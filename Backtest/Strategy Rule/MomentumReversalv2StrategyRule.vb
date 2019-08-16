@@ -7,7 +7,6 @@ Public Class MomentumReversalv2StrategyRule
     Inherits StrategyRule
 
     Private _ATRPayload As Dictionary(Of Date, Decimal) = Nothing
-    Private _targetMultiplier As Decimal = 3
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -39,9 +38,9 @@ Public Class MomentumReversalv2StrategyRule
             _parentStrategy.TotalPLAfterBrokerage(currentTick.PayloadDate) > Math.Abs(_parentStrategy.OverAllLossPerDay) * -1 AndAlso
             currentMinuteCandlePayload.PayloadDate >= tradeStartTime AndAlso GetLastDayLastCandleATR() <> Decimal.MinValue Then
             Dim signalCandle As Payload = Nothing
+            Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, Trade.TradeType.MIS)
             Dim signalCandleSatisfied As Tuple(Of Boolean, Trade.TradeExecutionDirection) = IsSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload)
             If signalCandleSatisfied IsNot Nothing AndAlso signalCandleSatisfied.Item1 Then
-                Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, Trade.TradeType.MIS)
                 If lastExecutedTrade Is Nothing Then
                     signalCandle = currentMinuteCandlePayload.PreviousCandlePayload
                 Else
@@ -50,6 +49,10 @@ Public Class MomentumReversalv2StrategyRule
                         signalCandle = currentMinuteCandlePayload.PreviousCandlePayload
                     End If
                 End If
+            ElseIf _parentStrategy.RuleSupporting1 AndAlso lastExecutedTrade IsNot Nothing AndAlso
+                lastExecutedTrade.ExitCondition = Trade.TradeExitCondition.StopLoss AndAlso lastExecutedTrade.PLPoint < 0 Then
+                signalCandle = lastExecutedTrade.SignalCandle
+                signalCandleSatisfied = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, lastExecutedTrade.EntryDirection)
             End If
             If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
                 If signalCandleSatisfied.Item2 = Trade.TradeExecutionDirection.Buy Then
@@ -58,8 +61,8 @@ Public Class MomentumReversalv2StrategyRule
                         .EntryPrice = signalCandle.High + buffer,
                         .EntryDirection = Trade.TradeExecutionDirection.Buy,
                         .Quantity = _lotSize,
-                        .Stoploss = .EntryPrice - ConvertFloorCeling(GetLastDayLastCandleATR(), _parentStrategy.TickSize, RoundOfType.Celing),
-                        .Target = .EntryPrice + ConvertFloorCeling(_ATRPayload(signalCandle.PayloadDate) * _targetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing),
+                        .Stoploss = .EntryPrice - ConvertFloorCeling(GetLastDayLastCandleATR() * _parentStrategy.StoplossMultiplier, _parentStrategy.TickSize, RoundOfType.Celing),
+                        .Target = .EntryPrice + ConvertFloorCeling(_ATRPayload(signalCandle.PayloadDate) * _parentStrategy.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing),
                         .Buffer = buffer,
                         .SignalCandle = signalCandle,
                         .Supporting1 = signalCandle.PayloadDate.ToShortTimeString,
@@ -72,8 +75,8 @@ Public Class MomentumReversalv2StrategyRule
                         .EntryPrice = signalCandle.Low - buffer,
                         .EntryDirection = Trade.TradeExecutionDirection.Sell,
                         .Quantity = _lotSize,
-                        .Stoploss = .EntryPrice + ConvertFloorCeling(GetLastDayLastCandleATR(), _parentStrategy.TickSize, RoundOfType.Celing),
-                        .Target = .EntryPrice - ConvertFloorCeling(_ATRPayload(signalCandle.PayloadDate) * _targetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing),
+                        .Stoploss = .EntryPrice + ConvertFloorCeling(GetLastDayLastCandleATR() * _parentStrategy.StoplossMultiplier, _parentStrategy.TickSize, RoundOfType.Celing),
+                        .Target = .EntryPrice - ConvertFloorCeling(_ATRPayload(signalCandle.PayloadDate) * _parentStrategy.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing),
                         .Buffer = buffer,
                         .SignalCandle = signalCandle,
                         .Supporting1 = signalCandle.PayloadDate.ToShortTimeString,
@@ -111,7 +114,7 @@ Public Class MomentumReversalv2StrategyRule
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrder(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
-        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+        If _parentStrategy.BreakevenMovement AndAlso currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
             Dim triggerPrice As Decimal = Decimal.MinValue
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                 Dim excpectedTarget As Decimal = currentTrade.EntryPrice + (currentTrade.PotentialTarget - currentTrade.EntryPrice) * 2 / 3

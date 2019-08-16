@@ -128,6 +128,11 @@ Namespace StrategyHelper
         Public StockMaxLossPerDay As Double = Decimal.MinValue
         Public NumberOfTradesPerStockPerDay As Integer = Integer.MaxValue
         Public NumberOfTradesPerDay As Integer = Integer.MaxValue
+
+        Public BreakevenMovement As Boolean = False
+        Public TargetMultiplier As Decimal = Decimal.MinValue
+        Public StoplossMultiplier As Decimal = Decimal.MinValue
+        Public RuleSupporting1 As Boolean = False
 #End Region
 
 #Region "Public Calculated Property"

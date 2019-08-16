@@ -277,44 +277,69 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            Using backtestStrategy As New GenericStrategy(canceller:=_canceller,
-                                                          exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                          exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                          tradeStartTime:=TimeSpan.Parse("09:18:00"),
-                                                          lastTradeEntryTime:=TimeSpan.Parse("14:30:00"),
-                                                          eodExitTime:=TimeSpan.Parse("15:15:00"),
-                                                          tickSize:=tick,
-                                                          marginMultiplier:=margin,
-                                                          timeframe:=1,
-                                                          heikenAshiCandle:=False,
-                                                          stockType:=stockType,
-                                                          databaseTable:=database,
-                                                          dataSource:=sourceData,
-                                                          initialCapital:=300000,
-                                                          usableCapital:=250000,
-                                                          minimumEarnedCapitalToWithdraw:=400000,
-                                                          amountToBeWithdrawn:=100000)
-                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+            For signalTimeFrame As Integer = 1 To 1 Step 1
+                For nmbrOfStock As Integer = 5 To 6 Step 1
+                    For nmbrOfTradePerStock As Integer = 2 To 3 Step 1
+                        For mp As Decimal = 50000 To 50000 Step 5000
+                            For ml As Decimal = 50000 To 50000 Step 5000
+                                For brkevnMvmnt As Integer = 1 To 1 Step 1
+                                    For tgtMul As Decimal = 3 To 3 Step 0.5
+                                        For slMul As Decimal = 1 To 1 Step 0.5
+                                            For lastSignalReentry As Integer = 0 To 1 Step 1
+                                                Using backtestStrategy As New GenericStrategy(canceller:=_canceller,
+                                                                                              exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                                              exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                                              tradeStartTime:=TimeSpan.Parse("09:18:00"),
+                                                                                              lastTradeEntryTime:=TimeSpan.Parse("14:30:00"),
+                                                                                              eodExitTime:=TimeSpan.Parse("15:15:00"),
+                                                                                              tickSize:=tick,
+                                                                                              marginMultiplier:=margin,
+                                                                                              timeframe:=signalTimeFrame,
+                                                                                              heikenAshiCandle:=False,
+                                                                                              stockType:=stockType,
+                                                                                              databaseTable:=database,
+                                                                                              dataSource:=sourceData,
+                                                                                              initialCapital:=300000,
+                                                                                              usableCapital:=250000,
+                                                                                              minimumEarnedCapitalToWithdraw:=400000,
+                                                                                              amountToBeWithdrawn:=100000)
+                                                    AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                With backtestStrategy
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Future Stock List ATR Based.csv")
-                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+                                                    With backtestStrategy
+                                                        .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Future Stock List ATR Based.csv")
+                                                        .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                    .NumberOfTradeableStockPerDay = 5
+                                                        .NumberOfTradeableStockPerDay = nmbrOfStock
 
-                    .NumberOfTradesPerDay = Integer.MaxValue
-                    .NumberOfTradesPerStockPerDay = 2
+                                                        .NumberOfTradesPerDay = Integer.MaxValue
+                                                        .NumberOfTradesPerStockPerDay = nmbrOfTradePerStock
 
-                    .ExitOnStockFixedTargetStoploss = False
-                    .StockMaxProfitPerDay = Decimal.MaxValue
-                    .StockMaxLossPerDay = Decimal.MinValue
+                                                        .BreakevenMovement = brkevnMvmnt
 
-                    .ExitOnOverAllFixedTargetStoploss = False
-                    .OverAllProfitPerDay = Decimal.MaxValue
-                    .OverAllLossPerDay = Decimal.MinValue
-                End With
-                Await backtestStrategy.TestStrategyAsync(startDate, endDate).ConfigureAwait(False)
-            End Using
+                                                        .TargetMultiplier = tgtMul
+                                                        .StoplossMultiplier = slMul
+
+                                                        .RuleSupporting1 = lastSignalReentry
+
+                                                        .ExitOnStockFixedTargetStoploss = False
+                                                        .StockMaxProfitPerDay = Decimal.MaxValue
+                                                        .StockMaxLossPerDay = Decimal.MinValue
+
+                                                        .ExitOnOverAllFixedTargetStoploss = True
+                                                        .OverAllProfitPerDay = mp
+                                                        .OverAllLossPerDay = ml
+                                                    End With
+                                                    Await backtestStrategy.TestStrategyAsync(startDate, endDate).ConfigureAwait(False)
+                                                End Using
+                                            Next
+                                        Next
+                                    Next
+                                Next
+                            Next
+                        Next
+                    Next
+                Next
+            Next
         Catch ex As Exception
             MsgBox(ex.ToString, MsgBoxStyle.Critical)
         Finally
