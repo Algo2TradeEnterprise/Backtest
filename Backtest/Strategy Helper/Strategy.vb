@@ -984,6 +984,28 @@ Namespace StrategyHelper
             End If
             Return ret
         End Function
+
+        Public Function GetBreakevenPoint(ByVal tradingSymbol As String, ByVal entryPrice As Decimal, ByVal quantity As Integer, ByVal direction As Trade.TradeExecutionDirection, ByVal lotsize As Integer, ByVal stockType As Trade.TypeOfStock) As Decimal
+            Dim ret As Decimal = Me.TickSize
+            If direction = Trade.TradeExecutionDirection.Buy Then
+                For exitPrice As Decimal = entryPrice To Decimal.MaxValue Step ret
+                    Dim pl As Decimal = CalculatePL(tradingSymbol, entryPrice, exitPrice, quantity, lotsize, stockType)
+                    If pl >= 0 Then
+                        ret = ConvertFloorCeling(exitPrice - entryPrice, Me.TickSize, RoundOfType.Celing)
+                        Exit For
+                    End If
+                Next
+            ElseIf direction = Trade.TradeExecutionDirection.Sell Then
+                For exitPrice As Decimal = entryPrice To Decimal.MinusOne Step ret * -1
+                    Dim pl As Decimal = CalculatePL(tradingSymbol, exitPrice, entryPrice, quantity, lotsize, stockType)
+                    If pl >= 0 Then
+                        ret = ConvertFloorCeling(entryPrice - exitPrice, Me.TickSize, RoundOfType.Celing)
+                        Exit For
+                    End If
+                Next
+            End If
+            Return ret
+        End Function
 #End Region
 
 #Region "Public MustOverride Function"
