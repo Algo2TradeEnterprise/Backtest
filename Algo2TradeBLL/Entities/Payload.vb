@@ -273,7 +273,8 @@ Public Class Payload
     Private _DojiCandle As Double
     Public ReadOnly Property DojiCandle As Boolean
         Get
-            If Me.CandleBody < Me.CandleRange / 4 Then
+            'If Me.CandleBody < Me.CandleRange / 4 Then
+            If Me.CandleBody = 0 Then
                 _DojiCandle = True
             Else
                 _DojiCandle = False
