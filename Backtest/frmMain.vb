@@ -277,15 +277,15 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            For signalTimeFrame As Integer = 1 To 1 Step 1
-                For nmbrOfStock As Integer = 5 To 6 Step 1
-                    For nmbrOfTradePerStock As Integer = 2 To 3 Step 1
-                        For mp As Decimal = 50000 To 50000 Step 5000
-                            For ml As Decimal = 50000 To 50000 Step 5000
-                                For brkevnMvmnt As Integer = 1 To 1 Step 1
-                                    For tgtMul As Decimal = 3 To 3 Step 0.5
-                                        For slMul As Decimal = 1 To 1 Step 0.5
-                                            For lastSignalReentry As Integer = 0 To 1 Step 1
+            For signalTimeFrame As Integer = 5 To 5 Step 1
+                For nmbrOfStock As Integer = 10 To 10 Step 1
+                    For nmbrOfTradePerStock As Integer = 100 To 100 Step 1
+                        For mp As Decimal = 5000000 To 5000000 Step 5000
+                            For ml As Decimal = 5000000 To 5000000 Step 5000
+                                For modifySL As Integer = 1 To 1 Step 1
+                                    For tgtMul As Decimal = 1 To 1 Step 0.5
+                                        For slMul As Decimal = 1.5 To 1.5 Step 0.5
+                                            For lastSignalReentry As Integer = 1 To 1 Step 1
                                                 Using backtestStrategy As New GenericStrategy(canceller:=_canceller,
                                                                                               exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                                               exchangeEndTime:=TimeSpan.Parse("15:29:59"),
@@ -314,7 +314,7 @@ Public Class frmMain
                                                         .NumberOfTradesPerDay = Integer.MaxValue
                                                         .NumberOfTradesPerStockPerDay = nmbrOfTradePerStock
 
-                                                        .BreakevenMovement = brkevnMvmnt
+                                                        .ModifyStoploss = modifySL
 
                                                         .TargetMultiplier = tgtMul
                                                         .StoplossMultiplier = slMul

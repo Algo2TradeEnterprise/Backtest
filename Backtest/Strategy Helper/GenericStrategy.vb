@@ -43,7 +43,7 @@ Namespace StrategyHelper
                                                    Me.NumberOfTradesPerStockPerDay,
                                                    If(Me.OverAllProfitPerDay = Decimal.MaxValue, 0, Me.OverAllProfitPerDay),
                                                    If(Me.OverAllLossPerDay = Decimal.MinValue, 0, Me.OverAllLossPerDay),
-                                                   Me.BreakevenMovement,
+                                                   Me.ModifyStoploss,
                                                    Me.TargetMultiplier,
                                                    Me.StoplossMultiplier,
                                                    Me.RuleSupporting1)
@@ -119,6 +119,8 @@ Namespace StrategyHelper
                                             stockRule = New HighVolumePinBarStrategyRule(XDayOneMinutePayload, stockList(stock)(0), Me, tradeCheckingDate, tradingSymbol, _canceller)
                                         Case 2
                                             stockRule = New MomentumReversalv2StrategyRule(XDayOneMinutePayload, stockList(stock)(0), Me, tradeCheckingDate, tradingSymbol, _canceller)
+                                        Case 3
+                                            stockRule = New HighVolumePinBarv2StrategyRule(XDayOneMinutePayload, stockList(stock)(0), Me, tradeCheckingDate, tradingSymbol, _canceller)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
