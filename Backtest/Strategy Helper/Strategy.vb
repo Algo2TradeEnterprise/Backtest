@@ -100,6 +100,8 @@ Namespace StrategyHelper
         Protected CapitalMovement As Dictionary(Of Date, List(Of Capital))
         Protected AvailableCapital As Decimal = Decimal.MinValue
 
+        Private StockNumberOfTradeBuffer As Dictionary(Of String, Integer) = Nothing
+
         Public ReadOnly Cmn As Common = Nothing
         Public ReadOnly ExchangeStartTime As TimeSpan = TimeSpan.Parse(EXCHANGE_START_TIME)
         Public ReadOnly ExchangeEndTime As TimeSpan = TimeSpan.Parse(EXCHANGE_END_TIME)
@@ -129,6 +131,7 @@ Namespace StrategyHelper
         Public NumberOfTradesPerStockPerDay As Integer = Integer.MaxValue
         Public NumberOfTradesPerDay As Integer = Integer.MaxValue
 
+        Public ReverseSignalExitOnly As Boolean = False
         Public ModifyStoploss As Boolean = False
         Public TargetMultiplier As Decimal = Decimal.MinValue
         Public StoplossMultiplier As Decimal = Decimal.MinValue
@@ -226,6 +229,9 @@ Namespace StrategyHelper
                             ret = artnrGroups.Count
                         End If
                     End If
+                End If
+                If StockNumberOfTradeBuffer IsNot Nothing AndAlso StockNumberOfTradeBuffer.ContainsKey(stockTradingSymbol) Then
+                    ret += StockNumberOfTradeBuffer(stockTradingSymbol)
                 End If
                 Return ret
             End Get
@@ -581,6 +587,8 @@ Namespace StrategyHelper
                     If reverseSignalExitOnly Then
                         If reverseSignalExit OrElse StockNumberOfTrades(currentPayload.PayloadDate, currentPayload.TradingSymbol) >= 1 Then
                             ExitTradeByForce(currentTrade, currentPayload, "Opposite direction trade exited")
+                            If StockNumberOfTradeBuffer Is Nothing Then StockNumberOfTradeBuffer = New Dictionary(Of String, Integer)
+                            StockNumberOfTradeBuffer(currentPayload.TradingSymbol) = 1
                         Else
                             currentTrade.UpdateTrade(EntryPrice:=currentPayload.Open, EntryTime:=currentPayload.PayloadDate, TradeCurrentStatus:=Trade.TradeExecutionStatus.Inprogress)
                         End If
@@ -604,6 +612,8 @@ Namespace StrategyHelper
                     If reverseSignalExitOnly Then
                         If reverseSignalExit OrElse StockNumberOfTrades(currentPayload.PayloadDate, currentPayload.TradingSymbol) >= 1 Then
                             ExitTradeByForce(currentTrade, currentPayload, "Opposite direction trade exited")
+                            If StockNumberOfTradeBuffer Is Nothing Then StockNumberOfTradeBuffer = New Dictionary(Of String, Integer)
+                            StockNumberOfTradeBuffer(currentPayload.TradingSymbol) = 1
                         Else
                             currentTrade.UpdateTrade(EntryPrice:=currentPayload.Open, EntryTime:=currentPayload.PayloadDate, TradeCurrentStatus:=Trade.TradeExecutionStatus.Inprogress)
                         End If

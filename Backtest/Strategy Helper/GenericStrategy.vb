@@ -37,16 +37,13 @@ Namespace StrategyHelper
                 Me.StockMaxProfitPerDay = Decimal.MaxValue
                 Me.StockMaxLossPerDay = Decimal.MinValue
             End If
-            Dim filename As String = String.Format("TF {0},NoS {1},NoT {2},MP {3},ML {4},Brkevn {5},TgtMul {6},SlMul {7},SgnlReentry {8}",
+            Dim filename As String = String.Format("TF {0},NoS {1},NoT {2},MP {3},ML {4},Brkevn {5}",
                                                    Me.SignalTimeFrame,
                                                    Me.NumberOfTradeableStockPerDay,
                                                    Me.NumberOfTradesPerStockPerDay,
                                                    If(Me.OverAllProfitPerDay = Decimal.MaxValue, 0, Me.OverAllProfitPerDay),
                                                    If(Me.OverAllLossPerDay = Decimal.MinValue, 0, Me.OverAllLossPerDay),
-                                                   Me.ModifyStoploss,
-                                                   Me.TargetMultiplier,
-                                                   Me.StoplossMultiplier,
-                                                   Me.RuleSupporting1)
+                                                   Me.ModifyStoploss)
 
             Dim tradesFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Trades.a2t", filename))
             Dim capitalFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Capital.a2t", filename))
@@ -121,6 +118,8 @@ Namespace StrategyHelper
                                             stockRule = New MomentumReversalv2StrategyRule(XDayOneMinutePayload, stockList(stock)(0), Me, tradeCheckingDate, tradingSymbol, _canceller)
                                         Case 3
                                             stockRule = New HighVolumePinBarv2StrategyRule(XDayOneMinutePayload, stockList(stock)(0), Me, tradeCheckingDate, tradingSymbol, _canceller)
+                                        Case 4
+                                            stockRule = New DonchianFractalStrategyRule(XDayOneMinutePayload, stockList(stock)(0), Me, tradeCheckingDate, tradingSymbol, _canceller)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -296,7 +295,7 @@ Namespace StrategyHelper
                                                     If potentialEntryTrades IsNot Nothing AndAlso potentialEntryTrades.Count > 0 Then
                                                         For Each runningPotentialEntryTrade In potentialEntryTrades
                                                             _canceller.Token.ThrowIfCancellationRequested()
-                                                            EnterTradeIfPossible(runningPotentialEntryTrade, runningTick)
+                                                            EnterTradeIfPossible(runningPotentialEntryTrade, runningTick, Me.ReverseSignalExitOnly)
                                                         Next
                                                     End If
 
