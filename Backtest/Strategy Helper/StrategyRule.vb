@@ -32,6 +32,7 @@ Namespace StrategyHelper
         Public MaxProfitOfThisStock As Decimal = Decimal.MaxValue
         Public MaxLossOfThisStock As Decimal = Decimal.MinValue
 
+        Public EligibleToTakeTrade As Boolean = True
         Protected _signalPayload As Dictionary(Of Date, Payload)
 
         Protected ReadOnly _lotSize As Integer
@@ -52,6 +53,8 @@ Namespace StrategyHelper
             _tradingDate = tradingDate
             _tradingSymbol = tradingSymbol
             _cts = canceller
+
+            EligibleToTakeTrade = True
         End Sub
 
         Public Overridable Sub CompletePreProcessing()
