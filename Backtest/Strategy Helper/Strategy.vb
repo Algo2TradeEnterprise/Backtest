@@ -920,6 +920,7 @@ Namespace StrategyHelper
 
                 If ltpUpdateTrades IsNot Nothing AndAlso ltpUpdateTrades.Count > 0 Then
                     For Each ltpUpdateTrade In ltpUpdateTrades
+                        ltpUpdateTrade.CurrentLTPTime = currentTickPayload.PayloadDate
                         ltpUpdateTrade.CurrentLTP = currentTickPayload.Open  'Assuming OHCL of tick is same
                     Next
                 End If

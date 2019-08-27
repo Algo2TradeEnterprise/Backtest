@@ -251,6 +251,17 @@ Namespace StrategyHelper
                 Dim b = _OriginatingStrategy.TotalMaxDrawUpPLAfterBrokerage(Me.TradingDate)
             End Set
         End Property
+
+        Private _CurrentLTPTime As Date
+        Public Property CurrentLTPTime As Date
+            Get
+                Return _CurrentLTPTime
+            End Get
+            Set(value As Date)
+                _CurrentLTPTime = value
+            End Set
+        End Property
+
         Public ReadOnly Property PLAfterBrokerage As Double
             Get
                 If EntryDirection = TradeExecutionDirection.Buy Then

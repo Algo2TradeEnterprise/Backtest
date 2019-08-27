@@ -69,7 +69,7 @@ Public Class DonchianFractalStrategyRule
                 ElseIf signalCandleSatisfied.Item2 = Trade.TradeExecutionDirection.Sell Then
                     If _FractalLowPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) <> _DonchianLowPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) AndAlso
                         currentTick.Open > _FractalLowPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) Then
-                        Dim buffer As Decimal = _parentStrategy.CalculateBuffer(_FractalHighPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), RoundOfType.Floor)
+                        Dim buffer As Decimal = _parentStrategy.CalculateBuffer(_FractalLowPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), RoundOfType.Floor)
                         Dim entryPrice As Decimal = ConvertFloorCeling(_FractalLowPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
                         parameter = New PlaceOrderParameters With {
                             .EntryPrice = entryPrice - buffer,
@@ -109,7 +109,15 @@ Public Class DonchianFractalStrategyRule
             If signalCandle IsNot Nothing Then
                 Dim signalCandleSatisfied As Tuple(Of Boolean, Trade.TradeExecutionDirection) = IsSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload)
                 If signalCandleSatisfied IsNot Nothing AndAlso signalCandleSatisfied.Item1 Then
-                    If signalCandle.PayloadDate <> currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate Then
+                    Dim entryPrice As Decimal = Decimal.MinValue
+                    If signalCandleSatisfied.Item2 = Trade.TradeExecutionDirection.Buy Then
+                        Dim buffer As Decimal = _parentStrategy.CalculateBuffer(_FractalHighPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), RoundOfType.Floor)
+                        entryPrice = ConvertFloorCeling(_FractalHighPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing) + buffer
+                    ElseIf signalCandleSatisfied.Item2 = Trade.TradeExecutionDirection.Sell Then
+                        Dim buffer As Decimal = _parentStrategy.CalculateBuffer(_FractalLowPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), RoundOfType.Floor)
+                        entryPrice = ConvertFloorCeling(_FractalLowPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing) - buffer
+                    End If
+                    If entryPrice <> Decimal.MinValue AndAlso entryPrice <> currentTrade.EntryPrice Then
                         ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                     End If
                 End If
