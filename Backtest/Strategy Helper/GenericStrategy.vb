@@ -214,7 +214,9 @@ Namespace StrategyHelper
                                                                                          Supporting4:=runningOrder.Supporting4,
                                                                                          Supporting5:=runningOrder.Supporting5)
 
-                                                                stockStrategyRule.EligibleToTakeTrade = PlaceOrModifyOrder(runningTrade, Nothing)
+                                                                If Not PlaceOrModifyOrder(runningTrade, Nothing) Then
+                                                                    stockStrategyRule.EligibleToTakeTrade = False
+                                                                End If
                                                             Next
                                                         End If
                                                     End If

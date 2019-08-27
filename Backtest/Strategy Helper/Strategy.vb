@@ -1064,7 +1064,7 @@ Namespace StrategyHelper
             With capitalRequired
                 .TradingDate = currentDate.Date
                 .CapitalExhaustedDateTime = currentDate
-                .RunningCapital = If(capitalToBeInserted = 0, 0, capitalToBeInserted + capitalToBeAdded - capitalToBeReleased)
+                .RunningCapital = capitalToBeInserted + capitalToBeAdded - capitalToBeReleased
                 .CapitalReleased = capitalToBeReleased
                 .AvailableCapital = Me.AvailableCapital
                 .Remarks = remarks
