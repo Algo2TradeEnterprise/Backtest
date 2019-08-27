@@ -331,9 +331,9 @@ Namespace StrategyHelper
             End Get
         End Property
 
-        'Private _TotalMaxDrawDownPLAfterBrokerage As Decimal = Decimal.MaxValue
+        Private _TotalMaxDrawDownTime As Date = Date.MinValue
         Private _TotalMaxDrawDownPLAfterBrokerage As Decimal = Decimal.MaxValue
-        Public ReadOnly Property TotalMaxDrawDownPLAfterBrokerage(ByVal currentDate As Date) As Decimal
+        Public ReadOnly Property TotalMaxDrawDownPLAfterBrokerage(ByVal currentDate As Date, ByVal currentTime As Date) As Decimal
             Get
                 Dim pl As Decimal = 0
                 If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentDate.Date) Then
@@ -343,14 +343,19 @@ Namespace StrategyHelper
                             pl += StockPLAfterBrokerage(currentDate, stock)
                         Next
                     End If
-                    _TotalMaxDrawDownPLAfterBrokerage = Math.Min(_TotalMaxDrawDownPLAfterBrokerage, pl)
+                    '_TotalMaxDrawDownPLAfterBrokerage = Math.Min(_TotalMaxDrawDownPLAfterBrokerage, pl)
+                    If pl < _TotalMaxDrawDownPLAfterBrokerage Then
+                        Me._TotalMaxDrawDownPLAfterBrokerage = pl
+                        Me._TotalMaxDrawDownTime = currentTime
+                    End If
                 End If
                 Return _TotalMaxDrawDownPLAfterBrokerage
             End Get
         End Property
 
+        Private _TotalMaxDrawUpTime As Date = Date.MinValue
         Private _TotalMaxDrawUpPLAfterBrokerage As Decimal = Decimal.MinValue
-        Public ReadOnly Property TotalMaxDrawUpPLAfterBrokerage(ByVal currentDate As Date) As Decimal
+        Public ReadOnly Property TotalMaxDrawUpPLAfterBrokerage(ByVal currentDate As Date, ByVal currentTime As Date) As Decimal
             Get
                 Dim pl As Decimal = 0
                 If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentDate.Date) Then
@@ -360,7 +365,11 @@ Namespace StrategyHelper
                             pl += StockPLAfterBrokerage(currentDate, stock)
                         Next
                     End If
-                    _TotalMaxDrawUpPLAfterBrokerage = Math.Max(_TotalMaxDrawUpPLAfterBrokerage, pl)
+                    '_TotalMaxDrawUpPLAfterBrokerage = Math.Max(_TotalMaxDrawUpPLAfterBrokerage, pl)
+                    If pl > _TotalMaxDrawUpPLAfterBrokerage Then
+                        Me._TotalMaxDrawUpPLAfterBrokerage = pl
+                        Me._TotalMaxDrawUpTime = currentTime
+                    End If
                 End If
                 Return _TotalMaxDrawUpPLAfterBrokerage
             End Get
@@ -935,8 +944,10 @@ Namespace StrategyHelper
                     For Each stock In stockTrades.Keys
                         Dim trades As List(Of Trade) = TradesTaken(currentDate.Date)(stock)
                         For Each runningTrade In trades
-                            runningTrade.OverAllMaxDrawDownPL = Me.TotalMaxDrawDownPLAfterBrokerage(currentDate)
-                            runningTrade.OverAllMaxDrawUpPL = Me.TotalMaxDrawUpPLAfterBrokerage(currentDate)
+                            runningTrade.OverAllMaxDrawDownPL = Me.TotalMaxDrawDownPLAfterBrokerage(currentDate, Date.MinValue)
+                            runningTrade.OverAllMaxDrawUpPL = Me.TotalMaxDrawUpPLAfterBrokerage(currentDate, Date.MinValue)
+                            runningTrade.OverAllMaxDrawUpTime = Me._TotalMaxDrawUpTime
+                            runningTrade.OverAllMaxDrawDownTime = Me._TotalMaxDrawDownTime
                         Next
                     Next
                 End If
@@ -1379,6 +1390,12 @@ Namespace StrategyHelper
                                 mainRawData(rowCtr, colCtr) = "Overall Draw Down PL for the day"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                mainRawData(rowCtr, colCtr) = "Overall Draw Up Time"
+                                colCtr += 1
+                                If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                mainRawData(rowCtr, colCtr) = "Overall Draw Down Time"
+                                colCtr += 1
+                                If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                 mainRawData(rowCtr, colCtr) = "Supporting1"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
@@ -1521,6 +1538,12 @@ Namespace StrategyHelper
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                                     mainRawData(rowCtr, colCtr) = tradeTaken.OverAllMaxDrawDownPL
+                                                    colCtr += 1
+                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                                    mainRawData(rowCtr, colCtr) = tradeTaken.OverAllMaxDrawUpTime.ToString("HH:mm:ss")
+                                                    colCtr += 1
+                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                                    mainRawData(rowCtr, colCtr) = tradeTaken.OverAllMaxDrawDownTime.ToString("HH:mm:ss")
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                                     mainRawData(rowCtr, colCtr) = tradeTaken.Supporting1

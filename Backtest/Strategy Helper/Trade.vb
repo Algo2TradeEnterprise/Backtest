@@ -247,8 +247,8 @@ Namespace StrategyHelper
                 If Me.MaximumDrawDown = 0 Or Me.MaximumDrawUp = 0 Then
                     Throw New ApplicationException(String.Format("{0} Value: 0", If(Me.MaximumDrawUp = 0, Me.MaximumDrawUp.ToString, Me.MaximumDrawDown.ToString)))
                 End If
-                Dim a = _OriginatingStrategy.TotalMaxDrawDownPLAfterBrokerage(Me.TradingDate)
-                Dim b = _OriginatingStrategy.TotalMaxDrawUpPLAfterBrokerage(Me.TradingDate)
+                Dim a = _OriginatingStrategy.TotalMaxDrawDownPLAfterBrokerage(Me.TradingDate, CurrentLTPTime)
+                Dim b = _OriginatingStrategy.TotalMaxDrawUpPLAfterBrokerage(Me.TradingDate, CurrentLTPTime)
             End Set
         End Property
 
@@ -349,6 +349,7 @@ Namespace StrategyHelper
                 'End Try
             End Get
         End Property
+
         Public ReadOnly Property DurationOfTrade As TimeSpan
             Get
                 Return Me.ExitTime - Me.EntryTime
@@ -379,6 +380,8 @@ Namespace StrategyHelper
         End Property
         Public Property OverAllMaxDrawUpPL As Double
         Public Property OverAllMaxDrawDownPL As Double
+        Public Property OverAllMaxDrawUpTime As Date
+        Public Property OverAllMaxDrawDownTime As Date
         'End Indibar
 #End Region
 
