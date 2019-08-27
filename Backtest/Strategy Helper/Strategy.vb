@@ -331,6 +331,7 @@ Namespace StrategyHelper
             End Get
         End Property
 
+        'Private _TotalMaxDrawDownPLAfterBrokerage As Decimal = Decimal.MaxValue
         Private _TotalMaxDrawDownPLAfterBrokerage As Decimal = Decimal.MaxValue
         Public ReadOnly Property TotalMaxDrawDownPLAfterBrokerage(ByVal currentDate As Date) As Decimal
             Get
