@@ -298,7 +298,7 @@ Namespace StrategyHelper
                                                     If potentialEntryTrades IsNot Nothing AndAlso potentialEntryTrades.Count > 0 Then
                                                         For Each runningPotentialEntryTrade In potentialEntryTrades
                                                             _canceller.Token.ThrowIfCancellationRequested()
-                                                            EnterTradeIfPossible(runningPotentialEntryTrade, runningTick, Me.ReverseSignalExitOnly)
+                                                            EnterTradeIfPossible(runningPotentialEntryTrade, runningTick)
                                                         Next
                                                     End If
 

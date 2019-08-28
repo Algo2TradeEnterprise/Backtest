@@ -278,10 +278,10 @@ Public Class frmMain
             End Select
 
             For signalTimeFrame As Integer = 1 To 1 Step 1
-                For nmbrOfStock As Integer = 5 To 5 Step 1
+                For nmbrOfStock As Integer = 10 To 10 Step 1
                     For nmbrOfTradePerStock As Integer = 1 To 1 Step 1
                         For mp As Decimal = 5000000 To 5000000 Step 5000
-                            For ml As Decimal = 2000 To 5000 Step 1000
+                            For ml As Decimal = 5000000 To 5000000 Step 1000
                                 For modifySL As Integer = 1 To 1 Step 1
                                     'For tgtMul As Decimal = 1 To 1 Step 0.5
                                     '    For slMul As Decimal = 1.5 To 1.5 Step 0.5
@@ -299,9 +299,9 @@ Public Class frmMain
                                                                                       stockType:=stockType,
                                                                                       databaseTable:=database,
                                                                                       dataSource:=sourceData,
-                                                                                      initialCapital:=500000,
-                                                                                      usableCapital:=500000,
-                                                                                      minimumEarnedCapitalToWithdraw:=400000,
+                                                                                      initialCapital:=150000,
+                                                                                      usableCapital:=100000,
+                                                                                      minimumEarnedCapitalToWithdraw:=250000,
                                                                                       amountToBeWithdrawn:=100000)
                                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
@@ -317,14 +317,12 @@ Public Class frmMain
 
                                             .ModifyStoploss = modifySL
 
-                                            .ReverseSignalExitOnly = True
-
                                             '.TargetMultiplier = tgtMul
                                             '.StoplossMultiplier = slMul
 
                                             '.RuleSupporting1 = lastSignalReentry
 
-                                            .ExitOnStockFixedTargetStoploss = True
+                                            .ExitOnStockFixedTargetStoploss = False
                                             .StockMaxProfitPerDay = Decimal.MaxValue
                                             .StockMaxLossPerDay = ml
 

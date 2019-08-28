@@ -11,6 +11,7 @@ Public Class DonchianFractalStrategyRule
     Private _DonchianMiddlePayload As Dictionary(Of Date, Decimal) = Nothing
     Private _FractalHighPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _FractalLowPayload As Dictionary(Of Date, Decimal) = Nothing
+    Private _InvalidInstrument As Boolean = False
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -19,6 +20,7 @@ Public Class DonchianFractalStrategyRule
                    ByVal tradingSymbol As String,
                    ByVal canceller As CancellationTokenSource)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller)
+        _InvalidInstrument = False
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -36,14 +38,14 @@ Public Class DonchianFractalStrategyRule
 
         Dim parameter As PlaceOrderParameters = Nothing
         If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
-            Not _parentStrategy.IsTradeOpen(currentTick, Trade.TradeType.MIS) AndAlso
+            Not _parentStrategy.IsTradeActive(currentTick, Trade.TradeType.MIS) AndAlso Not _parentStrategy.IsTradeOpen(currentTick, Trade.TradeType.MIS) AndAlso
             Not _parentStrategy.IsAnyTradeOfTheStockTargetReached(currentTick, Trade.TradeType.MIS) AndAlso
-            _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol) < _parentStrategy.NumberOfTradesPerStockPerDay + 1 AndAlso
+            _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol) < _parentStrategy.NumberOfTradesPerStockPerDay AndAlso
             _parentStrategy.TotalPLAfterBrokerage(currentTick.PayloadDate) < _parentStrategy.OverAllProfitPerDay AndAlso
             _parentStrategy.TotalPLAfterBrokerage(currentTick.PayloadDate) > Math.Abs(_parentStrategy.OverAllLossPerDay) * -1 AndAlso
             _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) < _parentStrategy.StockMaxProfitPerDay AndAlso
             _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) > Math.Abs(_parentStrategy.StockMaxLossPerDay) * -1 AndAlso
-            currentMinuteCandlePayload.PayloadDate >= tradeStartTime AndAlso Me.EligibleToTakeTrade Then
+            currentMinuteCandlePayload.PayloadDate >= tradeStartTime AndAlso Not _InvalidInstrument Then
             Dim signalCandle As Payload = Nothing
 
             Dim signalCandleSatisfied As Tuple(Of Boolean, Trade.TradeExecutionDirection) = IsSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload)
@@ -52,51 +54,53 @@ Public Class DonchianFractalStrategyRule
             End If
             If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
                 If signalCandleSatisfied.Item2 = Trade.TradeExecutionDirection.Buy Then
-                    If _FractalHighPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) <> _DonchianHighPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) AndAlso
-                        currentTick.Open < _FractalHighPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) Then
-                        Dim buffer As Decimal = _parentStrategy.CalculateBuffer(_FractalHighPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), RoundOfType.Floor)
-                        Dim entryPrice As Decimal = ConvertFloorCeling(_FractalHighPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
+                    If _FractalHighPayload(signalCandle.PayloadDate) <> _DonchianHighPayload(signalCandle.PayloadDate) AndAlso
+                        currentTick.Open < _FractalHighPayload(signalCandle.PayloadDate) Then
+                        Dim buffer As Decimal = _parentStrategy.CalculateBuffer(_FractalHighPayload(signalCandle.PayloadDate), RoundOfType.Floor)
+                        Dim entryPrice As Decimal = ConvertFloorCeling(_FractalHighPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
                         parameter = New PlaceOrderParameters With {
                             .EntryPrice = entryPrice + buffer,
                             .EntryDirection = Trade.TradeExecutionDirection.Buy,
                             .Quantity = _lotSize,
-                            .Stoploss = ConvertFloorCeling(_FractalLowPayload(currentMinuteCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing) - buffer,
+                            .Stoploss = ConvertFloorCeling(_FractalLowPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing) - buffer,
                             .Target = .EntryPrice + 100000,
                             .Buffer = buffer,
                             .SignalCandle = signalCandle,
                             .Supporting1 = signalCandle.PayloadDate.ToShortTimeString,
-                            .Supporting2 = ConvertFloorCeling(_FractalLowPayload(currentMinuteCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
+                            .Supporting2 = ConvertFloorCeling(_FractalLowPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
                         }
                     End If
                 ElseIf signalCandleSatisfied.Item2 = Trade.TradeExecutionDirection.Sell Then
-                    If _FractalLowPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) <> _DonchianLowPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) AndAlso
-                        currentTick.Open > _FractalLowPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) Then
-                        Dim buffer As Decimal = _parentStrategy.CalculateBuffer(_FractalLowPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), RoundOfType.Floor)
-                        Dim entryPrice As Decimal = ConvertFloorCeling(_FractalLowPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
+                    If _FractalLowPayload(signalCandle.PayloadDate) <> _DonchianLowPayload(signalCandle.PayloadDate) AndAlso
+                        currentTick.Open > _FractalLowPayload(signalCandle.PayloadDate) Then
+                        Dim buffer As Decimal = _parentStrategy.CalculateBuffer(_FractalLowPayload(signalCandle.PayloadDate), RoundOfType.Floor)
+                        Dim entryPrice As Decimal = ConvertFloorCeling(_FractalLowPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
                         parameter = New PlaceOrderParameters With {
                             .EntryPrice = entryPrice - buffer,
                             .EntryDirection = Trade.TradeExecutionDirection.Sell,
                             .Quantity = _lotSize,
-                            .Stoploss = ConvertFloorCeling(_FractalHighPayload(currentMinuteCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing) + buffer,
+                            .Stoploss = ConvertFloorCeling(_FractalHighPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing) + buffer,
                             .Target = .EntryPrice - 100000,
                             .Buffer = buffer,
                             .SignalCandle = signalCandle,
                             .Supporting1 = signalCandle.PayloadDate.ToShortTimeString,
-                            .Supporting2 = ConvertFloorCeling(_FractalHighPayload(currentMinuteCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
+                            .Supporting2 = ConvertFloorCeling(_FractalHighPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
                         }
                     End If
                 End If
             End If
         End If
         If parameter IsNot Nothing Then
-            If Not _parentStrategy.IsTradeActive(currentTick, Trade.TradeType.MIS) Then
+            'If Not _parentStrategy.IsTradeActive(currentTick, Trade.TradeType.MIS) Then
+            If Not IsPreviousSignalUsed(currentMinuteCandlePayload.PayloadDate) Then
                 ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
-            Else
-                Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, Trade.TradeType.MIS)
-                If lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.EntryDirection <> parameter.EntryDirection Then
-                    ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
-                End If
             End If
+            'Else
+            '    Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, Trade.TradeType.MIS)
+            '    If lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.EntryDirection <> parameter.EntryDirection Then
+            '        ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
+            '    End If
+            'End If
         End If
         Return ret
     End Function
@@ -124,13 +128,25 @@ Public Class DonchianFractalStrategyRule
                     End If
                 End If
             End If
-            'ElseIf currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-            '    Dim signalCandleSatisfied As Tuple(Of Boolean, Trade.TradeExecutionDirection) = IsSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload)
-            '    If signalCandleSatisfied IsNot Nothing AndAlso signalCandleSatisfied.Item1 Then
-            '        If signalCandleSatisfied.Item2 <> currentTrade.EntryDirection Then
-            '            ret = New Tuple(Of Boolean, String)(True, "Reverse Signal")
-            '        End If
-            '    End If
+        ElseIf currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            Dim signalCandleSatisfied As Tuple(Of Boolean, Trade.TradeExecutionDirection) = IsSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload)
+            If signalCandleSatisfied IsNot Nothing AndAlso signalCandleSatisfied.Item1 Then
+                If signalCandleSatisfied.Item2 <> currentTrade.EntryDirection Then
+                    Dim buffer As Decimal = Decimal.MinValue
+                    Dim entryPrice As Decimal = Decimal.MinValue
+                    Dim validTrade As Boolean = True
+                    If signalCandleSatisfied.Item2 = Trade.TradeExecutionDirection.Buy Then
+                        buffer = _parentStrategy.CalculateBuffer(_FractalHighPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), RoundOfType.Floor)
+                        entryPrice = ConvertFloorCeling(_FractalHighPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing) + buffer
+                    ElseIf signalCandleSatisfied.Item2 = Trade.TradeExecutionDirection.Sell Then
+                        buffer = _parentStrategy.CalculateBuffer(_FractalLowPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), RoundOfType.Floor)
+                        entryPrice = ConvertFloorCeling(_FractalLowPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing) - buffer
+                    End If
+                    If IsSignalTriggered(entryPrice, signalCandleSatisfied.Item2, currentTick) Then
+                        ret = New Tuple(Of Boolean, String)(True, "Reverse Signal")
+                    End If
+                End If
+            End If
         End If
         Return ret
     End Function
@@ -227,6 +243,39 @@ Public Class DonchianFractalStrategyRule
                     ElseIf direction = Trade.TradeExecutionDirection.Sell Then
                         If _signalPayload(runningPayload).Close > levelPrice Then
                             ret = False
+                        End If
+                    End If
+                End If
+            Next
+        End If
+        Return ret
+    End Function
+
+    Private Function IsPreviousSignalUsed(ByVal currentMinute As Date) As Boolean
+        Dim ret As Boolean = False
+        If _signalPayload IsNot Nothing AndAlso _signalPayload.Count > 0 Then
+            For Each runningPayload In _signalPayload.Keys.OrderByDescending(Function(x)
+                                                                                 Return x
+                                                                             End Function)
+                If runningPayload.Date = _tradingDate.Date AndAlso runningPayload < currentMinute Then
+                    Dim signalCandleSatisfied As Tuple(Of Boolean, Trade.TradeExecutionDirection) = IsSignalCandle(_signalPayload(runningPayload).PreviousCandlePayload)
+                    If signalCandleSatisfied IsNot Nothing AndAlso signalCandleSatisfied.Item1 Then
+                        Dim buffer As Decimal = Decimal.MinValue
+                        Dim entryPrice As Decimal = Decimal.MinValue
+                        Dim validTrade As Boolean = True
+                        If signalCandleSatisfied.Item2 = Trade.TradeExecutionDirection.Buy Then
+                            buffer = _parentStrategy.CalculateBuffer(_FractalHighPayload(_signalPayload(runningPayload).PreviousCandlePayload.PayloadDate), RoundOfType.Floor)
+                            entryPrice = ConvertFloorCeling(_FractalHighPayload(_signalPayload(runningPayload).PreviousCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing) + buffer
+                            validTrade = _signalPayload(runningPayload).Open < entryPrice
+                        ElseIf signalCandleSatisfied.Item2 = Trade.TradeExecutionDirection.Sell Then
+                            buffer = _parentStrategy.CalculateBuffer(_FractalLowPayload(_signalPayload(runningPayload).PreviousCandlePayload.PayloadDate), RoundOfType.Floor)
+                            entryPrice = ConvertFloorCeling(_FractalLowPayload(_signalPayload(runningPayload).PreviousCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing) - buffer
+                            validTrade = _signalPayload(runningPayload).Open > entryPrice
+                        End If
+                        If validTrade AndAlso IsSignalTriggered(entryPrice, signalCandleSatisfied.Item2, runningPayload, runningPayload) Then
+                            ret = True
+                            _InvalidInstrument = True
+                            Exit For
                         End If
                     End If
                 End If

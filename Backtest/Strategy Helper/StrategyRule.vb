@@ -77,5 +77,41 @@ Namespace StrategyHelper
         Public MustOverride Async Function IsTriggerReceivedForExitOrder(ByVal currentTick As Payload, ByVal currentTrade As Trade) As Task(Of Tuple(Of Boolean, String))
         Public MustOverride Async Function IsTriggerReceivedForModifyStoplossOrder(ByVal currentTick As Payload, ByVal currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Public MustOverride Async Function IsTriggerReceivedForModifyTargetOrder(ByVal currentTick As Payload, ByVal currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
+
+        Public Overridable Function IsSignalTriggered(ByVal entryPrice As Decimal, ByVal entryDirection As Trade.TradeExecutionDirection, ByVal startTime As Date, ByVal endTime As Date) As Boolean
+            Dim ret As Boolean = False
+            If _inputPayload IsNot Nothing AndAlso _inputPayload.Count > 0 Then
+                For Each runningPayload In _inputPayload.Keys
+                    If runningPayload >= startTime AndAlso runningPayload <= endTime Then
+                        If entryDirection = Trade.TradeExecutionDirection.Buy Then
+                            If _inputPayload(runningPayload).High >= entryPrice Then
+                                ret = True
+                                Exit For
+                            End If
+                        ElseIf entryDirection = Trade.TradeExecutionDirection.Sell Then
+                            If _inputPayload(runningPayload).Low <= entryPrice Then
+                                ret = True
+                                Exit For
+                            End If
+                        End If
+                    End If
+                Next
+            End If
+            Return ret
+        End Function
+
+        Public Overridable Function IsSignalTriggered(ByVal entryPrice As Decimal, ByVal entryDirection As Trade.TradeExecutionDirection, ByVal currentTick As Payload) As Boolean
+            Dim ret As Boolean = False
+            If entryDirection = Trade.TradeExecutionDirection.Buy Then
+                If currentTick.High >= entryPrice Then
+                    ret = True
+                End If
+            ElseIf entryDirection = Trade.TradeExecutionDirection.Sell Then
+                If currentTick.Low <= entryPrice Then
+                    ret = True
+                End If
+            End If
+            Return ret
+        End Function
     End Class
 End Namespace

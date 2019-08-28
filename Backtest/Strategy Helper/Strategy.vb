@@ -131,7 +131,6 @@ Namespace StrategyHelper
         Public NumberOfTradesPerStockPerDay As Integer = Integer.MaxValue
         Public NumberOfTradesPerDay As Integer = Integer.MaxValue
 
-        Public ReverseSignalExitOnly As Boolean = False
         Public ModifyStoploss As Boolean = False
         Public TargetMultiplier As Decimal = Decimal.MinValue
         Public StoplossMultiplier As Decimal = Decimal.MinValue
