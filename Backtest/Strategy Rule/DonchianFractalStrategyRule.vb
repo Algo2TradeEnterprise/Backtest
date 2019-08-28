@@ -39,12 +39,13 @@ Public Class DonchianFractalStrategyRule
         Dim parameter As PlaceOrderParameters = Nothing
         If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
             Not _parentStrategy.IsTradeActive(currentTick, Trade.TradeType.MIS) AndAlso Not _parentStrategy.IsTradeOpen(currentTick, Trade.TradeType.MIS) AndAlso
-            Not _parentStrategy.IsAnyTradeOfTheStockTargetReached(currentTick, Trade.TradeType.MIS) AndAlso
             _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol) < _parentStrategy.NumberOfTradesPerStockPerDay AndAlso
             _parentStrategy.TotalPLAfterBrokerage(currentTick.PayloadDate) < _parentStrategy.OverAllProfitPerDay AndAlso
             _parentStrategy.TotalPLAfterBrokerage(currentTick.PayloadDate) > Math.Abs(_parentStrategy.OverAllLossPerDay) * -1 AndAlso
             _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) < _parentStrategy.StockMaxProfitPerDay AndAlso
             _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) > Math.Abs(_parentStrategy.StockMaxLossPerDay) * -1 AndAlso
+            _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) < Me.MaxProfitOfThisStock AndAlso
+            _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) > Math.Abs(Me.MaxLossOfThisStock) * -1 AndAlso
             currentMinuteCandlePayload.PayloadDate >= tradeStartTime AndAlso Not _InvalidInstrument Then
             Dim signalCandle As Payload = Nothing
 
@@ -93,6 +94,7 @@ Public Class DonchianFractalStrategyRule
         If parameter IsNot Nothing Then
             'If Not _parentStrategy.IsTradeActive(currentTick, Trade.TradeType.MIS) Then
             If Not IsPreviousSignalUsed(currentMinuteCandlePayload.PayloadDate) Then
+                Me.MaxLossOfThisStock = (parameter.EntryPrice * parameter.Quantity / _parentStrategy.MarginMultiplier) * _parentStrategy.StoplossMultiplier / 100
                 ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
             End If
             'Else

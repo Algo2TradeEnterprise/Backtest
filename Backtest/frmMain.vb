@@ -283,10 +283,10 @@ Public Class frmMain
                         For mp As Decimal = 5000000 To 5000000 Step 5000
                             For ml As Decimal = 5000000 To 5000000 Step 1000
                                 For modifySL As Integer = 1 To 1 Step 1
-                                    'For tgtMul As Decimal = 1 To 1 Step 0.5
-                                    '    For slMul As Decimal = 1.5 To 1.5 Step 0.5
-                                    'For lastSignalReentry As Integer = 1 To 1 Step 1
-                                    Using backtestStrategy As New GenericStrategy(canceller:=_canceller,
+                                    For tgtMul As Decimal = 1 To 1 Step 0.5
+                                        For slMul As Decimal = 20 To 20 Step 0.5
+                                            For lastSignalReentry As Integer = 1 To 1 Step 1
+                                                Using backtestStrategy As New GenericStrategy(canceller:=_canceller,
                                                                                       exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                                       exchangeEndTime:=TimeSpan.Parse("15:29:59"),
                                                                                       tradeStartTime:=TimeSpan.Parse("09:18:00"),
@@ -303,38 +303,38 @@ Public Class frmMain
                                                                                       usableCapital:=100000,
                                                                                       minimumEarnedCapitalToWithdraw:=250000,
                                                                                       amountToBeWithdrawn:=100000)
-                                        AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+                                                    AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                                        With backtestStrategy
-                                            '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Future Stock List ATR Based.csv")
-                                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pre Market Data.csv")
-                                            .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+                                                    With backtestStrategy
+                                                        '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Future Stock List ATR Based.csv")
+                                                        .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pre Market Data.csv")
+                                                        .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                                            .NumberOfTradeableStockPerDay = nmbrOfStock
+                                                        .NumberOfTradeableStockPerDay = nmbrOfStock
 
-                                            .NumberOfTradesPerDay = Integer.MaxValue
-                                            .NumberOfTradesPerStockPerDay = nmbrOfTradePerStock
+                                                        .NumberOfTradesPerDay = Integer.MaxValue
+                                                        .NumberOfTradesPerStockPerDay = nmbrOfTradePerStock
 
-                                            .ModifyStoploss = modifySL
+                                                        .ModifyStoploss = modifySL
 
-                                            '.TargetMultiplier = tgtMul
-                                            '.StoplossMultiplier = slMul
+                                                        .TargetMultiplier = tgtMul
+                                                        .StoplossMultiplier = slMul
 
-                                            '.RuleSupporting1 = lastSignalReentry
+                                                        .RuleSupporting1 = lastSignalReentry
 
-                                            .ExitOnStockFixedTargetStoploss = False
-                                            .StockMaxProfitPerDay = Decimal.MaxValue
-                                            .StockMaxLossPerDay = ml
+                                                        .ExitOnStockFixedTargetStoploss = False
+                                                        .StockMaxProfitPerDay = Decimal.MaxValue
+                                                        .StockMaxLossPerDay = ml
 
-                                            .ExitOnOverAllFixedTargetStoploss = False
-                                            .OverAllProfitPerDay = mp
-                                            .OverAllLossPerDay = ml
-                                        End With
-                                        Await backtestStrategy.TestStrategyAsync(startDate, endDate).ConfigureAwait(False)
-                                    End Using
-                                    'Next
-                                    'Next
-                                    'Next
+                                                        .ExitOnOverAllFixedTargetStoploss = False
+                                                        .OverAllProfitPerDay = mp
+                                                        .OverAllLossPerDay = ml
+                                                    End With
+                                                    Await backtestStrategy.TestStrategyAsync(startDate, endDate).ConfigureAwait(False)
+                                                End Using
+                                            Next
+                                        Next
+                                    Next
                                 Next
                             Next
                         Next

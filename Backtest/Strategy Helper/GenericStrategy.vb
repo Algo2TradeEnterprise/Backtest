@@ -37,14 +37,15 @@ Namespace StrategyHelper
                 Me.StockMaxProfitPerDay = Decimal.MaxValue
                 Me.StockMaxLossPerDay = Decimal.MinValue
             End If
-            Dim filename As String = String.Format("TF {0},NoS {1},NoT {2},MP {3},ML {4},Brkevn {5}, SL {6}",
+            Dim filename As String = String.Format("TF {0},NoS {1},NoT {2},MP {3},ML {4},SMP {5},SML {6},SL {7}",
                                                    Me.SignalTimeFrame,
                                                    Me.NumberOfTradeableStockPerDay,
                                                    Me.NumberOfTradesPerStockPerDay,
                                                    If(Me.OverAllProfitPerDay = Decimal.MaxValue, 0, Me.OverAllProfitPerDay),
                                                    If(Me.OverAllLossPerDay = Decimal.MinValue, 0, Me.OverAllLossPerDay),
-                                                   Me.ModifyStoploss,
-                                                   If(Me.StockMaxLossPerDay = Decimal.MinValue, 0, Me.StockMaxLossPerDay))
+                                                   If(Me.StockMaxProfitPerDay = Decimal.MaxValue, 0, Me.StockMaxProfitPerDay),
+                                                   If(Me.StockMaxLossPerDay = Decimal.MinValue, 0, Me.StockMaxLossPerDay),
+                                                   Me.StoplossMultiplier)
 
             Dim tradesFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Trades.a2t", filename))
             Dim capitalFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Capital.a2t", filename))
