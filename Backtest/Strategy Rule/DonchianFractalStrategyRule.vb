@@ -140,12 +140,15 @@ Public Class DonchianFractalStrategyRule
                     If signalCandleSatisfied.Item2 = Trade.TradeExecutionDirection.Buy Then
                         buffer = _parentStrategy.CalculateBuffer(_FractalHighPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), RoundOfType.Floor)
                         entryPrice = ConvertFloorCeling(_FractalHighPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing) + buffer
+                        If currentTick.High >= entryPrice Then
+                            ret = New Tuple(Of Boolean, String)(True, "Reverse Signal")
+                        End If
                     ElseIf signalCandleSatisfied.Item2 = Trade.TradeExecutionDirection.Sell Then
                         buffer = _parentStrategy.CalculateBuffer(_FractalLowPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), RoundOfType.Floor)
                         entryPrice = ConvertFloorCeling(_FractalLowPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing) - buffer
-                    End If
-                    If IsSignalTriggered(entryPrice, signalCandleSatisfied.Item2, currentTick) Then
-                        ret = New Tuple(Of Boolean, String)(True, "Reverse Signal")
+                        If currentTick.Low <= entryPrice Then
+                            ret = New Tuple(Of Boolean, String)(True, "Reverse Signal")
+                        End If
                     End If
                 End If
             End If

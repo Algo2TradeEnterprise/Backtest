@@ -99,19 +99,5 @@ Namespace StrategyHelper
             End If
             Return ret
         End Function
-
-        Public Overridable Function IsSignalTriggered(ByVal entryPrice As Decimal, ByVal entryDirection As Trade.TradeExecutionDirection, ByVal currentTick As Payload) As Boolean
-            Dim ret As Boolean = False
-            If entryDirection = Trade.TradeExecutionDirection.Buy Then
-                If currentTick.High >= entryPrice Then
-                    ret = True
-                End If
-            ElseIf entryDirection = Trade.TradeExecutionDirection.Sell Then
-                If currentTick.Low <= entryPrice Then
-                    ret = True
-                End If
-            End If
-            Return ret
-        End Function
     End Class
 End Namespace
