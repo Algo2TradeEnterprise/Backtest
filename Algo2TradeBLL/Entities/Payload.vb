@@ -308,7 +308,7 @@ Public Class Payload
     Private _Ticks As List(Of Payload)
     Public ReadOnly Property Ticks As List(Of Payload)
         Get
-            Dim tickSize As Decimal = 1
+            Dim tickSize As Decimal = 0.05
             'TO DO: Change the vaue of tickSize to take the actual tick as per Exchange
             If _Ticks Is Nothing OrElse _Ticks.Count = 0 Then
                 Dim multiplier As Short = 0
