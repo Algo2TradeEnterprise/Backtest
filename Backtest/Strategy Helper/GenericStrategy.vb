@@ -122,6 +122,8 @@ Namespace StrategyHelper
                                             stockRule = New HighVolumePinBarv2StrategyRule(XDayOneMinutePayload, stockList(stock)(0), Me, tradeCheckingDate, tradingSymbol, _canceller)
                                         Case 4
                                             stockRule = New DonchianFractalStrategyRule(XDayOneMinutePayload, stockList(stock)(0), Me, tradeCheckingDate, tradingSymbol, _canceller)
+                                        Case 5
+                                            stockRule = New SMIFractalStrategyRule(XDayOneMinutePayload, stockList(stock)(0), Me, tradeCheckingDate, tradingSymbol, _canceller)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
