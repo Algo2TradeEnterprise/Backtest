@@ -242,7 +242,7 @@ Public Class Common
         Return XMinutePayloads
     End Function
 
-    Public Shared Function ConvetDecimalToPayload(ByVal targetfield As Payload.PayloadFields, ByVal inputpayload As Dictionary(Of Date, Decimal), ByRef outputpayload As Dictionary(Of Date, Payload))
+    Public Shared Function ConvertDecimalToPayload(ByVal targetfield As Payload.PayloadFields, ByVal inputpayload As Dictionary(Of Date, Decimal), ByRef outputpayload As Dictionary(Of Date, Payload))
         Dim output As Payload
         outputpayload = New Dictionary(Of Date, Payload)
         For Each runningitem In inputpayload

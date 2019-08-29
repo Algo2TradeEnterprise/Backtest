@@ -279,7 +279,7 @@ Public Class frmMain
 
             For signalTimeFrame As Integer = 1 To 1 Step 1
                 For nmbrOfStock As Integer = 5 To 5 Step 1
-                    For nmbrOfTradePerStock As Integer = 2 To 2 Step 1
+                    For nmbrOfTradePerStock As Integer = 100 To 100 Step 1
                         For mp As Decimal = 5000000 To 5000000 Step 5000
                             For ml As Decimal = 5000000 To 5000000 Step 1000
                                 For modifySL As Integer = 1 To 1 Step 1
@@ -287,27 +287,29 @@ Public Class frmMain
                                         For slMul As Decimal = 20 To 20 Step 0.5
                                             For lastSignalReentry As Integer = 1 To 1 Step 1
                                                 Using backtestStrategy As New GenericStrategy(canceller:=_canceller,
-                                                                                      exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                                                      exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                                                      tradeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                                                      lastTradeEntryTime:=TimeSpan.Parse("14:30:00"),
-                                                                                      eodExitTime:=TimeSpan.Parse("15:15:00"),
-                                                                                      tickSize:=tick,
-                                                                                      marginMultiplier:=margin,
-                                                                                      timeframe:=signalTimeFrame,
-                                                                                      heikenAshiCandle:=False,
-                                                                                      stockType:=stockType,
-                                                                                      databaseTable:=database,
-                                                                                      dataSource:=sourceData,
-                                                                                      initialCapital:=500000,
-                                                                                      usableCapital:=500000,
-                                                                                      minimumEarnedCapitalToWithdraw:=250000,
-                                                                                      amountToBeWithdrawn:=100000)
+                                                                                              exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                                              exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                                              tradeStartTime:=TimeSpan.Parse("09:16:00"),
+                                                                                              lastTradeEntryTime:=TimeSpan.Parse("14:30:00"),
+                                                                                              eodExitTime:=TimeSpan.Parse("15:15:00"),
+                                                                                              tickSize:=tick,
+                                                                                              marginMultiplier:=margin,
+                                                                                              timeframe:=signalTimeFrame,
+                                                                                              heikenAshiCandle:=False,
+                                                                                              stockType:=stockType,
+                                                                                              databaseTable:=database,
+                                                                                              dataSource:=sourceData,
+                                                                                              initialCapital:=150000,
+                                                                                              usableCapital:=100000,
+                                                                                              minimumEarnedCapitalToWithdraw:=250000,
+                                                                                              amountToBeWithdrawn:=100000)
                                                     AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                                                     With backtestStrategy
                                                         '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Future Stock List ATR Based.csv")
                                                         .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pre Market Data.csv")
+                                                        .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "BANKNIFTY.csv")
+
                                                         .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
                                                         .NumberOfTradeableStockPerDay = nmbrOfStock

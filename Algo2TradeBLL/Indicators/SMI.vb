@@ -35,9 +35,9 @@ Namespace Indicator
                 EMA.CalculateEMA(K_Smoothing, Payload.PayloadFields.C_AVG_HL, SMIIntermediatePayload, rdiffEMAOutput)
 
                 Dim diffEMAOutputPayload As New Dictionary(Of Date, Payload)
-                Common.ConvetDecimalToPayload(Payload.PayloadFields.H_L, diffEMAOutput, diffEMAOutputPayload)
+                Common.ConvertDecimalToPayload(Payload.PayloadFields.H_L, diffEMAOutput, diffEMAOutputPayload)
                 Dim rdiffEMAOutputPayload As New Dictionary(Of Date, Payload)
-                Common.ConvetDecimalToPayload(Payload.PayloadFields.C_AVG_HL, rdiffEMAOutput, rdiffEMAOutputPayload)
+                Common.ConvertDecimalToPayload(Payload.PayloadFields.C_AVG_HL, rdiffEMAOutput, rdiffEMAOutputPayload)
 
                 'For Each item In diffEMAOutput.Keys
                 '    Console.WriteLine(diffEMAOutput(item))
@@ -56,7 +56,7 @@ Namespace Indicator
                 Next
 
                 Dim SMIPayload As New Dictionary(Of Date, Payload)
-                Common.ConvetDecimalToPayload(Payload.PayloadFields.SMI_EMA, outputSMIsignalPayload, SMIPayload)
+                Common.ConvertDecimalToPayload(Payload.PayloadFields.SMI_EMA, outputSMIsignalPayload, SMIPayload)
 
                 EMA.CalculateEMA(D_Periods, Payload.PayloadFields.SMI_EMA, SMIPayload, outputEMASMIsignalPayload)
 

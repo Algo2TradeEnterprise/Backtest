@@ -124,6 +124,8 @@ Namespace StrategyHelper
                                             stockRule = New DonchianFractalStrategyRule(XDayOneMinutePayload, stockList(stock)(0), Me, tradeCheckingDate, tradingSymbol, _canceller)
                                         Case 5
                                             stockRule = New SMIFractalStrategyRule(XDayOneMinutePayload, stockList(stock)(0), Me, tradeCheckingDate, tradingSymbol, _canceller)
+                                        Case 6
+                                            stockRule = New BromastroStrategyRule(XDayOneMinutePayload, stockList(stock)(0), Me, tradeCheckingDate, tradingSymbol, _canceller)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -141,6 +143,7 @@ Namespace StrategyHelper
                             Dim endMinute As TimeSpan = ExchangeEndTime
                             While startMinute < endMinute
                                 _canceller.Token.ThrowIfCancellationRequested()
+                                OnHeartbeat(String.Format("Checking Trade on {0}. Time:{1}", tradeCheckingDate.ToShortDateString, startMinute.ToString))
                                 Dim startSecond As TimeSpan = startMinute
                                 Dim endSecond As TimeSpan = startMinute.Add(TimeSpan.FromMinutes(Me.SignalTimeFrame - 1))
                                 endSecond = endSecond.Add(TimeSpan.FromSeconds(59))

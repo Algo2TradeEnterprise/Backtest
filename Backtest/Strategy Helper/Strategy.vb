@@ -484,6 +484,22 @@ Namespace StrategyHelper
             Return ret
         End Function
 
+        Public Function GetOpenActiveTrades(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TradeType, ByVal direction As Trade.TradeExecutionDirection) As List(Of Trade)
+            Dim ret As List(Of Trade) = Nothing
+            If currentMinutePayload IsNot Nothing Then
+                Dim tradeDate As Date = currentMinutePayload.PayloadDate.Date
+                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(tradeDate) AndAlso TradesTaken(tradeDate).ContainsKey(currentMinutePayload.TradingSymbol) Then
+                    ret = TradesTaken(tradeDate)(currentMinutePayload.TradingSymbol).FindAll(Function(x)
+                                                                                                 Return x.SquareOffType = tradeType AndAlso
+                                                                                                 (x.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress OrElse
+                                                                                                 x.TradeCurrentStatus = Trade.TradeExecutionStatus.Open) AndAlso
+                                                                                                 x.EntryDirection = direction
+                                                                                             End Function)
+                End If
+            End If
+            Return ret
+        End Function
+
         Public Function GetSpecificTrades(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TradeType, ByVal tradeStatus As Trade.TradeExecutionStatus) As List(Of Trade)
             Dim ret As List(Of Trade) = Nothing
             If currentMinutePayload IsNot Nothing Then
