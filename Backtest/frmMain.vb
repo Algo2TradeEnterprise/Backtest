@@ -278,7 +278,7 @@ Public Class frmMain
             End Select
 
             For signalTimeFrame As Integer = 1 To 1 Step 1
-                For nmbrOfStock As Integer = 5 To 5 Step 1
+                For nmbrOfStock As Integer = 1 To 1 Step 1
                     For nmbrOfTradePerStock As Integer = 100 To 100 Step 1
                         For mp As Decimal = 5000000 To 5000000 Step 5000
                             For ml As Decimal = 5000000 To 5000000 Step 1000
@@ -290,7 +290,7 @@ Public Class frmMain
                                                                                               exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                                               exchangeEndTime:=TimeSpan.Parse("15:29:59"),
                                                                                               tradeStartTime:=TimeSpan.Parse("09:16:00"),
-                                                                                              lastTradeEntryTime:=TimeSpan.Parse("14:30:00"),
+                                                                                              lastTradeEntryTime:=TimeSpan.Parse("15:00:00"),
                                                                                               eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                                                               tickSize:=tick,
                                                                                               marginMultiplier:=margin,
@@ -299,10 +299,10 @@ Public Class frmMain
                                                                                               stockType:=stockType,
                                                                                               databaseTable:=database,
                                                                                               dataSource:=sourceData,
-                                                                                              initialCapital:=150000,
-                                                                                              usableCapital:=100000,
-                                                                                              minimumEarnedCapitalToWithdraw:=250000,
-                                                                                              amountToBeWithdrawn:=100000)
+                                                                                              initialCapital:=1500000,
+                                                                                              usableCapital:=1000000,
+                                                                                              minimumEarnedCapitalToWithdraw:=2500000,
+                                                                                              amountToBeWithdrawn:=1000000)
                                                     AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                                                     With backtestStrategy

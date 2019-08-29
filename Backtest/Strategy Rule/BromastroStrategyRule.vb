@@ -58,7 +58,7 @@ Public Class BromastroStrategyRule
                         parameter1 = New PlaceOrderParameters With {
                             .EntryPrice = currentSignal.Item2 + buffer,
                             .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                            .Quantity = _lotSize,
+                            .Quantity = _lotSize * 10,
                             .Stoploss = currentSignal.Item3 - buffer,
                             .Target = .EntryPrice + 100000,
                             .Buffer = buffer,
@@ -77,7 +77,7 @@ Public Class BromastroStrategyRule
                         parameter2 = New PlaceOrderParameters With {
                             .EntryPrice = currentSignal.Item3 - buffer,
                             .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                            .Quantity = _lotSize,
+                            .Quantity = _lotSize * 10,
                             .Stoploss = currentSignal.Item2 + buffer,
                             .Target = .EntryPrice - 100000,
                             .Buffer = buffer,
@@ -165,6 +165,17 @@ Public Class BromastroStrategyRule
                 If previousSwingHigh <> currentSwingHigh Then
                     Dim highestHigh As Decimal = Math.Max(Math.Max(candle.High, candle.PreviousCandlePayload.High), candle.PreviousCandlePayload.PreviousCandlePayload.High)
                     Dim lowestLow As Decimal = Math.Min(Math.Min(candle.Low, candle.PreviousCandlePayload.Low), candle.PreviousCandlePayload.PreviousCandlePayload.Low)
+                    Dim dummyHighestHigh As Decimal = Decimal.MinValue
+                    If highestHigh = candle.PreviousCandlePayload.PreviousCandlePayload.High Then
+                        dummyHighestHigh = Math.Max(candle.High, candle.PreviousCandlePayload.High)
+                    ElseIf highestHigh = candle.PreviousCandlePayload.High Then
+                        dummyHighestHigh = Math.Max(candle.High, candle.PreviousCandlePayload.PreviousCandlePayload.High)
+                    ElseIf highestHigh = candle.High Then
+                        dummyHighestHigh = Math.Max(candle.PreviousCandlePayload.PreviousCandlePayload.High, candle.PreviousCandlePayload.High)
+                    End If
+                    If dummyHighestHigh < (highestHigh + lowestLow) / 2 Then
+                        highestHigh = dummyHighestHigh
+                    End If
                     ret = New Tuple(Of Boolean, Decimal, Decimal)(True, highestHigh, lowestLow)
                 End If
             ElseIf direction = Trade.TradeExecutionDirection.Sell Then
@@ -173,6 +184,17 @@ Public Class BromastroStrategyRule
                 If previousSwingLow <> currentSwingLow Then
                     Dim highestHigh As Decimal = Math.Max(Math.Max(candle.High, candle.PreviousCandlePayload.High), candle.PreviousCandlePayload.PreviousCandlePayload.High)
                     Dim lowestLow As Decimal = Math.Min(Math.Min(candle.Low, candle.PreviousCandlePayload.Low), candle.PreviousCandlePayload.PreviousCandlePayload.Low)
+                    Dim dummyLowestLow As Decimal = Decimal.MinValue
+                    If lowestLow = candle.PreviousCandlePayload.PreviousCandlePayload.Low Then
+                        dummyLowestLow = Math.Min(candle.Low, candle.PreviousCandlePayload.Low)
+                    ElseIf lowestLow = candle.PreviousCandlePayload.Low Then
+                        dummyLowestLow = Math.Min(candle.Low, candle.PreviousCandlePayload.PreviousCandlePayload.Low)
+                    ElseIf lowestLow = candle.Low Then
+                        dummyLowestLow = Math.Min(candle.PreviousCandlePayload.PreviousCandlePayload.Low, candle.PreviousCandlePayload.Low)
+                    End If
+                    If dummyLowestLow > (highestHigh + lowestLow) / 2 Then
+                        lowestLow = dummyLowestLow
+                    End If
                     ret = New Tuple(Of Boolean, Decimal, Decimal)(True, highestHigh, lowestLow)
                 End If
             End If
