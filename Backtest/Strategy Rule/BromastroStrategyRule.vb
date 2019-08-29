@@ -50,7 +50,7 @@ Public Class BromastroStrategyRule
             Dim shortTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentMinuteCandlePayload, Trade.TradeType.MIS, Trade.TradeExecutionDirection.Sell)
 
             If longTrades Is Nothing OrElse (longTrades IsNot Nothing AndAlso longTrades.Count = 0) Then
-                Dim currentSignal As Tuple(Of Boolean, Decimal, Decimal) = GetSignals(currentMinuteCandlePayload.PreviousCandlePayload, Trade.TradeExecutionDirection.Buy)
+                Dim currentSignal As Tuple(Of Boolean, Decimal, Decimal, Payload) = GetSignals(currentMinuteCandlePayload.PreviousCandlePayload, Trade.TradeExecutionDirection.Buy)
                 If currentSignal IsNot Nothing AndAlso currentSignal.Item1 Then
                     If currentTick.Open < currentSignal.Item2 Then
                         'Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentSignal.Item2, RoundOfType.Floor)
@@ -62,14 +62,14 @@ Public Class BromastroStrategyRule
                             .Stoploss = currentSignal.Item3 - buffer,
                             .Target = .EntryPrice + 100000,
                             .Buffer = buffer,
-                            .SignalCandle = currentMinuteCandlePayload.PreviousCandlePayload,
-                            .Supporting1 = currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate.ToShortTimeString
+                            .SignalCandle = currentSignal.Item4,
+                            .Supporting1 = currentSignal.Item4.PayloadDate.ToShortTimeString
                         }
                     End If
                 End If
             End If
             If shortTrades Is Nothing OrElse (shortTrades IsNot Nothing AndAlso shortTrades.Count = 0) Then
-                Dim currentSignal As Tuple(Of Boolean, Decimal, Decimal) = GetSignals(currentMinuteCandlePayload.PreviousCandlePayload, Trade.TradeExecutionDirection.Sell)
+                Dim currentSignal As Tuple(Of Boolean, Decimal, Decimal, Payload) = GetSignals(currentMinuteCandlePayload.PreviousCandlePayload, Trade.TradeExecutionDirection.Sell)
                 If currentSignal IsNot Nothing AndAlso currentSignal.Item1 Then
                     If currentTick.Open > currentSignal.Item3 Then
                         'Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentSignal.Item3, RoundOfType.Floor)
@@ -81,8 +81,8 @@ Public Class BromastroStrategyRule
                             .Stoploss = currentSignal.Item2 + buffer,
                             .Target = .EntryPrice - 100000,
                             .Buffer = buffer,
-                            .SignalCandle = currentMinuteCandlePayload.PreviousCandlePayload,
-                            .Supporting1 = currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate.ToShortTimeString
+                            .SignalCandle = currentSignal.Item4,
+                            .Supporting1 = currentSignal.Item4.PayloadDate.ToShortTimeString
                         }
                     End If
                 End If
@@ -109,7 +109,7 @@ Public Class BromastroStrategyRule
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
 
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
-            Dim currentSignal As Tuple(Of Boolean, Decimal, Decimal) = GetSignals(currentMinuteCandlePayload.PreviousCandlePayload, currentTrade.EntryDirection)
+            Dim currentSignal As Tuple(Of Boolean, Decimal, Decimal, Payload) = GetSignals(currentMinuteCandlePayload.PreviousCandlePayload, currentTrade.EntryDirection)
             If currentSignal IsNot Nothing AndAlso currentSignal.Item1 Then
                 Dim entryPrice As Decimal = Decimal.MinValue
                 If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
@@ -156,13 +156,61 @@ Public Class BromastroStrategyRule
         Return ret
     End Function
 
-    Private Function GetSignals(ByVal candle As Payload, ByVal direction As Trade.TradeExecutionDirection) As Tuple(Of Boolean, Decimal, Decimal)
-        Dim ret As Tuple(Of Boolean, Decimal, Decimal) = Nothing
+    'Private Function GetSignals(ByVal candle As Payload, ByVal direction As Trade.TradeExecutionDirection) As Tuple(Of Boolean, Decimal, Decimal)
+    '    Dim ret As Tuple(Of Boolean, Decimal, Decimal) = Nothing
+    '    If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then
+    '        If direction = Trade.TradeExecutionDirection.Buy Then
+    '            Dim previousSwingHigh As Decimal = _SwingHighPayload(candle.PreviousCandlePayload.PayloadDate)
+    '            Dim currentSwingHigh As Decimal = _SwingHighPayload(candle.PayloadDate)
+    '            If previousSwingHigh <> currentSwingHigh Then
+    '                Dim highestHigh As Decimal = Math.Max(Math.Max(candle.High, candle.PreviousCandlePayload.High), candle.PreviousCandlePayload.PreviousCandlePayload.High)
+    '                Dim lowestLow As Decimal = Math.Min(Math.Min(candle.Low, candle.PreviousCandlePayload.Low), candle.PreviousCandlePayload.PreviousCandlePayload.Low)
+    '                Dim dummyHighestHigh As Decimal = Decimal.MinValue
+    '                If highestHigh = candle.PreviousCandlePayload.PreviousCandlePayload.High Then
+    '                    dummyHighestHigh = Math.Max(candle.High, candle.PreviousCandlePayload.High)
+    '                ElseIf highestHigh = candle.PreviousCandlePayload.High Then
+    '                    dummyHighestHigh = Math.Max(candle.High, candle.PreviousCandlePayload.PreviousCandlePayload.High)
+    '                ElseIf highestHigh = candle.High Then
+    '                    dummyHighestHigh = Math.Max(candle.PreviousCandlePayload.PreviousCandlePayload.High, candle.PreviousCandlePayload.High)
+    '                End If
+    '                If dummyHighestHigh < (highestHigh + lowestLow) / 2 Then
+    '                    highestHigh = dummyHighestHigh
+    '                End If
+    '                ret = New Tuple(Of Boolean, Decimal, Decimal)(True, highestHigh, lowestLow)
+    '            End If
+    '        ElseIf direction = Trade.TradeExecutionDirection.Sell Then
+    '            Dim previousSwingLow As Decimal = _SwingLowPayload(candle.PreviousCandlePayload.PayloadDate)
+    '            Dim currentSwingLow As Decimal = _SwingLowPayload(candle.PayloadDate)
+    '            If previousSwingLow <> currentSwingLow Then
+    '                Dim highestHigh As Decimal = Math.Max(Math.Max(candle.High, candle.PreviousCandlePayload.High), candle.PreviousCandlePayload.PreviousCandlePayload.High)
+    '                Dim lowestLow As Decimal = Math.Min(Math.Min(candle.Low, candle.PreviousCandlePayload.Low), candle.PreviousCandlePayload.PreviousCandlePayload.Low)
+    '                Dim dummyLowestLow As Decimal = Decimal.MinValue
+    '                If lowestLow = candle.PreviousCandlePayload.PreviousCandlePayload.Low Then
+    '                    dummyLowestLow = Math.Min(candle.Low, candle.PreviousCandlePayload.Low)
+    '                ElseIf lowestLow = candle.PreviousCandlePayload.Low Then
+    '                    dummyLowestLow = Math.Min(candle.Low, candle.PreviousCandlePayload.PreviousCandlePayload.Low)
+    '                ElseIf lowestLow = candle.Low Then
+    '                    dummyLowestLow = Math.Min(candle.PreviousCandlePayload.PreviousCandlePayload.Low, candle.PreviousCandlePayload.Low)
+    '                End If
+    '                If dummyLowestLow > (highestHigh + lowestLow) / 2 Then
+    '                    lowestLow = dummyLowestLow
+    '                End If
+    '                ret = New Tuple(Of Boolean, Decimal, Decimal)(True, highestHigh, lowestLow)
+    '            End If
+    '        End If
+    '    End If
+    '    Return ret
+    'End Function
+
+    Private Function GetSignals(ByVal candle As Payload, ByVal direction As Trade.TradeExecutionDirection) As Tuple(Of Boolean, Decimal, Decimal, Payload)
+        Dim ret As Tuple(Of Boolean, Decimal, Decimal, Payload) = Nothing
         If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then
             If direction = Trade.TradeExecutionDirection.Buy Then
-                Dim previousSwingHigh As Decimal = _SwingHighPayload(candle.PreviousCandlePayload.PayloadDate)
                 Dim currentSwingHigh As Decimal = _SwingHighPayload(candle.PayloadDate)
-                If previousSwingHigh <> currentSwingHigh Then
+                Dim startTime As Date = GetStartTimeOfIndicator(candle.PayloadDate, _SwingHighPayload)
+                If startTime.Date = _tradingDate.Date Then
+                    candle = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(startTime, _signalPayload))
+
                     Dim highestHigh As Decimal = Math.Max(Math.Max(candle.High, candle.PreviousCandlePayload.High), candle.PreviousCandlePayload.PreviousCandlePayload.High)
                     Dim lowestLow As Decimal = Math.Min(Math.Min(candle.Low, candle.PreviousCandlePayload.Low), candle.PreviousCandlePayload.PreviousCandlePayload.Low)
                     Dim dummyHighestHigh As Decimal = Decimal.MinValue
@@ -176,12 +224,14 @@ Public Class BromastroStrategyRule
                     If dummyHighestHigh < (highestHigh + lowestLow) / 2 Then
                         highestHigh = dummyHighestHigh
                     End If
-                    ret = New Tuple(Of Boolean, Decimal, Decimal)(True, highestHigh, lowestLow)
+                    ret = New Tuple(Of Boolean, Decimal, Decimal, Payload)(True, highestHigh, lowestLow, candle)
                 End If
             ElseIf direction = Trade.TradeExecutionDirection.Sell Then
-                Dim previousSwingLow As Decimal = _SwingLowPayload(candle.PreviousCandlePayload.PayloadDate)
                 Dim currentSwingLow As Decimal = _SwingLowPayload(candle.PayloadDate)
-                If previousSwingLow <> currentSwingLow Then
+                Dim startTime As Date = GetStartTimeOfIndicator(candle.PayloadDate, _SwingLowPayload)
+                If startTime.Date = _tradingDate.Date Then
+                    candle = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(startTime, _signalPayload))
+
                     Dim highestHigh As Decimal = Math.Max(Math.Max(candle.High, candle.PreviousCandlePayload.High), candle.PreviousCandlePayload.PreviousCandlePayload.High)
                     Dim lowestLow As Decimal = Math.Min(Math.Min(candle.Low, candle.PreviousCandlePayload.Low), candle.PreviousCandlePayload.PreviousCandlePayload.Low)
                     Dim dummyLowestLow As Decimal = Decimal.MinValue
@@ -195,7 +245,7 @@ Public Class BromastroStrategyRule
                     If dummyLowestLow > (highestHigh + lowestLow) / 2 Then
                         lowestLow = dummyLowestLow
                     End If
-                    ret = New Tuple(Of Boolean, Decimal, Decimal)(True, highestHigh, lowestLow)
+                    ret = New Tuple(Of Boolean, Decimal, Decimal, Payload)(True, highestHigh, lowestLow, candle)
                 End If
             End If
         End If
@@ -218,5 +268,25 @@ Public Class BromastroStrategyRule
             previousPayload = output
         Next
         Return Nothing
+    End Function
+
+    Private Function GetStartTimeOfIndicator(ByVal currentTime As Date, ByVal indicatorPayload As Dictionary(Of Date, Decimal)) As Date
+        Dim ret As Date = Date.MinValue
+        Dim currentIndicatorValue As Decimal = indicatorPayload(currentTime)
+        Dim indicatorStartTime As Date = Date.MinValue
+        For Each runningIndicator In indicatorPayload.Keys.OrderByDescending(Function(x)
+                                                                                 Return x
+                                                                             End Function)
+            If runningIndicator <= currentTime Then
+                If indicatorPayload(runningIndicator) <> currentIndicatorValue Then
+                    indicatorStartTime = runningIndicator
+                    Exit For
+                End If
+            End If
+        Next
+        If indicatorStartTime <> Date.MinValue Then
+            ret = indicatorStartTime.AddMinutes(_parentStrategy.SignalTimeFrame)
+        End If
+        Return ret
     End Function
 End Class
