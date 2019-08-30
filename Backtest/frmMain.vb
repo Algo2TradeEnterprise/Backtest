@@ -278,7 +278,7 @@ Public Class frmMain
             End Select
 
             For signalTimeFrame As Integer = 1 To 1 Step 1
-                For nmbrOfStock As Integer = 1 To 1 Step 1
+                For nmbrOfStock As Integer = 5 To 5 Step 1
                     For nmbrOfTradePerStock As Integer = 2 To 2 Step 1
                         For mp As Decimal = 5000000 To 5000000 Step 5000
                             For ml As Decimal = 5000000 To 5000000 Step 1000
@@ -299,10 +299,10 @@ Public Class frmMain
                                                                                               stockType:=stockType,
                                                                                               databaseTable:=database,
                                                                                               dataSource:=sourceData,
-                                                                                              initialCapital:=1500000,
-                                                                                              usableCapital:=1000000,
-                                                                                              minimumEarnedCapitalToWithdraw:=2500000,
-                                                                                              amountToBeWithdrawn:=1000000)
+                                                                                              initialCapital:=200000,
+                                                                                              usableCapital:=150000,
+                                                                                              minimumEarnedCapitalToWithdraw:=350000,
+                                                                                              amountToBeWithdrawn:=100000)
                                                     AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                                                     With backtestStrategy

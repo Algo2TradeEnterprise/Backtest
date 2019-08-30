@@ -115,12 +115,12 @@ Public Class DayStartSMIStrategyRule
                 If currentSignal IsNot Nothing AndAlso currentSignal.Item1 Then
                     Dim entryPrice As Decimal = Decimal.MinValue
                     If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                        entryPrice = currentSignal.Item2 + 2
+                        entryPrice = currentSignal.Item2 + _parentStrategy.CalculateBuffer(currentSignal.Item2, RoundOfType.Floor)
                         If entryPrice < currentTrade.EntryPrice Then
                             ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                         End If
                     ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                        entryPrice = currentSignal.Item3 - 2
+                        entryPrice = currentSignal.Item3 - _parentStrategy.CalculateBuffer(currentSignal.Item3, RoundOfType.Floor)
                         If entryPrice > currentTrade.EntryPrice Then
                             ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                         End If
@@ -143,12 +143,30 @@ Public Class DayStartSMIStrategyRule
                 ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
                     direction = Trade.TradeExecutionDirection.Buy
                 End If
+                Dim triggerPrice As Decimal = Decimal.MinValue
+                Dim remark As String = Nothing
+
                 Dim currentTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentMinuteCandlePayload, Trade.TradeType.MIS, direction)
                 If currentTrades IsNot Nothing AndAlso currentTrades.Count > 0 Then
-                    Dim triggerPrice As Decimal = currentTrades.FirstOrDefault.EntryPrice
-                    If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
-                        ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, String.Format("{0}. Time:{1}", triggerPrice, currentTick.PayloadDate))
+                    triggerPrice = currentTrades.FirstOrDefault.EntryPrice
+                    remark = String.Format("{0}. Time:{1}", triggerPrice, currentTick.PayloadDate)
+                End If
+                Dim potentialTriggerPrice As Decimal = Decimal.MinValue
+                If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                    potentialTriggerPrice = ConvertFloorCeling(currentTrade.EntryPrice - currentTrade.EntryPrice * 0.9 / 100, _parentStrategy.TickSize, RoundOfType.Celing)
+                    If triggerPrice < potentialTriggerPrice Then
+                        triggerPrice = potentialTriggerPrice
+                        remark = String.Format("0.9% {0}. Time:{1}", triggerPrice, currentTick.PayloadDate)
                     End If
+                ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                    potentialTriggerPrice = ConvertFloorCeling(currentTrade.EntryPrice + currentTrade.EntryPrice * 0.9 / 100, _parentStrategy.TickSize, RoundOfType.Celing)
+                    If triggerPrice > potentialTriggerPrice Then
+                        triggerPrice = potentialTriggerPrice
+                        remark = String.Format("0.9% {0}. Time:{1}", triggerPrice, currentTick.PayloadDate)
+                    End If
+                End If
+                If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
+                    ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, remark)
                 End If
             Else
                 Dim triggerPrice As Decimal = Decimal.MinValue
