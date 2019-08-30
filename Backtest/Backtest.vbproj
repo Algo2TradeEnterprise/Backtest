@@ -109,7 +109,7 @@
     <Compile Include="Strategy Helper\StrategyOutput.vb" />
     <Compile Include="Strategy Helper\StrategyRule.vb" />
     <Compile Include="Strategy Helper\Trade.vb" />
-    <Compile Include="Strategy Rule\BromastroStrategyRule.vb" />
+    <Compile Include="Strategy Rule\BANKNIFTYDayLongSMIStrategyRule.vb" />
     <Compile Include="Strategy Rule\DonchianFractalStrategyRule.vb" />
     <Compile Include="Strategy Rule\HighVolumePinBarStrategyRule.vb" />
     <Compile Include="Strategy Rule\HighVolumePinBarv2StrategyRule.vb" />

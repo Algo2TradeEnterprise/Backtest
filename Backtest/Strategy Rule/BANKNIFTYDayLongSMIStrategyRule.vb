@@ -3,7 +3,7 @@ Imports System.Threading
 Imports Algo2TradeBLL
 Imports Utilities.Numbers.NumberManipulation
 
-Public Class BromastroStrategyRule
+Public Class BANKNIFTYDayLongSMIStrategyRule
     Inherits StrategyRule
 
     Private _SwingHighPayload As Dictionary(Of Date, Decimal) = Nothing

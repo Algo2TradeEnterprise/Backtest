@@ -125,7 +125,7 @@ Namespace StrategyHelper
                                         Case 5
                                             stockRule = New SMIFractalStrategyRule(XDayOneMinutePayload, stockList(stock)(0), Me, tradeCheckingDate, tradingSymbol, _canceller)
                                         Case 6
-                                            stockRule = New BromastroStrategyRule(XDayOneMinutePayload, stockList(stock)(0), Me, tradeCheckingDate, tradingSymbol, _canceller)
+                                            stockRule = New BANKNIFTYDayLongSMIStrategyRule(XDayOneMinutePayload, stockList(stock)(0), Me, tradeCheckingDate, tradingSymbol, _canceller)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
