@@ -59,7 +59,7 @@ Public Class DayStartSMIStrategyRule
                             .EntryPrice = currentSignal.Item2 + buffer,
                             .EntryDirection = Trade.TradeExecutionDirection.Buy,
                             .Quantity = _lotSize,
-                            .Stoploss = .EntryPrice - ConvertFloorCeling(.EntryPrice * _parentStrategy.StoplossMultiplier / 100, _parentStrategy.TickSize, RoundOfType.Celing),
+                            .Stoploss = currentSignal.Item3 - buffer,
                             .Target = .EntryPrice + ConvertFloorCeling(.EntryPrice * _parentStrategy.TargetMultiplier / 100, _parentStrategy.TickSize, RoundOfType.Celing),
                             .Buffer = buffer,
                             .SignalCandle = currentSignal.Item4,
@@ -77,7 +77,7 @@ Public Class DayStartSMIStrategyRule
                             .EntryPrice = currentSignal.Item3 - buffer,
                             .EntryDirection = Trade.TradeExecutionDirection.Sell,
                             .Quantity = _lotSize,
-                            .Stoploss = .EntryPrice + ConvertFloorCeling(.EntryPrice * _parentStrategy.StoplossMultiplier / 100, _parentStrategy.TickSize, RoundOfType.Celing),
+                            .Stoploss = currentSignal.Item2 + buffer,
                             .Target = .EntryPrice - ConvertFloorCeling(.EntryPrice * _parentStrategy.TargetMultiplier / 100, _parentStrategy.TickSize, RoundOfType.Celing),
                             .Buffer = buffer,
                             .SignalCandle = currentSignal.Item4,
@@ -108,18 +108,22 @@ Public Class DayStartSMIStrategyRule
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
 
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
-            Dim currentSignal As Tuple(Of Boolean, Decimal, Decimal, Payload) = GetSignals(currentMinuteCandlePayload.PreviousCandlePayload, currentTrade.EntryDirection)
-            If currentSignal IsNot Nothing AndAlso currentSignal.Item1 Then
-                Dim entryPrice As Decimal = Decimal.MinValue
-                If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                    entryPrice = currentSignal.Item2 + 2
-                    If entryPrice < currentTrade.EntryPrice Then
-                        ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
-                    End If
-                ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                    entryPrice = currentSignal.Item3 - 2
-                    If entryPrice > currentTrade.EntryPrice Then
-                        ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+            If _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol) >= _parentStrategy.NumberOfTradesPerStockPerDay Then
+                ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+            Else
+                Dim currentSignal As Tuple(Of Boolean, Decimal, Decimal, Payload) = GetSignals(currentMinuteCandlePayload.PreviousCandlePayload, currentTrade.EntryDirection)
+                If currentSignal IsNot Nothing AndAlso currentSignal.Item1 Then
+                    Dim entryPrice As Decimal = Decimal.MinValue
+                    If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                        entryPrice = currentSignal.Item2 + 2
+                        If entryPrice < currentTrade.EntryPrice Then
+                            ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                        End If
+                    ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                        entryPrice = currentSignal.Item3 - 2
+                        If entryPrice > currentTrade.EntryPrice Then
+                            ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                        End If
                     End If
                 End If
             End If
@@ -131,19 +135,60 @@ Public Class DayStartSMIStrategyRule
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
-        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress AndAlso
-            _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol) < _parentStrategy.NumberOfTradesPerStockPerDay Then
-            Dim direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
-            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                direction = Trade.TradeExecutionDirection.Sell
-            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                direction = Trade.TradeExecutionDirection.Buy
-            End If
-            Dim currentTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentMinuteCandlePayload, Trade.TradeType.MIS, direction)
-            If currentTrades IsNot Nothing AndAlso currentTrades.Count > 0 Then
-                Dim triggerPrice As Decimal = currentTrades.FirstOrDefault.EntryPrice
-                If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
-                    ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, String.Format("{0}. Time:{1}", triggerPrice, currentTick.PayloadDate))
+        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            If _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol) < _parentStrategy.NumberOfTradesPerStockPerDay Then
+                Dim direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
+                If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                    direction = Trade.TradeExecutionDirection.Sell
+                ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                    direction = Trade.TradeExecutionDirection.Buy
+                End If
+                Dim currentTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentMinuteCandlePayload, Trade.TradeType.MIS, direction)
+                If currentTrades IsNot Nothing AndAlso currentTrades.Count > 0 Then
+                    Dim triggerPrice As Decimal = currentTrades.FirstOrDefault.EntryPrice
+                    If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
+                        ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, String.Format("{0}. Time:{1}", triggerPrice, currentTick.PayloadDate))
+                    End If
+                End If
+            Else
+                Dim triggerPrice As Decimal = Decimal.MinValue
+                Dim direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
+                If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                    direction = Trade.TradeExecutionDirection.Sell
+                ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                    direction = Trade.TradeExecutionDirection.Buy
+                End If
+                Dim currentSignal As Tuple(Of Boolean, Decimal, Decimal, Payload) = GetSignals(currentMinuteCandlePayload.PreviousCandlePayload, direction)
+                If currentSignal IsNot Nothing AndAlso currentSignal.Item1 Then
+                    Dim entryPrice As Decimal = Decimal.MinValue
+                    If direction = Trade.TradeExecutionDirection.Buy Then
+                        entryPrice = currentSignal.Item2 + _parentStrategy.CalculateBuffer(currentSignal.Item2, RoundOfType.Floor)
+                        If entryPrice > currentTrade.EntryPrice Then
+                            triggerPrice = entryPrice
+                        End If
+                    ElseIf direction = Trade.TradeExecutionDirection.Sell Then
+                        entryPrice = currentSignal.Item3 - +_parentStrategy.CalculateBuffer(currentSignal.Item3, RoundOfType.Floor)
+                        If entryPrice < currentTrade.EntryPrice Then
+                            triggerPrice = entryPrice
+                        End If
+                    End If
+                End If
+                If triggerPrice <> Decimal.MinValue Then
+                    Dim remark As String = String.Format("{0}. Time:{1}", triggerPrice, currentTick.PayloadDate)
+                    If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                        If triggerPrice < ConvertFloorCeling(currentTrade.EntryPrice - currentTrade.EntryPrice * _parentStrategy.StoplossMultiplier / 100, _parentStrategy.TickSize, RoundOfType.Floor) Then
+                            triggerPrice = ConvertFloorCeling(currentTrade.EntryPrice - currentTrade.EntryPrice * _parentStrategy.StoplossMultiplier / 100, _parentStrategy.TickSize, RoundOfType.Floor)
+                            remark = String.Format("Mathematical SL {0}. Time:{1}", triggerPrice, currentTick.PayloadDate)
+                        End If
+                    ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                        If triggerPrice > ConvertFloorCeling(currentTrade.EntryPrice + currentTrade.EntryPrice * _parentStrategy.StoplossMultiplier / 100, _parentStrategy.TickSize, RoundOfType.Floor) Then
+                            triggerPrice = ConvertFloorCeling(currentTrade.EntryPrice + currentTrade.EntryPrice * _parentStrategy.StoplossMultiplier / 100, _parentStrategy.TickSize, RoundOfType.Floor)
+                            remark = String.Format("Mathematical SL {0}. Time:{1}", triggerPrice, currentTick.PayloadDate)
+                        End If
+                    End If
+                    If triggerPrice <> currentTrade.PotentialStopLoss Then
+                        ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, remark)
+                    End If
                 End If
             End If
         End If
