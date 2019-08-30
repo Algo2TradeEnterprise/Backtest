@@ -278,7 +278,7 @@ Public Class frmMain
             End Select
 
             For signalTimeFrame As Integer = 1 To 1 Step 1
-                For nmbrOfStock As Integer = 5 To 5 Step 1
+                For nmbrOfStock As Integer = 10 To 10 Step 1
                     For nmbrOfTradePerStock As Integer = 1 To 1 Step 1
                         For mp As Decimal = 5000 To 5000 Step 5000
                             For ml As Decimal = 5000000 To 5000000 Step 1000

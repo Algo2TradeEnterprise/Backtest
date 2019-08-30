@@ -128,6 +128,8 @@ Namespace StrategyHelper
                                             stockRule = New BANKNIFTYDayLongSMIStrategyRule(XDayOneMinutePayload, stockList(stock)(0), Me, tradeCheckingDate, tradingSymbol, _canceller)
                                         Case 7
                                             stockRule = New DayStartSMIStrategyRule(XDayOneMinutePayload, stockList(stock)(0), Me, tradeCheckingDate, tradingSymbol, _canceller)
+                                        Case 8
+                                            stockRule = New GapFractalBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock)(0), Me, tradeCheckingDate, tradingSymbol, _canceller, stockList(stock)(1))
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -386,7 +388,7 @@ Namespace StrategyHelper
                             Else
                                 instrumentName = tradingSymbol
                             End If
-                            ret.Add(instrumentName, {dt.Rows(i).Item(2)})
+                            ret.Add(instrumentName, {dt.Rows(i).Item(2), dt.Rows(i).Item(5)})
                             counter += 1
                             If counter = Me.NumberOfTradeableStockPerDay Then Exit For
                         End If
