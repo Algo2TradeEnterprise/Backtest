@@ -163,125 +163,146 @@ Public Class GapFractalBreakoutStrategyRule
         Return ret
     End Function
 
-    Private Function IsOpposite2FractalFormed(ByVal currentTime As Date) As Boolean
+    Private _fractalBreakoutDone As Boolean = False
+    Private Function IsFractalBreakoutDone(ByVal currentTime As Date) As Boolean
         Dim ret As Boolean = False
-        If _signalPayload IsNot Nothing AndAlso _signalPayload.Count > 0 Then
-            Dim fractalPayload As Dictionary(Of Date, Decimal) = Nothing
-            Dim direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
-            If _Gap > 0.5 Then
-                direction = Trade.TradeExecutionDirection.Sell
-                fractalPayload = _FractalHighPayload
-            ElseIf _Gap < -0.5 Then
-                direction = Trade.TradeExecutionDirection.Buy
-                fractalPayload = _FractalLowPayload
-            End If
-            If fractalPayload IsNot Nothing AndAlso fractalPayload.Count > 0 Then
-                Dim fractalValue As Decimal = Decimal.MinValue
-                For Each runningPayload In _signalPayload.Keys
-                    If runningPayload.Date = _tradingDate.Date AndAlso runningPayload <= currentTime Then
-                        Dim indicatorStartTime As Date = GetStartTimeOfIndicator(runningPayload, fractalPayload)
-                        If indicatorStartTime.Date = _tradingDate.Date Then
-                            Dim indicatorValue As Decimal = fractalPayload(runningPayload)
-                            If fractalValue = Decimal.MinValue Then
-                                fractalValue = indicatorValue
-                            Else
+        If Not _fractalBreakoutDone Then
+            If _signalPayload IsNot Nothing AndAlso _signalPayload.Count > 0 Then
+                Dim fractalPayload As Dictionary(Of Date, Decimal) = Nothing
+                Dim direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
+                If _Gap > 0.5 Then
+                    direction = Trade.TradeExecutionDirection.Sell
+                    fractalPayload = _FractalLowPayload
+                ElseIf _Gap < -0.5 Then
+                    direction = Trade.TradeExecutionDirection.Buy
+                    fractalPayload = _FractalHighPayload
+                End If
+                If fractalPayload IsNot Nothing AndAlso fractalPayload.Count > 0 Then
+                    Dim currentFractalStartTime As Date = GetStartTimeOfIndicator(currentTime, fractalPayload)
+                    For Each runningPayload In _signalPayload.Keys
+                        If runningPayload.Date = _tradingDate.Date AndAlso runningPayload <= currentTime Then
+                            Dim indicatorStartTime As Date = GetStartTimeOfIndicator(_signalPayload(runningPayload).PreviousCandlePayload.PayloadDate, fractalPayload)
+                            If indicatorStartTime.Date = _tradingDate.Date AndAlso indicatorStartTime <> currentFractalStartTime Then
+                                Dim indicatorValue As Decimal = fractalPayload(_signalPayload(runningPayload).PreviousCandlePayload.PayloadDate)
                                 If direction = Trade.TradeExecutionDirection.Buy Then
-                                    If indicatorValue < fractalValue Then
+                                    Dim entryPrice As Decimal = indicatorValue + _parentStrategy.CalculateBuffer(indicatorValue, RoundOfType.Floor)
+                                    If _signalPayload(runningPayload).High > indicatorValue Then
                                         ret = True
+                                        _fractalBreakoutDone = True
                                         Exit For
                                     End If
                                 ElseIf direction = Trade.TradeExecutionDirection.Sell Then
-                                    If indicatorValue > fractalValue Then
+                                    Dim entryPrice As Decimal = indicatorValue - _parentStrategy.CalculateBuffer(indicatorValue, RoundOfType.Floor)
+                                    If _signalPayload(runningPayload).Low < indicatorValue Then
                                         ret = True
+                                        _fractalBreakoutDone = True
                                         Exit For
                                     End If
                                 End If
                             End If
                         End If
-                    End If
-                Next
+                    Next
+                End If
             End If
+        Else
+            ret = _fractalBreakoutDone
         End If
         Return ret
     End Function
 
-    Private Function IsFractalBreakoutDone(ByVal currentTime As Date) As Boolean
+    Private _oppositeFractal As Boolean = False
+    Private Function IsOpposite2FractalFormed(ByVal currentTime As Date) As Boolean
         Dim ret As Boolean = False
-        If _signalPayload IsNot Nothing AndAlso _signalPayload.Count > 0 Then
-            Dim fractalPayload As Dictionary(Of Date, Decimal) = Nothing
-            Dim direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
-            If _Gap > 0.5 Then
-                direction = Trade.TradeExecutionDirection.Sell
-                fractalPayload = _FractalLowPayload
-            ElseIf _Gap < -0.5 Then
-                direction = Trade.TradeExecutionDirection.Buy
-                fractalPayload = _FractalHighPayload
-            End If
-            If fractalPayload IsNot Nothing AndAlso fractalPayload.Count > 0 Then
-                Dim currentFractalStartTime As Date = GetStartTimeOfIndicator(currentTime, fractalPayload)
-                For Each runningPayload In _signalPayload.Keys
-                    If runningPayload.Date = _tradingDate.Date AndAlso runningPayload <= currentTime Then
-                        Dim indicatorStartTime As Date = GetStartTimeOfIndicator(_signalPayload(runningPayload).PreviousCandlePayload.PayloadDate, fractalPayload)
-                        If indicatorStartTime.Date = _tradingDate.Date AndAlso indicatorStartTime <> currentFractalStartTime Then
-                            Dim indicatorValue As Decimal = fractalPayload(_signalPayload(runningPayload).PreviousCandlePayload.PayloadDate)
-                            If direction = Trade.TradeExecutionDirection.Buy Then
-                                Dim entryPrice As Decimal = indicatorValue + _parentStrategy.CalculateBuffer(indicatorValue, RoundOfType.Floor)
-                                If _signalPayload(runningPayload).High > indicatorValue Then
-                                    ret = True
-                                    Exit For
-                                End If
-                            ElseIf direction = Trade.TradeExecutionDirection.Sell Then
-                                Dim entryPrice As Decimal = indicatorValue - _parentStrategy.CalculateBuffer(indicatorValue, RoundOfType.Floor)
-                                If _signalPayload(runningPayload).Low < indicatorValue Then
-                                    ret = True
-                                    Exit For
+        If Not _oppositeFractal Then
+            If _signalPayload IsNot Nothing AndAlso _signalPayload.Count > 0 Then
+                Dim fractalPayload As Dictionary(Of Date, Decimal) = Nothing
+                Dim direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
+                If _Gap > 0.5 Then
+                    direction = Trade.TradeExecutionDirection.Sell
+                    fractalPayload = _FractalHighPayload
+                ElseIf _Gap < -0.5 Then
+                    direction = Trade.TradeExecutionDirection.Buy
+                    fractalPayload = _FractalLowPayload
+                End If
+                If fractalPayload IsNot Nothing AndAlso fractalPayload.Count > 0 Then
+                    Dim fractalValue As Decimal = Decimal.MinValue
+                    For Each runningPayload In _signalPayload.Keys
+                        If runningPayload.Date = _tradingDate.Date AndAlso runningPayload <= currentTime Then
+                            Dim indicatorStartTime As Date = GetStartTimeOfIndicator(runningPayload, fractalPayload)
+                            If indicatorStartTime.Date = _tradingDate.Date Then
+                                Dim indicatorValue As Decimal = fractalPayload(runningPayload)
+                                If fractalValue = Decimal.MinValue Then
+                                    fractalValue = indicatorValue
+                                Else
+                                    If direction = Trade.TradeExecutionDirection.Buy Then
+                                        If indicatorValue < fractalValue Then
+                                            ret = True
+                                            _oppositeFractal = True
+                                            Exit For
+                                        End If
+                                    ElseIf direction = Trade.TradeExecutionDirection.Sell Then
+                                        If indicatorValue > fractalValue Then
+                                            ret = True
+                                            _oppositeFractal = True
+                                            Exit For
+                                        End If
+                                    End If
                                 End If
                             End If
                         End If
-                    End If
-                Next
+                    Next
+                End If
             End If
+        Else
+            ret = _oppositeFractal
         End If
         Return ret
     End Function
 
+    Private _fabourableFractal As Boolean = False
     Private Function IsFabourableFractalFormed(ByVal currentTime As Date) As Boolean
         Dim ret As Boolean = False
-        If _signalPayload IsNot Nothing AndAlso _signalPayload.Count > 0 Then
-            Dim fractalPayload As Dictionary(Of Date, Decimal) = Nothing
-            Dim oppositeFractalPayload As Dictionary(Of Date, Decimal) = Nothing
-            Dim direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
-            If _Gap > 0.5 Then
-                direction = Trade.TradeExecutionDirection.Sell
-                fractalPayload = _FractalLowPayload
-                oppositeFractalPayload = _FractalHighPayload
-            ElseIf _Gap < -0.5 Then
-                direction = Trade.TradeExecutionDirection.Buy
-                fractalPayload = _FractalHighPayload
-                oppositeFractalPayload = _FractalLowPayload
-            End If
-            If fractalPayload IsNot Nothing AndAlso fractalPayload.Count > 0 Then
-                For Each runningPayload In _signalPayload.Keys
-                    If runningPayload.Date = _tradingDate.Date AndAlso runningPayload <= currentTime Then
-                        Dim indicatorStartTime As Date = GetStartTimeOfIndicator(runningPayload, fractalPayload)
-                        If indicatorStartTime.Date = _tradingDate.Date Then
-                            Dim indicatorValue As Decimal = fractalPayload(runningPayload)
-                            Dim oppositeIndicatorValue As Decimal = GetIndicatorPreviousValue(runningPayload, oppositeFractalPayload)
-                            If direction = Trade.TradeExecutionDirection.Buy Then
-                                If oppositeIndicatorValue > indicatorValue Then
-                                    ret = True
-                                    Exit For
-                                End If
-                            ElseIf direction = Trade.TradeExecutionDirection.Sell Then
-                                If oppositeIndicatorValue < indicatorValue Then
-                                    ret = True
-                                    Exit For
+        If Not _fabourableFractal Then
+            If _signalPayload IsNot Nothing AndAlso _signalPayload.Count > 0 Then
+                Dim fractalPayload As Dictionary(Of Date, Decimal) = Nothing
+                Dim oppositeFractalPayload As Dictionary(Of Date, Decimal) = Nothing
+                Dim direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
+                If _Gap > 0.5 Then
+                    direction = Trade.TradeExecutionDirection.Sell
+                    fractalPayload = _FractalLowPayload
+                    oppositeFractalPayload = _FractalHighPayload
+                ElseIf _Gap < -0.5 Then
+                    direction = Trade.TradeExecutionDirection.Buy
+                    fractalPayload = _FractalHighPayload
+                    oppositeFractalPayload = _FractalLowPayload
+                End If
+                If fractalPayload IsNot Nothing AndAlso fractalPayload.Count > 0 Then
+                    For Each runningPayload In _signalPayload.Keys
+                        If runningPayload.Date = _tradingDate.Date AndAlso runningPayload <= currentTime Then
+                            Dim indicatorStartTime As Date = GetStartTimeOfIndicator(runningPayload, fractalPayload)
+                            If indicatorStartTime.Date = _tradingDate.Date Then
+                                Dim indicatorValue As Decimal = fractalPayload(runningPayload)
+                                Dim oppositeIndicatorValue As Decimal = GetIndicatorPreviousValue(runningPayload, oppositeFractalPayload)
+                                If direction = Trade.TradeExecutionDirection.Buy Then
+                                    If oppositeIndicatorValue > indicatorValue Then
+                                        ret = True
+                                        _fabourableFractal = True
+                                        Exit For
+                                    End If
+                                ElseIf direction = Trade.TradeExecutionDirection.Sell Then
+                                    If oppositeIndicatorValue < indicatorValue Then
+                                        ret = True
+                                        _fabourableFractal = True
+                                        Exit For
+                                    End If
                                 End If
                             End If
                         End If
-                    End If
-                Next
+                    Next
+                End If
             End If
+        Else
+            ret = _fabourableFractal
         End If
         Return ret
     End Function
