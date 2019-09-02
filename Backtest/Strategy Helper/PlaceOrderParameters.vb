@@ -14,5 +14,6 @@ Namespace StrategyHelper
         Public Supporting3 As String
         Public Supporting4 As String
         Public Supporting5 As String
+        Public Used As Boolean
     End Class
 End Namespace

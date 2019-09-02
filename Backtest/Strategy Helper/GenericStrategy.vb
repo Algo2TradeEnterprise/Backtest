@@ -292,6 +292,9 @@ Namespace StrategyHelper
                                                             Dim tradeTag As String = System.Guid.NewGuid.ToString()
                                                             For Each runningOrder In placeOrders
                                                                 _canceller.Token.ThrowIfCancellationRequested()
+                                                                If runningOrder.Used Then
+                                                                    Continue For
+                                                                End If
                                                                 Select Case runningOrder.OrderType
                                                                     Case TypeOfOrder.Breakout
                                                                         If runningOrder.EntryDirection = Trade.TradeExecutionDirection.Buy Then
@@ -333,7 +336,7 @@ Namespace StrategyHelper
                                                                                          Supporting5:=runningOrder.Supporting5)
 
                                                                 If PlaceOrModifyOrder(runningTrade, Nothing) Then
-
+                                                                    runningOrder.Used = True
                                                                 End If
                                                             Next
                                                         End If
