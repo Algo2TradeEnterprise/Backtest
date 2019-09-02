@@ -47,6 +47,11 @@ Public Class ForwardMomentumStrategyRule
             Dim signalCandleSatisfied As Boolean = IsSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload)
             If signalCandleSatisfied Then
                 signalCandle = currentMinuteCandlePayload.PreviousCandlePayload
+            Else
+                Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, Trade.TradeType.MIS)
+                If lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.ExitCondition = Trade.TradeExitCondition.StopLoss Then
+                    signalCandle = lastExecutedTrade.SignalCandle
+                End If
             End If
             If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
                 Dim longActiveTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentMinuteCandlePayload, Trade.TradeType.MIS, Trade.TradeExecutionDirection.Buy)
