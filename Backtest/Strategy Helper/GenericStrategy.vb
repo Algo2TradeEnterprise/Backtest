@@ -162,6 +162,7 @@ Namespace StrategyHelper
                                         For Each stockName In stockList
                                             stockName.Value.PlaceOrderDoneForTheMinute = False
                                             stockName.Value.ExitOrderDoneForTheMinute = False
+                                            stockName.Value.CancelOrderDoneForTheMinute = False
                                             stockName.Value.ModifyStoplossOrderDoneForTheMinute = False
                                             stockName.Value.ModifyTargetOrderDoneForTheMinute = False
                                         Next
@@ -447,6 +448,7 @@ Namespace StrategyHelper
                             Dim detailsOfStock As StockDetails = New StockDetails With
                                 {.StockName = instrumentName,
                                 .LotSize = dt.Rows(i).Item(2),
+                                .EligibleToTakeTrade = True,
                                 .Supporting1 = dt.Rows(i).Item(5)}
                             ret.Add(instrumentName, detailsOfStock)
                             counter += 1
