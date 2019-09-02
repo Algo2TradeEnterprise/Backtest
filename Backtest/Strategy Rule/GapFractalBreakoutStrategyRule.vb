@@ -311,7 +311,9 @@ Public Class GapFractalBreakoutStrategyRule
                     oppositeFractalPayload = _FractalLowPayload
                 End If
                 If fractalPayload IsNot Nothing AndAlso fractalPayload.Count > 0 Then
-                    For Each runningPayload In _signalPayload.Keys
+                    For Each runningPayload In _signalPayload.Keys.OrderByDescending(Function(x)
+                                                                                         Return x
+                                                                                     End Function)
                         If runningPayload.Date = _tradingDate.Date AndAlso runningPayload <= currentTime Then
                             Dim indicatorStartTime As Date = GetStartTimeOfIndicator(runningPayload, fractalPayload)
                             If indicatorStartTime.Date = _tradingDate.Date Then
