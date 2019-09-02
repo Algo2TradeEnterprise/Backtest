@@ -8,6 +8,10 @@ Public Class GapFractalBreakoutStrategyRule
 
     Private _FractalHighPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _FractalLowPayload As Dictionary(Of Date, Decimal) = Nothing
+    Private _FractalHighBreakoutPayload As Dictionary(Of Date, FractalBreakout) = Nothing
+    Private _FractalLowBreakoutPayload As Dictionary(Of Date, FractalBreakout) = Nothing
+    Private _FractalHighJumpPayload As Dictionary(Of Date, Boolean) = Nothing
+    Private _FractalLowJumpPayload As Dictionary(Of Date, Boolean) = Nothing
 
     Private ReadOnly _Gap As Decimal
 
@@ -149,8 +153,62 @@ Public Class GapFractalBreakoutStrategyRule
         Return ret
     End Function
 
+    Private _FirstFratalHigh As Decimal = Decimal.MinValue
+    Private _FirstFratalLow As Decimal = Decimal.MinValue
     Public Overrides Async Function UpdateRequiredCollectionsAsync(currentTick As Payload) As Task
-        Throw New NotImplementedException()
+        Await Task.Delay(0).ConfigureAwait(False)
+        Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
+        Dim signalCandle As Payload = currentMinuteCandlePayload.PreviousCandlePayload
+
+        Dim fractalHigh As Decimal = _FractalHighPayload(signalCandle.PayloadDate)
+        Dim fractalLow As Decimal = _FractalLowPayload(signalCandle.PayloadDate)
+        Dim fractalHighStartTime As Date = GetStartTimeOfIndicator(signalCandle.PayloadDate, _FractalHighPayload)
+        Dim fractalLowStartTime As Date = GetStartTimeOfIndicator(signalCandle.PayloadDate, _FractalLowPayload)
+        If _FirstFratalHigh = Decimal.MinValue AndAlso fractalHighStartTime.Date = _tradingDate.Date Then
+            _FirstFratalHigh = fractalHigh
+        End If
+        If _FirstFratalLow = Decimal.MinValue AndAlso fractalLowStartTime.Date = _tradingDate.Date Then
+            _FirstFratalLow = fractalLow
+        End If
+        'Fractal Breakout
+        If _FractalHighBreakoutPayload Is Nothing Then _FractalHighBreakoutPayload = New Dictionary(Of Date, FractalBreakout)
+        If fractalHighStartTime.Date = _tradingDate.Date Then
+            If _FractalHighBreakoutPayload.ContainsKey(currentMinuteCandlePayload.PayloadDate) AndAlso Not _FractalHighBreakoutPayload(currentMinuteCandlePayload.PayloadDate).BreakoutDone Then
+                _FractalHighBreakoutPayload(currentMinuteCandlePayload.PayloadDate).BreakoutDone = (currentTick.High >= fractalHigh)
+                _FractalHighBreakoutPayload(currentMinuteCandlePayload.PayloadDate).LTPTime = currentTick.PayloadDate
+            Else
+                _FractalHighBreakoutPayload(currentMinuteCandlePayload.PayloadDate) = New FractalBreakout With {.BreakoutDone = currentTick.High >= fractalHigh, .FractalValue = fractalHigh, .LTPTime = currentTick.PayloadDate, .FractalStartTime = fractalHighStartTime}
+            End If
+        Else
+            _FractalHighBreakoutPayload(currentMinuteCandlePayload.PayloadDate) = New FractalBreakout With {.BreakoutDone = False, .FractalValue = fractalHigh, .LTPTime = currentTick.PayloadDate, .FractalStartTime = fractalHighStartTime}
+        End If
+
+        If _FractalLowBreakoutPayload Is Nothing Then _FractalLowBreakoutPayload = New Dictionary(Of Date, FractalBreakout)
+        If fractalLowStartTime.Date = _tradingDate.Date Then
+            If _FractalLowBreakoutPayload.ContainsKey(currentMinuteCandlePayload.PayloadDate) AndAlso Not _FractalLowBreakoutPayload(currentMinuteCandlePayload.PayloadDate).BreakoutDone Then
+                _FractalLowBreakoutPayload(currentMinuteCandlePayload.PayloadDate).BreakoutDone = (currentTick.Low <= fractalLow)
+                _FractalLowBreakoutPayload(currentMinuteCandlePayload.PayloadDate).LTPTime = currentTick.PayloadDate
+            Else
+                _FractalLowBreakoutPayload(currentMinuteCandlePayload.PayloadDate) = New FractalBreakout With {.BreakoutDone = currentTick.Low <= fractalLow, .FractalValue = fractalLow, .LTPTime = currentTick.PayloadDate, .FractalStartTime = fractalLowStartTime}
+            End If
+        Else
+            _FractalLowBreakoutPayload(currentMinuteCandlePayload.PayloadDate) = New FractalBreakout With {.BreakoutDone = False, .FractalValue = fractalLow, .LTPTime = currentTick.PayloadDate, .FractalStartTime = fractalLowStartTime}
+        End If
+
+        'Fractal Jump
+        If _FractalHighJumpPayload Is Nothing Then _FractalHighJumpPayload = New Dictionary(Of Date, Boolean)
+        If _FirstFratalHigh = Decimal.MinValue Then
+            _FractalHighJumpPayload(currentMinuteCandlePayload.PayloadDate) = False
+        Else
+            _FractalHighJumpPayload(currentMinuteCandlePayload.PayloadDate) = fractalHigh > _FirstFratalHigh
+        End If
+
+        If _FractalLowJumpPayload Is Nothing Then _FractalLowJumpPayload = New Dictionary(Of Date, Boolean)
+        If _FirstFratalLow = Decimal.MinValue Then
+            _FractalLowJumpPayload(currentMinuteCandlePayload.PayloadDate) = False
+        Else
+            _FractalLowJumpPayload(currentMinuteCandlePayload.PayloadDate) = fractalLow < _FirstFratalLow
+        End If
     End Function
 
     Private Function IsSignalCandle(ByVal candle As Payload) As Tuple(Of Boolean, String)
@@ -158,10 +216,10 @@ Public Class GapFractalBreakoutStrategyRule
         If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then
             If IsFractalBreakoutDone(candle.PayloadDate) Then
                 ret = New Tuple(Of Boolean, String)(True, "Second fractal breakout")
-                'ElseIf IsOpposite2FractalFormed(candle.PayloadDate) Then
-                '    ret = New Tuple(Of Boolean, String)(True, "Opposite 2 fractal formed")
-                'ElseIf IsFabourableFractalFormed(candle.PayloadDate) Then
-                '    ret = New Tuple(Of Boolean, String)(True, "Fabourable Fractal formed")
+            ElseIf IsOpposite2FractalFormed(candle.PayloadDate) Then
+                ret = New Tuple(Of Boolean, String)(True, "Opposite 2 fractal formed")
+            ElseIf IsFabourableFractalFormed(candle.PayloadDate) Then
+                ret = New Tuple(Of Boolean, String)(True, "Fabourable Fractal formed")
             End If
         End If
         Return ret
@@ -172,40 +230,28 @@ Public Class GapFractalBreakoutStrategyRule
         Dim ret As Boolean = False
         If Not _fractalBreakoutDone Then
             If _signalPayload IsNot Nothing AndAlso _signalPayload.Count > 0 Then
-                Dim fractalPayload As Dictionary(Of Date, Decimal) = Nothing
-                Dim direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
                 If _Gap > 0.5 Then
-                    direction = Trade.TradeExecutionDirection.Sell
-                    fractalPayload = _FractalLowPayload
+                    Dim currentFractalStartTime As Date = GetStartTimeOfIndicator(currentTime, _FractalLowPayload)
+                    Dim breakoutPayload As IEnumerable(Of KeyValuePair(Of Date, FractalBreakout)) =
+                        _FractalLowBreakoutPayload.Where(Function(x)
+                                                             Return x.Key <= currentTime AndAlso x.Value.BreakoutDone AndAlso
+                                                            x.Value.FractalStartTime <> currentFractalStartTime
+                                                         End Function)
+                    If breakoutPayload IsNot Nothing AndAlso breakoutPayload.Count > 0 Then
+                        ret = True
+                        _fractalBreakoutDone = True
+                    End If
                 ElseIf _Gap < -0.5 Then
-                    direction = Trade.TradeExecutionDirection.Buy
-                    fractalPayload = _FractalHighPayload
-                End If
-                If fractalPayload IsNot Nothing AndAlso fractalPayload.Count > 0 Then
-                    Dim currentFractalStartTime As Date = GetStartTimeOfIndicator(currentTime, fractalPayload)
-                    For Each runningPayload In _signalPayload.Keys
-                        If runningPayload.Date = _tradingDate.Date AndAlso runningPayload <= currentTime Then
-                            Dim indicatorStartTime As Date = GetStartTimeOfIndicator(_signalPayload(runningPayload).PreviousCandlePayload.PayloadDate, fractalPayload)
-                            If indicatorStartTime.Date = _tradingDate.Date AndAlso indicatorStartTime <> currentFractalStartTime Then
-                                Dim indicatorValue As Decimal = fractalPayload(_signalPayload(runningPayload).PreviousCandlePayload.PayloadDate)
-                                If direction = Trade.TradeExecutionDirection.Buy Then
-                                    Dim entryPrice As Decimal = indicatorValue + _parentStrategy.CalculateBuffer(indicatorValue, RoundOfType.Floor)
-                                    If _signalPayload(runningPayload).High > indicatorValue Then
-                                        ret = True
-                                        _fractalBreakoutDone = True
-                                        Exit For
-                                    End If
-                                ElseIf direction = Trade.TradeExecutionDirection.Sell Then
-                                    Dim entryPrice As Decimal = indicatorValue - _parentStrategy.CalculateBuffer(indicatorValue, RoundOfType.Floor)
-                                    If _signalPayload(runningPayload).Low < indicatorValue Then
-                                        ret = True
-                                        _fractalBreakoutDone = True
-                                        Exit For
-                                    End If
-                                End If
-                            End If
-                        End If
-                    Next
+                    Dim currentFractalStartTime As Date = GetStartTimeOfIndicator(currentTime, _FractalHighPayload)
+                    Dim breakoutPayload As IEnumerable(Of KeyValuePair(Of Date, FractalBreakout)) =
+                        _FractalHighBreakoutPayload.Where(Function(x)
+                                                              Return x.Key <= currentTime AndAlso x.Value.BreakoutDone AndAlso
+                                                            x.Value.FractalStartTime <> currentFractalStartTime
+                                                          End Function)
+                    If breakoutPayload IsNot Nothing AndAlso breakoutPayload.Count > 0 Then
+                        ret = True
+                        _fractalBreakoutDone = True
+                    End If
                 End If
             End If
         Else
@@ -222,39 +268,23 @@ Public Class GapFractalBreakoutStrategyRule
                 Dim fractalPayload As Dictionary(Of Date, Decimal) = Nothing
                 Dim direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
                 If _Gap > 0.5 Then
-                    direction = Trade.TradeExecutionDirection.Sell
-                    fractalPayload = _FractalHighPayload
+                    Dim jumpPayload As IEnumerable(Of KeyValuePair(Of Date, Boolean)) =
+                        _FractalHighJumpPayload.Where(Function(x)
+                                                          Return x.Key <= currentTime AndAlso x.Value
+                                                      End Function)
+                    If jumpPayload IsNot Nothing AndAlso jumpPayload.Count > 0 Then
+                        ret = True
+                        _oppositeFractal = True
+                    End If
                 ElseIf _Gap < -0.5 Then
-                    direction = Trade.TradeExecutionDirection.Buy
-                    fractalPayload = _FractalLowPayload
-                End If
-                If fractalPayload IsNot Nothing AndAlso fractalPayload.Count > 0 Then
-                    Dim fractalValue As Decimal = Decimal.MinValue
-                    For Each runningPayload In _signalPayload.Keys
-                        If runningPayload.Date = _tradingDate.Date AndAlso runningPayload <= currentTime Then
-                            Dim indicatorStartTime As Date = GetStartTimeOfIndicator(runningPayload, fractalPayload)
-                            If indicatorStartTime.Date = _tradingDate.Date Then
-                                Dim indicatorValue As Decimal = fractalPayload(runningPayload)
-                                If fractalValue = Decimal.MinValue Then
-                                    fractalValue = indicatorValue
-                                Else
-                                    If direction = Trade.TradeExecutionDirection.Buy Then
-                                        If indicatorValue < fractalValue Then
-                                            ret = True
-                                            _oppositeFractal = True
-                                            Exit For
-                                        End If
-                                    ElseIf direction = Trade.TradeExecutionDirection.Sell Then
-                                        If indicatorValue > fractalValue Then
-                                            ret = True
-                                            _oppositeFractal = True
-                                            Exit For
-                                        End If
-                                    End If
-                                End If
-                            End If
-                        End If
-                    Next
+                    Dim jumpPayload As IEnumerable(Of KeyValuePair(Of Date, Boolean)) =
+                        _FractalLowJumpPayload.Where(Function(x)
+                                                         Return x.Key <= currentTime AndAlso x.Value
+                                                     End Function)
+                    If jumpPayload IsNot Nothing AndAlso jumpPayload.Count > 0 Then
+                        ret = True
+                        _oppositeFractal = True
+                    End If
                 End If
             End If
         Else
@@ -364,4 +394,12 @@ Public Class GapFractalBreakoutStrategyRule
         End If
         Return ret
     End Function
+
+    Private Class FractalBreakout
+        Public FractalValue As Decimal
+        Public FractalStartTime As Date
+        Public LTPTime As Date
+        Public BreakoutDone As Boolean
+    End Class
+
 End Class
