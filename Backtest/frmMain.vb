@@ -278,13 +278,13 @@ Public Class frmMain
             End Select
 
             For signalTimeFrame As Integer = 1 To 1 Step 1
-                For nmbrOfStock As Integer = 10 To 10 Step 1
-                    For nmbrOfTradePerStock As Integer = 1 To 1 Step 1
+                For nmbrOfStock As Integer = 5 To 5 Step 1
+                    For nmbrOfTradePerStock As Integer = 100 To 100 Step 1
                         For mp As Decimal = 5000 To 5000 Step 5000
                             For ml As Decimal = 5000000 To 5000000 Step 1000
                                 For modifySL As Integer = 1 To 1 Step 1
-                                    For tgtMul As Decimal = 100 To 100 Step 0.5
-                                        For slMul As Decimal = 0.9 To 0.9 Step 0.5
+                                    For tgtMul As Decimal = 2 To 2 Step 0.5
+                                        For slMul As Decimal = 1 To 1 Step 0.5
                                             For lastSignalReentry As Integer = 1 To 1 Step 1
                                                 Using backtestStrategy As New GenericStrategy(canceller:=_canceller,
                                                                                               exchangeStartTime:=TimeSpan.Parse("09:15:00"),
@@ -307,7 +307,8 @@ Public Class frmMain
 
                                                     With backtestStrategy
                                                         '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Future Stock List ATR Based.csv")
-                                                        .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pre Market Data.csv")
+                                                        .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR 01_10_17 to 30_08_19.csv")
+                                                        '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pre Market Data.csv")
                                                         '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "BANKNIFTY.csv")
 
                                                         .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
@@ -328,7 +329,7 @@ Public Class frmMain
                                                         .StockMaxProfitPerDay = Decimal.MaxValue
                                                         .StockMaxLossPerDay = ml
 
-                                                        .ExitOnOverAllFixedTargetStoploss = True
+                                                        .ExitOnOverAllFixedTargetStoploss = False
                                                         .OverAllProfitPerDay = mp
                                                         .OverAllLossPerDay = Decimal.MinValue
                                                     End With
