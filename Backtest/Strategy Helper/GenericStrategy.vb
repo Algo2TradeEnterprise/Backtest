@@ -162,6 +162,12 @@ Namespace StrategyHelper
                                     End If
                                     For Each stockName In stockList.Keys
                                         _canceller.Token.ThrowIfCancellationRequested()
+                                        Dim stockStrategyRule As StrategyRule = stocksRuleData(stockName)
+
+                                        If Not stockStrategyRule.EligibleToTakeTrade Then
+                                            Continue For
+                                        End If
+
                                         If Not currentDayOneMinuteStocksPayload.ContainsKey(stockName) Then
                                             Continue For
                                         End If
@@ -184,8 +190,6 @@ Namespace StrategyHelper
 
                                             _canceller.Token.ThrowIfCancellationRequested()
                                             If currentSecondTickPayload IsNot Nothing AndAlso currentSecondTickPayload.Count > 0 Then
-                                                Dim stockStrategyRule As StrategyRule = stocksRuleData(stockName)
-
                                                 For Each runningTick In currentSecondTickPayload
                                                     _canceller.Token.ThrowIfCancellationRequested()
                                                     SetCurrentLTPForStock(currentMinuteCandlePayload, runningTick, Trade.TradeType.MIS)
