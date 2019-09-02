@@ -154,10 +154,10 @@ Public Class GapFractalBreakoutStrategyRule
         If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then
             If IsFractalBreakoutDone(candle.PayloadDate) Then
                 ret = New Tuple(Of Boolean, String)(True, "Second fractal breakout")
-            ElseIf IsOpposite2FractalFormed(candle.PayloadDate) Then
-                ret = New Tuple(Of Boolean, String)(True, "Opposite 2 fractal formed")
-            ElseIf IsFabourableFractalFormed(candle.PayloadDate) Then
-                ret = New Tuple(Of Boolean, String)(True, "Fabourable Fractal formed")
+                'ElseIf IsOpposite2FractalFormed(candle.PayloadDate) Then
+                '    ret = New Tuple(Of Boolean, String)(True, "Opposite 2 fractal formed")
+                'ElseIf IsFabourableFractalFormed(candle.PayloadDate) Then
+                '    ret = New Tuple(Of Boolean, String)(True, "Fabourable Fractal formed")
             End If
         End If
         Return ret
@@ -179,29 +179,39 @@ Public Class GapFractalBreakoutStrategyRule
                 End If
                 If fractalPayload IsNot Nothing AndAlso fractalPayload.Count > 0 Then
                     Dim currentFractalStartTime As Date = GetStartTimeOfIndicator(currentTime, fractalPayload)
+                    Dim s As Stopwatch = New Stopwatch
+                    s.Reset()
+                    s.Start()
+                    Dim sw As Stopwatch = New Stopwatch
                     For Each runningPayload In _signalPayload.Keys
                         If runningPayload.Date = _tradingDate.Date AndAlso runningPayload <= currentTime Then
+                            'sw.Reset()
+                            'sw.Start()
                             Dim indicatorStartTime As Date = GetStartTimeOfIndicator(_signalPayload(runningPayload).PreviousCandlePayload.PayloadDate, fractalPayload)
-                            If indicatorStartTime.Date = _tradingDate.Date AndAlso indicatorStartTime <> currentFractalStartTime Then
-                                Dim indicatorValue As Decimal = fractalPayload(_signalPayload(runningPayload).PreviousCandlePayload.PayloadDate)
-                                If direction = Trade.TradeExecutionDirection.Buy Then
-                                    Dim entryPrice As Decimal = indicatorValue + _parentStrategy.CalculateBuffer(indicatorValue, RoundOfType.Floor)
-                                    If _signalPayload(runningPayload).High > indicatorValue Then
-                                        ret = True
-                                        _fractalBreakoutDone = True
-                                        Exit For
-                                    End If
-                                ElseIf direction = Trade.TradeExecutionDirection.Sell Then
-                                    Dim entryPrice As Decimal = indicatorValue - _parentStrategy.CalculateBuffer(indicatorValue, RoundOfType.Floor)
-                                    If _signalPayload(runningPayload).Low < indicatorValue Then
-                                        ret = True
-                                        _fractalBreakoutDone = True
-                                        Exit For
-                                    End If
-                                End If
-                            End If
+                            'sw.Stop()
+                            ''Debug.WriteLine(String.Format("Inner Fractal1 {0}", sw.ElapsedMilliseconds))
+                            'If indicatorStartTime.Date = _tradingDate.Date AndAlso indicatorStartTime <> currentFractalStartTime Then
+                            '    Dim indicatorValue As Decimal = fractalPayload(_signalPayload(runningPayload).PreviousCandlePayload.PayloadDate)
+                            '    If direction = Trade.TradeExecutionDirection.Buy Then
+                            '        Dim entryPrice As Decimal = indicatorValue + _parentStrategy.CalculateBuffer(indicatorValue, RoundOfType.Floor)
+                            '        If _signalPayload(runningPayload).High > indicatorValue Then
+                            '            ret = True
+                            '            _fractalBreakoutDone = True
+                            '            Exit For
+                            '        End If
+                            '    ElseIf direction = Trade.TradeExecutionDirection.Sell Then
+                            '        Dim entryPrice As Decimal = indicatorValue - _parentStrategy.CalculateBuffer(indicatorValue, RoundOfType.Floor)
+                            '        If _signalPayload(runningPayload).Low < indicatorValue Then
+                            '            ret = True
+                            '            _fractalBreakoutDone = True
+                            '            Exit For
+                            '        End If
+                            '    End If
+                            'End If
                         End If
                     Next
+                    s.Stop()
+                    Debug.WriteLine(String.Format("Fractal1 {0}", s.ElapsedMilliseconds))
                 End If
             End If
         Else
