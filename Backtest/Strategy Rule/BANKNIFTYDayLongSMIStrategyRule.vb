@@ -52,39 +52,41 @@ Public Class BANKNIFTYDayLongSMIStrategyRule
             If longTrades Is Nothing OrElse (longTrades IsNot Nothing AndAlso longTrades.Count = 0) Then
                 Dim currentSignal As Tuple(Of Boolean, Decimal, Decimal, Payload) = GetSignals(currentMinuteCandlePayload.PreviousCandlePayload, Trade.TradeExecutionDirection.Buy)
                 If currentSignal IsNot Nothing AndAlso currentSignal.Item1 Then
-                    If currentTick.Open < currentSignal.Item2 Then
-                        'Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentSignal.Item2, RoundOfType.Floor)
-                        Dim buffer As Decimal = 2
-                        parameter1 = New PlaceOrderParameters With {
-                            .EntryPrice = currentSignal.Item2 + buffer,
-                            .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                            .Quantity = _lotSize * 10,
-                            .Stoploss = currentSignal.Item3 - buffer,
-                            .Target = .EntryPrice + 100000,
-                            .Buffer = buffer,
-                            .SignalCandle = currentSignal.Item4,
-                            .Supporting1 = currentSignal.Item4.PayloadDate.ToShortTimeString
-                        }
-                    End If
+                    'If currentTick.Open < currentSignal.Item2 Then
+                    'Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentSignal.Item2, RoundOfType.Floor)
+                    Dim buffer As Decimal = 2
+                    parameter1 = New PlaceOrderParameters With {
+                        .EntryPrice = currentSignal.Item2 + buffer,
+                        .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                        .Quantity = _lotSize * 10,
+                        .Stoploss = currentSignal.Item3 - buffer,
+                        .Target = .EntryPrice + 100000,
+                        .Buffer = buffer,
+                        .SignalCandle = currentSignal.Item4,
+                        .OrderType = Strategy.TypeOfOrder.Breakout,
+                        .Supporting1 = currentSignal.Item4.PayloadDate.ToShortTimeString
+                    }
+                    'End If
                 End If
             End If
             If shortTrades Is Nothing OrElse (shortTrades IsNot Nothing AndAlso shortTrades.Count = 0) Then
                 Dim currentSignal As Tuple(Of Boolean, Decimal, Decimal, Payload) = GetSignals(currentMinuteCandlePayload.PreviousCandlePayload, Trade.TradeExecutionDirection.Sell)
                 If currentSignal IsNot Nothing AndAlso currentSignal.Item1 Then
-                    If currentTick.Open > currentSignal.Item3 Then
-                        'Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentSignal.Item3, RoundOfType.Floor)
-                        Dim buffer As Decimal = 2
-                        parameter2 = New PlaceOrderParameters With {
-                            .EntryPrice = currentSignal.Item3 - buffer,
-                            .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                            .Quantity = _lotSize * 10,
-                            .Stoploss = currentSignal.Item2 + buffer,
-                            .Target = .EntryPrice - 100000,
-                            .Buffer = buffer,
-                            .SignalCandle = currentSignal.Item4,
-                            .Supporting1 = currentSignal.Item4.PayloadDate.ToShortTimeString
-                        }
-                    End If
+                    'If currentTick.Open > currentSignal.Item3 Then
+                    'Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentSignal.Item3, RoundOfType.Floor)
+                    Dim buffer As Decimal = 2
+                    parameter2 = New PlaceOrderParameters With {
+                        .EntryPrice = currentSignal.Item3 - buffer,
+                        .EntryDirection = Trade.TradeExecutionDirection.Sell,
+                        .Quantity = _lotSize * 10,
+                        .Stoploss = currentSignal.Item2 + buffer,
+                        .Target = .EntryPrice - 100000,
+                        .Buffer = buffer,
+                        .SignalCandle = currentSignal.Item4,
+                        .OrderType = Strategy.TypeOfOrder.Breakout,
+                        .Supporting1 = currentSignal.Item4.PayloadDate.ToShortTimeString
+                    }
+                    'End If
                 End If
             End If
         End If

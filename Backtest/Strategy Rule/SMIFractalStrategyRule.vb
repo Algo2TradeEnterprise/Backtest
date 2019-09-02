@@ -82,21 +82,22 @@ Public Class SMIFractalStrategyRule
                     End If
                     If indicatorPayload IsNot Nothing AndAlso Not IsIndicatorUsed(currentMinuteCandlePayload, indicatorPayload, Trade.TradeExecutionDirection.Buy) Then
                         Dim potentialEntryPrice As Decimal = indicatorPayload(signalCandle.PayloadDate)
-                        If currentTick.Open < potentialEntryPrice Then
-                            Dim buffer As Decimal = _parentStrategy.CalculateBuffer(potentialEntryPrice, RoundOfType.Floor)
-                            Dim entryPrice As Decimal = ConvertFloorCeling(potentialEntryPrice, _parentStrategy.TickSize, RoundOfType.Celing)
-                            parameter = New PlaceOrderParameters With {
-                                .EntryPrice = entryPrice + buffer,
-                                .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                .Quantity = _lotSize,
-                                .Stoploss = ConvertFloorCeling(_FractalLowPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing) - buffer,
-                                .Target = .EntryPrice + 100000,
-                                .Buffer = buffer,
-                                .SignalCandle = signalCandle,
-                                .Supporting1 = signalCandle.PayloadDate.ToShortTimeString,
-                                .Supporting2 = ConvertFloorCeling(_FractalLowPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
-                            }
-                        End If
+                        'If currentTick.Open < potentialEntryPrice Then
+                        Dim buffer As Decimal = _parentStrategy.CalculateBuffer(potentialEntryPrice, RoundOfType.Floor)
+                        Dim entryPrice As Decimal = ConvertFloorCeling(potentialEntryPrice, _parentStrategy.TickSize, RoundOfType.Celing)
+                        parameter = New PlaceOrderParameters With {
+                            .EntryPrice = entryPrice + buffer,
+                            .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                            .Quantity = _lotSize,
+                            .Stoploss = ConvertFloorCeling(_FractalLowPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing) - buffer,
+                            .Target = .EntryPrice + 100000,
+                            .Buffer = buffer,
+                            .SignalCandle = signalCandle,
+                            .OrderType = Strategy.TypeOfOrder.Breakout,
+                            .Supporting1 = signalCandle.PayloadDate.ToShortTimeString,
+                            .Supporting2 = ConvertFloorCeling(_FractalLowPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
+                        }
+                        'End If
                     End If
                 ElseIf signalCandleSatisfied.Item2 = Trade.TradeExecutionDirection.Sell Then
                     Dim indicatorPayload As Dictionary(Of Date, Decimal) = Nothing
@@ -119,21 +120,22 @@ Public Class SMIFractalStrategyRule
                     End If
                     If indicatorPayload IsNot Nothing AndAlso Not IsIndicatorUsed(currentMinuteCandlePayload, indicatorPayload, Trade.TradeExecutionDirection.Sell) Then
                         Dim potentialEntryPrice As Decimal = indicatorPayload(signalCandle.PayloadDate)
-                        If currentTick.Open > potentialEntryPrice Then
-                            Dim buffer As Decimal = _parentStrategy.CalculateBuffer(potentialEntryPrice, RoundOfType.Floor)
-                            Dim entryPrice As Decimal = ConvertFloorCeling(potentialEntryPrice, _parentStrategy.TickSize, RoundOfType.Celing)
-                            parameter = New PlaceOrderParameters With {
-                                .EntryPrice = entryPrice - buffer,
-                                .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                                .Quantity = _lotSize,
-                                .Stoploss = ConvertFloorCeling(_FractalHighPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing) + buffer,
-                                .Target = .EntryPrice - 100000,
-                                .Buffer = buffer,
-                                .SignalCandle = signalCandle,
-                                .Supporting1 = signalCandle.PayloadDate.ToShortTimeString,
-                                .Supporting2 = ConvertFloorCeling(_FractalHighPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
-                            }
-                        End If
+                        'If currentTick.Open > potentialEntryPrice Then
+                        Dim buffer As Decimal = _parentStrategy.CalculateBuffer(potentialEntryPrice, RoundOfType.Floor)
+                        Dim entryPrice As Decimal = ConvertFloorCeling(potentialEntryPrice, _parentStrategy.TickSize, RoundOfType.Celing)
+                        parameter = New PlaceOrderParameters With {
+                            .EntryPrice = entryPrice - buffer,
+                            .EntryDirection = Trade.TradeExecutionDirection.Sell,
+                            .Quantity = _lotSize,
+                            .Stoploss = ConvertFloorCeling(_FractalHighPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing) + buffer,
+                            .Target = .EntryPrice - 100000,
+                            .Buffer = buffer,
+                            .SignalCandle = signalCandle,
+                            .OrderType = Strategy.TypeOfOrder.Breakout,
+                            .Supporting1 = signalCandle.PayloadDate.ToShortTimeString,
+                            .Supporting2 = ConvertFloorCeling(_FractalHighPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
+                        }
+                        'End If
                     End If
                 End If
             End If

@@ -92,6 +92,12 @@ Namespace StrategyHelper
             Database
             None
         End Enum
+
+        Enum TypeOfOrder
+            Limit
+            Market
+            Breakout
+        End Enum
 #End Region
 
 #Region "Variables"

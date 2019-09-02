@@ -105,6 +105,7 @@
     <Compile Include="Strategy Helper\Capital.vb" />
     <Compile Include="Strategy Helper\GenericStrategy.vb" />
     <Compile Include="Strategy Helper\PlaceOrderParameters.vb" />
+    <Compile Include="Strategy Helper\StockDetails.vb" />
     <Compile Include="Strategy Helper\Strategy.vb" />
     <Compile Include="Strategy Helper\StrategyOutput.vb" />
     <Compile Include="Strategy Helper\StrategyRule.vb" />

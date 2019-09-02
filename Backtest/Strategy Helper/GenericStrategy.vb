@@ -68,7 +68,7 @@ Namespace StrategyHelper
                     _canceller.Token.ThrowIfCancellationRequested()
                     Me.AvailableCapital = Me.UsableCapital
                     TradesTaken = New Dictionary(Of Date, Dictionary(Of String, List(Of Trade)))
-                    Dim stockList As Dictionary(Of String, Decimal()) = GetStockData(tradeCheckingDate)
+                    Dim stockList As Dictionary(Of String, StockDetails) = GetStockData(tradeCheckingDate)
 
                     _canceller.Token.ThrowIfCancellationRequested()
                     If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
@@ -113,23 +113,23 @@ Namespace StrategyHelper
                                     Dim tradingSymbol As String = currentDayOneMinutePayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
                                         Case 0
-                                            stockRule = New SmallestCandleBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock)(0), Me, tradeCheckingDate, tradingSymbol, _canceller)
+                                            stockRule = New SmallestCandleBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller)
                                         Case 1
-                                            stockRule = New HighVolumePinBarStrategyRule(XDayOneMinutePayload, stockList(stock)(0), Me, tradeCheckingDate, tradingSymbol, _canceller)
+                                            stockRule = New HighVolumePinBarStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller)
                                         Case 2
-                                            stockRule = New MomentumReversalv2StrategyRule(XDayOneMinutePayload, stockList(stock)(0), Me, tradeCheckingDate, tradingSymbol, _canceller)
+                                            stockRule = New MomentumReversalv2StrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller)
                                         Case 3
-                                            stockRule = New HighVolumePinBarv2StrategyRule(XDayOneMinutePayload, stockList(stock)(0), Me, tradeCheckingDate, tradingSymbol, _canceller)
+                                            stockRule = New HighVolumePinBarv2StrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller)
                                         Case 4
-                                            stockRule = New DonchianFractalStrategyRule(XDayOneMinutePayload, stockList(stock)(0), Me, tradeCheckingDate, tradingSymbol, _canceller)
+                                            stockRule = New DonchianFractalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller)
                                         Case 5
-                                            stockRule = New SMIFractalStrategyRule(XDayOneMinutePayload, stockList(stock)(0), Me, tradeCheckingDate, tradingSymbol, _canceller)
+                                            stockRule = New SMIFractalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller)
                                         Case 6
-                                            stockRule = New BANKNIFTYDayLongSMIStrategyRule(XDayOneMinutePayload, stockList(stock)(0), Me, tradeCheckingDate, tradingSymbol, _canceller)
+                                            stockRule = New BANKNIFTYDayLongSMIStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller)
                                         Case 7
-                                            stockRule = New DayStartSMIStrategyRule(XDayOneMinutePayload, stockList(stock)(0), Me, tradeCheckingDate, tradingSymbol, _canceller)
+                                            stockRule = New DayStartSMIStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller)
                                         Case 8
-                                            stockRule = New GapFractalBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock)(0), Me, tradeCheckingDate, tradingSymbol, _canceller, stockList(stock)(1))
+                                            stockRule = New GapFractalBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, stockList(stock).Supporting1)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -159,12 +159,18 @@ Namespace StrategyHelper
                                     potentialTickSignalTime = New Date(tradeCheckingDate.Year, tradeCheckingDate.Month, tradeCheckingDate.Day, startSecond.Hours, startSecond.Minutes, startSecond.Seconds)
                                     If potentialTickSignalTime.Second = 0 Then
                                         potentialCandleSignalTime = potentialTickSignalTime
+                                        For Each stockName In stockList
+                                            stockName.Value.PlaceOrderDoneForTheMinute = False
+                                            stockName.Value.ExitOrderDoneForTheMinute = False
+                                            stockName.Value.ModifyStoplossOrderDoneForTheMinute = False
+                                            stockName.Value.ModifyTargetOrderDoneForTheMinute = False
+                                        Next
                                     End If
                                     For Each stockName In stockList.Keys
                                         _canceller.Token.ThrowIfCancellationRequested()
                                         Dim stockStrategyRule As StrategyRule = stocksRuleData(stockName)
 
-                                        If Not stockStrategyRule.EligibleToTakeTrade Then
+                                        If Not stockList(stockName).EligibleToTakeTrade Then
                                             Continue For
                                         End If
 
@@ -197,15 +203,109 @@ Namespace StrategyHelper
                                                     'Update Collection
                                                     Await stockStrategyRule.UpdateRequiredCollectionsAsync(runningTick).ConfigureAwait(False)
 
+                                                    'Specific Stock MTM Check
+                                                    _canceller.Token.ThrowIfCancellationRequested()
+                                                    If StockPLAfterBrokerage(tradeCheckingDate, runningTick.TradingSymbol) >= stockStrategyRule.MaxProfitOfThisStock Then
+                                                        ExitStockTradesByForce(runningTick, Trade.TradeType.MIS, "Max Stock Profit reached for the day")
+                                                        stockList(stockName).EligibleToTakeTrade = False
+                                                    ElseIf StockPLAfterBrokerage(tradeCheckingDate, runningTick.TradingSymbol) <= Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
+                                                        ExitStockTradesByForce(runningTick, Trade.TradeType.MIS, "Max Stock Loss reached for the day")
+                                                        stockList(stockName).EligibleToTakeTrade = False
+                                                    End If
+
+                                                    'Force exit at day end
+                                                    _canceller.Token.ThrowIfCancellationRequested()
+                                                    Dim eodTime As Date = New Date(runningTick.PayloadDate.Year, runningTick.PayloadDate.Month, runningTick.PayloadDate.Day, Me.EODExitTime.Hours, Me.EODExitTime.Minutes, Me.EODExitTime.Seconds)
+                                                    If runningTick.PayloadDate >= eodTime Then
+                                                        ExitStockTradesByForce(runningTick, Trade.TradeType.MIS, "EOD Exit")
+                                                        stockList(stockName).EligibleToTakeTrade = False
+                                                    End If
+
+                                                    'Stock MTM Check
+                                                    _canceller.Token.ThrowIfCancellationRequested()
+                                                    If ExitOnStockFixedTargetStoploss Then
+                                                        If StockPLAfterBrokerage(tradeCheckingDate, runningTick.TradingSymbol) >= StockMaxProfitPerDay Then
+                                                            ExitStockTradesByForce(runningTick, Trade.TradeType.MIS, "Max Stock Profit reached for the day")
+                                                            stockList(stockName).EligibleToTakeTrade = False
+                                                        ElseIf StockPLAfterBrokerage(tradeCheckingDate, runningTick.TradingSymbol) <= Math.Abs(StockMaxLossPerDay) * -1 Then
+                                                            ExitStockTradesByForce(runningTick, Trade.TradeType.MIS, "Max Stock Loss reached for the day")
+                                                            stockList(stockName).EligibleToTakeTrade = False
+                                                        End If
+                                                    End If
+
+                                                    'OverAll MTM Check
+                                                    _canceller.Token.ThrowIfCancellationRequested()
+                                                    If ExitOnOverAllFixedTargetStoploss Then
+                                                        If TotalPLAfterBrokerage(tradeCheckingDate) >= OverAllProfitPerDay Then
+                                                            ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TradeType.MIS, "Max Profit reached for the day")
+                                                            stockList(stockName).EligibleToTakeTrade = False
+                                                        ElseIf TotalPLAfterBrokerage(tradeCheckingDate) <= Math.Abs(OverAllLossPerDay) * -1 Then
+                                                            ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TradeType.MIS, "Max Loss reached for the day")
+                                                            stockList(stockName).EligibleToTakeTrade = False
+                                                        End If
+                                                    End If
+
+                                                    'Exit Trade From Rule
+                                                    _canceller.Token.ThrowIfCancellationRequested()
+                                                    Dim potentialRuleCancelTrades As List(Of Trade) = GetSpecificTrades(currentMinuteCandlePayload, Trade.TradeType.MIS, Trade.TradeExecutionStatus.Open)
+                                                    If potentialRuleCancelTrades IsNot Nothing AndAlso potentialRuleCancelTrades.Count > 0 Then
+                                                        If Not stockList(stockName).CancelOrderDoneForTheMinute Then
+                                                            For Each runningCancelTrade In potentialRuleCancelTrades
+                                                                _canceller.Token.ThrowIfCancellationRequested()
+                                                                Dim exitOrderDetails As Tuple(Of Boolean, String) = Await stockStrategyRule.IsTriggerReceivedForExitOrderAsync(runningTick, runningCancelTrade).ConfigureAwait(False)
+                                                                If exitOrderDetails IsNot Nothing AndAlso exitOrderDetails.Item1 Then
+                                                                    _canceller.Token.ThrowIfCancellationRequested()
+                                                                    ExitTradeByForce(runningCancelTrade, runningTick, exitOrderDetails.Item2)
+                                                                End If
+                                                            Next
+                                                            stockList(stockName).CancelOrderDoneForTheMinute = True
+                                                        End If
+                                                    End If
+                                                    _canceller.Token.ThrowIfCancellationRequested()
+                                                    Dim potentialRuleExitTrades As List(Of Trade) = GetSpecificTrades(currentMinuteCandlePayload, Trade.TradeType.MIS, Trade.TradeExecutionStatus.Inprogress)
+                                                    If potentialRuleExitTrades IsNot Nothing AndAlso potentialRuleExitTrades.Count > 0 Then
+                                                        If Not stockList(stockName).ExitOrderDoneForTheMinute Then
+                                                            For Each runningExitTrade In potentialRuleExitTrades
+                                                                _canceller.Token.ThrowIfCancellationRequested()
+                                                                Dim exitOrderDetails As Tuple(Of Boolean, String) = Await stockStrategyRule.IsTriggerReceivedForExitOrderAsync(runningTick, runningExitTrade).ConfigureAwait(False)
+                                                                If exitOrderDetails IsNot Nothing AndAlso exitOrderDetails.Item1 Then
+                                                                    ExitTradeByForce(runningExitTrade, runningTick, exitOrderDetails.Item2)
+                                                                End If
+                                                            Next
+                                                            stockList(stockName).ExitOrderDoneForTheMinute = True
+                                                        End If
+                                                    End If
+
                                                     'Place Order
                                                     _canceller.Token.ThrowIfCancellationRequested()
-                                                    Dim placeOrderDetails As Tuple(Of Boolean, List(Of PlaceOrderParameters)) = Await stockStrategyRule.IsTriggerReceivedForPlaceOrderAsync(runningTick).ConfigureAwait(False)
+                                                    Dim placeOrderDetails As Tuple(Of Boolean, List(Of PlaceOrderParameters)) = Nothing
+                                                    If stockList(stockName).PlaceOrderDoneForTheMinute Then
+                                                        placeOrderDetails = stockList(stockName).PlaceOrderTrigger
+                                                    Else
+                                                        placeOrderDetails = Await stockStrategyRule.IsTriggerReceivedForPlaceOrderAsync(runningTick).ConfigureAwait(False)
+                                                        stockList(stockName).PlaceOrderTrigger = placeOrderDetails
+                                                        stockList(stockName).PlaceOrderDoneForTheMinute = True
+                                                    End If
                                                     If placeOrderDetails IsNot Nothing AndAlso placeOrderDetails.Item1 Then
                                                         Dim placeOrders As List(Of PlaceOrderParameters) = placeOrderDetails.Item2
                                                         If placeOrders IsNot Nothing AndAlso placeOrders.Count > 0 Then
                                                             Dim tradeTag As String = System.Guid.NewGuid.ToString()
                                                             For Each runningOrder In placeOrders
                                                                 _canceller.Token.ThrowIfCancellationRequested()
+                                                                Select Case runningOrder.OrderType
+                                                                    Case TypeOfOrder.Breakout
+                                                                        If runningOrder.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                                                                            If runningTick.High > runningOrder.EntryPrice Then
+                                                                                Continue For
+                                                                            End If
+                                                                        ElseIf runningOrder.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                                                                            If runningTick.Low < runningOrder.EntryPrice Then
+                                                                                Continue For
+                                                                            End If
+                                                                        End If
+                                                                    Case Else
+                                                                        Throw New NotImplementedException
+                                                                End Select
                                                                 Dim runningTrade As Trade = New Trade(originatingStrategy:=Me,
                                                                                                       tradingSymbol:=runningTick.TradingSymbol,
                                                                                                       stockType:=Me.StockType,
@@ -232,70 +332,10 @@ Namespace StrategyHelper
                                                                                          Supporting4:=runningOrder.Supporting4,
                                                                                          Supporting5:=runningOrder.Supporting5)
 
-                                                                If Not PlaceOrModifyOrder(runningTrade, Nothing) Then
-                                                                    stockStrategyRule.EligibleToTakeTrade = False
+                                                                If PlaceOrModifyOrder(runningTrade, Nothing) Then
+
                                                                 End If
                                                             Next
-                                                        End If
-                                                    End If
-
-                                                    'Exit Trade From Rule
-                                                    _canceller.Token.ThrowIfCancellationRequested()
-                                                    Dim potentialRuleCancelTrades As List(Of Trade) = GetSpecificTrades(currentMinuteCandlePayload, Trade.TradeType.MIS, Trade.TradeExecutionStatus.Open)
-                                                    If potentialRuleCancelTrades IsNot Nothing AndAlso potentialRuleCancelTrades.Count > 0 Then
-                                                        For Each runningCancelTrade In potentialRuleCancelTrades
-                                                            _canceller.Token.ThrowIfCancellationRequested()
-                                                            Dim exitOrderDetails As Tuple(Of Boolean, String) = Await stockStrategyRule.IsTriggerReceivedForExitOrderAsync(runningTick, runningCancelTrade).ConfigureAwait(False)
-                                                            If exitOrderDetails IsNot Nothing AndAlso exitOrderDetails.Item1 Then
-                                                                _canceller.Token.ThrowIfCancellationRequested()
-                                                                ExitTradeByForce(runningCancelTrade, runningTick, exitOrderDetails.Item2)
-                                                            End If
-                                                        Next
-                                                    End If
-                                                    _canceller.Token.ThrowIfCancellationRequested()
-                                                    Dim potentialRuleExitTrades As List(Of Trade) = GetSpecificTrades(currentMinuteCandlePayload, Trade.TradeType.MIS, Trade.TradeExecutionStatus.Inprogress)
-                                                    If potentialRuleExitTrades IsNot Nothing AndAlso potentialRuleExitTrades.Count > 0 Then
-                                                        For Each runningExitTrade In potentialRuleExitTrades
-                                                            _canceller.Token.ThrowIfCancellationRequested()
-                                                            Dim exitOrderDetails As Tuple(Of Boolean, String) = Await stockStrategyRule.IsTriggerReceivedForExitOrderAsync(runningTick, runningExitTrade).ConfigureAwait(False)
-                                                            If exitOrderDetails IsNot Nothing AndAlso exitOrderDetails.Item1 Then
-                                                                ExitTradeByForce(runningExitTrade, runningTick, exitOrderDetails.Item2)
-                                                            End If
-                                                        Next
-                                                    End If
-
-                                                    'Specific Stock MTM Check
-                                                    _canceller.Token.ThrowIfCancellationRequested()
-                                                    If StockPLAfterBrokerage(tradeCheckingDate, runningTick.TradingSymbol) >= stockStrategyRule.MaxProfitOfThisStock Then
-                                                        ExitStockTradesByForce(runningTick, Trade.TradeType.MIS, "Max Stock Profit reached for the day")
-                                                    ElseIf StockPLAfterBrokerage(tradeCheckingDate, runningTick.TradingSymbol) <= Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
-                                                        ExitStockTradesByForce(runningTick, Trade.TradeType.MIS, "Max Stock Loss reached for the day")
-                                                    End If
-
-                                                    'Force exit at day end
-                                                    _canceller.Token.ThrowIfCancellationRequested()
-                                                    Dim eodTime As Date = New Date(runningTick.PayloadDate.Year, runningTick.PayloadDate.Month, runningTick.PayloadDate.Day, Me.EODExitTime.Hours, Me.EODExitTime.Minutes, Me.EODExitTime.Seconds)
-                                                    If runningTick.PayloadDate >= eodTime Then
-                                                        ExitStockTradesByForce(runningTick, Trade.TradeType.MIS, "EOD Exit")
-                                                    End If
-
-                                                    'Stock MTM Check
-                                                    _canceller.Token.ThrowIfCancellationRequested()
-                                                    If ExitOnStockFixedTargetStoploss Then
-                                                        If StockPLAfterBrokerage(tradeCheckingDate, runningTick.TradingSymbol) >= StockMaxProfitPerDay Then
-                                                            ExitStockTradesByForce(runningTick, Trade.TradeType.MIS, "Max Stock Profit reached for the day")
-                                                        ElseIf StockPLAfterBrokerage(tradeCheckingDate, runningTick.TradingSymbol) <= Math.Abs(StockMaxLossPerDay) * -1 Then
-                                                            ExitStockTradesByForce(runningTick, Trade.TradeType.MIS, "Max Stock Loss reached for the day")
-                                                        End If
-                                                    End If
-
-                                                    'OverAll MTM Check
-                                                    _canceller.Token.ThrowIfCancellationRequested()
-                                                    If ExitOnOverAllFixedTargetStoploss Then
-                                                        If TotalPLAfterBrokerage(tradeCheckingDate) >= OverAllProfitPerDay Then
-                                                            ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TradeType.MIS, "Max Profit reached for the day")
-                                                        ElseIf TotalPLAfterBrokerage(tradeCheckingDate) <= Math.Abs(OverAllLossPerDay) * -1 Then
-                                                            ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TradeType.MIS, "Max Loss reached for the day")
                                                         End If
                                                     End If
 
@@ -323,28 +363,34 @@ Namespace StrategyHelper
                                                     _canceller.Token.ThrowIfCancellationRequested()
                                                     Dim potentialModifySLTrades As List(Of Trade) = GetSpecificTrades(currentMinuteCandlePayload, Trade.TradeType.MIS, Trade.TradeExecutionStatus.Inprogress)
                                                     If potentialModifySLTrades IsNot Nothing AndAlso potentialModifySLTrades.Count > 0 Then
-                                                        For Each runningModifyTrade In potentialModifySLTrades
-                                                            _canceller.Token.ThrowIfCancellationRequested()
-                                                            Dim modifyOrderDetails As Tuple(Of Boolean, Decimal, String) = Await stockStrategyRule.IsTriggerReceivedForModifyStoplossOrderAsync(runningTick, runningModifyTrade).ConfigureAwait(False)
-                                                            If modifyOrderDetails IsNot Nothing AndAlso modifyOrderDetails.Item1 Then
+                                                        If Not stockList(stockName).ModifyStoplossOrderDoneForTheMinute Then
+                                                            For Each runningModifyTrade In potentialModifySLTrades
                                                                 _canceller.Token.ThrowIfCancellationRequested()
-                                                                runningModifyTrade.UpdateTrade(PotentialStopLoss:=modifyOrderDetails.Item2, SLRemark:=modifyOrderDetails.Item3)
-                                                            End If
-                                                        Next
+                                                                Dim modifyOrderDetails As Tuple(Of Boolean, Decimal, String) = Await stockStrategyRule.IsTriggerReceivedForModifyStoplossOrderAsync(runningTick, runningModifyTrade).ConfigureAwait(False)
+                                                                If modifyOrderDetails IsNot Nothing AndAlso modifyOrderDetails.Item1 Then
+                                                                    _canceller.Token.ThrowIfCancellationRequested()
+                                                                    runningModifyTrade.UpdateTrade(PotentialStopLoss:=modifyOrderDetails.Item2, SLRemark:=modifyOrderDetails.Item3)
+                                                                End If
+                                                            Next
+                                                            stockList(stockName).ModifyStoplossOrderDoneForTheMinute = True
+                                                        End If
                                                     End If
 
                                                     'Modify Target Trade
                                                     _canceller.Token.ThrowIfCancellationRequested()
                                                     Dim potentialModifyTargetTrades As List(Of Trade) = GetSpecificTrades(currentMinuteCandlePayload, Trade.TradeType.MIS, Trade.TradeExecutionStatus.Inprogress)
                                                     If potentialModifyTargetTrades IsNot Nothing AndAlso potentialModifyTargetTrades.Count > 0 Then
-                                                        For Each runningModifyTrade In potentialModifyTargetTrades
-                                                            _canceller.Token.ThrowIfCancellationRequested()
-                                                            Dim modifyOrderDetails As Tuple(Of Boolean, Decimal, String) = Await stockStrategyRule.IsTriggerReceivedForModifyTargetOrderAsync(runningTick, runningModifyTrade).ConfigureAwait(False)
-                                                            If modifyOrderDetails IsNot Nothing AndAlso modifyOrderDetails.Item1 Then
+                                                        If Not stockList(stockName).ModifyTargetOrderDoneForTheMinute Then
+                                                            For Each runningModifyTrade In potentialModifyTargetTrades
                                                                 _canceller.Token.ThrowIfCancellationRequested()
-                                                                runningModifyTrade.UpdateTrade(PotentialTarget:=modifyOrderDetails.Item2, TargetRemark:=modifyOrderDetails.Item3)
-                                                            End If
-                                                        Next
+                                                                Dim modifyOrderDetails As Tuple(Of Boolean, Decimal, String) = Await stockStrategyRule.IsTriggerReceivedForModifyTargetOrderAsync(runningTick, runningModifyTrade).ConfigureAwait(False)
+                                                                If modifyOrderDetails IsNot Nothing AndAlso modifyOrderDetails.Item1 Then
+                                                                    _canceller.Token.ThrowIfCancellationRequested()
+                                                                    runningModifyTrade.UpdateTrade(PotentialTarget:=modifyOrderDetails.Item2, TargetRemark:=modifyOrderDetails.Item3)
+                                                                End If
+                                                            Next
+                                                            stockList(stockName).ModifyTargetOrderDoneForTheMinute = True
+                                                        End If
                                                     End If
                                                 Next
                                             End If
@@ -375,8 +421,8 @@ Namespace StrategyHelper
 
 
 #Region "Stock Selection"
-        Private Function GetStockData(tradingDate As Date) As Dictionary(Of String, Decimal())
-            Dim ret As Dictionary(Of String, Decimal()) = Nothing
+        Private Function GetStockData(tradingDate As Date) As Dictionary(Of String, StockDetails)
+            Dim ret As Dictionary(Of String, StockDetails) = Nothing
             If Me.StockFileName IsNot Nothing Then
                 Dim dt As DataTable = Nothing
                 Using csvHelper As New Utilities.DAL.CSVHelper(Me.StockFileName, ",", _canceller)
@@ -387,7 +433,7 @@ Namespace StrategyHelper
                     For i = 1 To dt.Rows.Count - 1
                         Dim rowDate As Date = dt.Rows(i)(0)
                         If rowDate.Date = tradingDate.Date Then
-                            If ret Is Nothing Then ret = New Dictionary(Of String, Decimal())
+                            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
                             Dim tradingSymbol As String = dt.Rows(i).Item(1)
                             Dim instrumentName As String = Nothing
                             If tradingSymbol.Contains("FUT") Then
@@ -395,7 +441,11 @@ Namespace StrategyHelper
                             Else
                                 instrumentName = tradingSymbol
                             End If
-                            ret.Add(instrumentName, {dt.Rows(i).Item(2), dt.Rows(i).Item(5)})
+                            Dim detailsOfStock As StockDetails = New StockDetails With
+                                {.StockName = instrumentName,
+                                .LotSize = dt.Rows(i).Item(2),
+                                .Supporting1 = dt.Rows(i).Item(5)}
+                            ret.Add(instrumentName, detailsOfStock)
                             counter += 1
                             If counter = Me.NumberOfTradeableStockPerDay Then Exit For
                         End If

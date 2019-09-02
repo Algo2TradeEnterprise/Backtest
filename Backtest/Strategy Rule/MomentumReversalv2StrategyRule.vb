@@ -65,6 +65,7 @@ Public Class MomentumReversalv2StrategyRule
                         .Target = .EntryPrice + ConvertFloorCeling(_ATRPayload(signalCandle.PayloadDate) * _parentStrategy.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing),
                         .Buffer = buffer,
                         .SignalCandle = signalCandle,
+                        .OrderType = Strategy.TypeOfOrder.Breakout,
                         .Supporting1 = signalCandle.PayloadDate.ToShortTimeString,
                         .Supporting2 = ConvertFloorCeling(GetLastDayLastCandleATR(), _parentStrategy.TickSize, RoundOfType.Celing),
                         .Supporting3 = _ATRPayload(signalCandle.PayloadDate)
@@ -79,6 +80,7 @@ Public Class MomentumReversalv2StrategyRule
                         .Target = .EntryPrice - ConvertFloorCeling(_ATRPayload(signalCandle.PayloadDate) * _parentStrategy.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing),
                         .Buffer = buffer,
                         .SignalCandle = signalCandle,
+                        .OrderType = Strategy.TypeOfOrder.Breakout,
                         .Supporting1 = signalCandle.PayloadDate.ToShortTimeString,
                         .Supporting2 = ConvertFloorCeling(GetLastDayLastCandleATR(), _parentStrategy.TickSize, RoundOfType.Celing),
                         .Supporting3 = _ATRPayload(signalCandle.PayloadDate)

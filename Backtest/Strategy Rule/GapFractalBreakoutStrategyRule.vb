@@ -87,6 +87,7 @@ Public Class GapFractalBreakoutStrategyRule
                                 .Target = .EntryPrice + 100000,
                                 .Buffer = buffer,
                                 .SignalCandle = signalCandle,
+                                .OrderType = Strategy.TypeOfOrder.Breakout,
                                 .Supporting1 = signalCandle.PayloadDate.ToShortTimeString,
                                 .Supporting2 = signalCandleSatisfied.Item2
                             }
@@ -106,6 +107,7 @@ Public Class GapFractalBreakoutStrategyRule
                                 .Target = .EntryPrice - 100000,
                                 .Buffer = buffer,
                                 .SignalCandle = signalCandle,
+                                .OrderType = Strategy.TypeOfOrder.Breakout,
                                 .Supporting1 = signalCandle.PayloadDate.ToShortTimeString,
                                 .Supporting2 = signalCandleSatisfied.Item2
                             }
@@ -224,8 +226,6 @@ Public Class GapFractalBreakoutStrategyRule
 
     Private Function IsSignalCandle(ByVal candle As Payload) As Tuple(Of Boolean, String)
         Dim ret As Tuple(Of Boolean, String) = Nothing
-        'Dim s As Stopwatch = New Stopwatch
-        's.Start()
         If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then
             If IsFractalBreakoutDone(candle.PayloadDate) Then
                 ret = New Tuple(Of Boolean, String)(True, "Second fractal breakout")
@@ -235,8 +235,6 @@ Public Class GapFractalBreakoutStrategyRule
                 ret = New Tuple(Of Boolean, String)(True, "Fabourable Fractal formed")
             End If
         End If
-        's.Stop()
-        'Console.WriteLine(String.Format("Signal {0}", s.ElapsedMilliseconds))
         Return ret
     End Function
 

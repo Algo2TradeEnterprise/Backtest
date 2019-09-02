@@ -67,6 +67,7 @@ Public Class SmallestCandleBreakoutStrategyRule
                         .Stoploss = Math.Max(signalCandle.Low - buffer, potentialStoploss),
                         .Buffer = buffer,
                         .SignalCandle = signalCandle,
+                        .OrderType = Strategy.TypeOfOrder.Breakout,
                         .Supporting1 = signalCandle.PayloadDate.ToShortTimeString
                     }
                 ElseIf currentTick.Open <= sellTriggerPrice Then
@@ -82,6 +83,7 @@ Public Class SmallestCandleBreakoutStrategyRule
                         .Stoploss = Math.Min(signalCandle.High + buffer, potentialStoploss),
                         .Buffer = buffer,
                         .SignalCandle = signalCandle,
+                        .OrderType = Strategy.TypeOfOrder.Breakout,
                         .Supporting1 = signalCandle.PayloadDate.ToShortTimeString
                     }
                 End If
