@@ -130,6 +130,8 @@ Namespace StrategyHelper
                                             stockRule = New DayStartSMIStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller)
                                         Case 8
                                             stockRule = New GapFractalBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, stockList(stock).Supporting1)
+                                        Case 9
+                                            stockRule = New ForwardMomentumStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat

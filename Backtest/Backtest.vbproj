@@ -116,7 +116,7 @@
     <Compile Include="Strategy Rule\GapFractalBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule\HighVolumePinBarStrategyRule.vb" />
     <Compile Include="Strategy Rule\HighVolumePinBarv2StrategyRule.vb" />
-    <Compile Include="Strategy Rule\MAStrategyRule.vb" />
+    <Compile Include="Strategy Rule\ForwardMomentumStrategyRule.vb" />
     <Compile Include="Strategy Rule\MomentumReversalv2StrategyRule.vb" />
     <Compile Include="Strategy Rule\SmallestCandleBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule\SMIFractalStrategyRule.vb" />

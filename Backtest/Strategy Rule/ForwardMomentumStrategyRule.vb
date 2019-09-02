@@ -3,7 +3,7 @@ Imports System.Threading
 Imports Algo2TradeBLL
 Imports Utilities.Numbers.NumberManipulation
 
-Public Class MAStrategyRule
+Public Class ForwardMomentumStrategyRule
     Inherits StrategyRule
 
     Private _EMA50Payload As Dictionary(Of Date, Decimal) = Nothing
