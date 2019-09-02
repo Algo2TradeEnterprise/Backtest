@@ -30,7 +30,7 @@ Public Class DonchianFractalStrategyRule
         Indicator.FractalBands.CalculateFractal(_signalPayload, _FractalHighPayload, _FractalLowPayload)
     End Sub
 
-    Public Overrides Async Function IsTriggerReceivedForPlaceOrder(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
+    Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
         Dim ret As Tuple(Of Boolean, List(Of PlaceOrderParameters)) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
@@ -107,7 +107,7 @@ Public Class DonchianFractalStrategyRule
         Return ret
     End Function
 
-    Public Overrides Async Function IsTriggerReceivedForExitOrder(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, String))
+    Public Overrides Async Function IsTriggerReceivedForExitOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, String))
         Dim ret As Tuple(Of Boolean, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
@@ -156,7 +156,7 @@ Public Class DonchianFractalStrategyRule
         Return ret
     End Function
 
-    Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrder(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
+    Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
@@ -182,7 +182,7 @@ Public Class DonchianFractalStrategyRule
         Return ret
     End Function
 
-    Public Overrides Async Function IsTriggerReceivedForModifyTargetOrder(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
+    Public Overrides Async Function IsTriggerReceivedForModifyTargetOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         Return ret

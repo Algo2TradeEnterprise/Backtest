@@ -23,7 +23,7 @@ Public Class MomentumReversalv2StrategyRule
         Indicator.ATR.CalculateATR(14, _signalPayload, _ATRPayload)
     End Sub
 
-    Public Overrides Async Function IsTriggerReceivedForPlaceOrder(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
+    Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
         Dim ret As Tuple(Of Boolean, List(Of PlaceOrderParameters)) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
@@ -92,7 +92,7 @@ Public Class MomentumReversalv2StrategyRule
         Return ret
     End Function
 
-    Public Overrides Async Function IsTriggerReceivedForExitOrder(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, String))
+    Public Overrides Async Function IsTriggerReceivedForExitOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, String))
         Dim ret As Tuple(Of Boolean, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
@@ -111,7 +111,7 @@ Public Class MomentumReversalv2StrategyRule
         Return ret
     End Function
 
-    Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrder(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
+    Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         If _parentStrategy.ModifyStoploss AndAlso currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
@@ -134,7 +134,7 @@ Public Class MomentumReversalv2StrategyRule
         Return ret
     End Function
 
-    Public Overrides Async Function IsTriggerReceivedForModifyTargetOrder(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
+    Public Overrides Async Function IsTriggerReceivedForModifyTargetOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         Return ret

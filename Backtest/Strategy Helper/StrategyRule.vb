@@ -73,10 +73,14 @@ Namespace StrategyHelper
             End If
         End Sub
 
-        Public MustOverride Async Function IsTriggerReceivedForPlaceOrder(ByVal currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
-        Public MustOverride Async Function IsTriggerReceivedForExitOrder(ByVal currentTick As Payload, ByVal currentTrade As Trade) As Task(Of Tuple(Of Boolean, String))
-        Public MustOverride Async Function IsTriggerReceivedForModifyStoplossOrder(ByVal currentTick As Payload, ByVal currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
-        Public MustOverride Async Function IsTriggerReceivedForModifyTargetOrder(ByVal currentTick As Payload, ByVal currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
+        Public Overridable Async Function UpdateRequiredCollectionsAsync(ByVal currentTick As Payload) As Task
+            Await Task.Delay(0).ConfigureAwait(False)
+        End Function
+
+        Public MustOverride Async Function IsTriggerReceivedForPlaceOrderAsync(ByVal currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
+        Public MustOverride Async Function IsTriggerReceivedForExitOrderAsync(ByVal currentTick As Payload, ByVal currentTrade As Trade) As Task(Of Tuple(Of Boolean, String))
+        Public MustOverride Async Function IsTriggerReceivedForModifyStoplossOrderAsync(ByVal currentTick As Payload, ByVal currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
+        Public MustOverride Async Function IsTriggerReceivedForModifyTargetOrderAsync(ByVal currentTick As Payload, ByVal currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
 
         Public Overridable Function IsSignalTriggered(ByVal entryPrice As Decimal, ByVal entryDirection As Trade.TradeExecutionDirection, ByVal startTime As Date, ByVal endTime As Date) As Boolean
             Dim ret As Boolean = False

@@ -190,9 +190,12 @@ Namespace StrategyHelper
                                                     _canceller.Token.ThrowIfCancellationRequested()
                                                     SetCurrentLTPForStock(currentMinuteCandlePayload, runningTick, Trade.TradeType.MIS)
 
+                                                    'Update Collection
+                                                    Await stockStrategyRule.UpdateRequiredCollectionsAsync(runningTick).ConfigureAwait(False)
+
                                                     'Place Order
                                                     _canceller.Token.ThrowIfCancellationRequested()
-                                                    Dim placeOrderDetails As Tuple(Of Boolean, List(Of PlaceOrderParameters)) = Await stockStrategyRule.IsTriggerReceivedForPlaceOrder(runningTick).ConfigureAwait(False)
+                                                    Dim placeOrderDetails As Tuple(Of Boolean, List(Of PlaceOrderParameters)) = Await stockStrategyRule.IsTriggerReceivedForPlaceOrderAsync(runningTick).ConfigureAwait(False)
                                                     If placeOrderDetails IsNot Nothing AndAlso placeOrderDetails.Item1 Then
                                                         Dim placeOrders As List(Of PlaceOrderParameters) = placeOrderDetails.Item2
                                                         If placeOrders IsNot Nothing AndAlso placeOrders.Count > 0 Then
@@ -238,7 +241,7 @@ Namespace StrategyHelper
                                                     If potentialRuleCancelTrades IsNot Nothing AndAlso potentialRuleCancelTrades.Count > 0 Then
                                                         For Each runningCancelTrade In potentialRuleCancelTrades
                                                             _canceller.Token.ThrowIfCancellationRequested()
-                                                            Dim exitOrderDetails As Tuple(Of Boolean, String) = Await stockStrategyRule.IsTriggerReceivedForExitOrder(runningTick, runningCancelTrade).ConfigureAwait(False)
+                                                            Dim exitOrderDetails As Tuple(Of Boolean, String) = Await stockStrategyRule.IsTriggerReceivedForExitOrderAsync(runningTick, runningCancelTrade).ConfigureAwait(False)
                                                             If exitOrderDetails IsNot Nothing AndAlso exitOrderDetails.Item1 Then
                                                                 _canceller.Token.ThrowIfCancellationRequested()
                                                                 ExitTradeByForce(runningCancelTrade, runningTick, exitOrderDetails.Item2)
@@ -250,7 +253,7 @@ Namespace StrategyHelper
                                                     If potentialRuleExitTrades IsNot Nothing AndAlso potentialRuleExitTrades.Count > 0 Then
                                                         For Each runningExitTrade In potentialRuleExitTrades
                                                             _canceller.Token.ThrowIfCancellationRequested()
-                                                            Dim exitOrderDetails As Tuple(Of Boolean, String) = Await stockStrategyRule.IsTriggerReceivedForExitOrder(runningTick, runningExitTrade).ConfigureAwait(False)
+                                                            Dim exitOrderDetails As Tuple(Of Boolean, String) = Await stockStrategyRule.IsTriggerReceivedForExitOrderAsync(runningTick, runningExitTrade).ConfigureAwait(False)
                                                             If exitOrderDetails IsNot Nothing AndAlso exitOrderDetails.Item1 Then
                                                                 ExitTradeByForce(runningExitTrade, runningTick, exitOrderDetails.Item2)
                                                             End If
@@ -318,7 +321,7 @@ Namespace StrategyHelper
                                                     If potentialModifySLTrades IsNot Nothing AndAlso potentialModifySLTrades.Count > 0 Then
                                                         For Each runningModifyTrade In potentialModifySLTrades
                                                             _canceller.Token.ThrowIfCancellationRequested()
-                                                            Dim modifyOrderDetails As Tuple(Of Boolean, Decimal, String) = Await stockStrategyRule.IsTriggerReceivedForModifyStoplossOrder(runningTick, runningModifyTrade).ConfigureAwait(False)
+                                                            Dim modifyOrderDetails As Tuple(Of Boolean, Decimal, String) = Await stockStrategyRule.IsTriggerReceivedForModifyStoplossOrderAsync(runningTick, runningModifyTrade).ConfigureAwait(False)
                                                             If modifyOrderDetails IsNot Nothing AndAlso modifyOrderDetails.Item1 Then
                                                                 _canceller.Token.ThrowIfCancellationRequested()
                                                                 runningModifyTrade.UpdateTrade(PotentialStopLoss:=modifyOrderDetails.Item2, SLRemark:=modifyOrderDetails.Item3)
@@ -332,7 +335,7 @@ Namespace StrategyHelper
                                                     If potentialModifyTargetTrades IsNot Nothing AndAlso potentialModifyTargetTrades.Count > 0 Then
                                                         For Each runningModifyTrade In potentialModifyTargetTrades
                                                             _canceller.Token.ThrowIfCancellationRequested()
-                                                            Dim modifyOrderDetails As Tuple(Of Boolean, Decimal, String) = Await stockStrategyRule.IsTriggerReceivedForModifyTargetOrder(runningTick, runningModifyTrade).ConfigureAwait(False)
+                                                            Dim modifyOrderDetails As Tuple(Of Boolean, Decimal, String) = Await stockStrategyRule.IsTriggerReceivedForModifyTargetOrderAsync(runningTick, runningModifyTrade).ConfigureAwait(False)
                                                             If modifyOrderDetails IsNot Nothing AndAlso modifyOrderDetails.Item1 Then
                                                                 _canceller.Token.ThrowIfCancellationRequested()
                                                                 runningModifyTrade.UpdateTrade(PotentialTarget:=modifyOrderDetails.Item2, TargetRemark:=modifyOrderDetails.Item3)
