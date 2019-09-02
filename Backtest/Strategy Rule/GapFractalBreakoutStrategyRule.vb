@@ -38,17 +38,6 @@ Public Class GapFractalBreakoutStrategyRule
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         Dim tradeStartTime As Date = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, _parentStrategy.TradeStartTime.Hours, _parentStrategy.TradeStartTime.Minutes, _parentStrategy.TradeStartTime.Seconds)
 
-        If _parentStrategy.TotalPLAfterBrokerage(currentTick.PayloadDate) >= _parentStrategy.OverAllProfitPerDay OrElse
-            _parentStrategy.TotalPLAfterBrokerage(currentTick.PayloadDate) <= Math.Abs(_parentStrategy.OverAllLossPerDay) * -1 OrElse
-            _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) >= _parentStrategy.StockMaxProfitPerDay OrElse
-            _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) <= Math.Abs(_parentStrategy.StockMaxLossPerDay) * -1 OrElse
-            _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) >= Me.MaxProfitOfThisStock OrElse
-            _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) <= Math.Abs(Me.MaxLossOfThisStock) * -1 Then
-            Me.EligibleToTakeTrade = False
-            Return Nothing
-            Exit Function
-        End If
-
         Dim parameter As PlaceOrderParameters = Nothing
         If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
             Not _parentStrategy.IsTradeActive(currentTick, Trade.TradeType.MIS) AndAlso Not _parentStrategy.IsTradeOpen(currentTick, Trade.TradeType.MIS) AndAlso
