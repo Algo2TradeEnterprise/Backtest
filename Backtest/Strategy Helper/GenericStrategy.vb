@@ -285,9 +285,17 @@ Namespace StrategyHelper
                                                     If stockList(stockName).PlaceOrderDoneForTheMinute Then
                                                         placeOrderDetails = stockList(stockName).PlaceOrderTrigger
                                                     Else
-                                                        placeOrderDetails = Await stockStrategyRule.IsTriggerReceivedForPlaceOrderAsync(runningTick).ConfigureAwait(False)
-                                                        stockList(stockName).PlaceOrderTrigger = placeOrderDetails
-                                                        stockList(stockName).PlaceOrderDoneForTheMinute = True
+                                                        If Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.NumberOfTradesPerStockPerDay AndAlso
+                                                            Me.TotalPLAfterBrokerage(runningTick.PayloadDate) < Me.OverAllProfitPerDay AndAlso
+                                                            Me.TotalPLAfterBrokerage(runningTick.PayloadDate) > Math.Abs(Me.OverAllLossPerDay) * -1 AndAlso
+                                                            Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.StockMaxProfitPerDay AndAlso
+                                                            Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso
+                                                            Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < stockStrategyRule.MaxProfitOfThisStock AndAlso
+                                                            Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
+                                                            placeOrderDetails = Await stockStrategyRule.IsTriggerReceivedForPlaceOrderAsync(runningTick).ConfigureAwait(False)
+                                                            stockList(stockName).PlaceOrderTrigger = placeOrderDetails
+                                                            stockList(stockName).PlaceOrderDoneForTheMinute = True
+                                                        End If
                                                     End If
                                                     If placeOrderDetails IsNot Nothing AndAlso placeOrderDetails.Item1 Then
                                                         Dim placeOrders As List(Of PlaceOrderParameters) = placeOrderDetails.Item2
@@ -347,12 +355,84 @@ Namespace StrategyHelper
 
                                                     'Exit Trade
                                                     _canceller.Token.ThrowIfCancellationRequested()
+                                                    Dim exitOrderSuccessful As Boolean = False
                                                     Dim potentialExitTrades As List(Of Trade) = GetSpecificTrades(currentMinuteCandlePayload, Trade.TradeType.MIS, Trade.TradeExecutionStatus.Inprogress)
                                                     If potentialExitTrades IsNot Nothing AndAlso potentialExitTrades.Count > 0 Then
                                                         For Each runningPotentialExitTrade In potentialExitTrades
                                                             _canceller.Token.ThrowIfCancellationRequested()
-                                                            ExitTradeIfPossible(runningPotentialExitTrade, runningTick)
+                                                            exitOrderSuccessful = ExitTradeIfPossible(runningPotentialExitTrade, runningTick)
                                                         Next
+                                                    End If
+
+                                                    'Place Order
+                                                    _canceller.Token.ThrowIfCancellationRequested()
+                                                    Dim placeOrderTrigger As Tuple(Of Boolean, List(Of PlaceOrderParameters)) = Nothing
+                                                    If exitOrderSuccessful Then
+                                                        If Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.NumberOfTradesPerStockPerDay AndAlso
+                                                            Me.TotalPLAfterBrokerage(runningTick.PayloadDate) < Me.OverAllProfitPerDay AndAlso
+                                                            Me.TotalPLAfterBrokerage(runningTick.PayloadDate) > Math.Abs(Me.OverAllLossPerDay) * -1 AndAlso
+                                                            Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.StockMaxProfitPerDay AndAlso
+                                                            Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso
+                                                            Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < stockStrategyRule.MaxProfitOfThisStock AndAlso
+                                                            Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
+                                                            placeOrderTrigger = Await stockStrategyRule.IsTriggerReceivedForPlaceOrderAsync(runningTick).ConfigureAwait(False)
+                                                            stockList(stockName).PlaceOrderTrigger = placeOrderTrigger
+                                                        End If
+                                                    End If
+                                                    If placeOrderTrigger IsNot Nothing AndAlso placeOrderTrigger.Item1 Then
+                                                        Dim placeOrders As List(Of PlaceOrderParameters) = placeOrderTrigger.Item2
+                                                        If placeOrders IsNot Nothing AndAlso placeOrders.Count > 0 Then
+                                                            Dim tradeTag As String = System.Guid.NewGuid.ToString()
+                                                            For Each runningOrder In placeOrders
+                                                                _canceller.Token.ThrowIfCancellationRequested()
+                                                                If runningOrder.Used Then
+                                                                    Continue For
+                                                                End If
+                                                                Select Case runningOrder.OrderType
+                                                                    Case TypeOfOrder.Breakout
+                                                                        If runningOrder.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                                                                            If runningTick.High > runningOrder.EntryPrice Then
+                                                                                Continue For
+                                                                            End If
+                                                                        ElseIf runningOrder.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                                                                            If runningTick.Low < runningOrder.EntryPrice Then
+                                                                                Continue For
+                                                                            End If
+                                                                        End If
+                                                                    Case Else
+                                                                        Throw New NotImplementedException
+                                                                End Select
+                                                                Dim runningTrade As Trade = New Trade(originatingStrategy:=Me,
+                                                                                                      tradingSymbol:=runningTick.TradingSymbol,
+                                                                                                      stockType:=Me.StockType,
+                                                                                                      tradingDate:=runningTick.PayloadDate,
+                                                                                                      entryDirection:=runningOrder.EntryDirection,
+                                                                                                      entryPrice:=runningOrder.EntryPrice,
+                                                                                                      entryBuffer:=runningOrder.Buffer,
+                                                                                                      squareOffType:=Trade.TradeType.MIS,
+                                                                                                      entryCondition:=Trade.TradeEntryCondition.Original,
+                                                                                                      entryRemark:="Original Entry",
+                                                                                                      quantity:=runningOrder.Quantity,
+                                                                                                      potentialTarget:=runningOrder.Target,
+                                                                                                      targetRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Target),
+                                                                                                      potentialStopLoss:=runningOrder.Stoploss,
+                                                                                                      stoplossBuffer:=runningOrder.Buffer,
+                                                                                                      slRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Stoploss),
+                                                                                                      signalCandle:=runningOrder.SignalCandle)
+
+                                                                runningTrade.UpdateTrade(Tag:=tradeTag,
+                                                                                         SquareOffValue:=Math.Abs(runningOrder.EntryPrice - runningOrder.Target),
+                                                                                         Supporting1:=runningOrder.Supporting1,
+                                                                                         Supporting2:=runningOrder.Supporting2,
+                                                                                         Supporting3:=runningOrder.Supporting3,
+                                                                                         Supporting4:=runningOrder.Supporting4,
+                                                                                         Supporting5:=runningOrder.Supporting5)
+
+                                                                If PlaceOrModifyOrder(runningTrade, Nothing) Then
+                                                                    runningOrder.Used = True
+                                                                End If
+                                                            Next
+                                                        End If
                                                     End If
 
                                                     'Enter Trade
