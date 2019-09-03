@@ -155,6 +155,7 @@ Public Class ForwardMomentumStrategyRule
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
+        Dim slab As Decimal = 1
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
 
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
@@ -162,9 +163,9 @@ Public Class ForwardMomentumStrategyRule
             Dim buffer As Decimal = currentTrade.StoplossBuffer
             Dim gain As Decimal = Math.Abs(currentTick.Open - currentTrade.EntryPrice)
             Dim gainPer As Decimal = gain * 100 / currentTrade.EntryPrice
-            If gainPer >= 1.5 Then
+            If gainPer >= slab + 0.5 Then
                 Dim movementMul As Decimal = gainPer * 10 / 5
-                Dim movementPer As Decimal = Math.Floor(movementMul - 2) * 0.5
+                Dim movementPer As Decimal = Math.Floor(movementMul - (slab * 2)) * 0.5
                 If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                     Dim sl As Decimal = currentTrade.EntryPrice + ConvertFloorCeling(currentTrade.EntryPrice * movementPer / 100, _parentStrategy.TickSize, RoundOfType.Celing)
                     If sl > currentTrade.PotentialStopLoss Then
