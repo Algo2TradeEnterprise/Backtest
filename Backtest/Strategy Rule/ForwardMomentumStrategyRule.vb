@@ -118,6 +118,7 @@ Public Class ForwardMomentumStrategyRule
             If Me.MaxProfitOfThisStock = Decimal.MaxValue Then
                 Dim capitalRequired As Decimal = parameter1.EntryPrice * parameter1.Quantity / _parentStrategy.MarginMultiplier
                 Me.MaxProfitOfThisStock = capitalRequired * 15 / 100
+                Me.MaxLossOfThisStock = capitalRequired * 15 / 100
             End If
         End If
         If parameter2 IsNot Nothing Then
@@ -126,6 +127,7 @@ Public Class ForwardMomentumStrategyRule
             If Me.MaxProfitOfThisStock = Decimal.MaxValue Then
                 Dim capitalRequired As Decimal = parameter2.EntryPrice * parameter2.Quantity / _parentStrategy.MarginMultiplier
                 Me.MaxProfitOfThisStock = capitalRequired * 15 / 100
+                Me.MaxLossOfThisStock = capitalRequired * 15 / 100
             End If
         End If
         If orderList IsNot Nothing AndAlso orderList.Count > 0 Then

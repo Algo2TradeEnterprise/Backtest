@@ -281,7 +281,7 @@ Public Class frmMain
                 For nmbrOfStock As Integer = 5 To 5 Step 1
                     For nmbrOfTradePerStock As Integer = 100 To 100 Step 1
                         For mp As Decimal = 20000 To 20000 Step 5000
-                            For ml As Decimal = 5000000 To 5000000 Step 1000
+                            For ml As Decimal = 20000 To 20000 Step 1000
                                 For modifySL As Integer = 1 To 1 Step 1
                                     For tgtMul As Decimal = 2 To 2 Step 0.5
                                         For slMul As Decimal = 1 To 1 Step 0.5
@@ -329,11 +329,11 @@ Public Class frmMain
 
                                                         .ExitOnStockFixedTargetStoploss = False
                                                         .StockMaxProfitPerDay = Decimal.MaxValue
-                                                        .StockMaxLossPerDay = ml
+                                                        .StockMaxLossPerDay = Decimal.MinValue
 
                                                         .ExitOnOverAllFixedTargetStoploss = True
                                                         .OverAllProfitPerDay = mp
-                                                        .OverAllLossPerDay = Decimal.MinValue
+                                                        .OverAllLossPerDay = ml
                                                     End With
                                                     Await backtestStrategy.TestStrategyAsync(startDate, endDate).ConfigureAwait(False)
                                                 End Using
