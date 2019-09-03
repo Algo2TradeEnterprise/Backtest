@@ -169,6 +169,16 @@ Public Class ForwardMomentumStrategyRule
                                 End If
                             End If
                         End If
+
+                        'New logic
+                        If ret Is Nothing Then
+                            Dim ema50offsetValue As Decimal = GetOffSetIndicatorValue(10, currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate, _EMA50Payload)
+                            Dim ema100offsetValue As Decimal = GetOffSetIndicatorValue(10, currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate, _EMA100Payload)
+                            If currentTrade.EntryPrice > Math.Min(ema50offsetValue, ema100offsetValue) AndAlso
+                                currentTrade.EntryPrice < Math.Max(ema50offsetValue, ema100offsetValue) Then
+                                ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                            End If
+                        End If
                     End If
                 End If
             End If
