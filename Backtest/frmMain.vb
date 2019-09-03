@@ -320,6 +320,8 @@ Public Class frmMain
 
                                                         .ModifyStoploss = modifySL
 
+                                                        .TrailingStoploss = True
+
                                                         .TargetMultiplier = tgtMul
                                                         .StoplossMultiplier = slMul
 
