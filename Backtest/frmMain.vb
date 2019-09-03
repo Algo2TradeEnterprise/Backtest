@@ -299,8 +299,8 @@ Public Class frmMain
                                                                                               stockType:=stockType,
                                                                                               databaseTable:=database,
                                                                                               dataSource:=sourceData,
-                                                                                              initialCapital:=300000,
-                                                                                              usableCapital:=300000,
+                                                                                              initialCapital:=3000000,
+                                                                                              usableCapital:=3000000,
                                                                                               minimumEarnedCapitalToWithdraw:=450000,
                                                                                               amountToBeWithdrawn:=100000)
                                                     AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
