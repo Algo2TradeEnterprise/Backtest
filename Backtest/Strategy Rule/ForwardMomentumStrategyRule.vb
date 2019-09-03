@@ -73,45 +73,41 @@ Public Class ForwardMomentumStrategyRule
                 Dim longActiveTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentMinuteCandlePayload, Trade.TradeType.MIS, Trade.TradeExecutionDirection.Buy)
                 If longActiveTrades Is Nothing OrElse longActiveTrades.Count = 0 Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.High, RoundOfType.Floor)
-                    If signalCandle.High + buffer < Math.Min(ema50offsetValue, ema100offsetValue) OrElse
-                        signalCandle.High + buffer > Math.Max(ema50offsetValue, ema100offsetValue) Then
-                        Dim sl As Decimal = Math.Min(GetOffSetIndicatorValue(10, signalCandle.PayloadDate, _EMA50Payload), GetOffSetIndicatorValue(10, signalCandle.PayloadDate, _EMA100Payload))
-                        Dim roundType As Utilities.Numbers.NumberManipulation.RoundOfType = RoundOfType.Celing
-                        If sl < 100 Then
-                            roundType = RoundOfType.Floor
-                        End If
-                        parameter1 = New PlaceOrderParameters With {
-                                    .EntryPrice = signalCandle.High + buffer,
-                                    .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                    .Quantity = _lotSize,
-                                    .Stoploss = ConvertFloorCeling(Math.Max(sl, (.EntryPrice - .EntryPrice * 1 / 100)), _parentStrategy.TickSize, roundType),
-                                    .Target = .EntryPrice + ConvertFloorCeling(.EntryPrice * 50 / 100, _parentStrategy.TickSize, RoundOfType.Celing),
-                                    .Buffer = buffer,
-                                    .SignalCandle = signalCandle,
-                                    .OrderType = Strategy.TypeOfOrder.Breakout,
-                                    .Supporting1 = signalCandle.PayloadDate.ToShortTimeString
-                                }
-                    End If
+                    'If signalCandle.High + buffer < Math.Min(ema50offsetValue, ema100offsetValue) OrElse
+                    '    signalCandle.High + buffer > Math.Max(ema50offsetValue, ema100offsetValue) Then
+                    Dim sl As Decimal = Math.Min(GetOffSetIndicatorValue(10, signalCandle.PayloadDate, _EMA50Payload), GetOffSetIndicatorValue(10, signalCandle.PayloadDate, _EMA100Payload))
+                    parameter1 = New PlaceOrderParameters With {
+                                .EntryPrice = signalCandle.High + buffer,
+                                .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                                .Quantity = _lotSize,
+                                .Stoploss = ConvertFloorCeling(Math.Max(sl, (.EntryPrice - .EntryPrice * 1 / 100)), _parentStrategy.TickSize, RoundOfType.Floor),
+                                .Target = .EntryPrice + ConvertFloorCeling(.EntryPrice * 50 / 100, _parentStrategy.TickSize, RoundOfType.Celing),
+                                .Buffer = buffer,
+                                .SignalCandle = signalCandle,
+                                .OrderType = Strategy.TypeOfOrder.Breakout,
+                                .Supporting1 = signalCandle.PayloadDate.ToShortTimeString
+                            }
+                    'End If
                 End If
 
                 Dim shortActiveTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentMinuteCandlePayload, Trade.TradeType.MIS, Trade.TradeExecutionDirection.Sell)
                 If shortActiveTrades Is Nothing OrElse shortActiveTrades.Count = 0 Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Low, RoundOfType.Floor)
-                    If signalCandle.Low - buffer < Math.Min(ema50offsetValue, ema100offsetValue) OrElse
-                        signalCandle.Low - buffer > Math.Max(ema50offsetValue, ema100offsetValue) Then
-                        Dim sl As Decimal = Math.Max(GetOffSetIndicatorValue(10, signalCandle.PayloadDate, _EMA50Payload), GetOffSetIndicatorValue(10, signalCandle.PayloadDate, _EMA100Payload))
-                        parameter2 = New PlaceOrderParameters With {
-                                    .EntryPrice = signalCandle.Low - buffer,
-                                    .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                                    .Quantity = _lotSize,
-                                    .Stoploss = ConvertFloorCeling(Math.Min(sl, (.EntryPrice + .EntryPrice * 1 / 100)), _parentStrategy.TickSize, RoundOfType.Celing),
-                                    .Target = .EntryPrice - ConvertFloorCeling(.EntryPrice * 50 / 100, _parentStrategy.TickSize, RoundOfType.Celing),
-                                    .Buffer = buffer,
-                                    .SignalCandle = signalCandle,
-                                    .OrderType = Strategy.TypeOfOrder.Breakout,
-                                    .Supporting1 = signalCandle.PayloadDate.ToShortTimeString
-                                }
-                    End If
+                    'If signalCandle.Low - buffer < Math.Min(ema50offsetValue, ema100offsetValue) OrElse
+                    '    signalCandle.Low - buffer > Math.Max(ema50offsetValue, ema100offsetValue) Then
+                    Dim sl As Decimal = Math.Max(GetOffSetIndicatorValue(10, signalCandle.PayloadDate, _EMA50Payload), GetOffSetIndicatorValue(10, signalCandle.PayloadDate, _EMA100Payload))
+                    parameter2 = New PlaceOrderParameters With {
+                                .EntryPrice = signalCandle.Low - buffer,
+                                .EntryDirection = Trade.TradeExecutionDirection.Sell,
+                                .Quantity = _lotSize,
+                                .Stoploss = ConvertFloorCeling(Math.Min(sl, (.EntryPrice + .EntryPrice * 1 / 100)), _parentStrategy.TickSize, RoundOfType.Celing),
+                                .Target = .EntryPrice - ConvertFloorCeling(.EntryPrice * 50 / 100, _parentStrategy.TickSize, RoundOfType.Celing),
+                                .Buffer = buffer,
+                                .SignalCandle = signalCandle,
+                                .OrderType = Strategy.TypeOfOrder.Breakout,
+                                .Supporting1 = signalCandle.PayloadDate.ToShortTimeString
+                            }
+                    'End If
                 End If
             End If
         End If
@@ -179,15 +175,15 @@ Public Class ForwardMomentumStrategyRule
                             End If
                         End If
 
-                        'New logic
-                        If ret Is Nothing Then
-                            Dim ema50offsetValue As Decimal = GetOffSetIndicatorValue(10, currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate, _EMA50Payload)
-                            Dim ema100offsetValue As Decimal = GetOffSetIndicatorValue(10, currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate, _EMA100Payload)
-                            If currentTrade.EntryPrice > Math.Min(ema50offsetValue, ema100offsetValue) AndAlso
-                                currentTrade.EntryPrice < Math.Max(ema50offsetValue, ema100offsetValue) Then
-                                ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
-                            End If
-                        End If
+                        ''New logic
+                        'If ret Is Nothing Then
+                        '    Dim ema50offsetValue As Decimal = GetOffSetIndicatorValue(10, currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate, _EMA50Payload)
+                        '    Dim ema100offsetValue As Decimal = GetOffSetIndicatorValue(10, currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate, _EMA100Payload)
+                        '    If currentTrade.EntryPrice > Math.Min(ema50offsetValue, ema100offsetValue) AndAlso
+                        '        currentTrade.EntryPrice < Math.Max(ema50offsetValue, ema100offsetValue) Then
+                        '        ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                        '    End If
+                        'End If
                     End If
                 End If
             End If
@@ -227,11 +223,7 @@ Public Class ForwardMomentumStrategyRule
                     If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                         Dim sl As Decimal = Math.Min(GetOffSetIndicatorValue(10, currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate, _EMA50Payload), GetOffSetIndicatorValue(10, currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate, _EMA100Payload))
                         If sl > currentTrade.PotentialStopLoss Then
-                            If sl < 100 Then
-                                triggerPrice = ConvertFloorCeling(sl, _parentStrategy.TickSize, RoundOfType.Floor)
-                            Else
-                                triggerPrice = ConvertFloorCeling(sl, _parentStrategy.TickSize, RoundOfType.Celing)
-                            End If
+                            triggerPrice = ConvertFloorCeling(sl, _parentStrategy.TickSize, RoundOfType.Floor)
                         End If
                     ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
                         Dim sl As Decimal = Math.Max(GetOffSetIndicatorValue(10, currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate, _EMA50Payload), GetOffSetIndicatorValue(10, currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate, _EMA100Payload))
