@@ -280,7 +280,7 @@ Public Class frmMain
             For signalTimeFrame As Integer = 1 To 1 Step 1
                 For nmbrOfStock As Integer = 5 To 5 Step 1
                     For nmbrOfTradePerStock As Integer = 100 To 100 Step 1
-                        For mp As Decimal = 5000 To 5000 Step 5000
+                        For mp As Decimal = 20000 To 20000 Step 5000
                             For ml As Decimal = 5000000 To 5000000 Step 1000
                                 For modifySL As Integer = 1 To 1 Step 1
                                     For tgtMul As Decimal = 2 To 2 Step 0.5
@@ -331,7 +331,7 @@ Public Class frmMain
                                                         .StockMaxProfitPerDay = Decimal.MaxValue
                                                         .StockMaxLossPerDay = ml
 
-                                                        .ExitOnOverAllFixedTargetStoploss = False
+                                                        .ExitOnOverAllFixedTargetStoploss = True
                                                         .OverAllProfitPerDay = mp
                                                         .OverAllLossPerDay = Decimal.MinValue
                                                     End With
