@@ -172,7 +172,7 @@ Public Class ForwardMomentumStrategyRule
                 End If
             End If
             If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
-                ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, String.Format("{0}. Time:{1}", triggerPrice, currentTick.PayloadDate))
+                ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, String.Format("{0}. Time:{1}. Gain:{2}", triggerPrice, currentTick.PayloadDate, gainPer))
             End If
         End If
         Return ret

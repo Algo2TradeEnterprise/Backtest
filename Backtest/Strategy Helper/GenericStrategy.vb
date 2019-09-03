@@ -449,7 +449,7 @@ Namespace StrategyHelper
                                                     _canceller.Token.ThrowIfCancellationRequested()
                                                     Dim potentialModifySLTrades As List(Of Trade) = GetSpecificTrades(currentMinuteCandlePayload, Trade.TradeType.MIS, Trade.TradeExecutionStatus.Inprogress)
                                                     If potentialModifySLTrades IsNot Nothing AndAlso potentialModifySLTrades.Count > 0 Then
-                                                        If Not stockList(stockName).ModifyStoplossOrderDoneForTheMinute Then
+                                                        If Not stockList(stockName).ModifyStoplossOrderDoneForTheMinute OrElse Me.ModifyStoploss Then
                                                             For Each runningModifyTrade In potentialModifySLTrades
                                                                 _canceller.Token.ThrowIfCancellationRequested()
                                                                 Dim modifyOrderDetails As Tuple(Of Boolean, Decimal, String) = Await stockStrategyRule.IsTriggerReceivedForModifyStoplossOrderAsync(runningTick, runningModifyTrade).ConfigureAwait(False)
