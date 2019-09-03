@@ -48,23 +48,20 @@ Public Class ForwardMomentumStrategyRule
             If signalCandleSatisfied Then
                 signalCandle = currentMinuteCandlePayload.PreviousCandlePayload
             Else
-                Dim lastExecutedTrade As Trade = Nothing
                 Dim completeTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentMinuteCandlePayload, Trade.TradeType.MIS, Trade.TradeExecutionStatus.Close)
                 If completeTrades IsNot Nothing AndAlso completeTrades.Count > 0 Then
-                    lastExecutedTrade = completeTrades.OrderBy(Function(x)
-                                                                   Return x.EntryTime
-                                                               End Function).LastOrDefault
-                End If
-                If lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.ExitCondition = Trade.TradeExitCondition.StopLoss AndAlso
-                    lastExecutedTrade.PLPoint < 0 Then
-                    Dim oppositeSLTrades As List(Of Trade) = completeTrades.FindAll(Function(x)
-                                                                                        Return x.ExitCondition = Trade.TradeExitCondition.StopLoss AndAlso
-                                                                                        x.SignalCandle.PayloadDate = lastExecutedTrade.SignalCandle.PayloadDate AndAlso
-                                                                                        x.EntryDirection <> lastExecutedTrade.EntryDirection
-                                                                                    End Function)
-                    If oppositeSLTrades Is Nothing OrElse oppositeSLTrades.Count < 2 Then
-                        If currentMinuteCandlePayload.PayloadDate < lastExecutedTrade.SignalCandle.PayloadDate.AddMinutes(10) Then
-                            signalCandle = lastExecutedTrade.SignalCandle
+                    Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, Trade.TradeType.MIS)
+                    If lastExecutedTrade IsNot Nothing AndAlso ((lastExecutedTrade.ExitCondition = Trade.TradeExitCondition.StopLoss AndAlso
+                        lastExecutedTrade.PLPoint < 0) OrElse (lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress)) Then
+                        Dim oppositeSLTrades As List(Of Trade) = completeTrades.FindAll(Function(x)
+                                                                                            Return x.ExitCondition = Trade.TradeExitCondition.StopLoss AndAlso
+                                                                                            x.SignalCandle.PayloadDate = lastExecutedTrade.SignalCandle.PayloadDate AndAlso
+                                                                                            x.EntryDirection <> lastExecutedTrade.EntryDirection
+                                                                                        End Function)
+                        If oppositeSLTrades Is Nothing OrElse oppositeSLTrades.Count < 2 Then
+                            If currentMinuteCandlePayload.PayloadDate < lastExecutedTrade.SignalCandle.PayloadDate.AddMinutes(10) Then
+                                signalCandle = lastExecutedTrade.SignalCandle
+                            End If
                         End If
                     End If
                 End If
