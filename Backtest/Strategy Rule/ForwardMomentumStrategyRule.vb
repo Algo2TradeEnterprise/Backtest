@@ -184,18 +184,18 @@ Public Class ForwardMomentumStrategyRule
                     If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                         Dim sl As Decimal = Math.Min(GetOffSetIndicatorValue(10, currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate, _EMA50Payload), GetOffSetIndicatorValue(10, currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate, _EMA100Payload))
                         If sl > currentTrade.PotentialStopLoss Then
-                            triggerPrice = sl
+                            triggerPrice = ConvertFloorCeling(sl, _parentStrategy.TickSize, RoundOfType.Celing)
                         End If
                     ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
                         Dim sl As Decimal = Math.Max(GetOffSetIndicatorValue(10, currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate, _EMA50Payload), GetOffSetIndicatorValue(10, currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate, _EMA100Payload))
                         If sl < currentTrade.PotentialStopLoss Then
-                            triggerPrice = sl
+                            triggerPrice = ConvertFloorCeling(sl, _parentStrategy.TickSize, RoundOfType.Celing)
                         End If
                     End If
                 End If
             End If
             If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
-                ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, String.Format("{0}. Time:{1}. Gain:{2}", triggerPrice, currentTick.PayloadDate, gainPer))
+                ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, String.Format("{0}. Time:{1}. Gain:{2}", triggerPrice, currentTick.PayloadDate, Math.Round(gainPer, 2)))
             End If
         End If
         Return ret
