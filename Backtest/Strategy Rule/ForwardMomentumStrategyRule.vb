@@ -58,7 +58,7 @@ Public Class ForwardMomentumStrategyRule
                                                                                             x.SignalCandle.PayloadDate = lastExecutedTrade.SignalCandle.PayloadDate AndAlso
                                                                                             x.EntryDirection <> lastExecutedTrade.EntryDirection
                                                                                         End Function)
-                        If oppositeSLTrades Is Nothing OrElse oppositeSLTrades.Count < 2 Then
+                        If oppositeSLTrades Is Nothing OrElse oppositeSLTrades.Count = 0 Then
                             If currentMinuteCandlePayload.PayloadDate < lastExecutedTrade.SignalCandle.PayloadDate.AddMinutes(10) Then
                                 signalCandle = lastExecutedTrade.SignalCandle
                             End If
