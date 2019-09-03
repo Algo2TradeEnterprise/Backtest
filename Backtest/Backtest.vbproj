@@ -113,6 +113,7 @@
     <Compile Include="Strategy Rule\BANKNIFTYDayLongSMIStrategyRule.vb" />
     <Compile Include="Strategy Rule\DayStartSMIStrategyRule.vb" />
     <Compile Include="Strategy Rule\DonchianFractalStrategyRule.vb" />
+    <Compile Include="Strategy Rule\ForwardMomentumv2StrategyRule.vb" />
     <Compile Include="Strategy Rule\GapFractalBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule\HighVolumePinBarStrategyRule.vb" />
     <Compile Include="Strategy Rule\HighVolumePinBarv2StrategyRule.vb" />

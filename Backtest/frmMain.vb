@@ -331,7 +331,7 @@ Public Class frmMain
                                                         .StockMaxProfitPerDay = Decimal.MaxValue
                                                         .StockMaxLossPerDay = Decimal.MinValue
 
-                                                        .ExitOnOverAllFixedTargetStoploss = True
+                                                        .ExitOnOverAllFixedTargetStoploss = False
                                                         .OverAllProfitPerDay = mp
                                                         .OverAllLossPerDay = ml
                                                     End With
