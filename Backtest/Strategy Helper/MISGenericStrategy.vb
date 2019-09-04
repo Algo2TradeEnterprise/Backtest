@@ -4,7 +4,7 @@ Imports System.Threading
 Imports Utilities.Strings
 
 Namespace StrategyHelper
-    Public Class GenericStrategy
+    Public Class MISGenericStrategy
         Inherits Strategy
         Implements IDisposable
         Public Property StockFileName As String
