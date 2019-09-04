@@ -382,22 +382,47 @@ Namespace StrategyHelper
         Public Function IsTradeActive(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TradeType, Optional ByVal tradeDirection As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None) As Boolean
             Dim ret As Boolean = False
             Dim tradeDate As Date = currentMinutePayload.PayloadDate.Date
-
-            If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(tradeDate) AndAlso TradesTaken(tradeDate).ContainsKey(currentMinutePayload.TradingSymbol) Then
-                Dim tradeList As List(Of Trade) = Nothing
-                If tradeDirection = Trade.TradeExecutionDirection.None Then
-                    tradeList = TradesTaken(tradeDate)(currentMinutePayload.TradingSymbol).FindAll(Function(x)
-                                                                                                       Return x.SquareOffType = tradeType AndAlso
+            If tradeType = Trade.TradeType.MIS Then
+                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(tradeDate) AndAlso TradesTaken(tradeDate).ContainsKey(currentMinutePayload.TradingSymbol) Then
+                    Dim tradeList As List(Of Trade) = Nothing
+                    If tradeDirection = Trade.TradeExecutionDirection.None Then
+                        tradeList = TradesTaken(tradeDate)(currentMinutePayload.TradingSymbol).FindAll(Function(x)
+                                                                                                           Return x.SquareOffType = tradeType AndAlso
                                                                                                    x.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress
-                                                                                                   End Function)
-                Else
-                    tradeList = TradesTaken(tradeDate)(currentMinutePayload.TradingSymbol).FindAll(Function(x)
-                                                                                                       Return x.SquareOffType = tradeType AndAlso
+                                                                                                       End Function)
+                    Else
+                        tradeList = TradesTaken(tradeDate)(currentMinutePayload.TradingSymbol).FindAll(Function(x)
+                                                                                                           Return x.SquareOffType = tradeType AndAlso
                                                                                                    x.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress AndAlso
                                                                                                    x.EntryDirection = tradeDirection
-                                                                                                   End Function)
+                                                                                                       End Function)
+                    End If
+                    ret = tradeList IsNot Nothing AndAlso tradeList.Count > 0
                 End If
-                ret = tradeList IsNot Nothing AndAlso tradeList.Count > 0
+            ElseIf tradeType = Trade.TradeType.CNC Then
+                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
+                    Dim tradeList As List(Of Trade) = Nothing
+                    For Each runningDate In TradesTaken.Keys
+                        If TradesTaken(runningDate).ContainsKey(currentMinutePayload.TradingSymbol) Then
+                            For Each runningTrade In TradesTaken(runningDate)(currentMinutePayload.TradingSymbol)
+                                If tradeDirection = Trade.TradeExecutionDirection.None Then
+                                    If runningTrade.SquareOffType = tradeType AndAlso runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                                        If tradeList Is Nothing Then tradeList = New List(Of Trade)
+                                        tradeList.Add(runningTrade)
+                                    End If
+                                Else
+                                    If runningTrade.SquareOffType = tradeType AndAlso
+                                        runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress AndAlso
+                                        runningTrade.EntryDirection = tradeDirection Then
+                                        If tradeList Is Nothing Then tradeList = New List(Of Trade)
+                                        tradeList.Add(runningTrade)
+                                    End If
+                                End If
+                            Next
+                        End If
+                    Next
+                    ret = tradeList IsNot Nothing AndAlso tradeList.Count > 0
+                End If
             End If
 
             Return ret
@@ -406,19 +431,44 @@ Namespace StrategyHelper
         Public Function IsTradeOpen(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TradeType, Optional ByVal tradeDirection As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None) As Boolean
             Dim ret As Boolean = False
             Dim tradeDate As Date = currentMinutePayload.PayloadDate.Date
-
-            If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(tradeDate) AndAlso TradesTaken(tradeDate).ContainsKey(currentMinutePayload.TradingSymbol) Then
-                Dim tradeList As List(Of Trade) = Nothing
-                If tradeDirection = Trade.TradeExecutionDirection.None Then
-                    tradeList = TradesTaken(tradeDate)(currentMinutePayload.TradingSymbol).FindAll(Function(x)
-                                                                                                       Return x.SquareOffType = tradeType AndAlso x.TradeCurrentStatus = Trade.TradeExecutionStatus.Open
-                                                                                                   End Function)
-                Else
-                    tradeList = TradesTaken(tradeDate)(currentMinutePayload.TradingSymbol).FindAll(Function(x)
-                                                                                                       Return x.SquareOffType = tradeType AndAlso x.TradeCurrentStatus = Trade.TradeExecutionStatus.Open AndAlso x.EntryDirection = tradeDirection
-                                                                                                   End Function)
+            If tradeType = Trade.TradeType.MIS Then
+                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(tradeDate) AndAlso TradesTaken(tradeDate).ContainsKey(currentMinutePayload.TradingSymbol) Then
+                    Dim tradeList As List(Of Trade) = Nothing
+                    If tradeDirection = Trade.TradeExecutionDirection.None Then
+                        tradeList = TradesTaken(tradeDate)(currentMinutePayload.TradingSymbol).FindAll(Function(x)
+                                                                                                           Return x.SquareOffType = tradeType AndAlso x.TradeCurrentStatus = Trade.TradeExecutionStatus.Open
+                                                                                                       End Function)
+                    Else
+                        tradeList = TradesTaken(tradeDate)(currentMinutePayload.TradingSymbol).FindAll(Function(x)
+                                                                                                           Return x.SquareOffType = tradeType AndAlso x.TradeCurrentStatus = Trade.TradeExecutionStatus.Open AndAlso x.EntryDirection = tradeDirection
+                                                                                                       End Function)
+                    End If
+                    ret = tradeList IsNot Nothing AndAlso tradeList.Count > 0
                 End If
-                ret = tradeList IsNot Nothing AndAlso tradeList.Count > 0
+            ElseIf tradeType = Trade.TradeType.CNC Then
+                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
+                    Dim tradeList As List(Of Trade) = Nothing
+                    For Each runningDate In TradesTaken.Keys
+                        If TradesTaken(runningDate).ContainsKey(currentMinutePayload.TradingSymbol) Then
+                            For Each runningTrade In TradesTaken(runningDate)(currentMinutePayload.TradingSymbol)
+                                If tradeDirection = Trade.TradeExecutionDirection.None Then
+                                    If runningTrade.SquareOffType = tradeType AndAlso runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
+                                        If tradeList Is Nothing Then tradeList = New List(Of Trade)
+                                        tradeList.Add(runningTrade)
+                                    End If
+                                Else
+                                    If runningTrade.SquareOffType = tradeType AndAlso
+                                        runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open AndAlso
+                                        runningTrade.EntryDirection = tradeDirection Then
+                                        If tradeList Is Nothing Then tradeList = New List(Of Trade)
+                                        tradeList.Add(runningTrade)
+                                    End If
+                                End If
+                            Next
+                        End If
+                    Next
+                    ret = tradeList IsNot Nothing AndAlso tradeList.Count > 0
+                End If
             End If
 
             Return ret
@@ -455,15 +505,7 @@ Namespace StrategyHelper
                 currentTrade.UpdateTrade(usableTrade)
 
                 With usableTrade
-                    If .EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                        currentTrade.UpdateTrade(EntryPrice:=ConvertFloorCeling(.EntryPrice, TickSize, RoundOfType.Celing),
-                                                 PotentialTarget:=ConvertFloorCeling(.PotentialTarget, TickSize, RoundOfType.Celing),
-                                                 PotentialStopLoss:=ConvertFloorCeling(.PotentialStopLoss, TickSize, RoundOfType.Floor))
-                    ElseIf .EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                        currentTrade.UpdateTrade(EntryPrice:=ConvertFloorCeling(.EntryPrice, TickSize, RoundOfType.Floor),
-                                                 PotentialTarget:=ConvertFloorCeling(.PotentialTarget, TickSize, RoundOfType.Floor),
-                                                 PotentialStopLoss:=ConvertFloorCeling(.PotentialStopLoss, TickSize, RoundOfType.Floor))
-                    End If
+                    currentTrade.UpdateTrade(EntryPrice:= .EntryPrice, PotentialTarget:= .PotentialTarget, PotentialStopLoss:= .PotentialStopLoss)
                     currentTrade.UpdateTrade(EntryTime:= .EntryTime, Quantity:= .Quantity, TradeCurrentStatus:=Trade.TradeExecutionStatus.Open)
                 End With
 
@@ -491,13 +533,30 @@ Namespace StrategyHelper
             Dim ret As List(Of Trade) = Nothing
             If currentMinutePayload IsNot Nothing Then
                 Dim tradeDate As Date = currentMinutePayload.PayloadDate.Date
-                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(tradeDate) AndAlso TradesTaken(tradeDate).ContainsKey(currentMinutePayload.TradingSymbol) Then
-                    ret = TradesTaken(tradeDate)(currentMinutePayload.TradingSymbol).FindAll(Function(x)
-                                                                                                 Return x.SquareOffType = tradeType AndAlso
-                                                                                                 (x.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress OrElse
-                                                                                                 x.TradeCurrentStatus = Trade.TradeExecutionStatus.Open) AndAlso
-                                                                                                 x.EntryDirection = direction
-                                                                                             End Function)
+                If tradeType = Trade.TradeType.MIS Then
+                    If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(tradeDate) AndAlso TradesTaken(tradeDate).ContainsKey(currentMinutePayload.TradingSymbol) Then
+                        ret = TradesTaken(tradeDate)(currentMinutePayload.TradingSymbol).FindAll(Function(x)
+                                                                                                     Return x.SquareOffType = tradeType AndAlso
+                                                                                                     (x.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress OrElse
+                                                                                                     x.TradeCurrentStatus = Trade.TradeExecutionStatus.Open) AndAlso
+                                                                                                     x.EntryDirection = direction
+                                                                                                 End Function)
+                    End If
+                ElseIf tradeType = Trade.TradeType.CNC Then
+                    If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
+                        For Each runningDate In TradesTaken.Keys
+                            If TradesTaken(runningDate).ContainsKey(currentMinutePayload.TradingSymbol) Then
+                                For Each runningTrade In TradesTaken(runningDate)(currentMinutePayload.TradingSymbol)
+                                    If runningTrade.SquareOffType = tradeType AndAlso runningTrade.EntryDirection = direction AndAlso
+                                        (runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress OrElse
+                                        runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open) Then
+                                        If ret Is Nothing Then ret = New List(Of Trade)
+                                        ret.Add(runningTrade)
+                                    End If
+                                Next
+                            End If
+                        Next
+                    End If
                 End If
             End If
             Return ret
@@ -507,10 +566,25 @@ Namespace StrategyHelper
             Dim ret As List(Of Trade) = Nothing
             If currentMinutePayload IsNot Nothing Then
                 Dim tradeDate As Date = currentMinutePayload.PayloadDate.Date
-                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(tradeDate) AndAlso TradesTaken(tradeDate).ContainsKey(currentMinutePayload.TradingSymbol) Then
-                    ret = TradesTaken(tradeDate)(currentMinutePayload.TradingSymbol).FindAll(Function(x)
-                                                                                                 Return x.SquareOffType = tradeType AndAlso x.TradeCurrentStatus = tradeStatus
-                                                                                             End Function)
+                If tradeType = Trade.TradeType.MIS Then
+                    If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(tradeDate) AndAlso TradesTaken(tradeDate).ContainsKey(currentMinutePayload.TradingSymbol) Then
+                        ret = TradesTaken(tradeDate)(currentMinutePayload.TradingSymbol).FindAll(Function(x)
+                                                                                                     Return x.SquareOffType = tradeType AndAlso x.TradeCurrentStatus = tradeStatus
+                                                                                                 End Function)
+                    End If
+                ElseIf tradeType = Trade.TradeType.CNC Then
+                    If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
+                        For Each runningDate In TradesTaken.Keys
+                            If TradesTaken(runningDate).ContainsKey(currentMinutePayload.TradingSymbol) Then
+                                For Each runningTrade In TradesTaken(runningDate)(currentMinutePayload.TradingSymbol)
+                                    If runningTrade.SquareOffType = tradeType AndAlso runningTrade.TradeCurrentStatus = tradeStatus Then
+                                        If ret Is Nothing Then ret = New List(Of Trade)
+                                        ret.Add(runningTrade)
+                                    End If
+                                Next
+                            End If
+                        Next
+                    End If
                 End If
             End If
             Return ret
@@ -715,7 +789,8 @@ Namespace StrategyHelper
                 End If
             End If
 
-            If Not ret AndAlso currentPayload.PayloadDate.TimeOfDay.Hours = EODExitTime.Hours And currentPayload.PayloadDate.TimeOfDay.Minutes = EODExitTime.Minutes Then
+            If Not ret AndAlso currentTrade.SquareOffType = Trade.TradeType.MIS AndAlso
+                currentPayload.PayloadDate.TimeOfDay.Hours = EODExitTime.Hours And currentPayload.PayloadDate.TimeOfDay.Minutes = EODExitTime.Minutes Then
                 currentTrade.UpdateTrade(ExitTime:=currentPayload.PayloadDate,
                                          ExitPrice:=currentPayload.Open,            'Assuming this is tick and OHLC=tickprice
                                          ExitCondition:=Trade.TradeExitCondition.EndOfDay,
