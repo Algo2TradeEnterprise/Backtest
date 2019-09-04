@@ -69,7 +69,7 @@ Public Class ForwardMomentumv2StrategyRule
                                         .Target = .EntryPrice + ConvertFloorCeling(.EntryPrice * 50 / 100, _parentStrategy.TickSize, RoundOfType.Celing),
                                         .Buffer = buffer,
                                         .SignalCandle = signalCandle,
-                                        .OrderType = Strategy.TypeOfOrder.Breakout,
+                                        .OrderType = Trade.TypeOfOrder.SL,
                                         .Supporting1 = signalCandle.PayloadDate.ToShortTimeString
                                     }
                         End If
@@ -88,7 +88,7 @@ Public Class ForwardMomentumv2StrategyRule
                                         .Target = .EntryPrice - ConvertFloorCeling(.EntryPrice * 50 / 100, _parentStrategy.TickSize, RoundOfType.Celing),
                                         .Buffer = buffer,
                                         .SignalCandle = signalCandle,
-                                        .OrderType = Strategy.TypeOfOrder.Breakout,
+                                        .OrderType = Trade.TypeOfOrder.SL,
                                         .Supporting1 = signalCandle.PayloadDate.ToShortTimeString
                                     }
                         End If

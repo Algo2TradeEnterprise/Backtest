@@ -71,7 +71,7 @@ Public Class HighVolumePinBarv2StrategyRule
                         .Target = .EntryPrice + targetPoint,
                         .Buffer = buffer,
                         .SignalCandle = signalCandle,
-                        .OrderType = Strategy.TypeOfOrder.Breakout,
+                        .OrderType = Trade.TypeOfOrder.SL,
                         .Supporting1 = signalCandle.PayloadDate.ToShortTimeString
                     }
                 ElseIf signalCandleSatisfied.Item2 = Trade.TradeExecutionDirection.Sell Then
@@ -84,7 +84,7 @@ Public Class HighVolumePinBarv2StrategyRule
                         .Target = .EntryPrice - targetPoint,
                         .Buffer = buffer,
                         .SignalCandle = signalCandle,
-                        .OrderType = Strategy.TypeOfOrder.Breakout,
+                        .OrderType = Trade.TypeOfOrder.SL,
                         .Supporting1 = signalCandle.PayloadDate.ToShortTimeString
                     }
                 End If

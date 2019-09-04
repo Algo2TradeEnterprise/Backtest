@@ -76,7 +76,7 @@ Public Class GapFractalBreakoutStrategyRule
                                 .Target = .EntryPrice + 100000,
                                 .Buffer = buffer,
                                 .SignalCandle = signalCandle,
-                                .OrderType = Strategy.TypeOfOrder.Breakout,
+                                .OrderType = Trade.TypeOfOrder.SL,
                                 .Supporting1 = signalCandle.PayloadDate.ToShortTimeString,
                                 .Supporting2 = signalCandleSatisfied.Item2
                             }
@@ -96,7 +96,7 @@ Public Class GapFractalBreakoutStrategyRule
                                 .Target = .EntryPrice - 100000,
                                 .Buffer = buffer,
                                 .SignalCandle = signalCandle,
-                                .OrderType = Strategy.TypeOfOrder.Breakout,
+                                .OrderType = Trade.TypeOfOrder.SL,
                                 .Supporting1 = signalCandle.PayloadDate.ToShortTimeString,
                                 .Supporting2 = signalCandleSatisfied.Item2
                             }

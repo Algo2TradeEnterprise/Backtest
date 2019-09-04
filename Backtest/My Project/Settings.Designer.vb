@@ -111,6 +111,30 @@ Namespace My
                 Me("Live") = value
             End Set
         End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("True")>  _
+        Public Property MIS() As Boolean
+            Get
+                Return CType(Me("MIS"),Boolean)
+            End Get
+            Set
+                Me("MIS") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("False")>  _
+        Public Property CNC() As Boolean
+            Get
+                Return CType(Me("CNC"),Boolean)
+            End Get
+            Set
+                Me("CNC") = value
+            End Set
+        End Property
     End Class
 End Namespace
 

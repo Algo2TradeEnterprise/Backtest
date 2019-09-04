@@ -222,6 +222,8 @@ Public Class frmMain
         cmbRule.SelectedIndex = My.Settings.Rule
         rdbDatabase.Checked = My.Settings.Database
         rdbLive.Checked = My.Settings.Live
+        rdbMIS.Checked = My.Settings.MIS
+        rdbCNC.Checked = My.Settings.CNC
         If My.Settings.StartDate <> Date.MinValue Then
             dtpckrStartDate.Value = My.Settings.StartDate
         End If
@@ -238,13 +240,19 @@ Public Class frmMain
         My.Settings.Rule = cmbRule.SelectedIndex
         My.Settings.Database = rdbDatabase.Checked
         My.Settings.Live = rdbLive.Checked
+        My.Settings.MIS = rdbMIS.Checked
+        My.Settings.CNC = rdbCNC.Checked
         My.Settings.StartDate = dtpckrStartDate.Value
         My.Settings.EndDate = dtpckrEndDate.Value
         My.Settings.Save()
-        Await Task.Run(AddressOf ViewDataAsync).ConfigureAwait(False)
+        If rdbMIS.Checked Then
+            Await Task.Run(AddressOf ViewDataMISAsync).ConfigureAwait(False)
+        ElseIf rdbCNC.Checked Then
+            Await Task.Run(AddressOf ViewDataCNCAsync).ConfigureAwait(False)
+        End If
     End Sub
 
-    Private Async Function ViewDataAsync() As Task
+    Private Async Function ViewDataMISAsync() As Task
         Try
             Dim startDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrStartDate)
             Dim endDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrEndDate)
@@ -340,6 +348,79 @@ Public Class frmMain
                     Next
                 Next
             Next
+        Catch ex As Exception
+            MsgBox(ex.ToString, MsgBoxStyle.Critical)
+        Finally
+            OnHeartbeat("Process Complete")
+            SetObjectEnableDisable_ThreadSafe(btnStart, True)
+            SetObjectEnableDisable_ThreadSafe(btnStop, False)
+        End Try
+    End Function
+
+    Private Async Function ViewDataCNCAsync() As Task
+        Try
+            Dim startDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrStartDate)
+            Dim endDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrEndDate)
+            Dim sourceData As Strategy.SourceOfData = Strategy.SourceOfData.None
+            If GetRadioButtonChecked_ThreadSafe(rdbLive) Then
+                sourceData = Strategy.SourceOfData.Live
+            Else
+                sourceData = Strategy.SourceOfData.Database
+            End If
+            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
+            Dim database As Common.DataBaseTable = Common.DataBaseTable.None
+            Dim margin As Decimal = 0
+            Dim tick As Decimal = 0
+            Select Case stockType
+                Case Trade.TypeOfStock.Cash
+                    database = Common.DataBaseTable.Intraday_Cash
+                    margin = 1
+                    tick = 0.05
+                Case Trade.TypeOfStock.Commodity
+                    database = Common.DataBaseTable.Intraday_Commodity
+                    margin = 1
+                    tick = 1
+                Case Trade.TypeOfStock.Currency
+                    database = Common.DataBaseTable.Intraday_Currency
+                    margin = 1
+                    tick = 0.0025
+                Case Trade.TypeOfStock.Futures
+                    database = Common.DataBaseTable.Intraday_Futures
+                    margin = 1
+                    tick = 0.05
+            End Select
+
+            Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
+                                                                              exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                              exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                              tradeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                              lastTradeEntryTime:=TimeSpan.Parse("15:29:59"),
+                                                                              eodExitTime:=TimeSpan.Parse("15:29:59"),
+                                                                              tickSize:=tick,
+                                                                              marginMultiplier:=margin,
+                                                                              timeframe:=1,
+                                                                              heikenAshiCandle:=False,
+                                                                              stockType:=stockType,
+                                                                              databaseTable:=database,
+                                                                              dataSource:=sourceData,
+                                                                              initialCapital:=Decimal.MaxValue,
+                                                                              usableCapital:=Decimal.MaxValue,
+                                                                              minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                                              amountToBeWithdrawn:=Decimal.MaxValue)
+                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+
+                With backtestStrategy
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR 01_10_17 to 04_09_19.csv")
+
+                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+
+                    .NumberOfTradeableStockPerDay = Integer.MaxValue
+
+                    .NumberOfTradesPerDay = Integer.MaxValue
+                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
+                End With
+                Await backtestStrategy.TestStrategyAsync(startDate, endDate).ConfigureAwait(False)
+            End Using
         Catch ex As Exception
             MsgBox(ex.ToString, MsgBoxStyle.Critical)
         Finally

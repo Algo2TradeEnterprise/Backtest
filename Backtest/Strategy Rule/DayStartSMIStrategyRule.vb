@@ -63,7 +63,7 @@ Public Class DayStartSMIStrategyRule
                         .Target = .EntryPrice + ConvertFloorCeling(.EntryPrice * _parentStrategy.TargetMultiplier / 100, _parentStrategy.TickSize, RoundOfType.Celing),
                         .Buffer = buffer,
                         .SignalCandle = currentSignal.Item4,
-                        .OrderType = Strategy.TypeOfOrder.Breakout,
+                        .OrderType = Trade.TypeOfOrder.SL,
                         .Supporting1 = currentSignal.Item4.PayloadDate.ToShortTimeString
                     }
                     'End If
@@ -82,7 +82,7 @@ Public Class DayStartSMIStrategyRule
                         .Target = .EntryPrice - ConvertFloorCeling(.EntryPrice * _parentStrategy.TargetMultiplier / 100, _parentStrategy.TickSize, RoundOfType.Celing),
                         .Buffer = buffer,
                         .SignalCandle = currentSignal.Item4,
-                        .OrderType = Strategy.TypeOfOrder.Breakout,
+                        .OrderType = Trade.TypeOfOrder.SL,
                         .Supporting1 = currentSignal.Item4.PayloadDate.ToShortTimeString
                     }
                     'End If

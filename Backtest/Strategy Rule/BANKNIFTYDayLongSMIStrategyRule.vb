@@ -63,7 +63,7 @@ Public Class BANKNIFTYDayLongSMIStrategyRule
                         .Target = .EntryPrice + 100000,
                         .Buffer = buffer,
                         .SignalCandle = currentSignal.Item4,
-                        .OrderType = Strategy.TypeOfOrder.Breakout,
+                        .OrderType = Trade.TypeOfOrder.SL,
                         .Supporting1 = currentSignal.Item4.PayloadDate.ToShortTimeString
                     }
                     'End If
@@ -83,7 +83,7 @@ Public Class BANKNIFTYDayLongSMIStrategyRule
                         .Target = .EntryPrice - 100000,
                         .Buffer = buffer,
                         .SignalCandle = currentSignal.Item4,
-                        .OrderType = Strategy.TypeOfOrder.Breakout,
+                        .OrderType = Trade.TypeOfOrder.SL,
                         .Supporting1 = currentSignal.Item4.PayloadDate.ToShortTimeString
                     }
                     'End If

@@ -67,7 +67,7 @@ Public Class DonchianFractalStrategyRule
                             .Target = .EntryPrice + 100000,
                             .Buffer = buffer,
                             .SignalCandle = signalCandle,
-                            .OrderType = Strategy.TypeOfOrder.Breakout,
+                            .OrderType = Trade.TypeOfOrder.SL,
                             .Supporting1 = signalCandle.PayloadDate.ToShortTimeString,
                             .Supporting2 = ConvertFloorCeling(_FractalLowPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
                         }
@@ -85,7 +85,7 @@ Public Class DonchianFractalStrategyRule
                             .Target = .EntryPrice - 100000,
                             .Buffer = buffer,
                             .SignalCandle = signalCandle,
-                            .OrderType = Strategy.TypeOfOrder.Breakout,
+                            .OrderType = Trade.TypeOfOrder.SL,
                             .Supporting1 = signalCandle.PayloadDate.ToShortTimeString,
                             .Supporting2 = ConvertFloorCeling(_FractalHighPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
                         }

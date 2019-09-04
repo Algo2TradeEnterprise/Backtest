@@ -103,6 +103,7 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
     <Compile Include="Strategy Helper\Capital.vb" />
+    <Compile Include="Strategy Helper\CNCGenericStrategy.vb" />
     <Compile Include="Strategy Helper\GenericStrategy.vb" />
     <Compile Include="Strategy Helper\PlaceOrderParameters.vb" />
     <Compile Include="Strategy Helper\StockDetails.vb" />

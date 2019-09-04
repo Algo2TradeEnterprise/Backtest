@@ -44,7 +44,7 @@ Public Class HighVolumePinBarStrategyRule
                         .Target = .EntryPrice + ConvertFloorCeling((.EntryPrice - .Stoploss) * _targetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing),
                         .Buffer = buffer,
                         .SignalCandle = signalCandle,
-                        .OrderType = Strategy.TypeOfOrder.Breakout,
+                        .OrderType = Trade.TypeOfOrder.SL,
                         .Supporting1 = signalCandle.PayloadDate.ToShortTimeString
                     }
                 ElseIf signalCandleSatisfied.Item2 = Trade.TradeExecutionDirection.Sell Then
@@ -57,7 +57,7 @@ Public Class HighVolumePinBarStrategyRule
                         .Target = .EntryPrice - ConvertFloorCeling((.Stoploss - .EntryPrice) * _targetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing),
                         .Buffer = buffer,
                         .SignalCandle = signalCandle,
-                        .OrderType = Strategy.TypeOfOrder.Breakout,
+                        .OrderType = Trade.TypeOfOrder.SL,
                         .Supporting1 = signalCandle.PayloadDate.ToShortTimeString
                     }
                 End If

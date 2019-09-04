@@ -8,7 +8,7 @@ Namespace StrategyHelper
         Public Quantity As Integer
         Public Buffer As Decimal
         Public SignalCandle As Payload
-        Public OrderType As Strategy.TypeOfOrder
+        Public OrderType As Trade.TypeOfOrder
         Public Supporting1 As String
         Public Supporting2 As String
         Public Supporting3 As String
