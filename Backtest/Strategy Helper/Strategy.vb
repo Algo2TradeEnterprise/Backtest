@@ -131,6 +131,8 @@ Namespace StrategyHelper
         Public ExitOnOverAllFixedTargetStoploss As Boolean = False
         Public OverAllProfitPerDay As Decimal = Decimal.MaxValue
         Public OverAllLossPerDay As Decimal = Decimal.MinValue
+        Public StockMaxProfitPercentagePerDay As Double = Decimal.MaxValue
+        Public StockMaxLossPercentagePerDay As Double = Decimal.MinValue
         Public ExitOnStockFixedTargetStoploss As Boolean = False
         Public StockMaxProfitPerDay As Double = Decimal.MaxValue
         Public StockMaxLossPerDay As Double = Decimal.MinValue

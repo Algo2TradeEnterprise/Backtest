@@ -100,20 +100,20 @@ Public Class ForwardMomentumv2StrategyRule
         If parameter1 IsNot Nothing Then
             If orderList Is Nothing Then orderList = New List(Of PlaceOrderParameters)
             orderList.Add(parameter1)
-            'If Me.MaxProfitOfThisStock = Decimal.MaxValue Then
-            '    Dim capitalRequired As Decimal = parameter1.EntryPrice * parameter1.Quantity / _parentStrategy.MarginMultiplier
-            '    Me.MaxProfitOfThisStock = capitalRequired * 15 / 100
-            '    Me.MaxLossOfThisStock = capitalRequired * 15 / 100
-            'End If
+            If Me.MaxProfitOfThisStock = Decimal.MaxValue Then
+                Dim capitalRequired As Decimal = parameter1.EntryPrice * parameter1.Quantity / _parentStrategy.MarginMultiplier
+                Me.MaxProfitOfThisStock = capitalRequired * _parentStrategy.StockMaxProfitPercentagePerDay / 100
+                Me.MaxLossOfThisStock = capitalRequired * _parentStrategy.StockMaxLossPercentagePerDay / 100
+            End If
         End If
         If parameter2 IsNot Nothing Then
             If orderList Is Nothing Then orderList = New List(Of PlaceOrderParameters)
             orderList.Add(parameter2)
-            'If Me.MaxProfitOfThisStock = Decimal.MaxValue Then
-            '    Dim capitalRequired As Decimal = parameter2.EntryPrice * parameter2.Quantity / _parentStrategy.MarginMultiplier
-            '    Me.MaxProfitOfThisStock = capitalRequired * 15 / 100
-            '    Me.MaxLossOfThisStock = capitalRequired * 15 / 100
-            'End If
+            If Me.MaxProfitOfThisStock = Decimal.MaxValue Then
+                Dim capitalRequired As Decimal = parameter2.EntryPrice * parameter2.Quantity / _parentStrategy.MarginMultiplier
+                Me.MaxProfitOfThisStock = capitalRequired * _parentStrategy.StockMaxProfitPercentagePerDay / 100
+                Me.MaxLossOfThisStock = capitalRequired * _parentStrategy.StockMaxLossPercentagePerDay / 100
+            End If
         End If
         If orderList IsNot Nothing AndAlso orderList.Count > 0 Then
             ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, orderList)
