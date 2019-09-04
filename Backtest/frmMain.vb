@@ -323,7 +323,7 @@ Public Class frmMain
                                         .StockMaxProfitPerDay = Decimal.MaxValue
                                         .StockMaxLossPerDay = Decimal.MinValue
 
-                                        .ExitOnOverAllFixedTargetStoploss = False
+                                        .ExitOnOverAllFixedTargetStoploss = True
                                         .OverAllProfitPerDay = backtestStrategy.InitialCapital * mp * overAllMul / 100
                                         .OverAllLossPerDay = backtestStrategy.InitialCapital * ml * overAllMul / 100
 
