@@ -279,8 +279,8 @@ Public Class frmMain
 
             For signalTimeFrame As Integer = 1 To 1 Step 1
                 For nmbrOfStock As Integer = 5 To 5 Step 1
-                    For mp As Decimal = 20 To 20 Step 1
-                        For ml As Decimal = 10 To 10 Step 1
+                    For stockMaxProfit As Decimal = 20 To 20 Step 1
+                        For stockMaxLoss As Decimal = 10 To 10 Step 1
                             For overAllMul As Decimal = 0.5 To 0.5 Step 1
                                 Using backtestStrategy As New GenericStrategy(canceller:=_canceller,
                                                                               exchangeStartTime:=TimeSpan.Parse("09:15:00"),
@@ -316,16 +316,16 @@ Public Class frmMain
 
                                         .TrailingStoploss = True
 
-                                        .StockMaxProfitPercentagePerDay = mp
-                                        .StockMaxLossPercentagePerDay = ml
+                                        .StockMaxProfitPercentagePerDay = stockMaxProfit
+                                        .StockMaxLossPercentagePerDay = stockMaxLoss
 
                                         .ExitOnStockFixedTargetStoploss = False
                                         .StockMaxProfitPerDay = Decimal.MaxValue
                                         .StockMaxLossPerDay = Decimal.MinValue
 
                                         .ExitOnOverAllFixedTargetStoploss = True
-                                        .OverAllProfitPerDay = backtestStrategy.InitialCapital * mp * overAllMul / 100
-                                        .OverAllLossPerDay = backtestStrategy.InitialCapital * ml * overAllMul / 100
+                                        .OverAllProfitPerDay = backtestStrategy.InitialCapital * stockMaxProfit * overAllMul / 100
+                                        .OverAllLossPerDay = backtestStrategy.InitialCapital * stockMaxLoss * overAllMul / 100
 
                                         'Rule
                                         .ModifyStoploss = False
