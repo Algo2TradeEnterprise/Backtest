@@ -286,10 +286,10 @@ Public Class frmMain
             End Select
 
             For signalTimeFrame As Integer = 1 To 1 Step 1
-                For nmbrOfStock As Integer = 5 To 5 Step 1
-                    For stockMaxProfit As Decimal = 20 To 20 Step 1
-                        For stockMaxLoss As Decimal = 10 To 10 Step 1
-                            For overAllMul As Decimal = 0.5 To 0.5 Step 1
+                For nmbrOfStock As Integer = 40 To 40 Step 1
+                    For stockMaxProfit As Decimal = 40 To 40 Step 1
+                        For stockMaxLoss As Decimal = 40 To 40 Step 1
+                            For overAllMul As Decimal = 0.4 To 0.4 Step 1
                                 Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                                   exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                                   exchangeEndTime:=TimeSpan.Parse("15:29:59"),
@@ -332,8 +332,8 @@ Public Class frmMain
                                         .StockMaxLossPerDay = Decimal.MinValue
 
                                         .ExitOnOverAllFixedTargetStoploss = True
-                                        .OverAllProfitPerDay = backtestStrategy.InitialCapital * stockMaxProfit * overAllMul / 100
-                                        .OverAllLossPerDay = backtestStrategy.InitialCapital * stockMaxLoss * overAllMul / 100
+                                        .OverAllProfitPerDay = backtestStrategy.UsableCapital * stockMaxProfit * overAllMul / 100
+                                        .OverAllLossPerDay = backtestStrategy.UsableCapital * stockMaxLoss * overAllMul / 100
 
                                         'Rule
                                         .ModifyStoploss = False
