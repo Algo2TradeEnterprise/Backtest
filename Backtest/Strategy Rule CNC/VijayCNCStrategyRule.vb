@@ -7,7 +7,7 @@ Public Class VijayCNCStrategyRule
     Inherits StrategyRule
 
     Private ReadOnly _StartingQuantity As Integer = 1
-    Private ReadOnly _QuantityMultiplier As Decimal = 1
+    Private ReadOnly _QuantityMultiplier As Decimal = 2
     Private ReadOnly _TargetPerecentage As Decimal = 3
     Private ReadOnly _DropPercentage As Decimal = 5
 
@@ -35,10 +35,10 @@ Public Class VijayCNCStrategyRule
             Dim signalCandle As Payload = Nothing
             Dim quantity As Integer = _StartingQuantity
 
-            Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, Trade.TradeType.MIS)
+            Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, Trade.TradeType.CNC)
             If lastExecutedTrade IsNot Nothing Then
                 If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-                    If (lastExecutedTrade.EntryPrice - currentTick.Open) <= lastExecutedTrade.EntryPrice * _DropPercentage / 100 Then
+                    If (lastExecutedTrade.EntryPrice - currentTick.Open) >= lastExecutedTrade.EntryPrice * _DropPercentage / 100 Then
                         signalCandle = currentMinuteCandlePayload
                         quantity = lastExecutedTrade.Quantity * _QuantityMultiplier
                     End If
@@ -55,7 +55,7 @@ Public Class VijayCNCStrategyRule
                 'End If
             End If
 
-            If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
+            If signalCandle IsNot Nothing Then
                 parameter = New PlaceOrderParameters With {
                             .EntryPrice = currentTick.Open,
                             .EntryDirection = Trade.TradeExecutionDirection.Buy,
@@ -64,7 +64,8 @@ Public Class VijayCNCStrategyRule
                             .Target = .EntryPrice + ConvertFloorCeling(.EntryPrice * _TargetPerecentage / 100, _parentStrategy.TickSize, RoundOfType.Celing),
                             .Buffer = 0,
                             .SignalCandle = signalCandle,
-                            .OrderType = Trade.TypeOfOrder.Market
+                            .OrderType = Trade.TypeOfOrder.Market,
+                            .Supporting1 = Math.Log(.Quantity / _StartingQuantity, _QuantityMultiplier) + 1
                         }
             End If
         End If
@@ -91,7 +92,7 @@ Public Class VijayCNCStrategyRule
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-            If currentTrade.PotentialTarget <> _CurrentTarget Then
+            If _CurrentTarget <> Decimal.MinValue AndAlso currentTrade.PotentialTarget <> _CurrentTarget Then
                 ret = New Tuple(Of Boolean, Decimal, String)(True, _CurrentTarget, String.Format("{0}. Time:{1}", _CurrentTarget, currentTick.PayloadDate))
             End If
         End If

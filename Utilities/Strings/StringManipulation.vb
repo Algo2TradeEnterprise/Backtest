@@ -422,9 +422,11 @@ Namespace Strings
                 stream.Close()
             End Using
         End Sub
-        Public Sub SerializeFromCollectionUsingFileStream(Of T)(ByVal outputFilePath As String, ByVal collectionToBeSerialized As T)
+        Public Sub SerializeFromCollectionUsingFileStream(Of T)(ByVal outputFilePath As String, ByVal collectionToBeSerialized As T, Optional ByVal append As Boolean = True)
             'serialize
-            Using stream As New FileStream(outputFilePath, FileMode.Append)
+            Dim fileOpenMode As FileMode = IO.FileMode.Append
+            If Not append Then fileOpenMode = FileMode.Create
+            Using stream As New FileStream(outputFilePath, fileOpenMode)
                 Dim bformatter = New System.Runtime.Serialization.Formatters.Binary.BinaryFormatter()
                 bformatter.Serialize(stream, collectionToBeSerialized)
             End Using

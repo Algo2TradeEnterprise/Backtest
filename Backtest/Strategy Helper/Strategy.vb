@@ -617,7 +617,8 @@ Namespace StrategyHelper
         End Sub
 
         Public Sub ExitStockTradesByForce(ByVal currentPayload As Payload, ByVal tradeType As Trade.TradeType, ByVal exitRemark As String)
-            If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentPayload.PayloadDate.Date) AndAlso TradesTaken(currentPayload.PayloadDate.Date).ContainsKey(currentPayload.TradingSymbol) Then
+            'If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentPayload.PayloadDate.Date) AndAlso TradesTaken(currentPayload.PayloadDate.Date).ContainsKey(currentPayload.TradingSymbol) Then
+            If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
                 Dim forceExitTrades As List(Of Trade) = New List(Of Trade)
                 Dim inprogessTrades As List(Of Trade) = GetSpecificTrades(currentPayload, tradeType, Trade.TradeExecutionStatus.Inprogress)
                 Dim openTrades As List(Of Trade) = GetSpecificTrades(currentPayload, tradeType, Trade.TradeExecutionStatus.Open)
@@ -637,34 +638,71 @@ Namespace StrategyHelper
         End Sub
 
         Public Sub ExitAllTradeByForce(ByVal currentTimeOfExit As Date, ByVal allOneMinutePayload As Dictionary(Of String, Dictionary(Of Date, Payload)), ByVal tradeType As Trade.TradeType, ByVal exitRemark As String)
-            If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentTimeOfExit.Date) Then
-                Dim allStockTrades As Dictionary(Of String, List(Of Trade)) = TradesTaken(currentTimeOfExit.Date)
-                If allStockTrades IsNot Nothing AndAlso allStockTrades.Count > 0 Then
-                    For Each stockName In allStockTrades.Keys
-                        Dim candleTime As Date = New Date(currentTimeOfExit.Year, currentTimeOfExit.Month, currentTimeOfExit.Day, currentTimeOfExit.Hour, currentTimeOfExit.Minute, 0)
-                        Dim currentPayload As Payload = Nothing
-                        Dim stock As String = stockName
-                        If stockName.ToUpper.Contains("FUT") Then
-                            stock = stockName.Remove(stockName.Count - 8)
-                        End If
-                        If allOneMinutePayload.ContainsKey(stock) AndAlso allOneMinutePayload(stock).ContainsKey(candleTime) Then
-                            currentPayload = allOneMinutePayload(stock)(candleTime).Ticks.FindAll(Function(x)
-                                                                                                      Return x.PayloadDate >= currentTimeOfExit
-                                                                                                  End Function).FirstOrDefault
-                        End If
-                        If currentPayload Is Nothing Then           'If the current time is more than last available Tick then move to the next available minute
-                            currentPayload = allOneMinutePayload(stock).Where(Function(x)
-                                                                                  Return x.Key >= currentTimeOfExit
-                                                                              End Function).FirstOrDefault.Value
-                        End If
-                        If currentPayload Is Nothing Then           'If current time payload is not available then pick last available payload
-                            Dim lastPayloadTime As Date = allOneMinutePayload(stock).Keys.LastOrDefault
-                            currentPayload = allOneMinutePayload(stock)(lastPayloadTime.AddMinutes(-5))
-                        End If
-                        If currentPayload IsNot Nothing Then
-                            ExitStockTradesByForce(currentPayload, tradeType, exitRemark)
-                        Else
-                            Throw New ApplicationException("Current Payload is NULL in 'ExitAllTradeByForce'")
+            If tradeType = Trade.TradeType.MIS Then
+                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentTimeOfExit.Date) Then
+                    Dim allStockTrades As Dictionary(Of String, List(Of Trade)) = TradesTaken(currentTimeOfExit.Date)
+                    If allStockTrades IsNot Nothing AndAlso allStockTrades.Count > 0 Then
+                        For Each stockName In allStockTrades.Keys
+                            Dim candleTime As Date = New Date(currentTimeOfExit.Year, currentTimeOfExit.Month, currentTimeOfExit.Day, currentTimeOfExit.Hour, currentTimeOfExit.Minute, 0)
+                            Dim currentPayload As Payload = Nothing
+                            Dim stock As String = stockName
+                            If stockName.ToUpper.Contains("FUT") Then
+                                stock = stockName.Remove(stockName.Count - 8)
+                            End If
+                            If allOneMinutePayload.ContainsKey(stock) AndAlso allOneMinutePayload(stock).ContainsKey(candleTime) Then
+                                currentPayload = allOneMinutePayload(stock)(candleTime).Ticks.FindAll(Function(x)
+                                                                                                          Return x.PayloadDate >= currentTimeOfExit
+                                                                                                      End Function).FirstOrDefault
+                            End If
+                            If currentPayload Is Nothing Then           'If the current time is more than last available Tick then move to the next available minute
+                                currentPayload = allOneMinutePayload(stock).Where(Function(x)
+                                                                                      Return x.Key >= currentTimeOfExit
+                                                                                  End Function).FirstOrDefault.Value
+                            End If
+                            If currentPayload Is Nothing Then           'If current time payload is not available then pick last available payload
+                                Dim lastPayloadTime As Date = allOneMinutePayload(stock).Keys.LastOrDefault
+                                currentPayload = allOneMinutePayload(stock)(lastPayloadTime.AddMinutes(-5))
+                            End If
+                            If currentPayload IsNot Nothing Then
+                                ExitStockTradesByForce(currentPayload, tradeType, exitRemark)
+                            Else
+                                Throw New ApplicationException("Current Payload is NULL in 'ExitAllTradeByForce'")
+                            End If
+                        Next
+                    End If
+                End If
+            ElseIf tradeType = Trade.TradeType.CNC Then
+                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
+                    For Each runningDate In TradesTaken.Keys
+                        Dim allStockTrades As Dictionary(Of String, List(Of Trade)) = TradesTaken(runningDate.Date)
+                        If allStockTrades IsNot Nothing AndAlso allStockTrades.Count > 0 Then
+                            For Each stockName In allStockTrades.Keys
+                                Dim candleTime As Date = New Date(currentTimeOfExit.Year, currentTimeOfExit.Month, currentTimeOfExit.Day, currentTimeOfExit.Hour, currentTimeOfExit.Minute, 0)
+                                Dim currentPayload As Payload = Nothing
+                                Dim stock As String = stockName
+                                If stockName.ToUpper.Contains("FUT") Then
+                                    stock = stockName.Remove(stockName.Count - 8)
+                                End If
+                                If allOneMinutePayload.ContainsKey(stock) AndAlso allOneMinutePayload(stock).ContainsKey(candleTime) Then
+                                    currentPayload = allOneMinutePayload(stock)(candleTime).Ticks.FindAll(Function(x)
+                                                                                                              Return x.PayloadDate >= currentTimeOfExit
+                                                                                                          End Function).FirstOrDefault
+                                End If
+                                If currentPayload Is Nothing Then           'If the current time is more than last available Tick then move to the next available minute
+                                    currentPayload = allOneMinutePayload(stock).Where(Function(x)
+                                                                                          Return x.Key >= currentTimeOfExit
+                                                                                      End Function).FirstOrDefault.Value
+                                End If
+                                If currentPayload Is Nothing Then           'If current time payload is not available then pick last available payload
+                                    Dim lastPayloadTime As Date = allOneMinutePayload(stock).Keys.LastOrDefault
+                                    currentPayload = allOneMinutePayload(stock)(lastPayloadTime)
+                                End If
+                                If currentPayload IsNot Nothing Then
+                                    ExitStockTradesByForce(currentPayload, tradeType, exitRemark)
+                                Else
+                                    Throw New ApplicationException("Current Payload is NULL in 'ExitAllTradeByForce'")
+                                End If
+                            Next
                         End If
                     Next
                 End If
@@ -735,7 +773,7 @@ Namespace StrategyHelper
                 End If
             End If
 
-            If ret Then SetCurrentLTPForStock(currentPayload, currentPayload, Trade.TradeType.MIS)
+            If ret Then SetCurrentLTPForStock(currentPayload, currentPayload, currentTrade.SquareOffType)
             Return ret
         End Function
 
@@ -1011,7 +1049,8 @@ Namespace StrategyHelper
         End Function
 
         Public Sub SetCurrentLTPForStock(ByVal currentMinutePayload As Payload, ByVal currentTickPayload As Payload, ByVal tradeType As Trade.TradeType)
-            If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentMinutePayload.PayloadDate.Date) AndAlso TradesTaken(currentMinutePayload.PayloadDate.Date).ContainsKey(currentMinutePayload.TradingSymbol) Then
+            'If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentMinutePayload.PayloadDate.Date) AndAlso TradesTaken(currentMinutePayload.PayloadDate.Date).ContainsKey(currentMinutePayload.TradingSymbol) Then
+            If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
                 Dim ltpUpdateTrades As List(Of Trade) = New List(Of Trade)
                 Dim inprogessTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Inprogress)
                 Dim openTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Open)
@@ -1069,7 +1108,8 @@ Namespace StrategyHelper
 
         Public Function GetLastExecutedTradeOfTheStock(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TradeType) As Trade
             Dim ret As Trade = Nothing
-            If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentMinutePayload.PayloadDate.Date) AndAlso TradesTaken(currentMinutePayload.PayloadDate.Date).ContainsKey(currentMinutePayload.TradingSymbol) Then
+            'If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentMinutePayload.PayloadDate.Date) AndAlso TradesTaken(currentMinutePayload.PayloadDate.Date).ContainsKey(currentMinutePayload.TradingSymbol) Then
+            If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
                 Dim completeTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Close)
                 Dim inprogressTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Inprogress)
                 Dim allTrades As List(Of Trade) = New List(Of Trade)
@@ -1562,10 +1602,10 @@ Namespace StrategyHelper
                                                     mainRawData(rowCtr, colCtr) = tradeTaken.Quantity
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.EntryTime.ToString("HH:mm:ss")
+                                                    mainRawData(rowCtr, colCtr) = tradeTaken.EntryTime.ToString("dd-MM-yyyy HH:mm:ss")
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.ExitTime.ToString("HH:mm:ss")
+                                                    mainRawData(rowCtr, colCtr) = tradeTaken.ExitTime.ToString("dd-MM-yyyy HH:mm:ss")
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                                     mainRawData(rowCtr, colCtr) = Math.Round(tradeTaken.DurationOfTrade.TotalMinutes, 4)

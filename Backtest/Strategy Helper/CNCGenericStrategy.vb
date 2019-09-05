@@ -56,10 +56,11 @@ Namespace StrategyHelper
                 If File.Exists(capitalFileName) Then File.Delete(capitalFileName)
                 Dim totalPL As Decimal = 0
                 Dim tradeCheckingDate As Date = startDate.Date
+                TradesTaken = New Dictionary(Of Date, Dictionary(Of String, List(Of Trade)))
                 While tradeCheckingDate <= endDate.Date
                     _canceller.Token.ThrowIfCancellationRequested()
                     Me.AvailableCapital = Me.UsableCapital
-                    TradesTaken = New Dictionary(Of Date, Dictionary(Of String, List(Of Trade)))
+                    'TradesTaken = New Dictionary(Of Date, Dictionary(Of String, List(Of Trade)))
                     Dim stockList As Dictionary(Of String, StockDetails) = GetStockData(tradeCheckingDate)
 
                     _canceller.Token.ThrowIfCancellationRequested()
@@ -195,7 +196,7 @@ Namespace StrategyHelper
                                             If currentSecondTickPayload IsNot Nothing AndAlso currentSecondTickPayload.Count > 0 Then
                                                 For Each runningTick In currentSecondTickPayload
                                                     _canceller.Token.ThrowIfCancellationRequested()
-                                                    SetCurrentLTPForStock(currentMinuteCandlePayload, runningTick, Trade.TradeType.MIS)
+                                                    SetCurrentLTPForStock(currentMinuteCandlePayload, runningTick, Trade.TradeType.CNC)
 
                                                     'Update Collection
                                                     Await stockStrategyRule.UpdateRequiredCollectionsAsync(runningTick).ConfigureAwait(False)
@@ -453,6 +454,9 @@ Namespace StrategyHelper
                                 startMinute = startMinute.Add(TimeSpan.FromMinutes(Me.SignalTimeFrame))
                             End While   'Minute Loop
                         End If
+                        If tradeCheckingDate.Date = endDate.Date Then
+                            ExitAllTradeByForce(tradeCheckingDate.AddDays(1).Date, currentDayOneMinuteStocksPayload, Trade.TradeType.CNC, "Open Trade")
+                        End If
                     End If
                     SetOverallDrawUpDrawDownForTheDay(tradeCheckingDate)
                     totalPL += TotalPLAfterBrokerage(tradeCheckingDate)
@@ -461,7 +465,7 @@ Namespace StrategyHelper
                     'Serialization
                     If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
                         OnHeartbeat("Serializing Trades collection")
-                        SerializeFromCollectionUsingFileStream(Of Dictionary(Of Date, Dictionary(Of String, List(Of Trade))))(tradesFileName, TradesTaken)
+                        SerializeFromCollectionUsingFileStream(Of Dictionary(Of Date, Dictionary(Of String, List(Of Trade))))(tradesFileName, TradesTaken, False)
                     End If
                 End While   'Date Loop
 

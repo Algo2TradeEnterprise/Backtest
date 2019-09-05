@@ -247,7 +247,6 @@ Namespace StrategyHelper
         End Property
         Public ReadOnly Property MaximumDrawDownPL As Double
             Get
-                'Try
                 If EntryDirection = TradeExecutionDirection.Buy Then
                     Return _OriginatingStrategy.CalculatePL(CoreTradingSymbol, EntryPrice, MaximumDrawDown, Quantity, LotSize, StockType)
                 ElseIf EntryDirection = TradeExecutionDirection.Sell Then
@@ -255,9 +254,6 @@ Namespace StrategyHelper
                 Else
                     Return Double.MinValue
                 End If
-                'Catch ex As Exception
-                '    Throw ex
-                'End Try
             End Get
         End Property
 
