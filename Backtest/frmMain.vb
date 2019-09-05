@@ -410,14 +410,16 @@ Public Class frmMain
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR 01_10_17 to 04_09_19.csv")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
 
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                    .NumberOfTradeableStockPerDay = Integer.MaxValue
+                    .NumberOfTradeableStockPerDay = 1
 
                     .NumberOfTradesPerDay = Integer.MaxValue
                     .NumberOfTradesPerStockPerDay = Integer.MaxValue
+
+                    .TickBasedStrategy = True
                 End With
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate).ConfigureAwait(False)
             End Using

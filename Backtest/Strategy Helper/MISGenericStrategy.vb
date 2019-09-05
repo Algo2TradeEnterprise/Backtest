@@ -130,6 +130,8 @@ Namespace StrategyHelper
                                             stockRule = New GapFractalBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, stockList(stock).Supporting1)
                                         Case 9
                                             stockRule = New ForwardMomentumv2StrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller)
+                                        Case 10
+                                            Throw New ApplicationException("Not a MIS strategy")
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat

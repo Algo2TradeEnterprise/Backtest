@@ -4,6 +4,35 @@
 Public Class Payload
     Implements IDisposable
 
+    Public Sub New(ByVal payloadSource As CandleDataSource)
+        Me.PayloadSource = payloadSource
+        Me.Volume = Double.MinValue
+    End Sub
+
+#Region "Enum"
+    Public Enum CandleDataSource
+        Chart = 1
+        Tick
+        Calculated
+    End Enum
+    Public Enum PayloadFields
+        Open = 1
+        High
+        Low
+        Close
+        Volume
+        H_L
+        C_AVG_HL
+        SMI_EMA
+        Additional_Field
+    End Enum
+    Public Enum StrongCandle
+        Bullish = 1
+        Bearish
+        None
+    End Enum
+#End Region
+
     Private _TradingSymbol As String
     Public Property TradingSymbol As String
         Get
@@ -33,6 +62,7 @@ Public Class Payload
             _Open = value
         End Set
     End Property
+
     Private _High As Decimal
     Public Property High As Decimal
         Get
@@ -42,6 +72,7 @@ Public Class Payload
             _High = value
         End Set
     End Property
+
     Private _Low As Decimal
     Public Property Low As Decimal
         Get
@@ -51,6 +82,7 @@ Public Class Payload
             _Low = value
         End Set
     End Property
+
     Private _Close As Decimal
     Public Property Close As Decimal
         Get
@@ -121,6 +153,9 @@ Public Class Payload
             _Volume = value
         End Set
     End Property
+
+    Public Property CumulativeVolume As Long
+
     Public Property PayloadDate As Date
 
     Private _CandleColor As Color
@@ -154,7 +189,9 @@ Public Class Payload
             Return _VolumeColor
         End Get
     End Property
+
     Public Property PreviousCandlePayload As Payload
+
     Public Property PayloadSource As CandleDataSource
 
     Private _CandleStrengthNormal As StrongCandle
@@ -294,6 +331,7 @@ Public Class Payload
             Return _DeadCandle
         End Get
     End Property
+
     Private _IsMaribazu As Double
     Public ReadOnly Property IsMaribazu As Boolean
         Get
@@ -305,6 +343,7 @@ Public Class Payload
             Return _IsMaribazu
         End Get
     End Property
+
     Private _Ticks As List(Of Payload)
     Public ReadOnly Property Ticks As List(Of Payload)
         Get
@@ -356,39 +395,15 @@ Public Class Payload
         End Get
     End Property
 
-    Public Sub New(ByVal payloadSource As CandleDataSource)
-        Me.PayloadSource = payloadSource
-        Me.Volume = Double.MinValue
-    End Sub
-
-    Public Property CumulativeVolume As Long
-    Public Enum CandleDataSource
-        Chart = 1
-        Tick
-        Calculated
-    End Enum
-    Public Enum PayloadFields
-        Open = 1
-        High
-        Low
-        Close
-        Volume
-        H_L
-        C_AVG_HL
-        SMI_EMA
-        Additional_Field
-    End Enum
-    Public Enum StrongCandle
-        Bullish = 1
-        Bearish
-        None
-    End Enum
-
     <Serializable>
     Public Class Wicks
         Public Property Top As Double
         Public Property Bottom As Double
     End Class
+
+    Public Overrides Function ToString() As String
+        Return String.Format("Open:{0}, Low:{1}, High:{2}, Close{3}, Date:{4}", Me.Open, Me.Low, Me.High, Me.Close, Me.PayloadDate)
+    End Function
 #Region "IDisposable Support"
     Private disposedValue As Boolean ' To detect redundant calls
 

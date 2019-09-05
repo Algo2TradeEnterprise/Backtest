@@ -132,6 +132,7 @@ Namespace StrategyHelper
         Public StockMaxLossPerDay As Double = Decimal.MinValue
         Public NumberOfTradesPerStockPerDay As Integer = Integer.MaxValue
         Public NumberOfTradesPerDay As Integer = Integer.MaxValue
+        Public TickBasedStrategy As Boolean = False
 
         Public ModifyStoploss As Boolean = False
         Public TrailingStoploss As Boolean = False
