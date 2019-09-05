@@ -111,17 +111,18 @@
     <Compile Include="Strategy Helper\StrategyOutput.vb" />
     <Compile Include="Strategy Helper\StrategyRule.vb" />
     <Compile Include="Strategy Helper\Trade.vb" />
-    <Compile Include="Strategy Rule\BANKNIFTYDayLongSMIStrategyRule.vb" />
-    <Compile Include="Strategy Rule\DayStartSMIStrategyRule.vb" />
-    <Compile Include="Strategy Rule\DonchianFractalStrategyRule.vb" />
-    <Compile Include="Strategy Rule\ForwardMomentumv2StrategyRule.vb" />
-    <Compile Include="Strategy Rule\GapFractalBreakoutStrategyRule.vb" />
-    <Compile Include="Strategy Rule\HighVolumePinBarStrategyRule.vb" />
-    <Compile Include="Strategy Rule\HighVolumePinBarv2StrategyRule.vb" />
-    <Compile Include="Strategy Rule\ForwardMomentumStrategyRule.vb" />
-    <Compile Include="Strategy Rule\MomentumReversalv2StrategyRule.vb" />
-    <Compile Include="Strategy Rule\SmallestCandleBreakoutStrategyRule.vb" />
-    <Compile Include="Strategy Rule\SMIFractalStrategyRule.vb" />
+    <Compile Include="Strategy Rule CNC\VijayCNCStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\BANKNIFTYDayLongSMIStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\DayStartSMIStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\DonchianFractalStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\ForwardMomentumv2StrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\GapFractalBreakoutStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\HighVolumePinBarStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\HighVolumePinBarv2StrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\ForwardMomentumStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\MomentumReversalv2StrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\SmallestCandleBreakoutStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\SMIFractalStrategyRule.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="frmMain.resx">
