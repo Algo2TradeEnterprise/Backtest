@@ -289,7 +289,7 @@ Public Class frmMain
                 For nmbrOfTrdblStock As Integer = 5 To 5 Step 1
                     For nmbrOfTradePerStock As Integer = 3 To 3 Step 1
                         For modifySL As Integer = 1 To 1 Step 1
-                            For firstTradeMinimumTargetPercentage As Decimal = 1 To 1 Step 1
+                            For firstTradeMinimumTargetPercentage As Decimal = 0.5 To 0.5 Step 1
                                 Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                                   exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                                   exchangeEndTime:=TimeSpan.Parse("15:29:59"),
