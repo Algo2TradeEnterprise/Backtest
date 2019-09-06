@@ -1602,10 +1602,10 @@ Namespace StrategyHelper
                                                     mainRawData(rowCtr, colCtr) = tradeTaken.Quantity
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.EntryTime.ToString("dd-MM-yyyy HH:mm:ss")
+                                                    mainRawData(rowCtr, colCtr) = tradeTaken.EntryTime.ToString("yyyy-MM-dd HH:mm:ss")
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.ExitTime.ToString("dd-MM-yyyy HH:mm:ss")
+                                                    mainRawData(rowCtr, colCtr) = tradeTaken.ExitTime.ToString("yyyy-MM-dd HH:mm:ss")
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                                     mainRawData(rowCtr, colCtr) = Math.Round(tradeTaken.DurationOfTrade.TotalMinutes, 4)

@@ -34,13 +34,28 @@ Public Class VijayCNCStrategyRule
             Not _parentStrategy.IsTradeOpen(currentTick, Trade.TradeType.CNC) AndAlso currentMinuteCandlePayload.PayloadDate >= tradeStartTime Then
             Dim signalCandle As Payload = Nothing
             Dim quantity As Integer = _StartingQuantity
-
+            Dim averageTradePrice As Decimal = currentTick.Open
             Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, Trade.TradeType.CNC)
             If lastExecutedTrade IsNot Nothing Then
                 If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
                     If (lastExecutedTrade.EntryPrice - currentTick.Open) >= lastExecutedTrade.EntryPrice * _DropPercentage / 100 Then
                         signalCandle = currentMinuteCandlePayload
                         quantity = lastExecutedTrade.Quantity * _QuantityMultiplier
+
+                        Dim openActiveTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentMinuteCandlePayload, Trade.TradeType.CNC, Trade.TradeExecutionDirection.Buy)
+                        If openActiveTrades IsNot Nothing AndAlso openActiveTrades.Count > 0 Then
+                            Dim totalCapital As Decimal = 0
+                            Dim totalQuantity As Decimal = 0
+                            For Each runningTrade In openActiveTrades
+                                If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                                    totalCapital += runningTrade.CapitalRequiredWithMargin
+                                    totalQuantity += runningTrade.Quantity
+                                End If
+                            Next
+                            totalCapital += currentTick.Open * quantity
+                            totalQuantity += quantity
+                            averageTradePrice = totalCapital / totalQuantity
+                        End If
                     End If
                 ElseIf lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
                     signalCandle = currentMinuteCandlePayload
@@ -61,11 +76,12 @@ Public Class VijayCNCStrategyRule
                             .EntryDirection = Trade.TradeExecutionDirection.Buy,
                             .Quantity = quantity,
                             .Stoploss = .EntryPrice - 100000,
-                            .Target = .EntryPrice + ConvertFloorCeling(.EntryPrice * _TargetPerecentage / 100, _parentStrategy.TickSize, RoundOfType.Celing),
+                            .Target = ConvertFloorCeling(averageTradePrice + (averageTradePrice * _TargetPerecentage / 100), _parentStrategy.TickSize, RoundOfType.Celing),
                             .Buffer = 0,
                             .SignalCandle = signalCandle,
                             .OrderType = Trade.TypeOfOrder.Market,
-                            .Supporting1 = Math.Log(.Quantity / _StartingQuantity, _QuantityMultiplier) + 1
+                            .Supporting1 = Math.Log(.Quantity / _StartingQuantity, _QuantityMultiplier) + 1,
+                            .Supporting2 = Math.Round(averageTradePrice, 4)
                         }
             End If
         End If
