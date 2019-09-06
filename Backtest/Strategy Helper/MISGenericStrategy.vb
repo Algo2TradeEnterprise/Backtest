@@ -172,6 +172,10 @@ Namespace StrategyHelper
                                     End If
                                     For Each stockName In stockList.Keys
                                         _canceller.Token.ThrowIfCancellationRequested()
+
+                                        If Not stocksRuleData.ContainsKey(stockName) Then
+                                            Continue For
+                                        End If
                                         Dim stockStrategyRule As StrategyRule = stocksRuleData(stockName)
 
                                         If Not stockList(stockName).EligibleToTakeTrade Then

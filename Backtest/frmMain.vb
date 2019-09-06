@@ -289,12 +289,12 @@ Public Class frmMain
                 For nmbrOfTrdblStock As Integer = 5 To 5 Step 1
                     For nmbrOfTradePerStock As Integer = 3 To 3 Step 1
                         For modifySL As Integer = 1 To 1 Step 1
-                            For firstTradeMinimumTargetPercentage As Decimal = 0.5 To 0.5 Step 1
+                            For firstTradeMinimumTargetPercentage As Decimal = 0.5 To 1 Step 0.5
                                 Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                                   exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                                   exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                                                  tradeStartTime:=TimeSpan.Parse("09:16:00"),
-                                                                                  lastTradeEntryTime:=TimeSpan.Parse("15:00:00"),
+                                                                                  tradeStartTime:=TimeSpan.Parse("9:16:00"),
+                                                                                  lastTradeEntryTime:=TimeSpan.Parse("14:45:00"),
                                                                                   eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                                                   tickSize:=tick,
                                                                                   marginMultiplier:=margin,
@@ -331,9 +331,9 @@ Public Class frmMain
                                         .StockMaxProfitPerDay = Decimal.MaxValue
                                         .StockMaxLossPerDay = Decimal.MinValue
 
-                                        .ExitOnOverAllFixedTargetStoploss = False
+                                        .ExitOnOverAllFixedTargetStoploss = True
                                         .OverAllProfitPerDay = Decimal.MaxValue
-                                        .OverAllLossPerDay = Decimal.MinValue
+                                        .OverAllLossPerDay = 5000
 
                                         'Rule
                                         .ModifyStoploss = modifySL
