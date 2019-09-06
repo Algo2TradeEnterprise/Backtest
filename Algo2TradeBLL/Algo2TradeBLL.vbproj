@@ -101,6 +101,7 @@
     <Compile Include="Indicators\Supertrend.vb" />
     <Compile Include="Indicators\SwingHighLow.vb" />
     <Compile Include="Indicators\SwingHighLowWithVWAP.vb" />
+    <Compile Include="Indicators\TrendIntensityIndex.vb" />
     <Compile Include="Indicators\TrueRange.vb" />
     <Compile Include="Indicators\VWAP.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
