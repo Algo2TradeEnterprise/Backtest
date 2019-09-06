@@ -102,7 +102,7 @@ Partial Class frmMain
         '
         Me.cmbRule.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.cmbRule.FormattingEnabled = True
-        Me.cmbRule.Items.AddRange(New Object() {"Smallest Candle Breakout", "High Volume Pin Bar", "Momentum Reversal v2", "High Volume Pin Bar v2", "Donchian Fractal Breakout", "SMI Fractal Breakout", "Day Long SMI (BANKNIFTY)", "Day Start SMI", "Gap Fractal Breakout", "Forward Momentum", "Vijay CNC"})
+        Me.cmbRule.Items.AddRange(New Object() {"Smallest Candle Breakout", "High Volume Pin Bar", "Momentum Reversal v2", "High Volume Pin Bar v2", "Donchian Fractal Breakout", "SMI Fractal Breakout", "Day Long SMI (BANKNIFTY)", "Day Start SMI", "Gap Fractal Breakout", "Forward Momentum", "Vijay CNC", "TII Opposite Breakout"})
         Me.cmbRule.Location = New System.Drawing.Point(123, 30)
         Me.cmbRule.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
         Me.cmbRule.Name = "cmbRule"
@@ -143,7 +143,7 @@ Partial Class frmMain
         '
         Me.dtpckrStartDate.Format = System.Windows.Forms.DateTimePickerFormat.[Short]
         Me.dtpckrStartDate.Location = New System.Drawing.Point(96, 86)
-        Me.dtpckrStartDate.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+        Me.dtpckrStartDate.Margin = New System.Windows.Forms.Padding(4)
         Me.dtpckrStartDate.Name = "dtpckrStartDate"
         Me.dtpckrStartDate.Size = New System.Drawing.Size(137, 22)
         Me.dtpckrStartDate.TabIndex = 27
@@ -152,7 +152,7 @@ Partial Class frmMain
         '
         Me.dtpckrEndDate.Format = System.Windows.Forms.DateTimePickerFormat.[Short]
         Me.dtpckrEndDate.Location = New System.Drawing.Point(321, 86)
-        Me.dtpckrEndDate.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+        Me.dtpckrEndDate.Margin = New System.Windows.Forms.Padding(4)
         Me.dtpckrEndDate.Name = "dtpckrEndDate"
         Me.dtpckrEndDate.Size = New System.Drawing.Size(137, 22)
         Me.dtpckrEndDate.TabIndex = 28

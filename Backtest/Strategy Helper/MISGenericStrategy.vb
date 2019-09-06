@@ -37,13 +37,11 @@ Namespace StrategyHelper
                 Me.StockMaxProfitPerDay = Decimal.MaxValue
                 Me.StockMaxLossPerDay = Decimal.MinValue
             End If
-            Dim filename As String = String.Format("TF {0},NoS {1},MP {2},ML {3},SMP% {4},SML% {5}",
+            Dim filename As String = String.Format("TF {0},NoS {1},MP {2},ML {3}",
                                                    Me.SignalTimeFrame,
                                                    Me.NumberOfTradeableStockPerDay,
                                                    If(Me.OverAllProfitPerDay = Decimal.MaxValue, 0, Me.OverAllProfitPerDay),
-                                                   If(Me.OverAllLossPerDay = Decimal.MinValue, 0, Me.OverAllLossPerDay),
-                                                   Me.StockMaxProfitPercentagePerDay,
-                                                   Me.StockMaxLossPercentagePerDay)
+                                                   If(Me.OverAllLossPerDay = Decimal.MinValue, 0, Me.OverAllLossPerDay))
 
             Dim tradesFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Trades.a2t", filename))
             Dim capitalFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Capital.a2t", filename))
@@ -132,6 +130,8 @@ Namespace StrategyHelper
                                             stockRule = New ForwardMomentumv2StrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller)
                                         Case 10
                                             Throw New ApplicationException("Not a MIS strategy")
+                                        Case 11
+                                            stockRule = New TIIOppositeBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
