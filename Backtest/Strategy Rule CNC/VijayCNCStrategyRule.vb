@@ -34,6 +34,7 @@ Public Class VijayCNCStrategyRule
             Not _parentStrategy.IsTradeOpen(currentTick, _parentStrategy.TradeType) AndAlso currentMinuteCandlePayload.PayloadDate >= tradeStartTime Then
             Dim signalCandle As Payload = Nothing
             Dim quantity As Integer = _StartingQuantity
+            Dim remark As String = ""
             Dim averageTradePrice As Decimal = currentTick.Open
             Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, _parentStrategy.TradeType)
             If lastExecutedTrade IsNot Nothing Then
@@ -65,6 +66,7 @@ Public Class VijayCNCStrategyRule
                     End If
                 ElseIf lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
                     signalCandle = currentMinuteCandlePayload
+                    remark = "Freash start"
                 End If
             Else
                 'If _FirstLTP = Decimal.MinValue Then
@@ -72,6 +74,7 @@ Public Class VijayCNCStrategyRule
                 'Else
                 '    If (_FirstLTP - currentTick.Open) <= _FirstLTP * _DropPercentage / 100 Then
                 signalCandle = currentMinuteCandlePayload
+                remark = "Freash start"
                 '    End If
                 'End If
             End If
@@ -85,7 +88,8 @@ Public Class VijayCNCStrategyRule
                             .Target = ConvertFloorCeling(averageTradePrice + (averageTradePrice * _TargetPerecentage / 100), _parentStrategy.TickSize, RoundOfType.Celing),
                             .Buffer = 0,
                             .SignalCandle = signalCandle,
-                            .OrderType = Trade.TypeOfOrder.Market
+                            .OrderType = Trade.TypeOfOrder.Market,
+                            .Supporting1 = remark
                         }
             End If
         End If
