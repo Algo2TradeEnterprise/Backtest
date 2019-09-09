@@ -66,7 +66,7 @@ Public Class VijayCNCStrategyRule
                     End If
                 ElseIf lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
                     signalCandle = currentMinuteCandlePayload
-                    remark = "Freash start"
+                    remark = "Fresh start"
                 End If
             Else
                 'If _FirstLTP = Decimal.MinValue Then
