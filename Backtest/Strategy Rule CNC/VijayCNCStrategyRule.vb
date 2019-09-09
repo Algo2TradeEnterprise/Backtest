@@ -74,7 +74,7 @@ Public Class VijayCNCStrategyRule
                 'Else
                 '    If (_FirstLTP - currentTick.Open) <= _FirstLTP * _DropPercentage / 100 Then
                 signalCandle = currentMinuteCandlePayload
-                remark = "Freash start"
+                remark = "Fresh start"
                 '    End If
                 'End If
             End If
