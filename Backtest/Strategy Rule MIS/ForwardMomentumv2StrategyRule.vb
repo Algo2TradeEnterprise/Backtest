@@ -48,19 +48,19 @@ Public Class ForwardMomentumv2StrategyRule
             If signalCandleSatisfied Then
                 signalCandle = currentMinuteCandlePayload.PreviousCandlePayload
             Else
-                Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, Trade.TradeType.MIS)
+                Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, Trade.TypeOfTrade.MIS)
                 If lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.ExitCondition = Trade.TradeExitCondition.StopLoss AndAlso
                     lastExecutedTrade.PLPoint < 0 AndAlso currentMinuteCandlePayload.PayloadDate < lastExecutedTrade.SignalCandle.PayloadDate.AddMinutes(10) Then
                     signalCandle = lastExecutedTrade.SignalCandle
                 End If
             End If
-            Dim lastTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, Trade.TradeType.MIS)
+            Dim lastTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, Trade.TypeOfTrade.MIS)
             If lastTrade IsNot Nothing AndAlso signalCandle IsNot Nothing AndAlso lastTrade.SignalCandle.PayloadDate = signalCandle.PayloadDate Then
                 signalCandle = Nothing
             End If
             If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
                 If signalCandle.CandleColor = Color.Green Then
-                    Dim longActiveTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentMinuteCandlePayload, Trade.TradeType.MIS, Trade.TradeExecutionDirection.Buy)
+                    Dim longActiveTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy)
                     If longActiveTrades Is Nothing OrElse longActiveTrades.Count = 0 Then
                         Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.High, RoundOfType.Floor)
                         If Not Me.IsSignalTriggered(signalCandle.Low - buffer, Trade.TradeExecutionDirection.Sell, signalCandle.PayloadDate, currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) Then
@@ -79,7 +79,7 @@ Public Class ForwardMomentumv2StrategyRule
                         End If
                     End If
                 ElseIf signalCandle.CandleColor = Color.Red Then
-                    Dim shortActiveTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentMinuteCandlePayload, Trade.TradeType.MIS, Trade.TradeExecutionDirection.Sell)
+                    Dim shortActiveTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell)
                     If shortActiveTrades Is Nothing OrElse shortActiveTrades.Count = 0 Then
                         Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Low, RoundOfType.Floor)
                         If Not Me.IsSignalTriggered(signalCandle.High + buffer, Trade.TradeExecutionDirection.Buy, signalCandle.PayloadDate, currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) Then

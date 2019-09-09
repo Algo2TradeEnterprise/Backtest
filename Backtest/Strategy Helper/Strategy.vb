@@ -44,6 +44,7 @@ Namespace StrategyHelper
                        ByVal timeframe As Integer,
                        ByVal heikenAshiCandle As Boolean,
                        ByVal stockType As Trade.TypeOfStock,
+                       ByVal tradeType As Trade.TypeOfTrade,
                        ByVal databaseTable As Common.DataBaseTable,
                        ByVal dataSource As SourceOfData,
                        ByVal initialCapital As Decimal,
@@ -61,6 +62,7 @@ Namespace StrategyHelper
             Me.SignalTimeFrame = timeframe
             Me.UseHeikenAshi = heikenAshiCandle
             Me.StockType = stockType
+            Me.TradeType = tradeType
             Me.DatabaseTable = databaseTable
             Me.DataSource = dataSource
             Me.InitialCapital = initialCapital
@@ -113,6 +115,7 @@ Namespace StrategyHelper
         Public ReadOnly SignalTimeFrame As Integer = 1
         Public ReadOnly UseHeikenAshi As Boolean = False
         Public ReadOnly StockType As Trade.TypeOfStock
+        Public ReadOnly TradeType As Trade.TypeOfTrade
         Public ReadOnly DatabaseTable As Common.DataBaseTable
         Public ReadOnly DataSource As SourceOfData = SourceOfData.Database
         Public ReadOnly InitialCapital As Decimal = Decimal.MaxValue
@@ -380,10 +383,10 @@ Namespace StrategyHelper
 #End Region
 
 #Region "Public Functions"
-        Public Function IsTradeActive(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TradeType, Optional ByVal tradeDirection As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None) As Boolean
+        Public Function IsTradeActive(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TypeOfTrade, Optional ByVal tradeDirection As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None) As Boolean
             Dim ret As Boolean = False
             Dim tradeDate As Date = currentMinutePayload.PayloadDate.Date
-            If tradeType = Trade.TradeType.MIS Then
+            If tradeType = Trade.TypeOfTrade.MIS Then
                 If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(tradeDate) AndAlso TradesTaken(tradeDate).ContainsKey(currentMinutePayload.TradingSymbol) Then
                     Dim tradeList As List(Of Trade) = Nothing
                     If tradeDirection = Trade.TradeExecutionDirection.None Then
@@ -400,7 +403,7 @@ Namespace StrategyHelper
                     End If
                     ret = tradeList IsNot Nothing AndAlso tradeList.Count > 0
                 End If
-            ElseIf tradeType = Trade.TradeType.CNC Then
+            ElseIf tradeType = Trade.TypeOfTrade.CNC Then
                 If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
                     Dim tradeList As List(Of Trade) = Nothing
                     For Each runningDate In TradesTaken.Keys
@@ -429,10 +432,10 @@ Namespace StrategyHelper
             Return ret
         End Function
 
-        Public Function IsTradeOpen(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TradeType, Optional ByVal tradeDirection As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None) As Boolean
+        Public Function IsTradeOpen(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TypeOfTrade, Optional ByVal tradeDirection As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None) As Boolean
             Dim ret As Boolean = False
             Dim tradeDate As Date = currentMinutePayload.PayloadDate.Date
-            If tradeType = Trade.TradeType.MIS Then
+            If tradeType = Trade.TypeOfTrade.MIS Then
                 If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(tradeDate) AndAlso TradesTaken(tradeDate).ContainsKey(currentMinutePayload.TradingSymbol) Then
                     Dim tradeList As List(Of Trade) = Nothing
                     If tradeDirection = Trade.TradeExecutionDirection.None Then
@@ -446,7 +449,7 @@ Namespace StrategyHelper
                     End If
                     ret = tradeList IsNot Nothing AndAlso tradeList.Count > 0
                 End If
-            ElseIf tradeType = Trade.TradeType.CNC Then
+            ElseIf tradeType = Trade.TypeOfTrade.CNC Then
                 If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
                     Dim tradeList As List(Of Trade) = Nothing
                     For Each runningDate In TradesTaken.Keys
@@ -530,11 +533,11 @@ Namespace StrategyHelper
             Return ret
         End Function
 
-        Public Function GetOpenActiveTrades(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TradeType, ByVal direction As Trade.TradeExecutionDirection) As List(Of Trade)
+        Public Function GetOpenActiveTrades(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TypeOfTrade, ByVal direction As Trade.TradeExecutionDirection) As List(Of Trade)
             Dim ret As List(Of Trade) = Nothing
             If currentMinutePayload IsNot Nothing Then
                 Dim tradeDate As Date = currentMinutePayload.PayloadDate.Date
-                If tradeType = Trade.TradeType.MIS Then
+                If tradeType = Trade.TypeOfTrade.MIS Then
                     If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(tradeDate) AndAlso TradesTaken(tradeDate).ContainsKey(currentMinutePayload.TradingSymbol) Then
                         ret = TradesTaken(tradeDate)(currentMinutePayload.TradingSymbol).FindAll(Function(x)
                                                                                                      Return x.SquareOffType = tradeType AndAlso
@@ -543,7 +546,7 @@ Namespace StrategyHelper
                                                                                                      x.EntryDirection = direction
                                                                                                  End Function)
                     End If
-                ElseIf tradeType = Trade.TradeType.CNC Then
+                ElseIf tradeType = Trade.TypeOfTrade.CNC Then
                     If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
                         For Each runningDate In TradesTaken.Keys
                             If TradesTaken(runningDate).ContainsKey(currentMinutePayload.TradingSymbol) Then
@@ -563,17 +566,17 @@ Namespace StrategyHelper
             Return ret
         End Function
 
-        Public Function GetSpecificTrades(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TradeType, ByVal tradeStatus As Trade.TradeExecutionStatus) As List(Of Trade)
+        Public Function GetSpecificTrades(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TypeOfTrade, ByVal tradeStatus As Trade.TradeExecutionStatus) As List(Of Trade)
             Dim ret As List(Of Trade) = Nothing
             If currentMinutePayload IsNot Nothing Then
                 Dim tradeDate As Date = currentMinutePayload.PayloadDate.Date
-                If tradeType = Trade.TradeType.MIS Then
+                If tradeType = Trade.TypeOfTrade.MIS Then
                     If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(tradeDate) AndAlso TradesTaken(tradeDate).ContainsKey(currentMinutePayload.TradingSymbol) Then
                         ret = TradesTaken(tradeDate)(currentMinutePayload.TradingSymbol).FindAll(Function(x)
                                                                                                      Return x.SquareOffType = tradeType AndAlso x.TradeCurrentStatus = tradeStatus
                                                                                                  End Function)
                     End If
-                ElseIf tradeType = Trade.TradeType.CNC Then
+                ElseIf tradeType = Trade.TypeOfTrade.CNC Then
                     If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
                         For Each runningDate In TradesTaken.Keys
                             If TradesTaken(runningDate).ContainsKey(currentMinutePayload.TradingSymbol) Then
@@ -591,7 +594,7 @@ Namespace StrategyHelper
             Return ret
         End Function
 
-        Public Function GetLastSpecificTrades(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TradeType, ByVal tradeStatus As Trade.TradeExecutionStatus) As Trade
+        Public Function GetLastSpecificTrades(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TypeOfTrade, ByVal tradeStatus As Trade.TradeExecutionStatus) As Trade
             Dim ret As Trade = Nothing
             Dim specificTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, tradeStatus)
             If specificTrades IsNot Nothing AndAlso specificTrades.Count > 0 Then
@@ -616,7 +619,7 @@ Namespace StrategyHelper
             End If
         End Sub
 
-        Public Sub ExitStockTradesByForce(ByVal currentPayload As Payload, ByVal tradeType As Trade.TradeType, ByVal exitRemark As String)
+        Public Sub ExitStockTradesByForce(ByVal currentPayload As Payload, ByVal tradeType As Trade.TypeOfTrade, ByVal exitRemark As String)
             'If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentPayload.PayloadDate.Date) AndAlso TradesTaken(currentPayload.PayloadDate.Date).ContainsKey(currentPayload.TradingSymbol) Then
             If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
                 Dim forceExitTrades As List(Of Trade) = New List(Of Trade)
@@ -637,8 +640,8 @@ Namespace StrategyHelper
             End If
         End Sub
 
-        Public Sub ExitAllTradeByForce(ByVal currentTimeOfExit As Date, ByVal allOneMinutePayload As Dictionary(Of String, Dictionary(Of Date, Payload)), ByVal tradeType As Trade.TradeType, ByVal exitRemark As String)
-            If tradeType = Trade.TradeType.MIS Then
+        Public Sub ExitAllTradeByForce(ByVal currentTimeOfExit As Date, ByVal allOneMinutePayload As Dictionary(Of String, Dictionary(Of Date, Payload)), ByVal tradeType As Trade.TypeOfTrade, ByVal exitRemark As String)
+            If tradeType = Trade.TypeOfTrade.MIS Then
                 If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentTimeOfExit.Date) Then
                     Dim allStockTrades As Dictionary(Of String, List(Of Trade)) = TradesTaken(currentTimeOfExit.Date)
                     If allStockTrades IsNot Nothing AndAlso allStockTrades.Count > 0 Then
@@ -671,7 +674,7 @@ Namespace StrategyHelper
                         Next
                     End If
                 End If
-            ElseIf tradeType = Trade.TradeType.CNC Then
+            ElseIf tradeType = Trade.TypeOfTrade.CNC Then
                 If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
                     For Each runningDate In TradesTaken.Keys
                         Dim allStockTrades As Dictionary(Of String, List(Of Trade)) = TradesTaken(runningDate.Date)
@@ -828,7 +831,7 @@ Namespace StrategyHelper
                 End If
             End If
 
-            If Not ret AndAlso currentTrade.SquareOffType = Trade.TradeType.MIS AndAlso
+            If Not ret AndAlso currentTrade.SquareOffType = Trade.TypeOfTrade.MIS AndAlso
                 currentPayload.PayloadDate.TimeOfDay.Hours = EODExitTime.Hours And currentPayload.PayloadDate.TimeOfDay.Minutes = EODExitTime.Minutes Then
                 currentTrade.UpdateTrade(ExitTime:=currentPayload.PayloadDate,
                                          ExitPrice:=currentPayload.Open,            'Assuming this is tick and OHLC=tickprice
@@ -1048,7 +1051,7 @@ Namespace StrategyHelper
             Return ret
         End Function
 
-        Public Sub SetCurrentLTPForStock(ByVal currentMinutePayload As Payload, ByVal currentTickPayload As Payload, ByVal tradeType As Trade.TradeType)
+        Public Sub SetCurrentLTPForStock(ByVal currentMinutePayload As Payload, ByVal currentTickPayload As Payload, ByVal tradeType As Trade.TypeOfTrade)
             'If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentMinutePayload.PayloadDate.Date) AndAlso TradesTaken(currentMinutePayload.PayloadDate.Date).ContainsKey(currentMinutePayload.TradingSymbol) Then
             If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
                 Dim ltpUpdateTrades As List(Of Trade) = New List(Of Trade)
@@ -1089,7 +1092,7 @@ Namespace StrategyHelper
             _TotalMaxDrawUpPLAfterBrokerage = Decimal.MinValue
         End Sub
 
-        Public Function IsAnyTradeOfTheStockTargetReached(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TradeType) As Boolean
+        Public Function IsAnyTradeOfTheStockTargetReached(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TypeOfTrade) As Boolean
             Dim ret As Boolean = False
             If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentMinutePayload.PayloadDate.Date) AndAlso TradesTaken(currentMinutePayload.PayloadDate.Date).ContainsKey(currentMinutePayload.TradingSymbol) Then
                 Dim completeTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Close)
@@ -1106,7 +1109,7 @@ Namespace StrategyHelper
             Return ret
         End Function
 
-        Public Function GetLastExecutedTradeOfTheStock(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TradeType) As Trade
+        Public Function GetLastExecutedTradeOfTheStock(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TypeOfTrade) As Trade
             Dim ret As Trade = Nothing
             'If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentMinutePayload.PayloadDate.Date) AndAlso TradesTaken(currentMinutePayload.PayloadDate.Date).ContainsKey(currentMinutePayload.TradingSymbol) Then
             If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then

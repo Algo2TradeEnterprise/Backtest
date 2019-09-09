@@ -46,8 +46,8 @@ Public Class BANKNIFTYDayLongSMIStrategyRule
             _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) < Me.MaxProfitOfThisStock AndAlso
             _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) > Math.Abs(Me.MaxLossOfThisStock) * -1 AndAlso
             currentMinuteCandlePayload.PayloadDate >= tradeStartTime Then
-            Dim longTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentMinuteCandlePayload, Trade.TradeType.MIS, Trade.TradeExecutionDirection.Buy)
-            Dim shortTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentMinuteCandlePayload, Trade.TradeType.MIS, Trade.TradeExecutionDirection.Sell)
+            Dim longTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy)
+            Dim shortTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell)
 
             If longTrades Is Nothing OrElse (longTrades IsNot Nothing AndAlso longTrades.Count = 0) Then
                 Dim currentSignal As Tuple(Of Boolean, Decimal, Decimal, Payload) = GetSignals(currentMinuteCandlePayload.PreviousCandlePayload, Trade.TradeExecutionDirection.Buy)
@@ -141,7 +141,7 @@ Public Class BANKNIFTYDayLongSMIStrategyRule
             ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
                 direction = Trade.TradeExecutionDirection.Buy
             End If
-            Dim currentTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentMinuteCandlePayload, Trade.TradeType.MIS, direction)
+            Dim currentTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS, direction)
             If currentTrades IsNot Nothing AndAlso currentTrades.Count > 0 Then
                 Dim triggerPrice As Decimal = currentTrades.FirstOrDefault.EntryPrice
                 If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then

@@ -38,7 +38,7 @@ Namespace StrategyHelper
             ForceExit
             None
         End Enum
-        Public Enum TradeType
+        Public Enum TypeOfTrade
             MIS = 1
             CNC
             None
@@ -58,7 +58,7 @@ Namespace StrategyHelper
                        ByVal entryDirection As TradeExecutionDirection,
                        ByVal entryPrice As Double,
                        ByVal entryBuffer As Decimal,
-                       ByVal squareOffType As TradeType,
+                       ByVal squareOffType As TypeOfTrade,
                        ByVal entryCondition As TradeEntryCondition,
                        ByVal entryRemark As String,
                        ByVal quantity As Integer,
@@ -119,7 +119,7 @@ Namespace StrategyHelper
         Public ReadOnly Property AdditionalTrade As Boolean
         Public ReadOnly Property EntryPrice As Double
         Public ReadOnly Property EntryBuffer As Decimal
-        Public ReadOnly Property SquareOffType As TradeType
+        Public ReadOnly Property SquareOffType As TypeOfTrade
         Public ReadOnly Property EntryCondition As TradeEntryCondition
         Public ReadOnly Property EntryRemark As String
         Public ReadOnly Property Quantity As Integer
@@ -316,7 +316,7 @@ Namespace StrategyHelper
                                 Optional ByVal EntryDirection As TradeExecutionDirection = TradeExecutionDirection.None,
                                 Optional ByVal EntryPrice As Double = Double.MinValue,
                                 Optional ByVal EntryBuffer As Decimal = Decimal.MinValue,
-                                Optional ByVal SquareOffType As TradeType = TradeType.None,
+                                Optional ByVal SquareOffType As TypeOfTrade = TypeOfTrade.None,
                                 Optional ByVal EntryCondition As TradeEntryCondition = TradeEntryCondition.None,
                                 Optional ByVal EntryRemark As String = Nothing,
                                 Optional ByVal Quantity As Integer = Integer.MinValue,
@@ -349,7 +349,7 @@ Namespace StrategyHelper
             If EntryDirection <> TradeExecutionDirection.None Then _EntryDirection = EntryDirection
             If EntryPrice <> Double.MinValue Then _EntryPrice = Math.Round(EntryPrice, 4)
             If EntryBuffer <> Decimal.MinValue Then _EntryBuffer = EntryBuffer
-            If SquareOffType <> TradeType.None Then _SquareOffType = SquareOffType
+            If SquareOffType <> TypeOfTrade.None Then _SquareOffType = SquareOffType
             If EntryCondition <> TradeEntryCondition.None Then _EntryCondition = EntryCondition
             If EntryRemark IsNot Nothing Then _EntryRemark = EntryRemark
             If Quantity <> Integer.MinValue Then _Quantity = Quantity
@@ -392,7 +392,7 @@ Namespace StrategyHelper
                 If .EntryDirection <> TradeExecutionDirection.None Then _EntryDirection = .EntryDirection
                 If .EntryPrice <> Double.MinValue Then _EntryPrice = .EntryPrice
                 If .EntryBuffer <> Decimal.MinValue Then _EntryBuffer = .EntryBuffer
-                If .SquareOffType <> TradeType.None Then _SquareOffType = .SquareOffType
+                If .SquareOffType <> TypeOfTrade.None Then _SquareOffType = .SquareOffType
                 If .EntryCondition <> TradeEntryCondition.None Then _EntryCondition = .EntryCondition
                 If .EntryRemark IsNot Nothing Then _EntryRemark = .EntryRemark
                 If .Quantity <> Integer.MinValue Then _Quantity = .Quantity

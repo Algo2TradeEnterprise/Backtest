@@ -48,9 +48,9 @@ Public Class ForwardMomentumStrategyRule
             If signalCandleSatisfied Then
                 signalCandle = currentMinuteCandlePayload.PreviousCandlePayload
             Else
-                Dim completeTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentMinuteCandlePayload, Trade.TradeType.MIS, Trade.TradeExecutionStatus.Close)
+                Dim completeTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Close)
                 If completeTrades IsNot Nothing AndAlso completeTrades.Count > 0 Then
-                    Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, Trade.TradeType.MIS)
+                    Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, Trade.TypeOfTrade.MIS)
                     If lastExecutedTrade IsNot Nothing AndAlso ((lastExecutedTrade.ExitCondition = Trade.TradeExitCondition.StopLoss AndAlso
                         lastExecutedTrade.PLPoint < 0) OrElse (lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress)) Then
                         Dim oppositeSLTrades As List(Of Trade) = completeTrades.FindAll(Function(x)
@@ -70,7 +70,7 @@ Public Class ForwardMomentumStrategyRule
                 Dim ema50offsetValue As Decimal = GetOffSetIndicatorValue(10, currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate, _EMA50Payload)
                 Dim ema100offsetValue As Decimal = GetOffSetIndicatorValue(10, currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate, _EMA100Payload)
 
-                Dim longActiveTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentMinuteCandlePayload, Trade.TradeType.MIS, Trade.TradeExecutionDirection.Buy)
+                Dim longActiveTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy)
                 If longActiveTrades Is Nothing OrElse longActiveTrades.Count = 0 Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.High, RoundOfType.Floor)
                     'If signalCandle.High + buffer < Math.Min(ema50offsetValue, ema100offsetValue) OrElse
@@ -90,7 +90,7 @@ Public Class ForwardMomentumStrategyRule
                     'End If
                 End If
 
-                Dim shortActiveTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentMinuteCandlePayload, Trade.TradeType.MIS, Trade.TradeExecutionDirection.Sell)
+                Dim shortActiveTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell)
                 If shortActiveTrades Is Nothing OrElse shortActiveTrades.Count = 0 Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Low, RoundOfType.Floor)
                     'If signalCandle.Low - buffer < Math.Min(ema50offsetValue, ema100offsetValue) OrElse
@@ -162,8 +162,8 @@ Public Class ForwardMomentumStrategyRule
                             ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                         End If
                     Else
-                        Dim completeTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentTick, Trade.TradeType.MIS, Trade.TradeExecutionStatus.Close)
-                        Dim inprogressTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentTick, Trade.TradeType.MIS, Trade.TradeExecutionStatus.Inprogress)
+                        Dim completeTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Close)
+                        Dim inprogressTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Inprogress)
                         Dim allTrades As List(Of Trade) = New List(Of Trade)
                         If completeTrades IsNot Nothing AndAlso completeTrades.Count > 0 Then allTrades.AddRange(completeTrades)
                         If inprogressTrades IsNot Nothing AndAlso inprogressTrades.Count > 0 Then allTrades.AddRange(inprogressTrades)

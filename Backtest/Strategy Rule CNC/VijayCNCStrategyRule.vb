@@ -7,9 +7,9 @@ Public Class VijayCNCStrategyRule
     Inherits StrategyRule
 
     Private ReadOnly _StartingQuantity As Integer = 1
-    Private ReadOnly _QuantityMultiplier As Decimal = 2
-    Private ReadOnly _TargetPerecentage As Decimal = 3
-    Private ReadOnly _DropPercentage As Decimal = 5
+    Private ReadOnly _QuantityMultiplier As Decimal = 1.5
+    Private ReadOnly _TargetPerecentage As Decimal = 1
+    Private ReadOnly _DropPercentage As Decimal = 0.5
 
     Private _FirstLTP As Decimal = Decimal.MinValue
     Private _CurrentTarget As Decimal = Decimal.MinValue
@@ -31,30 +31,36 @@ Public Class VijayCNCStrategyRule
 
         Dim parameter As PlaceOrderParameters = Nothing
         If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
-            Not _parentStrategy.IsTradeOpen(currentTick, Trade.TradeType.CNC) AndAlso currentMinuteCandlePayload.PayloadDate >= tradeStartTime Then
+            Not _parentStrategy.IsTradeOpen(currentTick, _parentStrategy.TradeType) AndAlso currentMinuteCandlePayload.PayloadDate >= tradeStartTime Then
             Dim signalCandle As Payload = Nothing
             Dim quantity As Integer = _StartingQuantity
             Dim averageTradePrice As Decimal = currentTick.Open
-            Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, Trade.TradeType.CNC)
+            Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, _parentStrategy.TradeType)
             If lastExecutedTrade IsNot Nothing Then
                 If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
                     If (lastExecutedTrade.EntryPrice - currentTick.Open) >= lastExecutedTrade.EntryPrice * _DropPercentage / 100 Then
                         signalCandle = currentMinuteCandlePayload
-                        quantity = lastExecutedTrade.Quantity * _QuantityMultiplier
+                        If _parentStrategy.RuleSupporting1 Then         'Refresh Quantity at day start
+                            If lastExecutedTrade.EntryTime.Date = _tradingDate.Date Then
+                                quantity = Math.Ceiling(lastExecutedTrade.Quantity * _QuantityMultiplier)
+                            End If
+                        Else
+                            quantity = Math.Ceiling(lastExecutedTrade.Quantity * _QuantityMultiplier)
+                        End If
 
-                        Dim openActiveTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentMinuteCandlePayload, Trade.TradeType.CNC, Trade.TradeExecutionDirection.Buy)
+                        Dim openActiveTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentMinuteCandlePayload, _parentStrategy.TradeType, Trade.TradeExecutionDirection.Buy)
                         If openActiveTrades IsNot Nothing AndAlso openActiveTrades.Count > 0 Then
-                            Dim totalCapital As Decimal = 0
+                            Dim totalCapitalUsedWithoutMargin As Decimal = 0
                             Dim totalQuantity As Decimal = 0
                             For Each runningTrade In openActiveTrades
                                 If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-                                    totalCapital += runningTrade.CapitalRequiredWithMargin
+                                    totalCapitalUsedWithoutMargin += runningTrade.EntryPrice * runningTrade.Quantity
                                     totalQuantity += runningTrade.Quantity
                                 End If
                             Next
-                            totalCapital += currentTick.Open * quantity
+                            totalCapitalUsedWithoutMargin += currentTick.Open * quantity
                             totalQuantity += quantity
-                            averageTradePrice = totalCapital / totalQuantity
+                            averageTradePrice = totalCapitalUsedWithoutMargin / totalQuantity
                         End If
                     End If
                 ElseIf lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
@@ -79,9 +85,7 @@ Public Class VijayCNCStrategyRule
                             .Target = ConvertFloorCeling(averageTradePrice + (averageTradePrice * _TargetPerecentage / 100), _parentStrategy.TickSize, RoundOfType.Celing),
                             .Buffer = 0,
                             .SignalCandle = signalCandle,
-                            .OrderType = Trade.TypeOfOrder.Market,
-                            .Supporting1 = Math.Log(.Quantity / _StartingQuantity, _QuantityMultiplier) + 1,
-                            .Supporting2 = Math.Round(averageTradePrice, 4)
+                            .OrderType = Trade.TypeOfOrder.Market
                         }
             End If
         End If
