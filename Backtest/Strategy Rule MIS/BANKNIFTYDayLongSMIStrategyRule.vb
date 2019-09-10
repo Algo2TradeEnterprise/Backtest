@@ -14,8 +14,9 @@ Public Class BANKNIFTYDayLongSMIStrategyRule
                    ByVal parentStrategy As Strategy,
                    ByVal tradingDate As Date,
                    ByVal tradingSymbol As String,
-                   ByVal canceller As CancellationTokenSource)
-        MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller)
+                   ByVal canceller As CancellationTokenSource,
+                   ByVal entities As RuleEntities)
+        MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
     End Sub
 
     Public Overrides Sub CompletePreProcessing()

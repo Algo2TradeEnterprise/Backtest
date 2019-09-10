@@ -6,14 +6,24 @@ Imports Utilities.Numbers.NumberManipulation
 Public Class HighVolumePinBarStrategyRule
     Inherits StrategyRule
 
-    Private _targetMultiplier As Decimal = 1.5
+#Region "Entity"
+    Public Class StrategyRuleEntities
+        Inherits RuleEntities
+
+        Public TargetMultiplier As Decimal
+    End Class
+#End Region
+
+    Private _userInputs As StrategyRuleEntities
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
                    ByVal parentStrategy As Strategy,
                    ByVal tradingDate As Date,
                    ByVal tradingSymbol As String,
-                   ByVal canceller As CancellationTokenSource)
-        MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller)
+                   ByVal canceller As CancellationTokenSource,
+                   ByVal entities As RuleEntities)
+        MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
+        _userInputs = _entities
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -41,7 +51,7 @@ Public Class HighVolumePinBarStrategyRule
                         .EntryDirection = Trade.TradeExecutionDirection.Buy,
                         .Quantity = _lotSize,
                         .Stoploss = signalCandle.Low - buffer,
-                        .Target = .EntryPrice + ConvertFloorCeling((.EntryPrice - .Stoploss) * _targetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing),
+                        .Target = .EntryPrice + ConvertFloorCeling((.EntryPrice - .Stoploss) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing),
                         .Buffer = buffer,
                         .SignalCandle = signalCandle,
                         .OrderType = Trade.TypeOfOrder.SL,
@@ -54,7 +64,7 @@ Public Class HighVolumePinBarStrategyRule
                         .EntryDirection = Trade.TradeExecutionDirection.Sell,
                         .Quantity = _lotSize,
                         .Stoploss = signalCandle.High + buffer,
-                        .Target = .EntryPrice - ConvertFloorCeling((.Stoploss - .EntryPrice) * _targetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing),
+                        .Target = .EntryPrice - ConvertFloorCeling((.Stoploss - .EntryPrice) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing),
                         .Buffer = buffer,
                         .SignalCandle = signalCandle,
                         .OrderType = Trade.TypeOfOrder.SL,

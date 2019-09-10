@@ -41,18 +41,22 @@ Namespace StrategyHelper
         Protected ReadOnly _tradingSymbol As String
         Protected ReadOnly _inputPayload As Dictionary(Of Date, Payload)
         Protected ReadOnly _cts As CancellationTokenSource
+        Protected ReadOnly _entities As RuleEntities
+
         Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                        ByVal lotSize As Integer,
                        ByVal parentStrategy As Strategy,
                        ByVal tradingDate As Date,
                        ByVal tradingSymbol As String,
-                       ByVal canceller As CancellationTokenSource)
+                       ByVal canceller As CancellationTokenSource,
+                       ByVal entities As RuleEntities)
             _inputPayload = inputPayload
             _lotSize = lotSize
             _parentStrategy = parentStrategy
             _tradingDate = tradingDate
             _tradingSymbol = tradingSymbol
             _cts = canceller
+            _entities = entities
 
             EligibleToTakeTrade = True
         End Sub

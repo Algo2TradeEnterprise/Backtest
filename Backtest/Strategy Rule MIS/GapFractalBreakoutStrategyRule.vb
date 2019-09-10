@@ -21,8 +21,9 @@ Public Class GapFractalBreakoutStrategyRule
                    ByVal tradingDate As Date,
                    ByVal tradingSymbol As String,
                    ByVal canceller As CancellationTokenSource,
+                   ByVal entities As RuleEntities,
                    ByVal gap As Decimal)
-        MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller)
+        MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _Gap = gap
     End Sub
 

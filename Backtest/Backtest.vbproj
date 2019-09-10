@@ -106,6 +106,7 @@
     <Compile Include="Strategy Helper\CNCGenericStrategy.vb" />
     <Compile Include="Strategy Helper\MISGenericStrategy.vb" />
     <Compile Include="Strategy Helper\PlaceOrderParameters.vb" />
+    <Compile Include="Strategy Helper\RuleEntities.vb" />
     <Compile Include="Strategy Helper\StockDetails.vb" />
     <Compile Include="Strategy Helper\Strategy.vb" />
     <Compile Include="Strategy Helper\StrategyOutput.vb" />

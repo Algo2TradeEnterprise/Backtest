@@ -6,16 +6,28 @@ Imports Utilities.Numbers.NumberManipulation
 Public Class TIIOppositeBreakoutStrategyRule
     Inherits StrategyRule
 
+#Region "Entity"
+    Public Class StrategyRuleEntities
+        Inherits RuleEntities
+
+        Public TargetMultiplier As Decimal
+        Public ModifyStoploss As Boolean
+    End Class
+#End Region
+
     Private _TIIPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _SignalLinePayload As Dictionary(Of Date, Decimal) = Nothing
+    Private _userInputs As StrategyRuleEntities
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
                    ByVal parentStrategy As Strategy,
                    ByVal tradingDate As Date,
                    ByVal tradingSymbol As String,
-                   ByVal canceller As CancellationTokenSource)
-        MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller)
+                   ByVal canceller As CancellationTokenSource,
+                   ByVal entities As RuleEntities)
+        MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
+        _userInputs = _entities
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -52,7 +64,7 @@ Public Class TIIOppositeBreakoutStrategyRule
                     If currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate >= exitCandlePayload.PayloadDate Then
                         If lastExecutedTrade.ExitCondition = Trade.TradeExitCondition.StopLoss Then
                             signalCandle = currentMinuteCandlePayload.PreviousCandlePayload
-                        ElseIf Math.Abs(lastExecutedTrade.PLPoint) < lastExecutedTrade.EntryPrice * _parentStrategy.TargetMultiplier / 100 Then
+                        ElseIf Math.Abs(lastExecutedTrade.PLPoint) < lastExecutedTrade.EntryPrice * _userInputs.TargetMultiplier / 100 Then
                             signalCandle = currentMinuteCandlePayload.PreviousCandlePayload
                         End If
                     Else
@@ -76,7 +88,7 @@ Public Class TIIOppositeBreakoutStrategyRule
                         Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(Me._tradingSymbol, signalCandle.High + buffer, _lotSize, Math.Abs(totalLoss), Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
                         targetPoint = target - signalCandle.High + buffer
                     Else
-                        targetPoint = Math.Max((signalCandle.High + buffer) * _parentStrategy.TargetMultiplier / 100, (signalCandle.CandleRange + 2 * buffer) * 2)
+                        targetPoint = Math.Max((signalCandle.High + buffer) * _userInputs.TargetMultiplier / 100, (signalCandle.CandleRange + 2 * buffer) * 2)
                     End If
                     parameter = New PlaceOrderParameters With {
                         .EntryPrice = signalCandle.High + buffer,
@@ -104,7 +116,7 @@ Public Class TIIOppositeBreakoutStrategyRule
                         Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(Me._tradingSymbol, signalCandle.Low - buffer, _lotSize, Math.Abs(totalLoss), Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
                         targetPoint = signalCandle.Low - buffer - target
                     Else
-                        targetPoint = Math.Max((signalCandle.Low - buffer) * _parentStrategy.TargetMultiplier / 100, (signalCandle.CandleRange + 2 * buffer) * 2)
+                        targetPoint = Math.Max((signalCandle.Low - buffer) * _userInputs.TargetMultiplier / 100, (signalCandle.CandleRange + 2 * buffer) * 2)
                     End If
                     parameter = New PlaceOrderParameters With {
                         .EntryPrice = signalCandle.Low - buffer,
@@ -160,7 +172,7 @@ Public Class TIIOppositeBreakoutStrategyRule
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
-        If _parentStrategy.ModifyStoploss Then
+        If _userInputs.ModifyStoploss Then
             If _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol) <= _parentStrategy.NumberOfTradesPerStockPerDay - 1 Then
                 Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
                 If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
@@ -184,7 +196,7 @@ Public Class TIIOppositeBreakoutStrategyRule
                 End If
             End If
         End If
-            Return ret
+        Return ret
     End Function
 
     Public Overrides Async Function IsTriggerReceivedForModifyTargetOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))

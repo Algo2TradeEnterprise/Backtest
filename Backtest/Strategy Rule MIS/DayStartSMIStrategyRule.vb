@@ -6,16 +6,28 @@ Imports Utilities.Numbers.NumberManipulation
 Public Class DayStartSMIStrategyRule
     Inherits StrategyRule
 
+#Region "Entity"
+    Public Class StrategyRuleEntities
+        Inherits RuleEntities
+
+        Public TargetPercentage As Decimal
+        Public StoplossPercentage As Decimal
+    End Class
+#End Region
+
     Private _SwingHighPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _SwingLowPayload As Dictionary(Of Date, Decimal) = Nothing
+    Private _userInputs As StrategyRuleEntities
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
                    ByVal parentStrategy As Strategy,
                    ByVal tradingDate As Date,
                    ByVal tradingSymbol As String,
-                   ByVal canceller As CancellationTokenSource)
-        MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller)
+                   ByVal canceller As CancellationTokenSource,
+                   ByVal entities As RuleEntities)
+        MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
+        _userInputs = _entities
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -60,7 +72,7 @@ Public Class DayStartSMIStrategyRule
                         .EntryDirection = Trade.TradeExecutionDirection.Buy,
                         .Quantity = _lotSize,
                         .Stoploss = currentSignal.Item3 - buffer,
-                        .Target = .EntryPrice + ConvertFloorCeling(.EntryPrice * _parentStrategy.TargetMultiplier / 100, _parentStrategy.TickSize, RoundOfType.Celing),
+                        .Target = .EntryPrice + ConvertFloorCeling(.EntryPrice * _userInputs.TargetPercentage / 100, _parentStrategy.TickSize, RoundOfType.Celing),
                         .Buffer = buffer,
                         .SignalCandle = currentSignal.Item4,
                         .OrderType = Trade.TypeOfOrder.SL,
@@ -79,7 +91,7 @@ Public Class DayStartSMIStrategyRule
                         .EntryDirection = Trade.TradeExecutionDirection.Sell,
                         .Quantity = _lotSize,
                         .Stoploss = currentSignal.Item2 + buffer,
-                        .Target = .EntryPrice - ConvertFloorCeling(.EntryPrice * _parentStrategy.TargetMultiplier / 100, _parentStrategy.TickSize, RoundOfType.Celing),
+                        .Target = .EntryPrice - ConvertFloorCeling(.EntryPrice * _userInputs.TargetPercentage / 100, _parentStrategy.TickSize, RoundOfType.Celing),
                         .Buffer = buffer,
                         .SignalCandle = currentSignal.Item4,
                         .OrderType = Trade.TypeOfOrder.SL,
@@ -196,13 +208,13 @@ Public Class DayStartSMIStrategyRule
                 If triggerPrice <> Decimal.MinValue Then
                     Dim remark As String = String.Format("{0}. Time:{1}", triggerPrice, currentTick.PayloadDate)
                     If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                        If triggerPrice < ConvertFloorCeling(currentTrade.EntryPrice - currentTrade.EntryPrice * _parentStrategy.StoplossMultiplier / 100, _parentStrategy.TickSize, RoundOfType.Floor) Then
-                            triggerPrice = ConvertFloorCeling(currentTrade.EntryPrice - currentTrade.EntryPrice * _parentStrategy.StoplossMultiplier / 100, _parentStrategy.TickSize, RoundOfType.Floor)
+                        If triggerPrice < ConvertFloorCeling(currentTrade.EntryPrice - currentTrade.EntryPrice * _userInputs.StoplossPercentage / 100, _parentStrategy.TickSize, RoundOfType.Floor) Then
+                            triggerPrice = ConvertFloorCeling(currentTrade.EntryPrice - currentTrade.EntryPrice * _userInputs.StoplossPercentage / 100, _parentStrategy.TickSize, RoundOfType.Floor)
                             remark = String.Format("Mathematical SL {0}. Time:{1}", triggerPrice, currentTick.PayloadDate)
                         End If
                     ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                        If triggerPrice > ConvertFloorCeling(currentTrade.EntryPrice + currentTrade.EntryPrice * _parentStrategy.StoplossMultiplier / 100, _parentStrategy.TickSize, RoundOfType.Floor) Then
-                            triggerPrice = ConvertFloorCeling(currentTrade.EntryPrice + currentTrade.EntryPrice * _parentStrategy.StoplossMultiplier / 100, _parentStrategy.TickSize, RoundOfType.Floor)
+                        If triggerPrice > ConvertFloorCeling(currentTrade.EntryPrice + currentTrade.EntryPrice * _userInputs.StoplossPercentage / 100, _parentStrategy.TickSize, RoundOfType.Floor) Then
+                            triggerPrice = ConvertFloorCeling(currentTrade.EntryPrice + currentTrade.EntryPrice * _userInputs.StoplossPercentage / 100, _parentStrategy.TickSize, RoundOfType.Floor)
                             remark = String.Format("Mathematical SL {0}. Time:{1}", triggerPrice, currentTick.PayloadDate)
                         End If
                     End If

@@ -6,6 +6,14 @@ Imports Utilities.Numbers.NumberManipulation
 Public Class VijayCNCStrategyRule
     Inherits StrategyRule
 
+#Region "Entity"
+    Public Class StrategyRuleEntities
+        Inherits RuleEntities
+
+        Public RefreshQuantityAtDayStart As Boolean
+    End Class
+#End Region
+
     Private ReadOnly _StartingQuantity As Integer = 1
     Private ReadOnly _QuantityMultiplier As Decimal = 1.5
     Private ReadOnly _TargetPerecentage As Decimal = 1
@@ -19,8 +27,9 @@ Public Class VijayCNCStrategyRule
                    ByVal parentStrategy As Strategy,
                    ByVal tradingDate As Date,
                    ByVal tradingSymbol As String,
-                   ByVal canceller As CancellationTokenSource)
-        MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller)
+                   ByVal canceller As CancellationTokenSource,
+                   ByVal entities As RuleEntities)
+        MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -41,7 +50,7 @@ Public Class VijayCNCStrategyRule
                 If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
                     If (lastExecutedTrade.EntryPrice - currentTick.Open) >= lastExecutedTrade.EntryPrice * _DropPercentage / 100 Then
                         signalCandle = currentMinuteCandlePayload
-                        If _parentStrategy.RuleSupporting1 Then         'Refresh Quantity at day start
+                        If CType(_entities, StrategyRuleEntities).RefreshQuantityAtDayStart Then         'Refresh Quantity at day start
                             If lastExecutedTrade.EntryTime.Date = _tradingDate.Date Then
                                 quantity = Math.Ceiling(lastExecutedTrade.Quantity * _QuantityMultiplier)
                             End If

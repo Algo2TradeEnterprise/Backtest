@@ -6,20 +6,32 @@ Imports Utilities.Numbers.NumberManipulation
 Public Class DonchianFractalStrategyRule
     Inherits StrategyRule
 
+#Region "Entity"
+    Public Class StrategyRuleEntities
+        Inherits RuleEntities
+
+        Public StoplossPercentage As Decimal
+        Public ModifyStoploss As Boolean
+    End Class
+#End Region
+
     Private _DonchianHighPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _DonchianLowPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _DonchianMiddlePayload As Dictionary(Of Date, Decimal) = Nothing
     Private _FractalHighPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _FractalLowPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _InvalidInstrument As Boolean = False
+    Private _userInputs As StrategyRuleEntities
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
                    ByVal parentStrategy As Strategy,
                    ByVal tradingDate As Date,
                    ByVal tradingSymbol As String,
-                   ByVal canceller As CancellationTokenSource)
-        MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller)
+                   ByVal canceller As CancellationTokenSource,
+                   ByVal entities As RuleEntities)
+        MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
+        _userInputs = _entities
         _InvalidInstrument = False
     End Sub
 
@@ -96,7 +108,7 @@ Public Class DonchianFractalStrategyRule
         If parameter IsNot Nothing Then
             'If Not _parentStrategy.IsTradeActive(currentTick, Trade.TradeType.MIS) Then
             If Not IsPreviousSignalUsed(currentMinuteCandlePayload.PayloadDate) Then
-                Me.MaxLossOfThisStock = (parameter.EntryPrice * parameter.Quantity / _parentStrategy.MarginMultiplier) * _parentStrategy.StoplossMultiplier / 100
+                Me.MaxLossOfThisStock = (parameter.EntryPrice * parameter.Quantity / _parentStrategy.MarginMultiplier) * _userInputs.StoplossPercentage / 100
                 ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
             End If
             'Else
@@ -163,7 +175,7 @@ Public Class DonchianFractalStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
 
-        If _parentStrategy.ModifyStoploss AndAlso currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+        If _userInputs.ModifyStoploss AndAlso currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
             Dim triggerPrice As Decimal = Decimal.MinValue
             Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentTrade.EntryPrice, RoundOfType.Floor)
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then

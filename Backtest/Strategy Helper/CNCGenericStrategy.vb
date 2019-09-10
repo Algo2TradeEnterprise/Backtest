@@ -9,6 +9,7 @@ Namespace StrategyHelper
         Implements IDisposable
         Public Property StockFileName As String
         Public Property RuleNumber As Integer
+        Public Property RuleEntityData As RuleEntities
         Public Sub New(ByVal canceller As CancellationTokenSource,
                        ByVal exchangeStartTime As TimeSpan,
                        ByVal exchangeEndTime As TimeSpan,
@@ -127,7 +128,7 @@ Namespace StrategyHelper
                                         Case 9
                                             Throw New ApplicationException("Not a CNC strategy")
                                         Case 10
-                                            stockRule = New VijayCNCStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller)
+                                            stockRule = New VijayCNCStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 11
                                             Throw New ApplicationException("Not a CNC strategy")
                                         Case 12

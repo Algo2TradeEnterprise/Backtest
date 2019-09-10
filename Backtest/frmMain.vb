@@ -291,65 +291,81 @@ Public Class frmMain
                     For nmbrOfTradePerStock As Integer = 100 To 100 Step 1
                         For tgtMul As Integer = 4 To 4 Step 1
                             For slMul As Integer = 1 To 1 Step 1
-                                For modifySL As Integer = 1 To 1 Step 1
-                                    For frstBrkoutSLlevel As Integer = 0 To 0 Step 1
-                                        Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
-                                                              exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                              exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                              tradeStartTime:=TimeSpan.Parse("9:16:00"),
-                                                              lastTradeEntryTime:=TimeSpan.Parse("14:45:59"),
-                                                              eodExitTime:=TimeSpan.Parse("15:15:00"),
-                                                              tickSize:=tick,
-                                                              marginMultiplier:=margin,
-                                                              timeframe:=timeFrame,
-                                                              heikenAshiCandle:=False,
-                                                              stockType:=stockType,
-                                                              databaseTable:=database,
-                                                              dataSource:=sourceData,
-                                                              initialCapital:=Decimal.MaxValue / 2,
-                                                              usableCapital:=Decimal.MaxValue / 2,
-                                                              minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
-                                                              amountToBeWithdrawn:=Decimal.MaxValue / 2)
-                                            AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+                                For level As Integer = 2 To 2 Step 1
+                                    For brkevenMvmnt As Integer = 1 To 1 Step 1
+                                        For brkevenMul As Decimal = 2 / 3 To 2 / 3 Step 1
+                                            Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+                                                                                              exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                                              exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                                              tradeStartTime:=TimeSpan.Parse("9:16:00"),
+                                                                                              lastTradeEntryTime:=TimeSpan.Parse("14:45:59"),
+                                                                                              eodExitTime:=TimeSpan.Parse("15:15:00"),
+                                                                                              tickSize:=tick,
+                                                                                              marginMultiplier:=margin,
+                                                                                              timeframe:=timeFrame,
+                                                                                              heikenAshiCandle:=False,
+                                                                                              stockType:=stockType,
+                                                                                              databaseTable:=database,
+                                                                                              dataSource:=sourceData,
+                                                                                              initialCapital:=Decimal.MaxValue / 2,
+                                                                                              usableCapital:=Decimal.MaxValue / 2,
+                                                                                              minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                                                              amountToBeWithdrawn:=Decimal.MaxValue / 2)
+                                                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                                            With backtestStrategy
-                                                '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Future Stock List ATR Based.csv")
-                                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based Stocks.csv")
-                                                '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pre Market Data.csv")
-                                                '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "BANKNIFTY.csv")
-                                                '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
+                                                With backtestStrategy
+                                                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Future Stock List ATR Based.csv")
+                                                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based Stocks.csv")
+                                                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pre Market Data.csv")
+                                                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "BANKNIFTY.csv")
+                                                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
 
-                                                .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+                                                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+                                                    Select Case .RuleNumber
+                                                        Case 1
+                                                            .RuleEntityData = New HighVolumePinBarStrategyRule.StrategyRuleEntities With {.TargetMultiplier = tgtMul}
+                                                        Case 2
+                                                            .RuleEntityData = New MomentumReversalv2StrategyRule.StrategyRuleEntities With {.TargetMultiplier = tgtMul, .StoplossMultiplier = slMul, .BreakevenMovement = True, .ReEntryAtPreviousSignal = True}
+                                                        Case 3
+                                                            .RuleEntityData = New HighVolumePinBarv2StrategyRule.StrategyRuleEntities With {.TargetMultiplier = tgtMul, .StoplossMultiplier = slMul, .ModifyStoploss = True, .ReEntryAtPreviousSignal = True}
+                                                        Case 4
+                                                            .RuleEntityData = New DonchianFractalStrategyRule.StrategyRuleEntities With {.StoplossPercentage = slMul, .ModifyStoploss = True}
+                                                        Case 5
+                                                            .RuleEntityData = New SMIFractalStrategyRule.StrategyRuleEntities With {.ModifyStoploss = True}
+                                                        Case 7
+                                                            .RuleEntityData = New DayStartSMIStrategyRule.StrategyRuleEntities With {.TargetPercentage = tgtMul, .StoplossPercentage = slMul}
+                                                        Case 10
+                                                            .RuleEntityData = New VijayCNCStrategyRule.StrategyRuleEntities With {.RefreshQuantityAtDayStart = True}
+                                                        Case 11
+                                                            .RuleEntityData = New TIIOppositeBreakoutStrategyRule.StrategyRuleEntities With {.TargetMultiplier = tgtMul, .ModifyStoploss = True}
+                                                        Case 12
+                                                            .RuleEntityData = New ATRFixedLevelBasedStrategyRule.StrategyRuleEntities With {.TargetMultiplier = tgtMul, .StoplossMultiplier = slMul, .BreakevenMovement = brkevenMvmnt, .BreakevenMultiplier = brkevenMul, .LevelType = level}
+                                                    End Select
 
-                                                .NumberOfTradeableStockPerDay = nmbrOfStock
 
-                                                .NumberOfTradesPerDay = Integer.MaxValue
-                                                .NumberOfTradesPerStockPerDay = nmbrOfTradePerStock
+                                                    .NumberOfTradeableStockPerDay = nmbrOfStock
 
-                                                .TrailingStoploss = False
+                                                    .NumberOfTradesPerDay = Integer.MaxValue
+                                                    .NumberOfTradesPerStockPerDay = nmbrOfTradePerStock
 
-                                                .TickBasedStrategy = True
+                                                    .TrailingStoploss = False
 
-                                                .StockMaxProfitPercentagePerDay = Decimal.MaxValue
-                                                .StockMaxLossPercentagePerDay = Decimal.MinValue
+                                                    .TickBasedStrategy = True
 
-                                                .ExitOnStockFixedTargetStoploss = False
-                                                .StockMaxProfitPerDay = Decimal.MaxValue
-                                                .StockMaxLossPerDay = Decimal.MinValue
+                                                    .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                                                    .StockMaxLossPercentagePerDay = Decimal.MinValue
 
-                                                .ExitOnOverAllFixedTargetStoploss = False
-                                                .OverAllProfitPerDay = Decimal.MaxValue
-                                                .OverAllLossPerDay = Decimal.MinValue
+                                                    .ExitOnStockFixedTargetStoploss = False
+                                                    .StockMaxProfitPerDay = Decimal.MaxValue
+                                                    .StockMaxLossPerDay = Decimal.MinValue
 
-                                                'Rule
-                                                .ModifyStoploss = modifySL
-                                                .TargetMultiplier = tgtMul
-                                                .StoplossMultiplier = slMul
-                                                .BreakevenMultiplier = 2 / 3
-                                                .RuleSupporting1 = frstBrkoutSLlevel
-                                            End With
-                                            Await backtestStrategy.TestStrategyAsync(startDate, endDate).ConfigureAwait(False)
-                                        End Using
+                                                    .ExitOnOverAllFixedTargetStoploss = False
+                                                    .OverAllProfitPerDay = Decimal.MaxValue
+                                                    .OverAllLossPerDay = Decimal.MinValue
+                                                End With
+                                                Await backtestStrategy.TestStrategyAsync(startDate, endDate).ConfigureAwait(False)
+                                            End Using
+                                        Next
                                     Next
                                 Next
                             Next
@@ -423,15 +439,17 @@ Public Class frmMain
 
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
+                    Select Case .RuleNumber
+                        Case 10
+                            .RuleEntityData = New VijayCNCStrategyRule.StrategyRuleEntities With {.RefreshQuantityAtDayStart = False}
+                    End Select
+
                     .NumberOfTradeableStockPerDay = 1
 
                     .NumberOfTradesPerDay = Integer.MaxValue
                     .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
                     .TickBasedStrategy = True
-
-                    'Rule
-                    .RuleSupporting1 = False         'Refresh quantity at day start
                 End With
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate).ConfigureAwait(False)
             End Using

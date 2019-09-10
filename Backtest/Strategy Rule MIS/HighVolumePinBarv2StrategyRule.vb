@@ -6,14 +6,28 @@ Imports Utilities.Numbers.NumberManipulation
 Public Class HighVolumePinBarv2StrategyRule
     Inherits StrategyRule
 
+#Region "Entity"
+    Public Class StrategyRuleEntities
+        Inherits RuleEntities
+
+        Public TargetMultiplier As Decimal
+        Public StoplossMultiplier As Decimal
+        Public ReEntryAtPreviousSignal As Boolean
+        Public ModifyStoploss As Boolean
+    End Class
+#End Region
+
     Private _ATRPayload As Dictionary(Of Date, Decimal) = Nothing
+    Private _userInputs As StrategyRuleEntities
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
                    ByVal parentStrategy As Strategy,
                    ByVal tradingDate As Date,
                    ByVal tradingSymbol As String,
-                   ByVal canceller As CancellationTokenSource)
-        MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller)
+                   ByVal canceller As CancellationTokenSource,
+                   ByVal entities As RuleEntities)
+        MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
+        _userInputs = _entities
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -46,20 +60,20 @@ Public Class HighVolumePinBarv2StrategyRule
                     Dim exitCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(lastExecutedTrade.ExitTime, _signalPayload))
                     If exitCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
                         signalCandle = currentMinuteCandlePayload.PreviousCandlePayload
-                    ElseIf exitCandle.PayloadDate = currentMinuteCandlePayload.PayloadDate AndAlso _parentStrategy.RuleSupporting1 AndAlso
+                    ElseIf exitCandle.PayloadDate = currentMinuteCandlePayload.PayloadDate AndAlso _userInputs.ReEntryAtPreviousSignal AndAlso
                         lastExecutedTrade.ExitCondition = Trade.TradeExitCondition.StopLoss AndAlso lastExecutedTrade.PLPoint < 0 Then
                         signalCandle = lastExecutedTrade.SignalCandle
                         signalCandleSatisfied = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, lastExecutedTrade.EntryDirection)
                     End If
                 End If
-            ElseIf _parentStrategy.RuleSupporting1 AndAlso lastExecutedTrade IsNot Nothing AndAlso
+            ElseIf _userInputs.ReEntryAtPreviousSignal AndAlso lastExecutedTrade IsNot Nothing AndAlso
                 lastExecutedTrade.ExitCondition = Trade.TradeExitCondition.StopLoss AndAlso lastExecutedTrade.PLPoint < 0 Then
                 signalCandle = lastExecutedTrade.SignalCandle
                 signalCandleSatisfied = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, lastExecutedTrade.EntryDirection)
             End If
             If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
-                Dim targetPoint As Decimal = ConvertFloorCeling(_ATRPayload(signalCandle.PayloadDate) * _parentStrategy.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
-                Dim potentialSLPoint As Decimal = ConvertFloorCeling(_ATRPayload(signalCandle.PayloadDate) * _parentStrategy.StoplossMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
+                Dim targetPoint As Decimal = ConvertFloorCeling(_ATRPayload(signalCandle.PayloadDate) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
+                Dim potentialSLPoint As Decimal = ConvertFloorCeling(_ATRPayload(signalCandle.PayloadDate) * _userInputs.StoplossMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
 
                 If signalCandleSatisfied.Item2 = Trade.TradeExecutionDirection.Buy Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.High, RoundOfType.Floor)
@@ -109,7 +123,7 @@ Public Class HighVolumePinBarv2StrategyRule
                     If signalCandle.PayloadDate = currentMinuteCandlePayload.PreviousCandlePayload.PreviousCandlePayload.PayloadDate Then
                         ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                     End If
-                ElseIf _parentStrategy.RuleSupporting1 Then
+                ElseIf _userInputs.ReEntryAtPreviousSignal Then
                     Dim exitCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(lastExecutedTrade.ExitTime, _signalPayload))
                     If exitCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
                         Dim signalCandleSatisfied As Tuple(Of Boolean, Trade.TradeExecutionDirection) = IsSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload)
@@ -130,7 +144,7 @@ Public Class HighVolumePinBarv2StrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
 
-        If _parentStrategy.ModifyStoploss AndAlso currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+        If _userInputs.ModifyStoploss AndAlso currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
             Dim breakoutCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTrade.EntryTime, _signalPayload))
             Dim signalCandle As Payload = currentTrade.SignalCandle
             If breakoutCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
