@@ -218,12 +218,6 @@ Public Class frmMain
 
     Private _canceller As CancellationTokenSource
 
-    Private _initialCapital As Decimal = Decimal.MaxValue / 2
-    Private _usableCapital As Decimal = Decimal.MaxValue / 2
-    Private _minimumEarnedCapitalToWithdraw As Decimal = Decimal.MaxValue
-    Private _amountToBeWithdrawn As Decimal = Decimal.MaxValue / 2
-    Private _refreshQuantityAtDayStart As Boolean = True
-
     Private Sub frmMain_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         cmbRule.SelectedIndex = My.Settings.Rule
         rdbDatabase.Checked = My.Settings.Database
@@ -269,7 +263,7 @@ Public Class frmMain
             Else
                 sourceData = Strategy.SourceOfData.Database
             End If
-            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
+            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Futures
             Dim database As Common.DataBaseTable = Common.DataBaseTable.None
             Dim margin As Decimal = 0
             Dim tick As Decimal = 0
@@ -292,62 +286,77 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+            For timeFrame As Integer = 2 To 2 Step 1
+                For nmbrOfStock As Integer = 5 To 5 Step 1
+                    For nmbrOfTradePerStock As Integer = 100 To 100 Step 1
+                        For tgtMul As Integer = 4 To 4 Step 1
+                            For slMul As Integer = 1 To 1 Step 1
+                                For modifySL As Integer = 1 To 1 Step 1
+                                    For frstBrkoutSLlevel As Integer = 0 To 0 Step 1
+                                        Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                               exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                               exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                              tradeStartTime:=TimeSpan.Parse("9:15:00"),
-                                                              lastTradeEntryTime:=TimeSpan.Parse("15:14:59"),
+                                                              tradeStartTime:=TimeSpan.Parse("9:16:00"),
+                                                              lastTradeEntryTime:=TimeSpan.Parse("14:45:59"),
                                                               eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                               tickSize:=tick,
                                                               marginMultiplier:=margin,
-                                                              timeframe:=1,
+                                                              timeframe:=timeFrame,
                                                               heikenAshiCandle:=False,
                                                               stockType:=stockType,
                                                               databaseTable:=database,
                                                               dataSource:=sourceData,
-                                                              initialCapital:=_initialCapital,
-                                                              usableCapital:=_usableCapital,
-                                                              minimumEarnedCapitalToWithdraw:=_minimumEarnedCapitalToWithdraw,
-                                                              amountToBeWithdrawn:=_amountToBeWithdrawn)
-                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+                                                              initialCapital:=Decimal.MaxValue / 2,
+                                                              usableCapital:=Decimal.MaxValue / 2,
+                                                              minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                              amountToBeWithdrawn:=Decimal.MaxValue / 2)
+                                            AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                With backtestStrategy
-                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Future Stock List ATR Based.csv")
-                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based Stocks.csv")
-                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pre Market Data.csv")
-                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "BANKNIFTY.csv")
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
+                                            With backtestStrategy
+                                                '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Future Stock List ATR Based.csv")
+                                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based Stocks.csv")
+                                                '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pre Market Data.csv")
+                                                '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "BANKNIFTY.csv")
+                                                '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
 
-                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+                                                .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                    .NumberOfTradeableStockPerDay = 1
+                                                .NumberOfTradeableStockPerDay = nmbrOfStock
 
-                    .NumberOfTradesPerDay = Integer.MaxValue
-                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
+                                                .NumberOfTradesPerDay = Integer.MaxValue
+                                                .NumberOfTradesPerStockPerDay = nmbrOfTradePerStock
 
-                    .TrailingStoploss = False
+                                                .TrailingStoploss = False
 
-                    .TickBasedStrategy = True
+                                                .TickBasedStrategy = True
 
-                    .StockMaxProfitPercentagePerDay = Decimal.MaxValue
-                    .StockMaxLossPercentagePerDay = Decimal.MinValue
+                                                .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                                                .StockMaxLossPercentagePerDay = Decimal.MinValue
 
-                    .ExitOnStockFixedTargetStoploss = False
-                    .StockMaxProfitPerDay = Decimal.MaxValue
-                    .StockMaxLossPerDay = Decimal.MinValue
+                                                .ExitOnStockFixedTargetStoploss = False
+                                                .StockMaxProfitPerDay = Decimal.MaxValue
+                                                .StockMaxLossPerDay = Decimal.MinValue
 
-                    .ExitOnOverAllFixedTargetStoploss = False
-                    .OverAllProfitPerDay = Decimal.MaxValue
-                    .OverAllLossPerDay = Decimal.MinValue
+                                                .ExitOnOverAllFixedTargetStoploss = False
+                                                .OverAllProfitPerDay = Decimal.MaxValue
+                                                .OverAllLossPerDay = Decimal.MinValue
 
-                    'Rule
-                    .ModifyStoploss = False
-                    .TargetMultiplier = 1
-                    .StoplossMultiplier = 1
-                    .RuleSupporting1 = False
-                End With
-                Await backtestStrategy.TestStrategyAsync(startDate, endDate).ConfigureAwait(False)
-            End Using
+                                                'Rule
+                                                .ModifyStoploss = modifySL
+                                                .TargetMultiplier = tgtMul
+                                                .StoplossMultiplier = slMul
+                                                .BreakevenMultiplier = 2 / 3
+                                                .RuleSupporting1 = frstBrkoutSLlevel
+                                            End With
+                                            Await backtestStrategy.TestStrategyAsync(startDate, endDate).ConfigureAwait(False)
+                                        End Using
+                                    Next
+                                Next
+                            Next
+                        Next
+                    Next
+                Next
+            Next
         Catch ex As Exception
             MsgBox(ex.ToString, MsgBoxStyle.Critical)
         Finally
@@ -403,10 +412,10 @@ Public Class frmMain
                                                             stockType:=stockType,
                                                             databaseTable:=database,
                                                             dataSource:=sourceData,
-                                                            initialCapital:=_initialCapital,
-                                                            usableCapital:=_usableCapital,
-                                                            minimumEarnedCapitalToWithdraw:=_minimumEarnedCapitalToWithdraw,
-                                                            amountToBeWithdrawn:=_amountToBeWithdrawn)
+                                                            initialCapital:=Decimal.MaxValue / 2,
+                                                            usableCapital:=Decimal.MaxValue / 2,
+                                                            minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                            amountToBeWithdrawn:=Decimal.MaxValue / 2)
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
@@ -422,7 +431,7 @@ Public Class frmMain
                     .TickBasedStrategy = True
 
                     'Rule
-                    .RuleSupporting1 = _refreshQuantityAtDayStart         'Refresh quantity at day start
+                    .RuleSupporting1 = False         'Refresh quantity at day start
                 End With
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate).ConfigureAwait(False)
             End Using

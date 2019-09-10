@@ -37,8 +37,18 @@ Namespace StrategyHelper
                 Me.StockMaxProfitPerDay = Decimal.MaxValue
                 Me.StockMaxLossPerDay = Decimal.MinValue
             End If
-            Dim filename As String = String.Format("MIS Output Capital {3} {0}_{1}_{2}", Now.Hour, Now.Minute, Now.Second,
-                                                   If(Me.UsableCapital = Decimal.MaxValue / 2, "Infinite", Me.UsableCapital))
+            Dim filename As String = String.Format("TF {0},NoS {1},NoT {2},SML {3},SMP {4},ML {5},MP {6},Tgt {7},SL {8},ModifySL {9},Level {10}",
+                                                   Me.SignalTimeFrame,
+                                                   If(Me.NumberOfTradeableStockPerDay = Integer.MaxValue, 0, Me.NumberOfTradeableStockPerDay),
+                                                   If(Me.NumberOfTradesPerStockPerDay = Integer.MaxValue, 0, Me.NumberOfTradesPerStockPerDay),
+                                                   If(Me.StockMaxLossPercentagePerDay = Decimal.MinValue, 0, Me.StockMaxLossPercentagePerDay),
+                                                   If(Me.StockMaxProfitPercentagePerDay = Decimal.MaxValue, 0, Me.StockMaxProfitPercentagePerDay),
+                                                   If(Me.OverAllLossPerDay = Decimal.MinValue, 0, Me.OverAllLossPerDay),
+                                                   If(Me.OverAllProfitPerDay = Decimal.MaxValue, 0, Me.OverAllProfitPerDay),
+                                                   Me.TargetMultiplier,
+                                                   Me.StoplossMultiplier,
+                                                   Me.ModifyStoploss,
+                                                   Me.RuleSupporting1)
 
             Dim tradesFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Trades.a2t", filename))
             Dim capitalFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Capital.a2t", filename))
@@ -130,6 +140,8 @@ Namespace StrategyHelper
                                             stockRule = New VijayCNCStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller)
                                         Case 11
                                             stockRule = New TIIOppositeBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller)
+                                        Case 12
+                                            stockRule = New ATRFixedLevelBasedStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -534,24 +546,24 @@ Namespace StrategyHelper
                     Dim counter As Integer = 0
                     For i = 1 To dt.Rows.Count - 1
                         Dim rowDate As Date = dt.Rows(i)(0)
-                        'If rowDate.Date = tradingDate.Date Then
-                        If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                        Dim tradingSymbol As String = dt.Rows(i).Item(1)
-                        Dim instrumentName As String = Nothing
-                        If tradingSymbol.Contains("FUT") Then
-                            instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
-                        Else
-                            instrumentName = tradingSymbol
+                        If rowDate.Date = tradingDate.Date Then
+                            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                            Dim tradingSymbol As String = dt.Rows(i).Item(1)
+                            Dim instrumentName As String = Nothing
+                            If tradingSymbol.Contains("FUT") Then
+                                instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                            Else
+                                instrumentName = tradingSymbol
+                            End If
+                            Dim detailsOfStock As StockDetails = New StockDetails With
+                                {.StockName = instrumentName,
+                                .LotSize = dt.Rows(i).Item(2),
+                                .EligibleToTakeTrade = True,
+                                .Supporting1 = dt.Rows(i).Item(5)}
+                            ret.Add(instrumentName, detailsOfStock)
+                            counter += 1
+                            If counter = Me.NumberOfTradeableStockPerDay Then Exit For
                         End If
-                        Dim detailsOfStock As StockDetails = New StockDetails With
-                            {.StockName = instrumentName,
-                            .LotSize = dt.Rows(i).Item(2),
-                            .EligibleToTakeTrade = True,
-                            .Supporting1 = dt.Rows(i).Item(5)}
-                        ret.Add(instrumentName, detailsOfStock)
-                        counter += 1
-                        If counter = Me.NumberOfTradeableStockPerDay Then Exit For
-                        'End If
                     Next
                 End If
             End If

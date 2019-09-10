@@ -112,6 +112,7 @@
     <Compile Include="Strategy Helper\StrategyRule.vb" />
     <Compile Include="Strategy Helper\Trade.vb" />
     <Compile Include="Strategy Rule CNC\VijayCNCStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\ATRFixedLevelBasedStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\BANKNIFTYDayLongSMIStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\DayStartSMIStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\DonchianFractalStrategyRule.vb" />

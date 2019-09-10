@@ -141,6 +141,7 @@ Namespace StrategyHelper
         Public TrailingStoploss As Boolean = False
         Public TargetMultiplier As Decimal = Decimal.MinValue
         Public StoplossMultiplier As Decimal = Decimal.MinValue
+        Public BreakevenMultiplier As Decimal = Decimal.MinValue
         Public RuleSupporting1 As Boolean = False
 #End Region
 

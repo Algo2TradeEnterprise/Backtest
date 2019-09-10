@@ -130,6 +130,8 @@ Namespace StrategyHelper
                                             stockRule = New VijayCNCStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller)
                                         Case 11
                                             Throw New ApplicationException("Not a CNC strategy")
+                                        Case 12
+                                            Throw New ApplicationException("Not a CNC strategy")
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
