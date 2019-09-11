@@ -287,15 +287,15 @@ Public Class frmMain
             End Select
 
             For timeFrame As Integer = 1 To 1 Step 1
-                For nmbrOfStock As Integer = 1 To 1 Step 1
+                For nmbrOfStock As Integer = 5 To 5 Step 1
                     For level As Integer = 4 To 4 Step 1
                         For nmbrOfTradePerStock As Integer = 4 To 4 Step -1
                             For maxLossPercentage As Decimal = Decimal.MinValue To Decimal.MinValue Step 1
-                                For tgtMul As Integer = 2 To 4 Step 2
+                                For tgtMul As Integer = 3 To 4 Step 1
                                     For slMul As Integer = 1 To 1 Step 1
-                                        For brkevenMvmnt As Integer = 0 To 1 Step 1
+                                        For brkevenMvmnt As Integer = 0 To 0 Step 1
                                             For brkevenMul As Decimal = 2 / 3 To 2 / 3 Step 1
-                                                For slMakeupTrade As Integer = 3 To 2 Step -1
+                                                For slMakeupTrade As Integer = Integer.MaxValue To Integer.MaxValue Step -1
                                                     Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                                                       exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                                                       exchangeEndTime:=TimeSpan.Parse("15:29:59"),

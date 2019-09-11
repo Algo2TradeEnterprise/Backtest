@@ -244,7 +244,7 @@ Public Class FixedLevelBasedStrategyRule
                 If candle.CandleRangePercentage * (_userInputs.TargetMultiplier + _userInputs.StoplossMultiplier) <= _stockATR / 2 Then
                     Dim atr As Decimal = _ATRPayload(candle.PayloadDate)
                     If candle.Volume > candle.PreviousCandlePayload.Volume AndAlso
-                        candle.CandleRange < candle.PreviousCandlePayload.CandleRange Then
+                        candle.CandleRange <= candle.PreviousCandlePayload.CandleRange Then
                         _potentialHighEntryPrice = candle.High
                         _potentialLowEntryPrice = candle.Low
                         _signalCandle = candle
