@@ -339,7 +339,7 @@ Public Class frmMain
                                                         Case 11
                                                             .RuleEntityData = New TIIOppositeBreakoutStrategyRule.StrategyRuleEntities With {.TargetMultiplier = tgtMul, .ModifyStoploss = True}
                                                         Case 12
-                                                            .RuleEntityData = New ATRFixedLevelBasedStrategyRule.StrategyRuleEntities With {.TargetMultiplier = tgtMul, .StoplossMultiplier = slMul, .BreakevenMovement = brkevenMvmnt, .BreakevenMultiplier = brkevenMul, .LevelType = level}
+                                                            .RuleEntityData = New FixedLevelBasedStrategyRule.StrategyRuleEntities With {.TargetMultiplier = tgtMul, .StoplossMultiplier = slMul, .BreakevenMovement = brkevenMvmnt, .BreakevenMultiplier = brkevenMul, .LevelType = level}
                                                     End Select
 
 

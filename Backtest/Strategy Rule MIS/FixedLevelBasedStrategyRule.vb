@@ -3,7 +3,7 @@ Imports System.Threading
 Imports Algo2TradeBLL
 Imports Utilities.Numbers.NumberManipulation
 
-Public Class ATRFixedLevelBasedStrategyRule
+Public Class FixedLevelBasedStrategyRule
     Inherits StrategyRule
 
 #Region "Entity"
@@ -14,12 +14,13 @@ Public Class ATRFixedLevelBasedStrategyRule
         Public StoplossMultiplier As Decimal
         Public BreakevenMovement As Boolean
         Public BreakevenMultiplier As Decimal
+        Public StoplossMakeupTrade As Integer
         Public LevelType As TypeOfLevel
 
         Enum TypeOfLevel
             None = 1
-            Breakout
-            SL
+            BreakoutATR
+            StoplossATR
             Candle
         End Enum
     End Class
@@ -62,60 +63,60 @@ Public Class ATRFixedLevelBasedStrategyRule
             _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol) < _parentStrategy.NumberOfTradesPerStockPerDay AndAlso
             _parentStrategy.TotalPLAfterBrokerage(currentTick.PayloadDate) < _parentStrategy.OverAllProfitPerDay AndAlso
             _parentStrategy.TotalPLAfterBrokerage(currentTick.PayloadDate) > Math.Abs(_parentStrategy.OverAllLossPerDay) * -1 AndAlso
+            _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) < _parentStrategy.StockMaxProfitPerDay AndAlso
+            _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) > Math.Abs(_parentStrategy.StockMaxLossPerDay) * -1 AndAlso
+            _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) < Me.MaxProfitOfThisStock AndAlso
+            _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) > Math.Abs(Me.MaxLossOfThisStock) * -1 AndAlso
             currentMinuteCandlePayload.PayloadDate >= tradeStartTime AndAlso GetLastDayLastCandleATR() <> Decimal.MinValue Then
             Dim signalCandle As Payload = Nothing
 
-            Dim signalCandleSatisfied As Tuple(Of Boolean, Decimal, Decimal) = IsSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload)
+            Dim signalCandleSatisfied As Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection) = IsSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
             If signalCandleSatisfied IsNot Nothing AndAlso signalCandleSatisfied.Item1 Then
-                If _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.Breakout OrElse
-                    (_userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.SL AndAlso _entryChanged) OrElse
+                If _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.BreakoutATR OrElse
+                    (_userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.StoplossATR AndAlso _entryChanged) OrElse
                     _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.Candle Then
                     signalCandle = _signalCandle
                 End If
             End If
 
             If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
-                Dim tradeDirection As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
-                Dim middlePoint As Decimal = (signalCandleSatisfied.Item2 + signalCandleSatisfied.Item3) / 2
-                Dim range As Decimal = signalCandleSatisfied.Item2 - middlePoint
-                If currentTick.Open >= middlePoint + range * 60 / 100 Then
-                    tradeDirection = Trade.TradeExecutionDirection.Buy
-                ElseIf currentTick.Open <= middlePoint - range * 60 / 100 Then
-                    tradeDirection = Trade.TradeExecutionDirection.Sell
-                End If
-                If tradeDirection = Trade.TradeExecutionDirection.Buy Then
+                If signalCandleSatisfied.Item4 = Trade.TradeExecutionDirection.Buy Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2, RoundOfType.Floor)
                     parameter = New PlaceOrderParameters With {
                         .EntryPrice = signalCandleSatisfied.Item2 + buffer,
                         .EntryDirection = Trade.TradeExecutionDirection.Buy,
                         .Quantity = _lotSize,
-                        .Stoploss = signalCandleSatisfied.Item2 - ConvertFloorCeling(GetLastDayLastCandleATR() * _userInputs.StoplossMultiplier, _parentStrategy.TickSize, RoundOfType.Celing),
+                        .Stoploss = signalCandleSatisfied.Item3,
                         .Target = .EntryPrice + ConvertFloorCeling((.EntryPrice - .Stoploss) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing),
                         .Buffer = buffer,
                         .SignalCandle = signalCandle,
                         .OrderType = Trade.TypeOfOrder.SL,
-                        .Supporting1 = signalCandle.PayloadDate.ToShortTimeString,
-                        .Supporting2 = GetLastDayLastCandleATR()
+                        .Supporting1 = signalCandle.PayloadDate.ToShortTimeString
                     }
-                ElseIf tradeDirection = Trade.TradeExecutionDirection.Sell Then
+                ElseIf signalCandleSatisfied.Item4 = Trade.TradeExecutionDirection.Sell Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item3, RoundOfType.Floor)
                     parameter = New PlaceOrderParameters With {
-                        .EntryPrice = signalCandleSatisfied.Item3 - buffer,
+                        .EntryPrice = signalCandleSatisfied.Item2 - buffer,
                         .EntryDirection = Trade.TradeExecutionDirection.Sell,
                         .Quantity = _lotSize,
-                        .Stoploss = signalCandleSatisfied.Item3 + ConvertFloorCeling(GetLastDayLastCandleATR() * _userInputs.StoplossMultiplier, _parentStrategy.TickSize, RoundOfType.Celing),
+                        .Stoploss = signalCandleSatisfied.Item3,
                         .Target = .EntryPrice - ConvertFloorCeling((.Stoploss - .EntryPrice) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing),
                         .Buffer = buffer,
                         .SignalCandle = signalCandle,
                         .OrderType = Trade.TypeOfOrder.SL,
-                        .Supporting1 = signalCandle.PayloadDate.ToShortTimeString,
-                        .Supporting2 = GetLastDayLastCandleATR()
+                        .Supporting1 = signalCandle.PayloadDate.ToShortTimeString
                     }
                 End If
             End If
         End If
         If parameter IsNot Nothing Then
             ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
+            If _parentStrategy.StockMaxProfitPercentagePerDay <> Decimal.MaxValue AndAlso Me.MaxProfitOfThisStock = Decimal.MaxValue Then
+                Me.MaxProfitOfThisStock = _parentStrategy.CalculatePL(currentTick.TradingSymbol, parameter.EntryPrice, ConvertFloorCeling(parameter.EntryPrice + parameter.EntryPrice * _parentStrategy.StockMaxProfitPercentagePerDay / 100, _parentStrategy.TickSize, RoundOfType.Celing), parameter.Quantity, _lotSize, _parentStrategy.StockType)
+            End If
+            If _parentStrategy.StockMaxLossPercentagePerDay <> Decimal.MinValue AndAlso Me.MaxLossOfThisStock = Decimal.MinValue Then
+                Me.MaxLossOfThisStock = _parentStrategy.CalculatePL(currentTick.TradingSymbol, parameter.EntryPrice, ConvertFloorCeling(parameter.EntryPrice - parameter.EntryPrice * _parentStrategy.StockMaxProfitPercentagePerDay / 100, _parentStrategy.TickSize, RoundOfType.Celing), parameter.Quantity, _lotSize, _parentStrategy.StockType)
+            End If
         End If
         Return ret
     End Function
@@ -128,17 +129,9 @@ Public Class ATRFixedLevelBasedStrategyRule
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
             Dim signalCandle As Payload = currentTrade.SignalCandle
             If signalCandle IsNot Nothing Then
-                Dim signalCandleSatisfied As Tuple(Of Boolean, Decimal, Decimal) = IsSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload)
+                Dim signalCandleSatisfied As Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection) = IsSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
                 If signalCandleSatisfied IsNot Nothing AndAlso signalCandleSatisfied.Item1 Then
-                    Dim tradeDirection As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
-                    Dim middlePoint As Decimal = (signalCandleSatisfied.Item2 + signalCandleSatisfied.Item3) / 2
-                    Dim range As Decimal = signalCandleSatisfied.Item2 - middlePoint
-                    If currentTick.Open >= middlePoint + range * 60 / 100 Then
-                        tradeDirection = Trade.TradeExecutionDirection.Buy
-                    ElseIf currentTick.Open <= middlePoint - range * 60 / 100 Then
-                        tradeDirection = Trade.TradeExecutionDirection.Sell
-                    End If
-                    If currentTrade.EntryDirection <> tradeDirection Then
+                    If currentTrade.EntryDirection <> signalCandleSatisfied.Item4 Then
                         ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                     End If
                 End If
@@ -181,43 +174,75 @@ Public Class ATRFixedLevelBasedStrategyRule
         If Not _entryChanged AndAlso GetLastDayLastCandleATR() <> Decimal.MinValue AndAlso
             _potentialHighEntryPrice <> Decimal.MinValue AndAlso _potentialLowEntryPrice <> Decimal.MinValue Then
             If currentTick.High >= _potentialHighEntryPrice Then
-                If _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.SL Then
+                If _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.StoplossATR Then
                     Dim middlePoint As Decimal = _potentialHighEntryPrice
                     _potentialHighEntryPrice = middlePoint + ConvertFloorCeling(GetLastDayLastCandleATR() * _userInputs.StoplossMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
                     _potentialLowEntryPrice = middlePoint - ConvertFloorCeling(GetLastDayLastCandleATR() * _userInputs.StoplossMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
-                ElseIf _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.Breakout Then
+                ElseIf _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.BreakoutATR Then
                     _potentialLowEntryPrice = _potentialHighEntryPrice - 2 * ConvertFloorCeling(GetLastDayLastCandleATR() * _userInputs.StoplossMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
-                    'ElseIf _userInputs.LevelType = ATRFixedLevelBasedStrategyRuleEntities.TypeOfLevel.Candle Then
-                    '    _potentialLowEntryPrice = _potentialHighEntryPrice - 2 * ConvertFloorCeling(GetLastDayLastCandleATR() * _userInputs.StoplossMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
+                ElseIf _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.Candle Then
+                    _potentialLowEntryPrice = _potentialHighEntryPrice - 2 * ConvertFloorCeling(_signalCandle.CandleRange * _userInputs.StoplossMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
                 End If
                 _entryChanged = True
             ElseIf currentTick.Low <= _potentialLowEntryPrice Then
-                If _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.SL Then
+                If _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.StoplossATR Then
                     Dim middlePoint As Decimal = _potentialLowEntryPrice
                     _potentialHighEntryPrice = middlePoint + ConvertFloorCeling(GetLastDayLastCandleATR() * _userInputs.StoplossMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
                     _potentialLowEntryPrice = middlePoint - ConvertFloorCeling(GetLastDayLastCandleATR() * _userInputs.StoplossMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
-                ElseIf _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.Breakout Then
+                ElseIf _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.BreakoutATR Then
                     _potentialHighEntryPrice = _potentialLowEntryPrice + 2 * ConvertFloorCeling(GetLastDayLastCandleATR() * _userInputs.StoplossMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
-                    'ElseIf _userInputs.LevelType = ATRFixedLevelBasedStrategyRuleEntities.TypeOfLevel.Candle Then
-                    '    _potentialLowEntryPrice = _potentialHighEntryPrice - 2 * ConvertFloorCeling(GetLastDayLastCandleATR() * _userInputs.StoplossMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
+                ElseIf _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.Candle Then
+                    _potentialHighEntryPrice = _potentialLowEntryPrice + 2 * ConvertFloorCeling(_signalCandle.CandleRange * _userInputs.StoplossMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
                 End If
                 _entryChanged = True
             End If
         End If
     End Function
 
-    Private Function IsSignalCandle(ByVal candle As Payload) As Tuple(Of Boolean, Decimal, Decimal)
-        Dim ret As Tuple(Of Boolean, Decimal, Decimal) = Nothing
+    Private Function IsSignalCandle(ByVal candle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)
+        Dim ret As Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection) = Nothing
         If candle IsNot Nothing AndAlso Not candle.PreviousCandlePayload.DeadCandle Then
-            If _potentialHighEntryPrice <> Decimal.MinValue AndAlso _potentialLowEntryPrice <> Decimal.MinValue Then
-                ret = New Tuple(Of Boolean, Decimal, Decimal)(True, _potentialHighEntryPrice, _potentialLowEntryPrice)
-            Else
+            If _potentialHighEntryPrice = Decimal.MinValue AndAlso _potentialLowEntryPrice = Decimal.MinValue Then
                 Dim atr As Decimal = _ATRPayload(candle.PayloadDate)
                 If candle.CandleRange < atr Then
                     _potentialHighEntryPrice = candle.High
                     _potentialLowEntryPrice = candle.Low
                     _signalCandle = candle
-                    ret = New Tuple(Of Boolean, Decimal, Decimal)(True, _potentialHighEntryPrice, _potentialLowEntryPrice)
+                End If
+            End If
+
+            If _potentialHighEntryPrice <> Decimal.MinValue AndAlso _potentialLowEntryPrice <> Decimal.MinValue Then
+                If _entryChanged Then
+                    Dim middlePoint As Decimal = (_potentialHighEntryPrice + _potentialLowEntryPrice) / 2
+                    Dim range As Decimal = _potentialHighEntryPrice - middlePoint
+                    If currentTick.Open >= middlePoint + range * 60 / 100 Then
+                        ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, _potentialHighEntryPrice, middlePoint, Trade.TradeExecutionDirection.Buy)
+                    ElseIf currentTick.Open <= middlePoint - range * 60 / 100 Then
+                        ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, _potentialLowEntryPrice, middlePoint, Trade.TradeExecutionDirection.Sell)
+                    End If
+                Else
+                    Dim tradeDirection As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
+                    Dim middlePoint As Decimal = (_potentialHighEntryPrice + _potentialLowEntryPrice) / 2
+                    Dim range As Decimal = _potentialHighEntryPrice - middlePoint
+                    If currentTick.Open >= middlePoint + range * 30 / 100 Then
+                        tradeDirection = Trade.TradeExecutionDirection.Buy
+                    ElseIf currentTick.Open <= middlePoint - range * 30 / 100 Then
+                        tradeDirection = Trade.TradeExecutionDirection.Sell
+                    End If
+                    Select Case _userInputs.LevelType
+                        Case StrategyRuleEntities.TypeOfLevel.BreakoutATR
+                            If tradeDirection = Trade.TradeExecutionDirection.Buy Then
+                                ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, _potentialHighEntryPrice, _potentialHighEntryPrice - ConvertFloorCeling(GetLastDayLastCandleATR() * _userInputs.StoplossMultiplier, _parentStrategy.TickSize, RoundOfType.Celing), Trade.TradeExecutionDirection.Buy)
+                            ElseIf tradeDirection = Trade.TradeExecutionDirection.Sell Then
+                                ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, _potentialLowEntryPrice, _potentialLowEntryPrice + ConvertFloorCeling(GetLastDayLastCandleATR() * _userInputs.StoplossMultiplier, _parentStrategy.TickSize, RoundOfType.Celing), Trade.TradeExecutionDirection.Sell)
+                            End If
+                        Case StrategyRuleEntities.TypeOfLevel.Candle
+                            If tradeDirection = Trade.TradeExecutionDirection.Buy Then
+                                ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, _potentialHighEntryPrice, _potentialLowEntryPrice, Trade.TradeExecutionDirection.Buy)
+                            ElseIf tradeDirection = Trade.TradeExecutionDirection.Sell Then
+                                ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, _potentialLowEntryPrice, _potentialHighEntryPrice, Trade.TradeExecutionDirection.Sell)
+                            End If
+                    End Select
                 End If
             End If
         End If

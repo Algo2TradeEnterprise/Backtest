@@ -46,10 +46,10 @@ Namespace StrategyHelper
                                                    If(Me.StockMaxProfitPercentagePerDay = Decimal.MaxValue, 0, Me.StockMaxProfitPercentagePerDay),
                                                    If(Me.OverAllLossPerDay = Decimal.MinValue, 0, Me.OverAllLossPerDay),
                                                    If(Me.OverAllProfitPerDay = Decimal.MaxValue, 0, Me.OverAllProfitPerDay),
-                                                   CType(RuleEntityData, ATRFixedLevelBasedStrategyRule.StrategyRuleEntities).TargetMultiplier,
-                                                   CType(RuleEntityData, ATRFixedLevelBasedStrategyRule.StrategyRuleEntities).StoplossMultiplier,
-                                                   CType(RuleEntityData, ATRFixedLevelBasedStrategyRule.StrategyRuleEntities).BreakevenMovement,
-                                                   CType(RuleEntityData, ATRFixedLevelBasedStrategyRule.StrategyRuleEntities).LevelType.ToString)
+                                                   CType(RuleEntityData, FixedLevelBasedStrategyRule.StrategyRuleEntities).TargetMultiplier,
+                                                   CType(RuleEntityData, FixedLevelBasedStrategyRule.StrategyRuleEntities).StoplossMultiplier,
+                                                   CType(RuleEntityData, FixedLevelBasedStrategyRule.StrategyRuleEntities).BreakevenMovement,
+                                                   CType(RuleEntityData, FixedLevelBasedStrategyRule.StrategyRuleEntities).LevelType.ToString)
 
             Dim tradesFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Trades.a2t", filename))
             Dim capitalFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Capital.a2t", filename))
@@ -141,7 +141,7 @@ Namespace StrategyHelper
                                         Case 11
                                             stockRule = New TIIOppositeBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 12
-                                            stockRule = New ATRFixedLevelBasedStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                            stockRule = New FixedLevelBasedStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
