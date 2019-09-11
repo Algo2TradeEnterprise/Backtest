@@ -113,7 +113,7 @@ Public Class FixedLevelBasedStrategyRule
                         .Supporting1 = signalCandle.PayloadDate.ToShortTimeString
                     }
                 ElseIf signalCandleSatisfied.Item4 = Trade.TradeExecutionDirection.Sell Then
-                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item3, RoundOfType.Floor)
+                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2, RoundOfType.Floor)
                     parameter = New PlaceOrderParameters With {
                         .EntryPrice = signalCandleSatisfied.Item2 - buffer,
                         .EntryDirection = Trade.TradeExecutionDirection.Sell,
@@ -160,7 +160,15 @@ Public Class FixedLevelBasedStrategyRule
             If signalCandle IsNot Nothing Then
                 Dim signalCandleSatisfied As Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection) = IsSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
                 If signalCandleSatisfied IsNot Nothing AndAlso signalCandleSatisfied.Item1 Then
-                    If currentTrade.EntryDirection <> signalCandleSatisfied.Item4 Then
+                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2, RoundOfType.Floor)
+                    Dim entryPrice As Decimal = Decimal.MinValue
+                    If signalCandleSatisfied.Item4 = Trade.TradeExecutionDirection.Buy Then
+                        entryPrice = signalCandleSatisfied.Item2 + buffer
+                    ElseIf signalCandleSatisfied.Item4 = Trade.TradeExecutionDirection.Sell Then
+                        entryPrice = signalCandleSatisfied.Item2 - buffer
+                    End If
+                    If (currentTrade.EntryDirection <> signalCandleSatisfied.Item4) OrElse
+                        (currentTrade.EntryPrice <> entryPrice) Then
                         ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                     End If
                 End If
