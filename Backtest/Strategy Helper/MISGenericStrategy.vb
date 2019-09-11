@@ -38,18 +38,19 @@ Namespace StrategyHelper
                 Me.StockMaxProfitPerDay = Decimal.MaxValue
                 Me.StockMaxLossPerDay = Decimal.MinValue
             End If
-            Dim filename As String = String.Format("TF {0},NoS {1},NoT {2},SML {3},SMP {4},ML {5},MP {6},Tgt {7},SL {8},ModifySL {9},Level {10}",
+            Dim filename As String = String.Format("TF {0},NoS {1},Level {2},NoT {3},SML {4},SMP {5},ML {6},MP {7},Tgt {8},SL {9},BrkevnMvmnt {10},SLMakeup {11}",
                                                    Me.SignalTimeFrame,
-                                                   If(Me.NumberOfTradeableStockPerDay = Integer.MaxValue, 0, Me.NumberOfTradeableStockPerDay),
-                                                   If(Me.NumberOfTradesPerStockPerDay = Integer.MaxValue, 0, Me.NumberOfTradesPerStockPerDay),
-                                                   If(Me.StockMaxLossPercentagePerDay = Decimal.MinValue, 0, Me.StockMaxLossPercentagePerDay),
-                                                   If(Me.StockMaxProfitPercentagePerDay = Decimal.MaxValue, 0, Me.StockMaxProfitPercentagePerDay),
-                                                   If(Me.OverAllLossPerDay = Decimal.MinValue, 0, Me.OverAllLossPerDay),
-                                                   If(Me.OverAllProfitPerDay = Decimal.MaxValue, 0, Me.OverAllProfitPerDay),
+                                                   If(Me.NumberOfTradeableStockPerDay = Integer.MaxValue, "∞", Me.NumberOfTradeableStockPerDay),
+                                                   CType(RuleEntityData, FixedLevelBasedStrategyRule.StrategyRuleEntities).LevelType.ToString,
+                                                   If(Me.NumberOfTradesPerStockPerDay = Integer.MaxValue, "∞", Me.NumberOfTradesPerStockPerDay),
+                                                   If(Me.StockMaxLossPercentagePerDay = Decimal.MinValue, "∞", Me.StockMaxLossPercentagePerDay),
+                                                   If(Me.StockMaxProfitPercentagePerDay = Decimal.MaxValue, "∞", Me.StockMaxProfitPercentagePerDay),
+                                                   If(Me.OverAllLossPerDay = Decimal.MinValue, "∞", Me.OverAllLossPerDay),
+                                                   If(Me.OverAllProfitPerDay = Decimal.MaxValue, "∞", Me.OverAllProfitPerDay),
                                                    CType(RuleEntityData, FixedLevelBasedStrategyRule.StrategyRuleEntities).TargetMultiplier,
                                                    CType(RuleEntityData, FixedLevelBasedStrategyRule.StrategyRuleEntities).StoplossMultiplier,
                                                    CType(RuleEntityData, FixedLevelBasedStrategyRule.StrategyRuleEntities).BreakevenMovement,
-                                                   CType(RuleEntityData, FixedLevelBasedStrategyRule.StrategyRuleEntities).LevelType.ToString)
+                                                   If(CType(RuleEntityData, FixedLevelBasedStrategyRule.StrategyRuleEntities).StoplossMakeupTrade = Integer.MaxValue, "∞", CType(RuleEntityData, FixedLevelBasedStrategyRule.StrategyRuleEntities).StoplossMakeupTrade))
 
             Dim tradesFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Trades.a2t", filename))
             Dim capitalFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Capital.a2t", filename))
