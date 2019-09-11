@@ -32,6 +32,7 @@ Public Class FixedLevelBasedStrategyRule
     Private _entryChanged As Boolean = False
     Private _ATRPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _userInputs As StrategyRuleEntities
+    Private _stockATR As Decimal
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -39,8 +40,10 @@ Public Class FixedLevelBasedStrategyRule
                    ByVal tradingDate As Date,
                    ByVal tradingSymbol As String,
                    ByVal canceller As CancellationTokenSource,
-                   ByVal entities As RuleEntities)
+                   ByVal entities As RuleEntities,
+                   ByVal stockATR As Decimal)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
+        _stockATR = stockATR
         _userInputs = _entities
     End Sub
 
@@ -102,7 +105,7 @@ Public Class FixedLevelBasedStrategyRule
                         .EntryPrice = signalCandleSatisfied.Item2 + buffer,
                         .EntryDirection = Trade.TradeExecutionDirection.Buy,
                         .Quantity = _lotSize,
-                        .Stoploss = signalCandleSatisfied.Item3,
+                        .Stoploss = signalCandleSatisfied.Item3 - If(_userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.Candle, buffer, 0),
                         .Target = .EntryPrice + ConvertFloorCeling((.EntryPrice - .Stoploss) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing),
                         .Buffer = buffer,
                         .SignalCandle = signalCandle,
@@ -115,7 +118,7 @@ Public Class FixedLevelBasedStrategyRule
                         .EntryPrice = signalCandleSatisfied.Item2 - buffer,
                         .EntryDirection = Trade.TradeExecutionDirection.Sell,
                         .Quantity = _lotSize,
-                        .Stoploss = signalCandleSatisfied.Item3,
+                        .Stoploss = signalCandleSatisfied.Item3 + If(_userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.Candle, buffer, 0),
                         .Target = .EntryPrice - ConvertFloorCeling((.Stoploss - .EntryPrice) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing),
                         .Buffer = buffer,
                         .SignalCandle = signalCandle,
@@ -230,8 +233,7 @@ Public Class FixedLevelBasedStrategyRule
         If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing AndAlso
             Not candle.DeadCandle AndAlso Not candle.PreviousCandlePayload.DeadCandle Then
             If _potentialHighEntryPrice = Decimal.MinValue AndAlso _potentialLowEntryPrice = Decimal.MinValue Then
-                If _parentStrategy.StockMaxLossPercentagePerDay = Decimal.MinValue OrElse
-                    candle.CandleRangePercentage <= _parentStrategy.StockMaxLossPercentagePerDay / 2 Then
+                If candle.CandleRangePercentage * (_userInputs.TargetMultiplier + _userInputs.StoplossMultiplier) <= _stockATR / 2 Then
                     Dim atr As Decimal = _ATRPayload(candle.PayloadDate)
                     If candle.Volume > candle.PreviousCandlePayload.Volume AndAlso
                         candle.CandleRange < candle.PreviousCandlePayload.CandleRange Then

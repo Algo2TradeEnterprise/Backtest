@@ -292,12 +292,12 @@ Public Class frmMain
                         For tgtMul As Integer = 4 To 4 Step 1
                             For slMul As Integer = 1 To 1 Step 1
                                 For level As Integer = 4 To 4 Step 1
-                                    For brkevenMvmnt As Integer = 1 To 1 Step 1
+                                    For brkevenMvmnt As Integer = 0 To 0 Step 1
                                         For brkevenMul As Decimal = 2 / 3 To 2 / 3 Step 1
                                             Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                                               exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                                               exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                                                              tradeStartTime:=TimeSpan.Parse("9:16:00"),
+                                                                                              tradeStartTime:=TimeSpan.Parse("9:18:00"),
                                                                                               lastTradeEntryTime:=TimeSpan.Parse("14:45:59"),
                                                                                               eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                                                               tickSize:=tick,
@@ -315,10 +315,11 @@ Public Class frmMain
 
                                                 With backtestStrategy
                                                     '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Future Stock List ATR Based.csv")
-                                                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based Stocks.csv")
+                                                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based Stocks.csv")
                                                     '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pre Market Data.csv")
                                                     '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "BANKNIFTY.csv")
                                                     '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
+                                                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Volume spike Stock List.csv")
 
                                                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
                                                     Select Case .RuleNumber
