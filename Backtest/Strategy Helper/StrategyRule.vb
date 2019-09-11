@@ -88,9 +88,11 @@ Namespace StrategyHelper
 
         Public Overridable Function IsSignalTriggered(ByVal entryPrice As Decimal, ByVal entryDirection As Trade.TradeExecutionDirection, ByVal startTime As Date, ByVal endTime As Date) As Boolean
             Dim ret As Boolean = False
+            startTime = _parentStrategy.GetCurrentXMinuteCandleTime(startTime, _inputPayload)
+            endTime = _parentStrategy.GetCurrentXMinuteCandleTime(endTime, _inputPayload)
             If _inputPayload IsNot Nothing AndAlso _inputPayload.Count > 0 Then
                 For Each runningPayload In _inputPayload.Keys
-                    If runningPayload >= startTime AndAlso runningPayload <= endTime Then
+                    If runningPayload >= startTime AndAlso runningPayload < endTime Then
                         If entryDirection = Trade.TradeExecutionDirection.Buy Then
                             If _inputPayload(runningPayload).High >= entryPrice Then
                                 ret = True

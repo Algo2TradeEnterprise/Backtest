@@ -286,12 +286,12 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            For timeFrame As Integer = 2 To 2 Step 1
+            For timeFrame As Integer = 1 To 1 Step 1
                 For nmbrOfStock As Integer = 5 To 5 Step 1
                     For nmbrOfTradePerStock As Integer = 100 To 100 Step 1
                         For tgtMul As Integer = 4 To 4 Step 1
                             For slMul As Integer = 1 To 1 Step 1
-                                For level As Integer = 2 To 2 Step 1
+                                For level As Integer = 4 To 4 Step 1
                                     For brkevenMvmnt As Integer = 1 To 1 Step 1
                                         For brkevenMul As Decimal = 2 / 3 To 2 / 3 Step 1
                                             Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
@@ -339,7 +339,13 @@ Public Class frmMain
                                                         Case 11
                                                             .RuleEntityData = New TIIOppositeBreakoutStrategyRule.StrategyRuleEntities With {.TargetMultiplier = tgtMul, .ModifyStoploss = True}
                                                         Case 12
-                                                            .RuleEntityData = New FixedLevelBasedStrategyRule.StrategyRuleEntities With {.TargetMultiplier = tgtMul, .StoplossMultiplier = slMul, .BreakevenMovement = brkevenMvmnt, .BreakevenMultiplier = brkevenMul, .LevelType = level}
+                                                            .RuleEntityData = New FixedLevelBasedStrategyRule.StrategyRuleEntities With
+                                                                {.TargetMultiplier = tgtMul,
+                                                                .StoplossMultiplier = slMul,
+                                                                .BreakevenMovement = brkevenMvmnt,
+                                                                .BreakevenMultiplier = brkevenMul,
+                                                                .LevelType = level,
+                                                                .StoplossMakeupTrade = 3}
                                                     End Select
 
 
@@ -353,7 +359,7 @@ Public Class frmMain
                                                     .TickBasedStrategy = True
 
                                                     .StockMaxProfitPercentagePerDay = Decimal.MaxValue
-                                                    .StockMaxLossPercentagePerDay = Decimal.MinValue
+                                                    .StockMaxLossPercentagePerDay = 1
 
                                                     .ExitOnStockFixedTargetStoploss = False
                                                     .StockMaxProfitPerDay = Decimal.MaxValue
