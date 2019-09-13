@@ -366,7 +366,7 @@ Public Class FixedLevelBasedStrategyRule
         Dim ret As Boolean = False
         Dim tradeStartTime As Date = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, 9, 17, 0)
         Dim middlePoint As Decimal = (candle.PreviousCandlePayload.High + candle.PreviousCandlePayload.Low) / 2
-        If candle.PreviousCandlePayload.PayloadDate >= tradeStartTime AndAlso candle.CandleRange <= candle.PreviousCandlePayload.CandleRange / 2 AndAlso
+        If candle.PayloadDate >= tradeStartTime AndAlso candle.CandleRange <= candle.PreviousCandlePayload.CandleRange / 2 AndAlso
             (candle.High <= ConvertFloorCeling(middlePoint, _parentStrategy.TickSize, RoundOfType.Floor) OrElse
             candle.Low >= ConvertFloorCeling(middlePoint, _parentStrategy.TickSize, RoundOfType.Celing)) Then
             ret = True
