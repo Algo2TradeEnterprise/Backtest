@@ -72,6 +72,7 @@ Namespace StrategyHelper
                 While tradeCheckingDate <= endDate.Date
                     _canceller.Token.ThrowIfCancellationRequested()
                     Me.AvailableCapital = Me.UsableCapital
+                    If Me.TrailingMTM Then Me.OverAllLossPerDay = Decimal.MinValue
                     TradesTaken = New Dictionary(Of Date, Dictionary(Of String, List(Of Trade)))
                     Dim stockList As Dictionary(Of String, StockDetails) = GetStockData(tradeCheckingDate)
 
@@ -226,6 +227,13 @@ Namespace StrategyHelper
                                                         Me.ExitOnOverAllFixedTargetStoploss = True
                                                         Dim trailingMTMLoss As Decimal = CalculateTrailingMTM(Me.MTMSlab, TotalPLAfterBrokerage(tradeCheckingDate))
                                                         If trailingMTMLoss <> Decimal.MinValue AndAlso trailingMTMLoss > Me.OverAllLossPerDay Then
+                                                            If trailingMTMLoss = 0 Then
+                                                                If Me.TotalMaxDrawDownPLAfterBrokerage(tradeCheckingDate, runningTick.PayloadDate) <= 1000 Then
+                                                                    trailingMTMLoss = 5000
+                                                                Else
+                                                                    trailingMTMLoss = Me.TotalMaxDrawDownPLAfterBrokerage(tradeCheckingDate, runningTick.PayloadDate)
+                                                                End If
+                                                            End If
                                                             Me.OverAllLossPerDay = trailingMTMLoss
                                                         End If
                                                     End If
