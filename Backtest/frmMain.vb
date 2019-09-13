@@ -370,6 +370,9 @@ Public Class frmMain
                                                         .ExitOnOverAllFixedTargetStoploss = False
                                                         .OverAllProfitPerDay = Decimal.MaxValue
                                                         .OverAllLossPerDay = Decimal.MinValue
+
+                                                        .TrailingMTM = True
+                                                        .MTMSlab = 10000
                                                     End With
                                                     Await backtestStrategy.TestStrategyAsync(startDate, endDate).ConfigureAwait(False)
                                                 End Using

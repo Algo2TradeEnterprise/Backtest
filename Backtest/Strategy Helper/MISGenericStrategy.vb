@@ -221,6 +221,15 @@ Namespace StrategyHelper
                                                     'Update Collection
                                                     Await stockStrategyRule.UpdateRequiredCollectionsAsync(runningTick).ConfigureAwait(False)
 
+                                                    'Set Overall MTM
+                                                    If TrailingMTM Then
+                                                        Me.ExitOnOverAllFixedTargetStoploss = True
+                                                        Dim trailingMTMLoss As Decimal = CalculateTrailingMTM(Me.MTMSlab, TotalPLAfterBrokerage(tradeCheckingDate))
+                                                        If trailingMTMLoss <> Decimal.MinValue AndAlso trailingMTMLoss > Me.OverAllLossPerDay Then
+                                                            Me.OverAllLossPerDay = trailingMTMLoss
+                                                        End If
+                                                    End If
+
                                                     'Specific Stock MTM Check
                                                     _canceller.Token.ThrowIfCancellationRequested()
                                                     If StockPLAfterBrokerage(tradeCheckingDate, runningTick.TradingSymbol) >= stockStrategyRule.MaxProfitOfThisStock Then

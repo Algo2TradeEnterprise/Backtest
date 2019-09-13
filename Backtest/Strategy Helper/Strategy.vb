@@ -137,6 +137,8 @@ Namespace StrategyHelper
         Public NumberOfTradesPerDay As Integer = Integer.MaxValue
         Public TickBasedStrategy As Boolean = False
         Public TrailingStoploss As Boolean = False
+        Public TrailingMTM As Boolean = False
+        Public MTMSlab As Decimal = Decimal.MinValue
 #End Region
 
 #Region "Public Calculated Property"
@@ -1170,6 +1172,15 @@ Namespace StrategyHelper
                         Exit For
                     End If
                 Next
+            End If
+            Return ret
+        End Function
+
+        Public Function CalculateTrailingMTM(ByVal slab As Decimal, ByVal pl As Decimal) As Decimal
+            Dim ret As Decimal = Decimal.MinValue
+            If pl >= slab Then
+                Dim multiplier As Decimal = pl / slab
+                ret = (Math.Floor(multiplier) - 1) * slab
             End If
             Return ret
         End Function
