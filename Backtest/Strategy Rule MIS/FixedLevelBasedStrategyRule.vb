@@ -385,40 +385,40 @@ Public Class FixedLevelBasedStrategyRule
             candle.Volume >= candle.PreviousCandlePayload.Volume AndAlso
             candle.Low < candle.PreviousCandlePayload.Low AndAlso
             currentMinuteCandlePayload.High >= candle.High + candleHighBuffer Then
-            If candle.High < candle.PreviousCandlePayload.High Then
+            'If candle.High < candle.PreviousCandlePayload.High Then
+            '    ret = True
+            'Else
+            Dim dayLow As Decimal = _signalPayload.Values.Min(Function(x)
+                                                                  If x.PayloadDate.Date = _tradingDate.Date AndAlso
+                                                                    x.PayloadDate <= candle.PayloadDate Then
+                                                                      Return x.Low
+                                                                  Else
+                                                                      Return Decimal.MaxValue
+                                                                  End If
+                                                              End Function)
+            If candle.Low = dayLow Then
                 ret = True
-            Else
-                Dim dayLow As Decimal = _signalPayload.Values.Min(Function(x)
-                                                                      If x.PayloadDate.Date = _tradingDate.Date AndAlso
-                                                                        x.PayloadDate <= candle.PayloadDate Then
-                                                                          Return x.Low
-                                                                      Else
-                                                                          Return Decimal.MaxValue
-                                                                      End If
-                                                                  End Function)
-                If candle.Low = dayLow Then
-                    ret = True
-                End If
             End If
+            'End If
         ElseIf candle.CandleWicks.Top >= ConvertFloorCeling(candle.CandleRange * 50 / 100, _parentStrategy.TickSize, RoundOfType.Celing) AndAlso
             candle.Volume >= candle.PreviousCandlePayload.Volume AndAlso
             candle.High > candle.PreviousCandlePayload.High AndAlso
             currentMinuteCandlePayload.Low <= candle.Low - candleLowBuffer Then
-            If candle.Low > candle.PreviousCandlePayload.Low Then
+            'If candle.Low > candle.PreviousCandlePayload.Low Then
+            '    ret = True
+            'Else
+            Dim dayHigh As Decimal = _signalPayload.Values.Max(Function(x)
+                                                                   If x.PayloadDate.Date = _tradingDate.Date AndAlso
+                                                                    x.PayloadDate <= candle.PayloadDate Then
+                                                                       Return x.High
+                                                                   Else
+                                                                       Return Decimal.MinValue
+                                                                   End If
+                                                               End Function)
+            If candle.High = dayHigh Then
                 ret = True
-            Else
-                Dim dayHigh As Decimal = _signalPayload.Values.Max(Function(x)
-                                                                       If x.PayloadDate.Date = _tradingDate.Date AndAlso
-                                                                        x.PayloadDate <= candle.PayloadDate Then
-                                                                           Return x.High
-                                                                       Else
-                                                                           Return Decimal.MinValue
-                                                                       End If
-                                                                   End Function)
-                If candle.High = dayHigh Then
-                    ret = True
-                End If
             End If
+            'End If
         End If
         Return ret
     End Function
