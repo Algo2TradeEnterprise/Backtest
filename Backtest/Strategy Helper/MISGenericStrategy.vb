@@ -229,7 +229,7 @@ Namespace StrategyHelper
                                                         If trailingMTMLoss <> Decimal.MinValue AndAlso trailingMTMLoss > Me.OverAllLossPerDay Then
                                                             If trailingMTMLoss = 0 Then
                                                                 If Me.TotalMaxDrawDownPLAfterBrokerage(tradeCheckingDate, runningTick.PayloadDate) >= -1000 Then
-                                                                    trailingMTMLoss = 5000
+                                                                    trailingMTMLoss = -5000
                                                                 Else
                                                                     trailingMTMLoss = Math.Max(Me.TotalMaxDrawDownPLAfterBrokerage(tradeCheckingDate, runningTick.PayloadDate), -10000)
                                                                 End If
