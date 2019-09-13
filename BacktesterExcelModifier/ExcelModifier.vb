@@ -31,8 +31,8 @@ Module ExcelModifier
                 pivotValue.Add("PL After Brokerage", ExcelHelper.XLFunction.Sum)
                 excelWriter.CreatPivotTable("Data", range, "Summary", "Month", pivotValue)
                 excelWriter.CreateNewSheet("Day Pivot")
-                pivotValue.Add("Overall Draw Up PL for the day", ExcelHelper.XLFunction.Average)
-                pivotValue.Add("Overall Draw Down PL for the day", ExcelHelper.XLFunction.Average)
+                'pivotValue.Add("Overall Draw Up PL for the day", ExcelHelper.XLFunction.Average)
+                'pivotValue.Add("Overall Draw Down PL for the day", ExcelHelper.XLFunction.Average)
                 excelWriter.CreatPivotTable("Data", range, "Day Pivot", "Trading Date", pivotValue)
 
                 excelWriter.SetActiveSheet("Day Pivot")
