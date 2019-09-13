@@ -228,6 +228,8 @@ Public Class FixedLevelBasedStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         If Not _entryChanged AndAlso GetSignalCandleATR() <> Decimal.MinValue AndAlso
             _potentialHighEntryPrice <> Decimal.MinValue AndAlso _potentialLowEntryPrice <> Decimal.MinValue Then
+            Dim highBuffer As Decimal = _parentStrategy.CalculateBuffer(_potentialHighEntryPrice, RoundOfType.Floor)
+            Dim lowBuffer As Decimal = _parentStrategy.CalculateBuffer(_potentialLowEntryPrice, RoundOfType.Floor)
             If currentTick.High >= _potentialHighEntryPrice Then
                 If _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.StoplossATR Then
                     Dim middlePoint As Decimal = _potentialHighEntryPrice
