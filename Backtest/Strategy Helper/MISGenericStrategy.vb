@@ -38,8 +38,8 @@ Namespace StrategyHelper
                 Me.StockMaxProfitPerDay = Decimal.MaxValue
                 Me.StockMaxLossPerDay = Decimal.MinValue
             End If
-            Dim filename As String = String.Format("TF {0},NoS {1},Level {2},NoT {3},SML {4},SMP {5},ML {6},MP {7},Tgt {8},SL {9},BrkevnMvmnt {10},SLMakeup {11}",
-                                                   Me.SignalTimeFrame,
+            Dim filename As String = String.Format("TF {0},NoS {1},Level {2},NoT {3},SML {4},SMP {5},ML {6},MP {7},Tgt {8},SL {9},BrkMvt {10},SLMkup {11}",
+                                              Me.SignalTimeFrame,
                                                    If(Me.NumberOfTradeableStockPerDay = Integer.MaxValue, "∞", Me.NumberOfTradeableStockPerDay),
                                                    CType(RuleEntityData, FixedLevelBasedStrategyRule.StrategyRuleEntities).LevelType.ToString,
                                                    If(Me.NumberOfTradesPerStockPerDay = Integer.MaxValue, "∞", Me.NumberOfTradesPerStockPerDay),
@@ -228,7 +228,7 @@ Namespace StrategyHelper
                                                         Dim trailingMTMLoss As Decimal = CalculateTrailingMTM(Me.MTMSlab, TotalPLAfterBrokerage(tradeCheckingDate))
                                                         If trailingMTMLoss <> Decimal.MinValue AndAlso trailingMTMLoss > Me.OverAllLossPerDay Then
                                                             If trailingMTMLoss = 0 Then
-                                                                If Me.TotalMaxDrawDownPLAfterBrokerage(tradeCheckingDate, runningTick.PayloadDate) <= 1000 Then
+                                                                If Me.TotalMaxDrawDownPLAfterBrokerage(tradeCheckingDate, runningTick.PayloadDate) >= -1000 Then
                                                                     trailingMTMLoss = 5000
                                                                 Else
                                                                     trailingMTMLoss = Me.TotalMaxDrawDownPLAfterBrokerage(tradeCheckingDate, runningTick.PayloadDate)
