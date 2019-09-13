@@ -343,7 +343,8 @@ Public Class FixedLevelBasedStrategyRule
         If candle.PreviousCandlePayload.CandleColor = Color.Red Then
             If candle.PreviousCandlePayload.CandleWicks.Top <= candle.PreviousCandlePayload.CandleRange * 50 / 100 AndAlso
                 candle.PreviousCandlePayload.CandleWicks.Bottom <= candle.PreviousCandlePayload.CandleRange * 25 / 100 Then
-                If candle.CandleColor = Color.Green AndAlso candle.High >= candle.PreviousCandlePayload.High Then
+                Dim buffer As Decimal = _parentStrategy.CalculateBuffer(candle.PreviousCandlePayload.High, RoundOfType.Floor)
+                If candle.CandleColor = Color.Green AndAlso candle.High >= candle.PreviousCandlePayload.High - buffer Then
                     If candle.CandleWicks.Top <= candle.CandleRange * 25 / 100 AndAlso
                         candle.CandleWicks.Bottom <= candle.CandleRange * 50 / 100 Then
                         ret = True
@@ -353,7 +354,8 @@ Public Class FixedLevelBasedStrategyRule
         ElseIf candle.PreviousCandlePayload.CandleColor = Color.Green Then
             If candle.PreviousCandlePayload.CandleWicks.Top <= candle.PreviousCandlePayload.CandleRange * 25 / 100 AndAlso
                 candle.PreviousCandlePayload.CandleWicks.Bottom <= candle.PreviousCandlePayload.CandleRange * 50 / 100 Then
-                If candle.CandleColor = Color.Red AndAlso candle.Low <= candle.PreviousCandlePayload.Low Then
+                Dim buffer As Decimal = _parentStrategy.CalculateBuffer(candle.PreviousCandlePayload.Low, RoundOfType.Floor)
+                If candle.CandleColor = Color.Red AndAlso candle.Low <= candle.PreviousCandlePayload.Low + buffer Then
                     If candle.CandleWicks.Top <= candle.CandleRange * 50 / 100 AndAlso
                         candle.CandleWicks.Bottom <= candle.CandleRange * 25 / 100 Then
                         ret = True
@@ -396,7 +398,7 @@ Public Class FixedLevelBasedStrategyRule
                                                                       Return Decimal.MaxValue
                                                                   End If
                                                               End Function)
-            If candle.Low = dayLow Then
+            If candle.Low <= dayLow + _parentStrategy.CalculateBuffer(dayLow, RoundOfType.Floor) Then
                 ret = True
             End If
             'End If
@@ -415,7 +417,7 @@ Public Class FixedLevelBasedStrategyRule
                                                                        Return Decimal.MinValue
                                                                    End If
                                                                End Function)
-            If candle.High = dayHigh Then
+            If candle.High >= dayHigh - _parentStrategy.CalculateBuffer(dayHigh, RoundOfType.Floor) Then
                 ret = True
             End If
             'End If
