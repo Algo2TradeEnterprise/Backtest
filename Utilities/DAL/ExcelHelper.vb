@@ -93,6 +93,11 @@ Namespace DAL
             Medium
             Hairline
         End Enum
+        Public Enum XLFunction
+            Sum = 1
+            Average
+            Count
+        End Enum
 #End Region
 
 #Region "Constructors"
