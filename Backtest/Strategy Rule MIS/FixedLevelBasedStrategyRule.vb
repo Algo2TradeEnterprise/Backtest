@@ -379,7 +379,7 @@ Public Class FixedLevelBasedStrategyRule
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(candle.PayloadDate.AddMinutes(_parentStrategy.SignalTimeFrame), _signalPayload))
         Dim candleHighBuffer As Decimal = _parentStrategy.CalculateBuffer(candle.High, RoundOfType.Floor)
         Dim candleLowBuffer As Decimal = _parentStrategy.CalculateBuffer(candle.Low, RoundOfType.Floor)
-        If candle.CandleWicks.Bottom >= candle.CandleRange * 50 / 100 AndAlso
+        If candle.CandleWicks.Bottom >= ConvertFloorCeling(candle.CandleRange * 50 / 100, _parentStrategy.TickSize, RoundOfType.Celing) AndAlso
             candle.Volume >= candle.PreviousCandlePayload.Volume AndAlso
             candle.Low < candle.PreviousCandlePayload.Low AndAlso
             currentMinuteCandlePayload.High >= candle.High + candleHighBuffer Then
@@ -398,7 +398,7 @@ Public Class FixedLevelBasedStrategyRule
                     ret = True
                 End If
             End If
-        ElseIf candle.CandleWicks.Top >= candle.CandleRange * 50 / 100 AndAlso
+        ElseIf candle.CandleWicks.Top >= ConvertFloorCeling(candle.CandleRange * 50 / 100, _parentStrategy.TickSize, RoundOfType.Celing) AndAlso
             candle.Volume >= candle.PreviousCandlePayload.Volume AndAlso
             candle.High > candle.PreviousCandlePayload.High AndAlso
             currentMinuteCandlePayload.Low <= candle.Low - candleLowBuffer Then
