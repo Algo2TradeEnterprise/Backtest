@@ -230,7 +230,7 @@ Public Class FixedLevelBasedStrategyRule
             _potentialHighEntryPrice <> Decimal.MinValue AndAlso _potentialLowEntryPrice <> Decimal.MinValue Then
             Dim highBuffer As Decimal = _parentStrategy.CalculateBuffer(_potentialHighEntryPrice, RoundOfType.Floor)
             Dim lowBuffer As Decimal = _parentStrategy.CalculateBuffer(_potentialLowEntryPrice, RoundOfType.Floor)
-            If currentTick.High >= _potentialHighEntryPrice Then
+            If currentTick.High >= _potentialHighEntryPrice + highBuffer Then
                 If _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.StoplossATR Then
                     Dim middlePoint As Decimal = _potentialHighEntryPrice
                     _potentialHighEntryPrice = middlePoint + ConvertFloorCeling(GetSignalCandleATR() * _userInputs.StoplossMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
@@ -241,7 +241,7 @@ Public Class FixedLevelBasedStrategyRule
                     _potentialLowEntryPrice = _potentialHighEntryPrice - 2 * ConvertFloorCeling(_signalCandle.CandleRange * _userInputs.StoplossMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
                 End If
                 _entryChanged = True
-            ElseIf currentTick.Low <= _potentialLowEntryPrice Then
+            ElseIf currentTick.Low <= _potentialLowEntryPrice - lowBuffer Then
                 If _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.StoplossATR Then
                     Dim middlePoint As Decimal = _potentialLowEntryPrice
                     _potentialHighEntryPrice = middlePoint + ConvertFloorCeling(GetSignalCandleATR() * _userInputs.StoplossMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
