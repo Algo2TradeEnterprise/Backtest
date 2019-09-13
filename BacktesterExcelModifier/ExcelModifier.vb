@@ -27,9 +27,13 @@ Module ExcelModifier
                 Dim columnCout As Long = excelWriter.GetLastCol
                 Dim range As String = excelWriter.GetNamedRange(1, rowCout - 1, 1, columnCout - 1)
                 Console.WriteLine("Creating Pivot Table")
-                excelWriter.CreatPivotTable("Data", range, "Summary", "Month", "PL After Brokerage")
+                Dim pivotValue As Dictionary(Of String, Utilities.DAL.ExcelHelper.XLFunction) = New Dictionary(Of String, ExcelHelper.XLFunction)
+                pivotValue.Add("PL After Brokerage", ExcelHelper.XLFunction.Sum)
+                excelWriter.CreatPivotTable("Data", range, "Summary", "Month", pivotValue)
                 excelWriter.CreateNewSheet("Day Pivot")
-                excelWriter.CreatPivotTable("Data", range, "Day Pivot", "Trading Date", "PL After Brokerage")
+                pivotValue.Add("Overall Draw Up PL for the day", ExcelHelper.XLFunction.Average)
+                pivotValue.Add("Overall Draw Down PL for the day", ExcelHelper.XLFunction.Average)
+                excelWriter.CreatPivotTable("Data", range, "Day Pivot", "Trading Date", pivotValue)
 
                 excelWriter.SetActiveSheet("Day Pivot")
                 Dim dayPivotData As Object(,) = excelWriter.GetExcelInMemory()

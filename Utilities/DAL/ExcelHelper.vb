@@ -689,7 +689,8 @@ Namespace DAL
             Return ret
         End Function
 
-        Public Sub CreatPivotTable(ByVal dataSheetName As String, ByVal dataSheetRange As String, ByVal pivotSheetName As String, ByVal rowLableColumnName As String, ByVal valueColumnName As String)
+        Public Sub CreatPivotTable(ByVal dataSheetName As String, ByVal dataSheetRange As String, ByVal pivotSheetName As String,
+                                   ByVal rowLableColumnName As String, ByVal valueField As Dictionary(Of String, XLFunction))
             SetActiveSheet(dataSheetName)
             Dim dataRange As Excel.Range = _wSheetInstance.Range(dataSheetRange)
 
@@ -703,11 +704,23 @@ Namespace DAL
             With pivotField1
                 .Orientation = Excel.XlPivotFieldOrientation.xlRowField
             End With
-            Dim pivotField2 As Excel.PivotField = pivotTable.PivotFields(valueColumnName)
-            With pivotField2
-                .Orientation = Excel.XlPivotFieldOrientation.xlDataField
-                .Function = Excel.XlConsolidationFunction.xlSum
-            End With
+
+            If valueField IsNot Nothing AndAlso valueField.Count > 0 Then
+                For Each runningValue In valueField
+                    Dim pivotField As Excel.PivotField = pivotTable.PivotFields(runningValue.Key)
+                    With pivotField
+                        .Orientation = Excel.XlPivotFieldOrientation.xlDataField
+                        Select Case runningValue.Value
+                            Case XLFunction.Sum
+                                .Function = Excel.XlConsolidationFunction.xlSum
+                            Case XLFunction.Average
+                                .Function = Excel.XlConsolidationFunction.xlAverage
+                            Case XLFunction.Count
+                                .Function = Excel.XlConsolidationFunction.xlCount
+                        End Select
+                    End With
+                Next
+            End If
 
             SaveExcel()
         End Sub
