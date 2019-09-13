@@ -31,8 +31,8 @@ Module ExcelModifier
                 pivotValue.Add("PL After Brokerage", ExcelHelper.XLFunction.Sum)
                 excelWriter.CreatPivotTable("Data", range, "Summary", "Month", pivotValue)
                 excelWriter.CreateNewSheet("Day Pivot")
-                'pivotValue.Add("Overall Draw Up PL for the day", ExcelHelper.XLFunction.Average)
-                'pivotValue.Add("Overall Draw Down PL for the day", ExcelHelper.XLFunction.Average)
+                pivotValue.Add("Overall Draw Up PL for the day", ExcelHelper.XLFunction.Average)
+                pivotValue.Add("Overall Draw Down PL for the day", ExcelHelper.XLFunction.Average)
                 excelWriter.CreatPivotTable("Data", range, "Day Pivot", "Trading Date", pivotValue)
 
                 excelWriter.SetActiveSheet("Day Pivot")
@@ -57,7 +57,7 @@ Module ExcelModifier
                 Dim totalDays As Integer = 0
                 Dim totalWinningDays As Integer = 0
                 Dim totalLossDays As Integer = 0
-                For i As Integer = 2 To dayPivotData.GetLength(0) - 2 Step 1
+                For i As Integer = 3 To dayPivotData.GetLength(0) - 2 Step 1
                     Console.WriteLine(String.Format("Writing for day {0} of {1}", i - 1, dayPivotData.GetLength(0) - 3))
                     Dim runningDate As Date = Date.FromOADate(dayPivotData(i, 1))
                     Dim totalPLOfTheDay As Decimal = dayPivotData(i, 2)
@@ -172,7 +172,7 @@ Module ExcelModifier
                 excelWriter.SaveExcel()
             End Using
         Catch ex As Exception
-            MsgBox(ex.Message, MsgBoxStyle.Critical)
+            MsgBox(ex.ToString, MsgBoxStyle.Critical)
         Finally
             Console.WriteLine("Process complete")
         End Try
