@@ -231,7 +231,7 @@ Namespace StrategyHelper
                                                                 If Me.TotalMaxDrawDownPLAfterBrokerage(tradeCheckingDate, runningTick.PayloadDate) >= -1000 Then
                                                                     trailingMTMLoss = 5000
                                                                 Else
-                                                                    trailingMTMLoss = Me.TotalMaxDrawDownPLAfterBrokerage(tradeCheckingDate, runningTick.PayloadDate)
+                                                                    trailingMTMLoss = Math.Max(Me.TotalMaxDrawDownPLAfterBrokerage(tradeCheckingDate, runningTick.PayloadDate), -10000)
                                                                 End If
                                                             End If
                                                             Me.OverAllLossPerDay = trailingMTMLoss
@@ -276,6 +276,9 @@ Namespace StrategyHelper
                                                             stockList(stockName).EligibleToTakeTrade = False
                                                         ElseIf TotalPLAfterBrokerage(tradeCheckingDate) <= Math.Abs(OverAllLossPerDay) * -1 Then
                                                             ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Max Loss reached for the day")
+                                                            stockList(stockName).EligibleToTakeTrade = False
+                                                        ElseIf Me.TrailingMTM AndAlso TotalPLAfterBrokerage(tradeCheckingDate) <= OverAllLossPerDay Then
+                                                            ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Trailing MTM reached for the day")
                                                             stockList(stockName).EligibleToTakeTrade = False
                                                         End If
                                                     End If
