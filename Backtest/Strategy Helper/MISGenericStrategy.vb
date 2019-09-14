@@ -38,19 +38,18 @@ Namespace StrategyHelper
                 Me.StockMaxProfitPerDay = Decimal.MaxValue
                 Me.StockMaxLossPerDay = Decimal.MinValue
             End If
-            Dim filename As String = String.Format("TF {0},NoS {1},Level {2},NoT {3},SML {4},SMP {5},ML {6},MP {7},Tgt {8},SL {9},BrkMvt {10},SLMkup {11}",
-                                              Me.SignalTimeFrame,
-                                                   If(Me.NumberOfTradeableStockPerDay = Integer.MaxValue, "∞", Me.NumberOfTradeableStockPerDay),
-                                                   CType(RuleEntityData, FixedLevelBasedStrategyRule.StrategyRuleEntities).LevelType.ToString,
+            Dim ruleData As FixedLevelBasedStrategyRule.StrategyRuleEntities = Me.RuleEntityData
+            Dim filename As String = String.Format("NoT {0},MxLsCaptl {1},Tgt {2},MdfyCndlTgt {3},MdfyNoT {4},SLMkup {5},BrkMvt {6},TrlnMTM {7},MP {8},ML {9}",
                                                    If(Me.NumberOfTradesPerStockPerDay = Integer.MaxValue, "∞", Me.NumberOfTradesPerStockPerDay),
-                                                   If(Me.StockMaxLossPercentagePerDay = Decimal.MinValue, "∞", Me.StockMaxLossPercentagePerDay),
-                                                   If(Me.StockMaxProfitPercentagePerDay = Decimal.MaxValue, "∞", Me.StockMaxProfitPercentagePerDay),
+                                                   If(ruleData.MaxLossPercentageOfCapital = Decimal.MinValue, "∞", ruleData.MaxLossPercentageOfCapital),
+                                                   ruleData.TargetMultiplier,
+                                                   ruleData.ModifyCandleTarget,
+                                                   ruleData.ModifyNumberOfTrade,
+                                                   If(ruleData.StoplossMakeupTrade = Integer.MaxValue, "∞", ruleData.StoplossMakeupTrade),
+                                                   ruleData.BreakevenMovement,
+                                                   Me.TrailingMTM,
                                                    If(Me.OverAllLossPerDay = Decimal.MinValue, "∞", Me.OverAllLossPerDay),
-                                                   If(Me.OverAllProfitPerDay = Decimal.MaxValue, "∞", Me.OverAllProfitPerDay),
-                                                   CType(RuleEntityData, FixedLevelBasedStrategyRule.StrategyRuleEntities).TargetMultiplier,
-                                                   CType(RuleEntityData, FixedLevelBasedStrategyRule.StrategyRuleEntities).StoplossMultiplier,
-                                                   CType(RuleEntityData, FixedLevelBasedStrategyRule.StrategyRuleEntities).BreakevenMovement,
-                                                   If(CType(RuleEntityData, FixedLevelBasedStrategyRule.StrategyRuleEntities).StoplossMakeupTrade = Integer.MaxValue, "∞", CType(RuleEntityData, FixedLevelBasedStrategyRule.StrategyRuleEntities).StoplossMakeupTrade))
+                                                   If(Me.OverAllProfitPerDay = Decimal.MaxValue, "∞", Me.OverAllProfitPerDay))
 
             Dim tradesFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Trades.a2t", filename))
             Dim capitalFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Capital.a2t", filename))
@@ -570,7 +569,7 @@ Namespace StrategyHelper
                     Dim counter As Integer = 0
                     For i = 1 To dt.Rows.Count - 1
                         Dim rowDate As Date = dt.Rows(i)(0)
-                        If rowDate.Date = tradingDate.Date Then
+                        If rowDate.Date = tradingDate.Date AndAlso dt.Rows(i)(5) > 0 Then
                             If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
                             Dim tradingSymbol As String = dt.Rows(i).Item(1)
                             Dim instrumentName As String = Nothing

@@ -16,6 +16,9 @@ Public Class FixedLevelBasedStrategyRule
         Public BreakevenMultiplier As Decimal
         Public StoplossMakeupTrade As Integer
         Public NumberOfTrade As Integer
+        Public ModifyCandleTarget As Boolean
+        Public ModifyNumberOfTrade As Boolean
+        Public MaxLossPercentageOfCapital As Decimal
         Public LevelType As TypeOfLevel
 
         Enum TypeOfLevel
@@ -52,6 +55,9 @@ Public Class FixedLevelBasedStrategyRule
             .BreakevenMovement = CType(_entities, StrategyRuleEntities).BreakevenMovement,
             .BreakevenMultiplier = CType(_entities, StrategyRuleEntities).BreakevenMultiplier,
             .StoplossMakeupTrade = CType(_entities, StrategyRuleEntities).StoplossMakeupTrade,
+            .ModifyCandleTarget = CType(_entities, StrategyRuleEntities).ModifyCandleTarget,
+            .ModifyNumberOfTrade = CType(_entities, StrategyRuleEntities).ModifyNumberOfTrade,
+            .MaxLossPercentageOfCapital = CType(_entities, StrategyRuleEntities).MaxLossPercentageOfCapital,
             .LevelType = CType(_entities, StrategyRuleEntities).LevelType,
             .NumberOfTrade = _parentStrategy.NumberOfTradesPerStockPerDay
         }
@@ -122,8 +128,9 @@ Public Class FixedLevelBasedStrategyRule
                         .OrderType = Trade.TypeOfOrder.SL,
                         .Supporting1 = signalCandle.PayloadDate.ToShortTimeString,
                         .Supporting2 = _entryRemark,
-                        .Supporting3 = _userInputs.TargetMultiplier,
-                        .Supporting4 = _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol) + 1
+                        .Supporting3 = _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol) + 1,
+                        .Supporting4 = _userInputs.TargetMultiplier,
+                        .Supporting5 = _userInputs.NumberOfTrade
                     }
                 ElseIf signalCandleSatisfied.Item4 = Trade.TradeExecutionDirection.Sell Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2, RoundOfType.Floor)
@@ -138,13 +145,15 @@ Public Class FixedLevelBasedStrategyRule
                         .OrderType = Trade.TypeOfOrder.SL,
                         .Supporting1 = signalCandle.PayloadDate.ToShortTimeString,
                         .Supporting2 = _entryRemark,
-                        .Supporting3 = _userInputs.TargetMultiplier,
-                        .Supporting4 = _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol) + 1
+                        .Supporting3 = _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol) + 1,
+                        .Supporting4 = _userInputs.TargetMultiplier,
+                        .Supporting5 = _userInputs.NumberOfTrade
                     }
                 End If
             End If
         End If
         If parameter IsNot Nothing Then
+            'Stoploss makeup target calculation
             If _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol) >= _userInputs.StoplossMakeupTrade - 1 Then
                 Dim closeTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentMinuteCandlePayload, _parentStrategy.TradeType, Trade.TradeExecutionStatus.Close)
                 If closeTrades IsNot Nothing AndAlso closeTrades.Count > 0 Then
@@ -155,22 +164,24 @@ Public Class FixedLevelBasedStrategyRule
                     If targetPrice <> Decimal.MinValue Then parameter.Target = targetPrice
                 End If
             End If
-            Dim capital As Decimal = parameter.EntryPrice * parameter.Quantity / _parentStrategy.MarginMultiplier
-            If capital < 15000 Then
+
+            'Quantity calculation
+            If parameter.EntryPrice * parameter.Quantity / _parentStrategy.MarginMultiplier < 15000 Then
                 parameter.Quantity = 2 * _lotSize
             End If
 
-            If _parentStrategy.StockMaxLossPercentagePerDay <> Decimal.MinValue Then
+            'Stop taking trade if loss is greater that x% of capital
+            If _userInputs.MaxLossPercentageOfCapital <> Decimal.MinValue Then
                 Dim closeTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentMinuteCandlePayload, _parentStrategy.TradeType, Trade.TradeExecutionStatus.Close)
                 If closeTrades IsNot Nothing AndAlso closeTrades.Count > 0 Then
                     Dim totalLoss As Decimal = closeTrades.Sum(Function(x)
                                                                    Return x.PLAfterBrokerage
                                                                End Function)
 
-                    If Math.Abs(totalLoss) >= (parameter.EntryPrice * parameter.Quantity / _parentStrategy.MarginMultiplier) * _parentStrategy.StockMaxLossPercentagePerDay / 100 AndAlso
+                    If Math.Abs(totalLoss) >= (parameter.EntryPrice * parameter.Quantity / _parentStrategy.MarginMultiplier) * _userInputs.MaxLossPercentageOfCapital / 100 AndAlso
                         _parentStrategy.TotalPLAfterBrokerage(currentTick.PayloadDate) < 0 Then
                         'Neglect this trade
-                        Console.WriteLine(String.Format("Trade neglected. Time: {0}, Direction:{1}, Symbol:{2}", currentTick.PayloadDate, parameter.EntryDirection, _tradingSymbol))
+                        'Console.WriteLine(String.Format("Trade neglected. Time: {0}, Direction:{1}, Symbol:{2}", currentTick.PayloadDate, parameter.EntryDirection, _tradingSymbol))
                         Me.EligibleToTakeTrade = False
                     Else
                         ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
@@ -184,12 +195,12 @@ Public Class FixedLevelBasedStrategyRule
 
             'ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
 
-            'If _parentStrategy.StockMaxProfitPercentagePerDay <> Decimal.MaxValue AndAlso Me.MaxProfitOfThisStock = Decimal.MaxValue Then
-            '    Me.MaxProfitOfThisStock = _parentStrategy.CalculatePL(currentTick.TradingSymbol, parameter.EntryPrice, ConvertFloorCeling(parameter.EntryPrice + parameter.EntryPrice * _parentStrategy.StockMaxProfitPercentagePerDay / 100, _parentStrategy.TickSize, RoundOfType.Celing), parameter.Quantity, _lotSize, _parentStrategy.StockType)
-            'End If
-            'If _parentStrategy.StockMaxLossPercentagePerDay <> Decimal.MinValue AndAlso Me.MaxLossOfThisStock = Decimal.MinValue Then
-            '    Me.MaxLossOfThisStock = _parentStrategy.CalculatePL(currentTick.TradingSymbol, parameter.EntryPrice, ConvertFloorCeling(parameter.EntryPrice - parameter.EntryPrice * _parentStrategy.StockMaxLossPercentagePerDay / 100, _parentStrategy.TickSize, RoundOfType.Celing), parameter.Quantity, _lotSize, _parentStrategy.StockType)
-            'End If
+            If _parentStrategy.StockMaxProfitPercentagePerDay <> Decimal.MaxValue AndAlso Me.MaxProfitOfThisStock = Decimal.MaxValue Then
+                Me.MaxProfitOfThisStock = _parentStrategy.CalculatePL(currentTick.TradingSymbol, parameter.EntryPrice, ConvertFloorCeling(parameter.EntryPrice + parameter.EntryPrice * _parentStrategy.StockMaxProfitPercentagePerDay / 100, _parentStrategy.TickSize, RoundOfType.Celing), parameter.Quantity, _lotSize, _parentStrategy.StockType)
+            End If
+            If _parentStrategy.StockMaxLossPercentagePerDay <> Decimal.MinValue AndAlso Me.MaxLossOfThisStock = Decimal.MinValue Then
+                Me.MaxLossOfThisStock = _parentStrategy.CalculatePL(currentTick.TradingSymbol, parameter.EntryPrice, ConvertFloorCeling(parameter.EntryPrice - parameter.EntryPrice * _parentStrategy.StockMaxLossPercentagePerDay / 100, _parentStrategy.TickSize, RoundOfType.Celing), parameter.Quantity, _lotSize, _parentStrategy.StockType)
+            End If
         End If
         Return ret
     End Function
@@ -288,46 +299,37 @@ Public Class FixedLevelBasedStrategyRule
             Not candle.DeadCandle AndAlso Not candle.PreviousCandlePayload.DeadCandle Then
             If _potentialHighEntryPrice = Decimal.MinValue AndAlso _potentialLowEntryPrice = Decimal.MinValue Then
                 If IsCandleHalf(candle) AndAlso candle.CandleRange > _parentStrategy.CalculateBuffer(candle.High, RoundOfType.Floor) Then
-                    'If IsCandleAllowedAccordingToCapital(candle, StrategyRuleEntities.TypeOfLevel.Candle) Then
                     _potentialHighEntryPrice = candle.High
                     _potentialLowEntryPrice = candle.Low
                     _signalCandle = candle
                     If _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.None Then
                         _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.Candle
-                        If GetSignalCandleATR() <> Decimal.MinValue AndAlso candle.CandleRange >= GetSignalCandleATR() Then
+                        If _userInputs.ModifyCandleTarget AndAlso GetSignalCandleATR() <> Decimal.MinValue AndAlso candle.CandleRange >= GetSignalCandleATR() Then
                             _userInputs.TargetMultiplier = Math.Floor(_userInputs.TargetMultiplier - _userInputs.TargetMultiplier * 25 / 100)
+                            If _userInputs.ModifyNumberOfTrade Then _userInputs.NumberOfTrade = Math.Floor(_userInputs.NumberOfTrade - _userInputs.NumberOfTrade * 25 / 100)
                         End If
                     End If
                     _entryRemark = "Candle Half"
-                    'Else
-                    '    Console.WriteLine(String.Format("Candle Half. Signal Candle:{0}, Trading Symbol:{1}", candle.PayloadDate, _tradingSymbol))
-                    'End If
                 ElseIf IsPinBar(candle) Then
-                    'If IsCandleAllowedAccordingToCapital(candle, StrategyRuleEntities.TypeOfLevel.BreakoutATR) Then
                     _potentialHighEntryPrice = candle.High
                     _potentialLowEntryPrice = candle.Low
                     _signalCandle = candle
                     If _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.None Then
                         _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.BreakoutATR
                         _userInputs.TargetMultiplier = Math.Floor(_userInputs.TargetMultiplier - _userInputs.TargetMultiplier * 25 / 100)
+                        If _userInputs.ModifyNumberOfTrade Then _userInputs.NumberOfTrade = Math.Floor(_userInputs.NumberOfTrade - _userInputs.NumberOfTrade * 25 / 100)
                     End If
                     _entryRemark = "Pin Bar"
-                    'Else
-                    '    Console.WriteLine(String.Format("Pin Bar. Signal Candle:{0}, Trading Symbol:{1}", candle.PayloadDate, _tradingSymbol))
-                    'End If
                 ElseIf IsTweezerPattern(candle) Then
-                    'If IsCandleAllowedAccordingToCapital(candle, StrategyRuleEntities.TypeOfLevel.BreakoutATR) Then
                     _potentialHighEntryPrice = candle.High
                     _potentialLowEntryPrice = candle.Low
                     _signalCandle = candle
                     If _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.None Then
                         _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.BreakoutATR
                         _userInputs.TargetMultiplier = Math.Floor(_userInputs.TargetMultiplier - _userInputs.TargetMultiplier * 25 / 100)
+                        If _userInputs.ModifyNumberOfTrade Then _userInputs.NumberOfTrade = Math.Floor(_userInputs.NumberOfTrade - _userInputs.NumberOfTrade * 25 / 100)
                     End If
                     _entryRemark = "Tweezer Pattern"
-                    'Else
-                    '    Console.WriteLine(String.Format("Tweezer Pattern. Signal Candle:{0}, Trading Symbol:{1}", candle.PayloadDate, _tradingSymbol))
-                    'End If
                 End If
             End If
 
