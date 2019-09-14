@@ -45,7 +45,7 @@ Namespace StrategyHelper
                                                    ruleData.TargetMultiplier,
                                                    ruleData.ModifyCandleTarget,
                                                    ruleData.ModifyNumberOfTrade,
-                                                   If(ruleData.StoplossMakeupTrade = Integer.MaxValue, "∞", ruleData.StoplossMakeupTrade),
+                                                   ruleData.StoplossMakeupTrade,
                                                    ruleData.BreakevenMovement,
                                                    Me.TrailingMTM,
                                                    If(Me.OverAllLossPerDay = Decimal.MinValue, "∞", Me.OverAllLossPerDay),

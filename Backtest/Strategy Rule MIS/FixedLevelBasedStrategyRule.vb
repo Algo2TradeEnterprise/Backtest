@@ -14,7 +14,7 @@ Public Class FixedLevelBasedStrategyRule
         Public StoplossMultiplier As Decimal
         Public BreakevenMovement As Boolean
         Public BreakevenMultiplier As Decimal
-        Public StoplossMakeupTrade As Integer
+        Public StoplossMakeupTrade As Boolean
         Public NumberOfTrade As Integer
         Public ModifyCandleTarget As Boolean
         Public ModifyNumberOfTrade As Boolean
@@ -154,7 +154,7 @@ Public Class FixedLevelBasedStrategyRule
         End If
         If parameter IsNot Nothing Then
             'Stoploss makeup target calculation
-            If _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol) >= _userInputs.StoplossMakeupTrade - 1 Then
+            If _userInputs.StoplossMakeupTrade AndAlso _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol) >= _userInputs.NumberOfTrade - 1 Then
                 Dim closeTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentMinuteCandlePayload, _parentStrategy.TradeType, Trade.TradeExecutionStatus.Close)
                 If closeTrades IsNot Nothing AndAlso closeTrades.Count > 0 Then
                     Dim totalLoss As Decimal = closeTrades.Sum(Function(x)
