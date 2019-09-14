@@ -122,7 +122,8 @@ Public Class FixedLevelBasedStrategyRule
                         .OrderType = Trade.TypeOfOrder.SL,
                         .Supporting1 = signalCandle.PayloadDate.ToShortTimeString,
                         .Supporting2 = _entryRemark,
-                        .Supporting3 = _userInputs.TargetMultiplier
+                        .Supporting3 = _userInputs.TargetMultiplier,
+                        .Supporting4 = _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol) + 1
                     }
                 ElseIf signalCandleSatisfied.Item4 = Trade.TradeExecutionDirection.Sell Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2, RoundOfType.Floor)
@@ -137,7 +138,8 @@ Public Class FixedLevelBasedStrategyRule
                         .OrderType = Trade.TypeOfOrder.SL,
                         .Supporting1 = signalCandle.PayloadDate.ToShortTimeString,
                         .Supporting2 = _entryRemark,
-                        .Supporting3 = _userInputs.TargetMultiplier
+                        .Supporting3 = _userInputs.TargetMultiplier,
+                        .Supporting4 = _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol) + 1
                     }
                 End If
             End If
