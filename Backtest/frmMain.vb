@@ -289,7 +289,7 @@ Public Class frmMain
             For timeFrame As Integer = 1 To 1 Step 1
                 For nmbrOfStock As Integer = 5 To 5 Step 1
                     For nmbrOfTradePerStock As Integer = 4 To 4 Step -1
-                        For maxLossPercentage As Decimal = 20 To 20 Step 1
+                        For maxLossPercentagePerStock As Decimal = Decimal.MinValue To Decimal.MinValue Step 1
                             For tgtMul As Integer = 4 To 4 Step 1
                                 For slMul As Integer = 1 To 1 Step 1
                                     For brkevenMvmnt As Integer = 0 To 0 Step 1
@@ -361,7 +361,7 @@ Public Class frmMain
                                                         .TickBasedStrategy = True
 
                                                         .StockMaxProfitPercentagePerDay = Decimal.MaxValue
-                                                        .StockMaxLossPercentagePerDay = maxLossPercentage
+                                                        .StockMaxLossPercentagePerDay = maxLossPercentagePerStock
 
                                                         .ExitOnStockFixedTargetStoploss = False
                                                         .StockMaxProfitPerDay = Decimal.MaxValue

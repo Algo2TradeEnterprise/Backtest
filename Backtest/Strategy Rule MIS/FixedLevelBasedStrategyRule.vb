@@ -294,6 +294,9 @@ Public Class FixedLevelBasedStrategyRule
                     _signalCandle = candle
                     If _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.None Then
                         _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.Candle
+                        If GetSignalCandleATR() <> Decimal.MinValue AndAlso candle.CandleRange >= GetSignalCandleATR() Then
+                            _userInputs.TargetMultiplier = Math.Floor(_userInputs.TargetMultiplier - _userInputs.TargetMultiplier * 25 / 100)
+                        End If
                     End If
                     _entryRemark = "Candle Half"
                     'Else
