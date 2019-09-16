@@ -286,16 +286,16 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            For nmbrOfTradePerStock As Integer = 3 To 5 Step 1
-                For maxLossPercentageOfCapitalPerStock As Decimal = Decimal.MinValue To 20 Step (maxLossPercentageOfCapitalPerStock * -1) + 20
-                    For tgtMul As Integer = 3 To 5 Step 1
-                        For mdfyCndlTgt As Integer = 0 To 1 Step 1
-                            For mdfyNmbrOfTrd As Integer = 0 To 1 Step 1
-                                For slMakeupTrade As Integer = 0 To 1 Step 1
+            For nmbrOfTradePerStock As Integer = 4 To 4 Step 1
+                For maxLossPercentageOfCapitalPerStock As Decimal = Decimal.MinValue To Decimal.MinValue Step 1
+                    For tgtMul As Integer = 4 To 4 Step 1
+                        For mdfyCndlTgt As Integer = 1 To 1 Step 1
+                            For mdfyNmbrOfTrd As Integer = 0 To 0 Step 1
+                                For slMakeupTrade As Integer = 0 To 0 Step 1
                                     For brkevenMvmnt As Integer = 0 To 0 Step 1
                                         For brkevenMul As Decimal = 2 / 3 To 2 / 3 Step 1
                                             For trlngMTM As Integer = 0 To 0 Step 1
-                                                For maxProfit As Decimal = Decimal.MaxValue To Decimal.MaxValue Step 1
+                                                For maxProfit As Decimal = Decimal.MaxValue To Decimal.MaxValue Step -1
                                                     For maxLoss As Decimal = Decimal.MinValue To Decimal.MinValue Step 1
                                                         Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                                                           exchangeStartTime:=TimeSpan.Parse("09:15:00"),
