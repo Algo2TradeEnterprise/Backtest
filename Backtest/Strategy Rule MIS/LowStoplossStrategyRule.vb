@@ -3,7 +3,7 @@ Imports System.Threading
 Imports Algo2TradeBLL
 Imports Utilities.Numbers.NumberManipulation
 
-Public Class LowSLStrategyRule
+Public Class LowStoplossStrategyRule
     Inherits StrategyRule
 
 #Region "Entity"
@@ -123,9 +123,9 @@ Public Class LowSLStrategyRule
                         .OrderType = Trade.TypeOfOrder.SL,
                         .Supporting1 = signalCandle.PayloadDate.ToShortTimeString,
                         .Supporting2 = _entryRemark,
-                        .Supporting3 = _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol) + 1,
-                        .Supporting4 = _userInputs.TargetMultiplier,
-                        .Supporting5 = _userInputs.NumberOfTrade
+                        .Supporting3 = _slPoint,
+                        .Supporting4 = _targetPoint,
+                        .Supporting5 = _dayATR
                     }
                 ElseIf signalCandleSatisfied.Item4 = Trade.TradeExecutionDirection.Sell Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2, RoundOfType.Floor)
@@ -140,9 +140,9 @@ Public Class LowSLStrategyRule
                         .OrderType = Trade.TypeOfOrder.SL,
                         .Supporting1 = signalCandle.PayloadDate.ToShortTimeString,
                         .Supporting2 = _entryRemark,
-                        .Supporting3 = _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol) + 1,
-                        .Supporting4 = _userInputs.TargetMultiplier,
-                        .Supporting5 = _userInputs.NumberOfTrade
+                        .Supporting3 = _slPoint,
+                        .Supporting4 = _targetPoint,
+                        .Supporting5 = _dayATR
                     }
                 End If
             End If
@@ -291,8 +291,10 @@ Public Class LowSLStrategyRule
                             _potentialLowEntryPrice = Decimal.MinValue
                             _signalCandle = Nothing
                         End If
+                        _entryRemark = "ATR Target"
                     Else
                         _targetPoint = _slPoint * _userInputs.TargetMultiplier
+                        _entryRemark = "SL Target"
                     End If
                 End If
             End If

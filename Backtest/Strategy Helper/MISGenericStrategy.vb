@@ -143,6 +143,8 @@ Namespace StrategyHelper
                                             stockRule = New TIIOppositeBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 12
                                             stockRule = New FixedLevelBasedStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
+                                        Case 13
+                                            stockRule = New LowStoplossStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2, stockList(stock).Supporting3)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -582,7 +584,9 @@ Namespace StrategyHelper
                                 {.StockName = instrumentName,
                                 .LotSize = dt.Rows(i).Item(2),
                                 .EligibleToTakeTrade = True,
-                                .Supporting1 = dt.Rows(i).Item(3)}
+                                .Supporting1 = dt.Rows(i).Item(3),
+                                .Supporting2 = dt.Rows(i).Item(6),
+                                .Supporting3 = dt.Rows(i).Item(7)}
                             ret.Add(instrumentName, detailsOfStock)
                             counter += 1
                             If counter = Me.NumberOfTradeableStockPerDay Then Exit For
