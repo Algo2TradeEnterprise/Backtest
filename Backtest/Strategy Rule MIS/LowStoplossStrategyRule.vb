@@ -161,7 +161,7 @@ Public Class LowStoplossStrategyRule
             End If
 
             'Quantity calculation
-            If parameter.EntryPrice * parameter.Quantity / _parentStrategy.MarginMultiplier < 15000 Then
+            If parameter.EntryPrice * parameter.Quantity / _parentStrategy.MarginMultiplier < 10000 Then
                 parameter.Quantity = 2 * _lotSize
             End If
 

@@ -386,7 +386,7 @@ Public Class frmMain
                                                                 .OverAllProfitPerDay = maxProfit
                                                                 .OverAllLossPerDay = maxLoss
 
-                                                                .TrailingMTM = False
+                                                                .TrailingMTM = trlngMTM
                                                                 .MTMSlab = 10000
                                                             End With
                                                             Await backtestStrategy.TestStrategyAsync(startDate, endDate).ConfigureAwait(False)
