@@ -333,36 +333,25 @@ Public Class LowStoplossStrategyRule
 
     Private Function IsSignalCandle(ByVal candle As Payload) As Boolean
         Dim ret As Boolean = False
-        If IsFractalHighChanged(candle.PayloadDate) AndAlso candle.Low < candle.PreviousCandlePayload.Low Then
+        If IsFractalChanged(candle.PayloadDate) = 1 AndAlso candle.Low < candle.PreviousCandlePayload.Low Then
             ret = True
-        ElseIf IsFractalLowChanged(candle.PayloadDate) AndAlso candle.High > candle.PreviousCandlePayload.High Then
+        ElseIf IsFractalchanged(candle.PayloadDate) = -1 AndAlso candle.High > candle.PreviousCandlePayload.High Then
             ret = True
         End If
         Return ret
     End Function
 
-    Private Function IsFractalHighChanged(ByVal currentTime As Date) As Boolean
-        Dim ret As Boolean = False
+    Private Function IsFractalChanged(ByVal currentTime As Date) As Integer
+        Dim ret As Integer = False
         If _signalPayload IsNot Nothing AndAlso _signalPayload.Count > 0 Then
             For Each runningPayload In _signalPayload
                 If runningPayload.Key.Date = _tradingDate.Date AndAlso runningPayload.Key <= currentTime Then
                     If _FractalHighPayload(runningPayload.Value.PayloadDate) <> _FractalHighPayload(runningPayload.Value.PreviousCandlePayload.PayloadDate) Then
-                        ret = True
+                        ret = 1
                         Exit For
                     End If
-                End If
-            Next
-        End If
-        Return ret
-    End Function
-
-    Private Function IsFractalLowChanged(ByVal currentTime As Date) As Boolean
-        Dim ret As Boolean = False
-        If _signalPayload IsNot Nothing AndAlso _signalPayload.Count > 0 Then
-            For Each runningPayload In _signalPayload
-                If runningPayload.Key.Date = _tradingDate.Date AndAlso runningPayload.Key <= currentTime Then
                     If _FractalLowPayload(runningPayload.Value.PayloadDate) <> _FractalLowPayload(runningPayload.Value.PreviousCandlePayload.PayloadDate) Then
-                        ret = True
+                        ret = -1
                         Exit For
                     End If
                 End If
