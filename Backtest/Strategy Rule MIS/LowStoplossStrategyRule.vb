@@ -117,7 +117,7 @@ Public Class LowStoplossStrategyRule
                         .EntryDirection = Trade.TradeExecutionDirection.Buy,
                         .Quantity = _lotSize,
                         .Stoploss = signalCandleSatisfied.Item3,
-                        .Target = .EntryPrice + ConvertFloorCeling(_targetPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing),
+                        .Target = .EntryPrice + _targetPoint,
                         .Buffer = buffer,
                         .SignalCandle = signalCandle,
                         .OrderType = Trade.TypeOfOrder.SL,
@@ -134,7 +134,7 @@ Public Class LowStoplossStrategyRule
                         .EntryDirection = Trade.TradeExecutionDirection.Sell,
                         .Quantity = _lotSize,
                         .Stoploss = signalCandleSatisfied.Item3,
-                        .Target = .EntryPrice - ConvertFloorCeling(_targetPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing),
+                        .Target = .EntryPrice - _targetPoint,
                         .Buffer = buffer,
                         .SignalCandle = signalCandle,
                         .OrderType = Trade.TypeOfOrder.SL,
@@ -293,7 +293,13 @@ Public Class LowStoplossStrategyRule
                         End If
                         _entryRemark = "ATR Target"
                     Else
-                        _targetPoint = _slPoint * _userInputs.TargetMultiplier
+                        Dim capital As Decimal = _potentialHighEntryPrice * _lotSize / _parentStrategy.MarginMultiplier
+                        Dim quantity As Integer = _lotSize
+                        If capital < 10000 Then quantity = 2 * _lotSize
+                        Dim pl As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, _potentialHighEntryPrice, _potentialHighEntryPrice - _slPoint, quantity, _lotSize, _parentStrategy.StockType)
+                        Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, _potentialHighEntryPrice, quantity, Math.Abs(pl) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
+
+                        _targetPoint = target - _potentialHighEntryPrice
                         _entryRemark = "SL Target"
                     End If
                 End If
