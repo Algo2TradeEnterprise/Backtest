@@ -286,12 +286,12 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            For nmbrOfTradePerStock As Integer = 4 To 4 Step 1
+            For nmbrOfTradePerStock As Integer = 4 To 5 Step 1
                 For maxLossPercentageOfCapitalPerStock As Decimal = Decimal.MinValue To Decimal.MinValue Step 1
-                    For tgtMul As Integer = 4 To 4 Step 1
+                    For tgtMul As Integer = 3 To 4 Step 1
                         For mdfyCndlTgt As Integer = 1 To 1 Step 1
                             For mdfyNmbrOfTrd As Integer = 0 To 0 Step 1
-                                For slMakeupTrade As Integer = 0 To 0 Step 1
+                                For slMakeupTrade As Integer = 0 To 1 Step 1
                                     For brkevenMvmnt As Integer = 0 To 0 Step 1
                                         For brkevenMul As Decimal = 2 / 3 To 2 / 3 Step 1
                                             For trlngMTM As Integer = 0 To 0 Step 1
@@ -305,7 +305,7 @@ Public Class frmMain
                                                                                                           eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                                                                           tickSize:=tick,
                                                                                                           marginMultiplier:=margin,
-                                                                                                          timeframe:=1,
+                                                                                                          timeframe:=2,
                                                                                                           heikenAshiCandle:=False,
                                                                                                           stockType:=stockType,
                                                                                                           databaseTable:=database,
@@ -322,7 +322,8 @@ Public Class frmMain
                                                                 '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pre Market Data.csv")
                                                                 '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "BANKNIFTY.csv")
                                                                 '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
-                                                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Volume spike Stock List.csv")
+                                                                '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Volume spike Stock List.csv")
+                                                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Volume spike With Low SL Stock List.csv")
 
                                                                 .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
                                                                 Select Case .RuleNumber

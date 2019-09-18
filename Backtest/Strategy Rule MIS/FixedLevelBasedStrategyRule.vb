@@ -298,7 +298,40 @@ Public Class FixedLevelBasedStrategyRule
         If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing AndAlso
             Not candle.DeadCandle AndAlso Not candle.PreviousCandlePayload.DeadCandle Then
             If _potentialHighEntryPrice = Decimal.MinValue AndAlso _potentialLowEntryPrice = Decimal.MinValue Then
-                If IsCandleHalf(candle) AndAlso candle.CandleRange > _parentStrategy.CalculateBuffer(candle.High, RoundOfType.Floor) Then
+                'If IsCandleHalf(candle) AndAlso candle.CandleRange > _parentStrategy.CalculateBuffer(candle.High, RoundOfType.Floor) Then
+                '    _potentialHighEntryPrice = candle.High
+                '    _potentialLowEntryPrice = candle.Low
+                '    _signalCandle = candle
+                '    If _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.None Then
+                '        _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.Candle
+                '        If _userInputs.ModifyCandleTarget AndAlso GetSignalCandleATR() <> Decimal.MinValue AndAlso candle.CandleRange >= GetSignalCandleATR() Then
+                '            _userInputs.TargetMultiplier = Math.Floor(_userInputs.TargetMultiplier - _userInputs.TargetMultiplier * 25 / 100)
+                '            If _userInputs.ModifyNumberOfTrade Then _userInputs.NumberOfTrade = Math.Floor(_userInputs.NumberOfTrade - _userInputs.NumberOfTrade * 25 / 100)
+                '        End If
+                '    End If
+                '    _entryRemark = "Candle Half"
+                'ElseIf IsPinBar(candle) Then
+                '    _potentialHighEntryPrice = candle.High
+                '    _potentialLowEntryPrice = candle.Low
+                '    _signalCandle = candle
+                '    If _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.None Then
+                '        _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.BreakoutATR
+                '        _userInputs.TargetMultiplier = Math.Floor(_userInputs.TargetMultiplier - _userInputs.TargetMultiplier * 25 / 100)
+                '        If _userInputs.ModifyNumberOfTrade Then _userInputs.NumberOfTrade = Math.Floor(_userInputs.NumberOfTrade - _userInputs.NumberOfTrade * 25 / 100)
+                '    End If
+                '    _entryRemark = "Pin Bar"
+                'ElseIf IsTweezerPattern(candle) Then
+                '    _potentialHighEntryPrice = candle.High
+                '    _potentialLowEntryPrice = candle.Low
+                '    _signalCandle = candle
+                '    If _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.None Then
+                '        _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.BreakoutATR
+                '        _userInputs.TargetMultiplier = Math.Floor(_userInputs.TargetMultiplier - _userInputs.TargetMultiplier * 25 / 100)
+                '        If _userInputs.ModifyNumberOfTrade Then _userInputs.NumberOfTrade = Math.Floor(_userInputs.NumberOfTrade - _userInputs.NumberOfTrade * 25 / 100)
+                '    End If
+                '    _entryRemark = "Tweezer Pattern"
+                'End If
+                If IsCandleLessThanATR(candle) Then
                     _potentialHighEntryPrice = candle.High
                     _potentialLowEntryPrice = candle.Low
                     _signalCandle = candle
@@ -309,27 +342,7 @@ Public Class FixedLevelBasedStrategyRule
                             If _userInputs.ModifyNumberOfTrade Then _userInputs.NumberOfTrade = Math.Floor(_userInputs.NumberOfTrade - _userInputs.NumberOfTrade * 25 / 100)
                         End If
                     End If
-                    _entryRemark = "Candle Half"
-                ElseIf IsPinBar(candle) Then
-                    _potentialHighEntryPrice = candle.High
-                    _potentialLowEntryPrice = candle.Low
-                    _signalCandle = candle
-                    If _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.None Then
-                        _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.BreakoutATR
-                        _userInputs.TargetMultiplier = Math.Floor(_userInputs.TargetMultiplier - _userInputs.TargetMultiplier * 25 / 100)
-                        If _userInputs.ModifyNumberOfTrade Then _userInputs.NumberOfTrade = Math.Floor(_userInputs.NumberOfTrade - _userInputs.NumberOfTrade * 25 / 100)
-                    End If
-                    _entryRemark = "Pin Bar"
-                ElseIf IsTweezerPattern(candle) Then
-                    _potentialHighEntryPrice = candle.High
-                    _potentialLowEntryPrice = candle.Low
-                    _signalCandle = candle
-                    If _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.None Then
-                        _userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.BreakoutATR
-                        _userInputs.TargetMultiplier = Math.Floor(_userInputs.TargetMultiplier - _userInputs.TargetMultiplier * 25 / 100)
-                        If _userInputs.ModifyNumberOfTrade Then _userInputs.NumberOfTrade = Math.Floor(_userInputs.NumberOfTrade - _userInputs.NumberOfTrade * 25 / 100)
-                    End If
-                    _entryRemark = "Tweezer Pattern"
+                    _entryRemark = ""
                 End If
             End If
 
@@ -464,6 +477,15 @@ Public Class FixedLevelBasedStrategyRule
                 ret = True
             End If
             'End If
+        End If
+        Return ret
+    End Function
+
+    Private Function IsCandleLessThanATR(ByVal candle As Payload) As Boolean
+        Dim ret As Boolean = False
+        Dim atr As Decimal = _ATRPayload(candle.PayloadDate)
+        If candle.CandleRange <= ConvertFloorCeling(atr, _parentStrategy.TickSize, RoundOfType.Celing) Then
+            ret = True
         End If
         Return ret
     End Function
