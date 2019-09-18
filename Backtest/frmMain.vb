@@ -305,7 +305,7 @@ Public Class frmMain
                                                                                                           eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                                                                           tickSize:=tick,
                                                                                                           marginMultiplier:=margin,
-                                                                                                          timeframe:=2,
+                                                                                                          timeframe:=1,
                                                                                                           heikenAshiCandle:=False,
                                                                                                           stockType:=stockType,
                                                                                                           databaseTable:=database,
@@ -366,7 +366,7 @@ Public Class frmMain
                                                                 End Select
 
 
-                                                                .NumberOfTradeableStockPerDay = 5
+                                                                .NumberOfTradeableStockPerDay = 1
 
                                                                 .NumberOfTradesPerDay = Integer.MaxValue
                                                                 .NumberOfTradesPerStockPerDay = nmbrOfTradePerStock
