@@ -113,7 +113,7 @@ Public Class LowStoplossStrategyRule
                 If signalCandleSatisfied.Item4 = Trade.TradeExecutionDirection.Buy Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2, RoundOfType.Floor)
                     parameter = New PlaceOrderParameters With {
-                        .EntryPrice = signalCandleSatisfied.Item2 + buffer,
+                        .EntryPrice = signalCandleSatisfied.Item2,
                         .EntryDirection = Trade.TradeExecutionDirection.Buy,
                         .Quantity = _lotSize,
                         .Stoploss = signalCandleSatisfied.Item3,
@@ -130,7 +130,7 @@ Public Class LowStoplossStrategyRule
                 ElseIf signalCandleSatisfied.Item4 = Trade.TradeExecutionDirection.Sell Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2, RoundOfType.Floor)
                     parameter = New PlaceOrderParameters With {
-                        .EntryPrice = signalCandleSatisfied.Item2 - buffer,
+                        .EntryPrice = signalCandleSatisfied.Item2,
                         .EntryDirection = Trade.TradeExecutionDirection.Sell,
                         .Quantity = _lotSize,
                         .Stoploss = signalCandleSatisfied.Item3,
@@ -327,9 +327,9 @@ Public Class LowStoplossStrategyRule
                         buffer = _parentStrategy.CalculateBuffer(_potentialLowEntryPrice, RoundOfType.Floor)
                     End If
                     If tradeDirection = Trade.TradeExecutionDirection.Buy Then
-                        ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, _potentialHighEntryPrice, _potentialHighEntryPrice + buffer - _slPoint, Trade.TradeExecutionDirection.Buy)
+                        ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, _potentialHighEntryPrice + buffer, _potentialHighEntryPrice + buffer - _slPoint, Trade.TradeExecutionDirection.Buy)
                     ElseIf tradeDirection = Trade.TradeExecutionDirection.Sell Then
-                        ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, _potentialLowEntryPrice, _potentialLowEntryPrice - buffer + _slPoint, Trade.TradeExecutionDirection.Sell)
+                        ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, _potentialLowEntryPrice - buffer, _potentialLowEntryPrice - buffer + _slPoint, Trade.TradeExecutionDirection.Sell)
                     End If
                 End If
             End If
