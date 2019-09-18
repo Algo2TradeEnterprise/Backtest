@@ -284,7 +284,13 @@ Public Class LowStoplossStrategyRule
                     _potentialLowEntryPrice = candle.Low
                     _signalCandle = candle
                     Dim atr As Decimal = ConvertFloorCeling(_ATRPayload(_signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Floor)
-                    If atr * _userInputs.TargetMultiplier >= _slPoint * _userInputs.TargetMultiplier Then
+                    Dim capital As Decimal = _potentialHighEntryPrice * _lotSize / _parentStrategy.MarginMultiplier
+                    Dim quantity As Integer = _lotSize
+                    If capital < 10000 Then quantity = 2 * _lotSize
+                    Dim pl As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, _potentialHighEntryPrice, _potentialHighEntryPrice - _slPoint, quantity, _lotSize, _parentStrategy.StockType)
+                    Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, _potentialHighEntryPrice, quantity, Math.Abs(pl) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
+
+                    If atr * _userInputs.TargetMultiplier >= target - _potentialHighEntryPrice Then
                         _targetPoint = atr * _userInputs.TargetMultiplier
                         If _targetPoint > _dayATR / 2 Then
                             _potentialHighEntryPrice = Decimal.MinValue
@@ -293,12 +299,6 @@ Public Class LowStoplossStrategyRule
                         End If
                         _entryRemark = "ATR Target"
                     Else
-                        Dim capital As Decimal = _potentialHighEntryPrice * _lotSize / _parentStrategy.MarginMultiplier
-                        Dim quantity As Integer = _lotSize
-                        If capital < 10000 Then quantity = 2 * _lotSize
-                        Dim pl As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, _potentialHighEntryPrice, _potentialHighEntryPrice - _slPoint, quantity, _lotSize, _parentStrategy.StockType)
-                        Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, _potentialHighEntryPrice, quantity, Math.Abs(pl) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
-
                         _targetPoint = target - _potentialHighEntryPrice
                         _entryRemark = "SL Target"
                     End If
