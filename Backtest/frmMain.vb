@@ -289,7 +289,7 @@ Public Class frmMain
             For nmbrOfTradePerStock As Integer = 4 To 4 Step 1
                 For maxLossPercentageOfCapitalPerStock As Decimal = Decimal.MinValue To Decimal.MinValue Step 1
                     For tgtMul As Integer = 4 To 4 Step 1
-                        For mdfyCndlTgt As Integer = 1 To 1 Step 1
+                        For mdfyCndlTgt As Integer = 0 To 0 Step 1
                             For mdfyNmbrOfTrd As Integer = 0 To 0 Step 1
                                 For slMakeupTrade As Integer = 0 To 0 Step 1
                                     For brkevenMvmnt As Integer = 0 To 0 Step 1
@@ -366,7 +366,7 @@ Public Class frmMain
                                                                 End Select
 
 
-                                                                .NumberOfTradeableStockPerDay = 1
+                                                                .NumberOfTradeableStockPerDay = 5
 
                                                                 .NumberOfTradesPerDay = Integer.MaxValue
                                                                 .NumberOfTradesPerStockPerDay = nmbrOfTradePerStock
