@@ -163,7 +163,7 @@ Public Class LowStoplossStrategyRule
 
             'Quantity calculation
             If _firstTradedQuantity = Integer.MinValue Then
-                _firstTradedQuantity = _parentStrategy.CalculateQuantityFromInvestment(_lotSize, 15000, parameter.EntryPrice, _parentStrategy.StockType, True)
+                _firstTradedQuantity = _parentStrategy.CalculateQuantityFromInvestment(_lotSize, 10000, parameter.EntryPrice, _parentStrategy.StockType, True)
             End If
             parameter.Quantity = _firstTradedQuantity
 
