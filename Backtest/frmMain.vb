@@ -323,7 +323,8 @@ Public Class frmMain
                                                                 '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "BANKNIFTY.csv")
                                                                 '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
                                                                 '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Volume spike Stock List.csv")
-                                                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Volume spike With Low SL Stock List.csv")
+                                                                '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Volume spike With Low SL Stock List.csv")
+                                                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Volume spike With Low SL Stock List Modified.csv")
 
                                                                 .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
                                                                 Select Case .RuleNumber
