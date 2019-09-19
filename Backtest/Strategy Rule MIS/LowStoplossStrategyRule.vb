@@ -285,9 +285,7 @@ Public Class LowStoplossStrategyRule
                     _potentialLowEntryPrice = candle.Low
                     _signalCandle = candle
                     Dim atr As Decimal = ConvertFloorCeling(_ATRPayload(_signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
-                    Dim capital As Decimal = _potentialHighEntryPrice * _lotSize / _parentStrategy.MarginMultiplier
-                    Dim quantity As Integer = _lotSize
-                    If capital < 10000 Then quantity = 2 * _lotSize
+                    Dim quantity As Integer = _parentStrategy.CalculateQuantityFromInvestment(_lotSize, 10000, _potentialHighEntryPrice, _parentStrategy.StockType, True)
                     Dim pl As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, _potentialHighEntryPrice, _potentialHighEntryPrice - _slPoint, quantity, _lotSize, _parentStrategy.StockType)
                     Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, _potentialHighEntryPrice, quantity, Math.Abs(pl) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
 
