@@ -362,7 +362,8 @@ Public Class frmMain
                                                                         .StoplossMakeupTrade = slMakeupTrade,
                                                                         .MaxLossPercentageOfCapital = maxLossPercentageOfCapitalPerStock,
                                                                         .ModifyCandleTarget = mdfyCndlTgt,
-                                                                        .ModifyNumberOfTrade = mdfyNmbrOfTrd}
+                                                                        .ModifyNumberOfTrade = mdfyNmbrOfTrd,
+                                                                        .MaxPLToModifyNumberOfTrade = 2000}
                                                                 End Select
 
 

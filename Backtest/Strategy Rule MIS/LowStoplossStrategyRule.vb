@@ -17,6 +17,7 @@ Public Class LowStoplossStrategyRule
         Public NumberOfTrade As Integer
         Public ModifyCandleTarget As Boolean
         Public ModifyNumberOfTrade As Boolean
+        Public MaxPLToModifyNumberOfTrade As Decimal
         Public MaxLossPercentageOfCapital As Decimal
     End Class
 #End Region
@@ -29,7 +30,7 @@ Public Class LowStoplossStrategyRule
     Private _FractalHighPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _FractalLowPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _userInputs As StrategyRuleEntities
-    Private _entryRemark As String = ""
+    Private _targetRemark As String = ""
     Private _targetPoint As Decimal = Decimal.MinValue
     Private _firstTradedQuantity As Integer = Integer.MinValue
     Private ReadOnly _stockATR As Decimal
@@ -74,6 +75,14 @@ Public Class LowStoplossStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         Dim tradeStartTime As Date = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, _parentStrategy.TradeStartTime.Hours, _parentStrategy.TradeStartTime.Minutes, _parentStrategy.TradeStartTime.Seconds)
+
+        If _parentStrategy.TotalPLAfterBrokerage(currentTick.PayloadDate) > _userInputs.MaxPLToModifyNumberOfTrade Then
+            _userInputs.NumberOfTrade = _parentStrategy.NumberOfTradesPerStockPerDay
+        Else
+            If _targetRemark = "ATR Target" Then
+                _userInputs.NumberOfTrade = Math.Floor(_targetPoint / _slPoint) - 1
+            End If
+        End If
 
         Dim parameter As PlaceOrderParameters = Nothing
         If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
@@ -123,7 +132,7 @@ Public Class LowStoplossStrategyRule
                         .SignalCandle = signalCandle,
                         .OrderType = Trade.TypeOfOrder.SL,
                         .Supporting1 = signalCandle.PayloadDate.ToShortTimeString,
-                        .Supporting2 = _entryRemark,
+                        .Supporting2 = _targetRemark,
                         .Supporting3 = _slPoint,
                         .Supporting4 = _targetPoint,
                         .Supporting5 = _dayATR
@@ -140,7 +149,7 @@ Public Class LowStoplossStrategyRule
                         .SignalCandle = signalCandle,
                         .OrderType = Trade.TypeOfOrder.SL,
                         .Supporting1 = signalCandle.PayloadDate.ToShortTimeString,
-                        .Supporting2 = _entryRemark,
+                        .Supporting2 = _targetRemark,
                         .Supporting3 = _slPoint,
                         .Supporting4 = _targetPoint,
                         .Supporting5 = _dayATR
@@ -296,11 +305,11 @@ Public Class LowStoplossStrategyRule
                             _potentialLowEntryPrice = Decimal.MinValue
                             _signalCandle = Nothing
                         End If
-                        _entryRemark = "ATR Target"
+                        _targetRemark = "ATR Target"
                         _userInputs.NumberOfTrade = Math.Floor(_targetPoint / _slPoint) - 1
                     Else
                         _targetPoint = target - _potentialHighEntryPrice
-                        _entryRemark = "SL Target"
+                        _targetRemark = "SL Target"
                     End If
                 End If
             End If
