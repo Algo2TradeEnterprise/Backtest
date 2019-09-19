@@ -145,10 +145,9 @@ Namespace Calculator
             Dim n = If((g * v * 0.0001) > 20, 20, Math.Round((g * v * 0.0001), (2)))
             Dim a = Math.Round((i + n), (2))
             Dim r = Convert.ToInt32(g * v * 0.0001)
-            Dim s = Math.Round((0.000021 * o), (2))
             Dim l = Math.Round((0.000019 * o), (2))
-            Dim c = Math.Round((0.000002 * o), (2))
-            Dim p = Math.Round((0.18 * (a + s)), (2))
+            Dim c = 0
+            Dim p = Math.Round((0.18 * (a + l)), (2))
 
             Output.Turnover = o
             Output.Brokerage = a
@@ -200,20 +199,20 @@ Namespace Calculator
             Dim c = 0.00
             s = If(e = "a", Math.Round((0.000036 * o), 2), Math.Round((0.0000105 * o), 2))
             l = If(e = "a", Math.Round((0.000026 * o), 2), Math.Round((0.0000005 * o), 2))
-            c = Math.Round((0.00001 * o), 2)
+            c = 0
             If item = "RBDPMOLEIN" And o >= 100000.0 Then
                 Dim p = Convert.ToInt32(Math.Round((o / 100000.0), 2))
                 s = p
             End If
             If item = "CASTORSEED" Then
                 l = Math.Round((0.000005 * o), 2)
-                c = Math.Round((0.00001 * o), 2)
+                c = 0
             ElseIf item = "RBDPMOLEIN" Then
                 l = Math.Round((0.00001 * o), 2)
-                c = Math.Round((0.00001 * o), 2)
+                c = 0
             ElseIf item = "PEPPER" Then
                 l = Math.Round((0.0000005 * o), 2)
-                c = Math.Round((0.00001 * o), 2)
+                c = 0
             End If
             Dim d = Math.Round((0.18 * (a + s)), 2)
 
@@ -247,7 +246,7 @@ Namespace Calculator
             Dim i = Math.Round((e + o), (2))
             Dim n = Math.Round((0.000011 * t), (2))
             Dim a = Math.Round((0.000009 * t), (2))
-            Dim r = Math.Round((0.000002 * t), (2))
+            Dim r = 0
             Dim s = Math.Round((0.18 * (i + n)), (2))
 
             Output.Turnover = t

@@ -113,7 +113,7 @@
         Private _SEBI As Decimal
         Public Property SEBI As Decimal
             Get
-                _SEBI = 0.0000015 * _Turnover
+                _SEBI = 0.000001 * _Turnover
                 Return Math.Round(_SEBI, 2)
             End Get
             Set(value As Decimal)
