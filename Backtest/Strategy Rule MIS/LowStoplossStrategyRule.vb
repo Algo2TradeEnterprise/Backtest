@@ -31,6 +31,7 @@ Public Class LowStoplossStrategyRule
     Private _userInputs As StrategyRuleEntities
     Private _entryRemark As String = ""
     Private _targetPoint As Decimal = Decimal.MinValue
+    Private _firstTradedQuantity As Integer = Integer.MinValue
     Private ReadOnly _stockATR As Decimal
     Private ReadOnly _dayATR As Decimal
     Private ReadOnly _slPoint As Decimal
@@ -161,9 +162,10 @@ Public Class LowStoplossStrategyRule
             End If
 
             'Quantity calculation
-            If parameter.EntryPrice * parameter.Quantity / _parentStrategy.MarginMultiplier < 10000 Then
-                parameter.Quantity = 2 * _lotSize
+            If _firstTradedQuantity = Integer.MinValue Then
+                _firstTradedQuantity = _parentStrategy.CalculateQuantityFromInvestment(_lotSize, 15000, parameter.EntryPrice, _parentStrategy.StockType, True)
             End If
+            parameter.Quantity = _firstTradedQuantity
 
             'Stop taking trade if loss is greater that x% of capital
             If _userInputs.MaxLossPercentageOfCapital <> Decimal.MinValue Then
