@@ -210,12 +210,11 @@ Public Class LowStoplossStrategyRule
             If signalCandle IsNot Nothing Then
                 Dim signalCandleSatisfied As Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection) = IsSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
                 If signalCandleSatisfied IsNot Nothing AndAlso signalCandleSatisfied.Item1 Then
-                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2, RoundOfType.Floor)
                     Dim entryPrice As Decimal = Decimal.MinValue
                     If signalCandleSatisfied.Item4 = Trade.TradeExecutionDirection.Buy Then
-                        entryPrice = signalCandleSatisfied.Item2 + buffer
+                        entryPrice = signalCandleSatisfied.Item2
                     ElseIf signalCandleSatisfied.Item4 = Trade.TradeExecutionDirection.Sell Then
-                        entryPrice = signalCandleSatisfied.Item2 - buffer
+                        entryPrice = signalCandleSatisfied.Item2
                     End If
                     If (currentTrade.EntryDirection <> signalCandleSatisfied.Item4) OrElse
                         (currentTrade.EntryPrice <> entryPrice) Then
@@ -298,6 +297,7 @@ Public Class LowStoplossStrategyRule
                             _signalCandle = Nothing
                         End If
                         _entryRemark = "ATR Target"
+                        _userInputs.NumberOfTrade = Math.Floor(_targetPoint / _slPoint) - 1
                     Else
                         _targetPoint = target - _potentialHighEntryPrice
                         _entryRemark = "SL Target"
