@@ -309,6 +309,7 @@ Public Class LowStoplossStrategyRule
                         _userInputs.NumberOfTrade = Math.Floor(_targetPoint / _slPoint) - 1
                     Else
                         _targetPoint = target - _potentialHighEntryPrice
+                        _targetPoint += _parentStrategy.TickSize * _userInputs.TargetMultiplier
                         _targetRemark = "SL Target"
                     End If
                 End If
