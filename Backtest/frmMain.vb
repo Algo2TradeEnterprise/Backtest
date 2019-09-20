@@ -286,7 +286,7 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            For signalType As Integer = 1 To 7 Step 1
+            For signalType As Integer = 7 To 8 Step 1
                 For nmbrOfTradePerStock As Integer = 4 To 4 Step 1
                     For mdfyNmbrOfTrd As Integer = 1 To 1 Step 1
                         For overallMaxLoss As Decimal = Decimal.MinValue To Decimal.MinValue Step 1

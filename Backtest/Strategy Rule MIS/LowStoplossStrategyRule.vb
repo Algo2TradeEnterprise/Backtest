@@ -476,10 +476,10 @@ Public Class LowStoplossStrategyRule
     End Function
 #End Region
 
-#Region "10% dip in ATR"
+#Region "1% dip in ATR"
     Private Function IsDipInATRSignalCandle(ByVal candle As Payload) As Boolean
         Dim ret As Boolean = False
-        If _ATRPayload(candle.PayloadDate) <= _ATRPayload(candle.PreviousCandlePayload.PayloadDate) * 0.9 Then
+        If _ATRPayload(candle.PayloadDate) <= _ATRPayload(candle.PreviousCandlePayload.PayloadDate) * 0.99 Then
             ret = True
         End If
         Return ret
