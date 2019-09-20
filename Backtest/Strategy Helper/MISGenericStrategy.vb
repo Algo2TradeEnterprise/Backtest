@@ -74,7 +74,7 @@ Namespace StrategyHelper
                     Me.AvailableCapital = Me.UsableCapital
                     If Me.TrailingMTM Then Me.OverAllLossPerDay = Decimal.MinValue
                     TradesTaken = New Dictionary(Of Date, Dictionary(Of String, List(Of Trade)))
-                    Dim stockList As Dictionary(Of String, StockDetails) = GetStockData(tradeCheckingDate)
+                    Dim stockList As Dictionary(Of String, StockDetails) = Await GetStockData(tradeCheckingDate).ConfigureAwait(False)
 
                     _canceller.Token.ThrowIfCancellationRequested()
                     If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
@@ -93,7 +93,7 @@ Namespace StrategyHelper
                             If Me.DataSource = SourceOfData.Database Then
                                 XDayOneMinutePayload = Cmn.GetRawPayload(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate)
                             ElseIf Me.DataSource = SourceOfData.Live Then
-                                XDayOneMinutePayload = Await Cmn.GetHistoricalData(Me.DatabaseTable, stock, tradeCheckingDate).ConfigureAwait(False)
+                                XDayOneMinutePayload = Await Cmn.GetHistoricalData(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate).ConfigureAwait(False)
                             End If
 
                             _canceller.Token.ThrowIfCancellationRequested()
@@ -559,7 +559,7 @@ Namespace StrategyHelper
 
 
 #Region "Stock Selection"
-        Private Function GetStockData(tradingDate As Date) As Dictionary(Of String, StockDetails)
+        Private Async Function GetStockData(tradingDate As Date) As Task(Of Dictionary(Of String, StockDetails))
             Dim ret As Dictionary(Of String, StockDetails) = Nothing
             If Me.StockFileName IsNot Nothing Then
                 Dim dt As DataTable = Nothing
@@ -579,16 +579,37 @@ Namespace StrategyHelper
                             Else
                                 instrumentName = tradingSymbol
                             End If
-                            Dim detailsOfStock As StockDetails = New StockDetails With
-                                {.StockName = instrumentName,
-                                .LotSize = dt.Rows(i).Item(2),
-                                .EligibleToTakeTrade = True,
-                                .Supporting1 = dt.Rows(i).Item(3),
-                                .Supporting2 = dt.Rows(i).Item(6),
-                                .Supporting3 = dt.Rows(i).Item(7)}
-                            ret.Add(instrumentName, detailsOfStock)
-                            counter += 1
-                            If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+
+                            Dim stockPayload As Dictionary(Of Date, Payload) = Nothing
+                            If Me.DataSource = SourceOfData.Database Then
+                                stockPayload = Cmn.GetRawPayload(Me.DatabaseTable, instrumentName, tradingDate, tradingDate)
+                            ElseIf Me.DataSource = SourceOfData.Live Then
+                                stockPayload = Await Cmn.GetHistoricalData(Me.DatabaseTable, instrumentName, tradingDate, tradingDate).ConfigureAwait(False)
+                            End If
+                            If stockPayload IsNot Nothing AndAlso stockPayload.Count > 0 Then
+                                Dim time As Date = New Date(tradingDate.Year, tradingDate.Month, tradingDate.Day, 9, 16, 0)
+                                Dim stockPrice As Decimal = stockPayload.Where(Function(x)
+                                                                                   Return x.Key >= time
+                                                                               End Function).FirstOrDefault.Value.Close
+                                Dim quantity As Integer = CalculateQuantityFromInvestment(dt.Rows(i).Item(2), CType(Me.RuleEntityData, LowStoplossStrategyRule.StrategyRuleEntities).MinimumCapital, stockPrice, Me.StockType, True)
+                                Dim capital As Decimal = stockPrice * quantity / Me.MarginMultiplier
+                                If capital < 25000 Then
+                                    Dim stoploss As Decimal = CalculatorTargetOrStoploss(instrumentName, stockPrice, quantity, -1000, Trade.TradeExecutionDirection.Buy, Me.StockType)
+                                    Dim slPoint As Decimal = stockPrice - stoploss
+                                    If slPoint * 4 <= dt.Rows(i).Item(7) / 2 Then
+                                        Dim detailsOfStock As StockDetails = New StockDetails With
+                                        {.StockName = instrumentName,
+                                        .LotSize = dt.Rows(i).Item(2),
+                                        .EligibleToTakeTrade = True,
+                                        .Supporting1 = dt.Rows(i).Item(3),
+                                        .Supporting2 = slPoint,
+                                        .Supporting3 = dt.Rows(i).Item(7)}
+                                        ret.Add(instrumentName, detailsOfStock)
+                                        counter += 1
+                                        If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                                    End If
+                                End If
+                            End If
                         End If
                     Next
                 End If

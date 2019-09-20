@@ -663,18 +663,18 @@ Public Class Common
         Return ret
     End Function
 
-    Public Async Function GetHistoricalData(ByVal tableName As DataBaseTable, ByVal rawInstrumentName As String, ByVal currentDate As Date) As Task(Of Dictionary(Of Date, Payload))
+    Public Async Function GetHistoricalData(ByVal tableName As DataBaseTable, ByVal rawInstrumentName As String, ByVal startDate As Date, ByVal endDate As Date) As Task(Of Dictionary(Of Date, Payload))
         Dim ret As Dictionary(Of Date, Payload) = Nothing
         Dim instrumentToken As String = Nothing
         Dim tradingSymbol As String = Nothing
         Dim ZerodhaHistoricalURL As String = "https://kitecharts-aws.zerodha.com/api/chart/{0}/minute?api_key=kitefront&access_token=K&from={1}&to={2}"
-        Dim instrument As Tuple(Of String, String) = GetCurrentTradingSymbolWithInstrumentToken(tableName, currentDate, rawInstrumentName)
+        Dim instrument As Tuple(Of String, String) = GetCurrentTradingSymbolWithInstrumentToken(tableName, endDate, rawInstrumentName)
         If instrument IsNot Nothing Then
             tradingSymbol = instrument.Item1
             instrumentToken = instrument.Item2
         End If
         If instrumentToken IsNot Nothing AndAlso instrumentToken <> "" Then
-            Dim historicalDataURL As String = String.Format(ZerodhaHistoricalURL, instrumentToken, currentDate.AddDays(-7).ToString("yyyy-MM-dd"), currentDate.ToString("yyyy-MM-dd"))
+            Dim historicalDataURL As String = String.Format(ZerodhaHistoricalURL, instrumentToken, startDate.ToString("yyyy-MM-dd"), endDate.ToString("yyyy-MM-dd"))
             OnHeartbeat(String.Format("Fetching historical Data: {0}", historicalDataURL))
             Dim historicalCandlesJSONDict As Dictionary(Of String, Object) = Nothing
             Using sr As New StreamReader(HttpWebRequest.Create(historicalDataURL).GetResponseAsync().Result.GetResponseStream)

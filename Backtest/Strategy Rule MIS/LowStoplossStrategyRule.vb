@@ -19,6 +19,7 @@ Public Class LowStoplossStrategyRule
         Public ModifyNumberOfTrade As Boolean
         Public MaxPLToModifyNumberOfTrade As Decimal
         Public MaxLossPercentageOfCapital As Decimal
+        Public MinimumCapital As Decimal
     End Class
 #End Region
 
@@ -60,7 +61,8 @@ Public Class LowStoplossStrategyRule
             .ModifyNumberOfTrade = CType(_entities, StrategyRuleEntities).ModifyNumberOfTrade,
             .MaxLossPercentageOfCapital = CType(_entities, StrategyRuleEntities).MaxLossPercentageOfCapital,
             .NumberOfTrade = _parentStrategy.NumberOfTradesPerStockPerDay,
-            .MaxPLToModifyNumberOfTrade = CType(_entities, StrategyRuleEntities).MaxPLToModifyNumberOfTrade
+            .MaxPLToModifyNumberOfTrade = CType(_entities, StrategyRuleEntities).MaxPLToModifyNumberOfTrade,
+            .MinimumCapital = CType(_entities, StrategyRuleEntities).MinimumCapital
         }
     End Sub
 
@@ -173,7 +175,7 @@ Public Class LowStoplossStrategyRule
 
             'Quantity calculation
             If _firstTradedQuantity = Integer.MinValue Then
-                _firstTradedQuantity = _parentStrategy.CalculateQuantityFromInvestment(_lotSize, 10000, parameter.EntryPrice, _parentStrategy.StockType, True)
+                _firstTradedQuantity = _parentStrategy.CalculateQuantityFromInvestment(_lotSize, _userInputs.MinimumCapital, parameter.EntryPrice, _parentStrategy.StockType, True)
             End If
             parameter.Quantity = _firstTradedQuantity
 
@@ -295,7 +297,7 @@ Public Class LowStoplossStrategyRule
                     _potentialLowEntryPrice = candle.Low
                     _signalCandle = candle
                     Dim atr As Decimal = ConvertFloorCeling(_ATRPayload(_signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
-                    Dim quantity As Integer = _parentStrategy.CalculateQuantityFromInvestment(_lotSize, 10000, _potentialHighEntryPrice, _parentStrategy.StockType, True)
+                    Dim quantity As Integer = _parentStrategy.CalculateQuantityFromInvestment(_lotSize, _userInputs.MinimumCapital, _potentialHighEntryPrice, _parentStrategy.StockType, True)
                     Dim pl As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, _potentialHighEntryPrice, _potentialHighEntryPrice - _slPoint, quantity, _lotSize, _parentStrategy.StockType)
                     Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, _potentialHighEntryPrice, quantity, Math.Abs(pl) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
 

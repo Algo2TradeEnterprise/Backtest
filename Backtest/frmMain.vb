@@ -286,7 +286,7 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            For nmbrOfTradePerStock As Integer = 10 To 10 Step 1
+            For nmbrOfTradePerStock As Integer = 4 To 4 Step 1
                 For maxLossPercentageOfCapitalPerStock As Decimal = Decimal.MinValue To Decimal.MinValue Step 1
                     For tgtMul As Integer = 4 To 4 Step 1
                         For mdfyCndlTgt As Integer = 0 To 0 Step 1
@@ -364,7 +364,8 @@ Public Class frmMain
                                                                         .MaxLossPercentageOfCapital = maxLossPercentageOfCapitalPerStock,
                                                                         .ModifyCandleTarget = mdfyCndlTgt,
                                                                         .ModifyNumberOfTrade = mdfyNmbrOfTrd,
-                                                                        .MaxPLToModifyNumberOfTrade = 0}
+                                                                        .MaxPLToModifyNumberOfTrade = 0,
+                                                                        .MinimumCapital = 10000}
                                                                 End Select
 
 
