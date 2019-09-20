@@ -126,9 +126,13 @@ Public Class LowStoplossStrategyRule
             End If
 
             If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
-                Dim potentialTarget As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, signalCandleSatisfied.Item2, _quantity, _userInputs.MaxTargetPerTrade, signalCandleSatisfied.Item4, _parentStrategy.StockType)
+                Dim potentialTarget As Decimal = Decimal.MaxValue
+                If _userInputs.MaxTargetPerTrade <> Decimal.MaxValue Then
+                    potentialTarget = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, signalCandleSatisfied.Item2, _quantity, _userInputs.MaxTargetPerTrade, signalCandleSatisfied.Item4, _parentStrategy.StockType)
+                End If
                 If signalCandleSatisfied.Item4 = Trade.TradeExecutionDirection.Buy Then
-                    Dim target As Decimal = Math.Min(_targetPoint, (potentialTarget - signalCandleSatisfied.Item2))
+                    Dim target As Decimal = _targetPoint
+                    If potentialTarget <> Decimal.MaxValue Then target = Math.Min(_targetPoint, (potentialTarget - signalCandleSatisfied.Item2))
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2, RoundOfType.Floor)
                     parameter = New PlaceOrderParameters With {
                         .EntryPrice = signalCandleSatisfied.Item2,
@@ -146,7 +150,8 @@ Public Class LowStoplossStrategyRule
                         .Supporting5 = _dayATR
                     }
                 ElseIf signalCandleSatisfied.Item4 = Trade.TradeExecutionDirection.Sell Then
-                    Dim target As Decimal = Math.Min(_targetPoint, (signalCandleSatisfied.Item2 - potentialTarget))
+                    Dim target As Decimal = _targetPoint
+                    If potentialTarget <> Decimal.MaxValue Then target = Math.Min(_targetPoint, (signalCandleSatisfied.Item2 - potentialTarget))
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2, RoundOfType.Floor)
                     parameter = New PlaceOrderParameters With {
                         .EntryPrice = signalCandleSatisfied.Item2,
