@@ -595,7 +595,7 @@ Namespace StrategyHelper
                                 Dim capital As Decimal = stockPrice * quantity / Me.MarginMultiplier
                                 If capital < 25000 Then
                                     Dim stoploss As Decimal = CalculatorTargetOrStoploss(instrumentName, stockPrice, quantity, -1000, Trade.TradeExecutionDirection.Buy, Me.StockType)
-                                    Dim slPoint As Decimal = stockPrice - stoploss
+                                    Dim slPoint As Decimal = stockPrice - stoploss - Me.TickSize
                                     If slPoint * 4 <= dt.Rows(i).Item(7) / 2 Then
                                         Dim detailsOfStock As StockDetails = New StockDetails With
                                         {.StockName = instrumentName,
