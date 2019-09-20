@@ -272,7 +272,7 @@ Public Class LowStoplossStrategyRule
                     _potentialLowEntryPrice = candle.Low
                     _signalCandle = candle
                     Dim atr As Decimal = _ATRPayload(_signalCandle.PayloadDate)
-                    Dim pl As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, _potentialHighEntryPrice, _potentialHighEntryPrice - _slPoint, _quantity, _lotSize, _parentStrategy.StockType)
+                    Dim pl As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, _potentialHighEntryPrice, _potentialHighEntryPrice - _slPoint + _parentStrategy.TickSize, _quantity, _lotSize, _parentStrategy.StockType)
                     Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, _potentialHighEntryPrice, _quantity, Math.Abs(pl) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
 
                     If ConvertFloorCeling(atr * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing) >= target - _potentialHighEntryPrice Then
@@ -327,34 +327,34 @@ Public Class LowStoplossStrategyRule
     End Function
 
 #Region "Fractal Change"
-    'Private Function IsSignalCandle(ByVal candle As Payload) As Boolean
-    '    Dim ret As Boolean = False
-    '    If IsFractalChanged(candle.PayloadDate) = 1 AndAlso candle.Low < candle.PreviousCandlePayload.Low Then
-    '        ret = True
-    '    ElseIf IsFractalchanged(candle.PayloadDate) = -1 AndAlso candle.High > candle.PreviousCandlePayload.High Then
-    '        ret = True
-    '    End If
-    '    Return ret
-    'End Function
+    Private Function IsSignalCandle(ByVal candle As Payload) As Boolean
+        Dim ret As Boolean = False
+        If IsFractalChanged(candle.PayloadDate) = 1 AndAlso candle.Low < candle.PreviousCandlePayload.Low Then
+            ret = True
+        ElseIf IsFractalChanged(candle.PayloadDate) = -1 AndAlso candle.High > candle.PreviousCandlePayload.High Then
+            ret = True
+        End If
+        Return ret
+    End Function
 
-    'Private Function IsFractalChanged(ByVal currentTime As Date) As Integer
-    '    Dim ret As Integer = False
-    '    If _signalPayload IsNot Nothing AndAlso _signalPayload.Count > 0 Then
-    '        For Each runningPayload In _signalPayload
-    '            If runningPayload.Key.Date = _tradingDate.Date AndAlso runningPayload.Key <= currentTime Then
-    '                If _FractalHighPayload(runningPayload.Value.PayloadDate) <> _FractalHighPayload(runningPayload.Value.PreviousCandlePayload.PayloadDate) Then
-    '                    ret = 1
-    '                    Exit For
-    '                End If
-    '                If _FractalLowPayload(runningPayload.Value.PayloadDate) <> _FractalLowPayload(runningPayload.Value.PreviousCandlePayload.PayloadDate) Then
-    '                    ret = -1
-    '                    Exit For
-    '                End If
-    '            End If
-    '        Next
-    '    End If
-    '    Return ret
-    'End Function
+    Private Function IsFractalChanged(ByVal currentTime As Date) As Integer
+        Dim ret As Integer = False
+        If _signalPayload IsNot Nothing AndAlso _signalPayload.Count > 0 Then
+            For Each runningPayload In _signalPayload
+                If runningPayload.Key.Date = _tradingDate.Date AndAlso runningPayload.Key <= currentTime Then
+                    If _FractalHighPayload(runningPayload.Value.PayloadDate) <> _FractalHighPayload(runningPayload.Value.PreviousCandlePayload.PayloadDate) Then
+                        ret = 1
+                        Exit For
+                    End If
+                    If _FractalLowPayload(runningPayload.Value.PayloadDate) <> _FractalLowPayload(runningPayload.Value.PreviousCandlePayload.PayloadDate) Then
+                        ret = -1
+                        Exit For
+                    End If
+                End If
+            Next
+        End If
+        Return ret
+    End Function
 #End Region
 
 #Region "n times Volume"
@@ -412,28 +412,28 @@ Public Class LowStoplossStrategyRule
 #End Region
 
 #Region "Half volume and then first increase in volume"
-    Private Function IsSignalCandle(ByVal candle As Payload) As Boolean
-        Dim ret As Boolean = False
-        If candle.Volume > candle.PreviousCandlePayload.Volume Then
-            If IsHalfVolume(candle.PayloadDate) Then
-                ret = True
-            End If
-        End If
-        Return ret
-    End Function
+    'Private Function IsSignalCandle(ByVal candle As Payload) As Boolean
+    '    Dim ret As Boolean = False
+    '    If candle.Volume > candle.PreviousCandlePayload.Volume Then
+    '        If IsHalfVolume(candle.PayloadDate) Then
+    '            ret = True
+    '        End If
+    '    End If
+    '    Return ret
+    'End Function
 
-    Private Function IsHalfVolume(ByVal currentTime As Date) As Boolean
-        Dim ret As Boolean = False
-        For Each runningPayload In _signalPayload
-            If runningPayload.Key.Date = _tradingDate.Date AndAlso runningPayload.Key < currentTime Then
-                If runningPayload.Value.Volume <= runningPayload.Value.PreviousCandlePayload.Volume / 2 Then
-                    ret = True
-                    Exit For
-                End If
-            End If
-        Next
-        Return ret
-    End Function
+    'Private Function IsHalfVolume(ByVal currentTime As Date) As Boolean
+    '    Dim ret As Boolean = False
+    '    For Each runningPayload In _signalPayload
+    '        If runningPayload.Key.Date = _tradingDate.Date AndAlso runningPayload.Key < currentTime Then
+    '            If runningPayload.Value.Volume <= runningPayload.Value.PreviousCandlePayload.Volume / 2 Then
+    '                ret = True
+    '                Exit For
+    '            End If
+    '        End If
+    '    Next
+    '    Return ret
+    'End Function
 #End Region
 
 End Class

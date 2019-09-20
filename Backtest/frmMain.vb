@@ -289,7 +289,7 @@ Public Class frmMain
             For nmbrOfTradePerStock As Integer = 4 To 4 Step 1
                 For mdfyNmbrOfTrd As Integer = 1 To 1 Step 1
                     For overallMaxLoss As Decimal = Decimal.MinValue To Decimal.MinValue Step 1
-                        For brkEvnMvmnt As Integer = 1 To 1 Step 1
+                        For brkEvnMvmnt As Integer = 0 To 0 Step 1
                             For tradeMaxProfit As Decimal = Decimal.MaxValue To Decimal.MaxValue Step -1
                                 If brkEvnMvmnt = 1 AndAlso tradeMaxProfit <> Decimal.MaxValue Then Continue For
                                 For stockMaxProfit As Decimal = Decimal.MaxValue To Decimal.MaxValue Step -1
