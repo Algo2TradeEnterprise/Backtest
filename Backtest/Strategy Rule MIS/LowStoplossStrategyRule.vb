@@ -59,10 +59,11 @@ Public Class LowStoplossStrategyRule
             .BreakevenMovement = CType(_entities, StrategyRuleEntities).BreakevenMovement,
             .BreakevenMultiplier = CType(_entities, StrategyRuleEntities).BreakevenMultiplier,
             .StoplossMakeupTrade = CType(_entities, StrategyRuleEntities).StoplossMakeupTrade,
-            .ModifyNumberOfTrade = CType(_entities, StrategyRuleEntities).ModifyNumberOfTrade,
             .NumberOfTrade = _parentStrategy.NumberOfTradesPerStockPerDay,
+            .ModifyNumberOfTrade = CType(_entities, StrategyRuleEntities).ModifyNumberOfTrade,
             .MaxPLToModifyNumberOfTrade = CType(_entities, StrategyRuleEntities).MaxPLToModifyNumberOfTrade,
-            .MinimumCapital = CType(_entities, StrategyRuleEntities).MinimumCapital
+            .MinimumCapital = CType(_entities, StrategyRuleEntities).MinimumCapital,
+            .MaxTargetPerTrade = CType(_entities, StrategyRuleEntities).MaxTargetPerTrade
         }
     End Sub
 
@@ -127,7 +128,7 @@ Public Class LowStoplossStrategyRule
             If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
                 Dim potentialTarget As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, signalCandleSatisfied.Item2, _quantity, _userInputs.MaxTargetPerTrade, signalCandleSatisfied.Item4, _parentStrategy.StockType)
                 If signalCandleSatisfied.Item4 = Trade.TradeExecutionDirection.Buy Then
-                    Dim target As Decimal = Math.Min(_targetPoint, (potentialTarget - signalCandleSatisfied.Item4))
+                    Dim target As Decimal = Math.Min(_targetPoint, (potentialTarget - signalCandleSatisfied.Item2))
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2, RoundOfType.Floor)
                     parameter = New PlaceOrderParameters With {
                         .EntryPrice = signalCandleSatisfied.Item2,
@@ -145,7 +146,7 @@ Public Class LowStoplossStrategyRule
                         .Supporting5 = _dayATR
                     }
                 ElseIf signalCandleSatisfied.Item4 = Trade.TradeExecutionDirection.Sell Then
-                    Dim target As Decimal = Math.Min(_targetPoint, (signalCandleSatisfied.Item4 - potentialTarget))
+                    Dim target As Decimal = Math.Min(_targetPoint, (signalCandleSatisfied.Item2 - potentialTarget))
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2, RoundOfType.Floor)
                     parameter = New PlaceOrderParameters With {
                         .EntryPrice = signalCandleSatisfied.Item2,
