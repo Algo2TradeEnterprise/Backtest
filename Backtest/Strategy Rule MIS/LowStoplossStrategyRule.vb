@@ -18,7 +18,18 @@ Public Class LowStoplossStrategyRule
         Public MaxPLToModifyNumberOfTrade As Decimal
         Public MinimumCapital As Decimal
         Public MaxTargetPerTrade As Decimal
+        Public TypeOfSignal As SignalType
     End Class
+
+    Enum SignalType
+        FractalChange = 1
+        HalfVolume
+        HHHL_LLLH
+        CloseOutsideFractal
+        OpenCloseOutsideFractal
+        DipInATR
+        HalfVolumeThenIncreaseInVolume
+    End Enum
 #End Region
 
     Private _potentialHighEntryPrice As Decimal = Decimal.MinValue
@@ -61,7 +72,8 @@ Public Class LowStoplossStrategyRule
             .ModifyNumberOfTrade = CType(_entities, StrategyRuleEntities).ModifyNumberOfTrade,
             .MaxPLToModifyNumberOfTrade = CType(_entities, StrategyRuleEntities).MaxPLToModifyNumberOfTrade,
             .MinimumCapital = CType(_entities, StrategyRuleEntities).MinimumCapital,
-            .MaxTargetPerTrade = CType(_entities, StrategyRuleEntities).MaxTargetPerTrade
+            .MaxTargetPerTrade = CType(_entities, StrategyRuleEntities).MaxTargetPerTrade,
+            .TypeOfSignal = CType(_entities, StrategyRuleEntities).TypeOfSignal
         }
     End Sub
 
@@ -267,32 +279,76 @@ Public Class LowStoplossStrategyRule
         If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing AndAlso
             Not candle.DeadCandle AndAlso Not candle.PreviousCandlePayload.DeadCandle Then
             Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(candle, _parentStrategy.TradeType)
-            'If lastExecutedTrade Is Nothing Then
-            If _potentialHighEntryPrice = Decimal.MinValue AndAlso _potentialLowEntryPrice = Decimal.MinValue Then
-                If IsSignalCandle(candle) Then
-                    _potentialHighEntryPrice = candle.High
-                    _potentialLowEntryPrice = candle.Low
-                    _signalCandle = candle
-                    Dim atr As Decimal = _ATRPayload(_signalCandle.PayloadDate)
-                    Dim pl As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, _potentialHighEntryPrice, _potentialHighEntryPrice - (_slPoint + _parentStrategy.TickSize), _quantity, _lotSize, _parentStrategy.StockType)
-                    Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, _potentialHighEntryPrice, _quantity, Math.Abs(pl) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
+            Dim signalFound As Boolean = False
 
-                    If ConvertFloorCeling(atr * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing) >= target - _potentialHighEntryPrice Then
-                        _targetPoint = ConvertFloorCeling(atr * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
-                        If _targetPoint > _dayATR / 2 Then
-                            _potentialHighEntryPrice = Decimal.MinValue
-                            _potentialLowEntryPrice = Decimal.MinValue
-                            _signalCandle = Nothing
+            Select Case _userInputs.TypeOfSignal
+                Case SignalType.FractalChange
+                    If _potentialHighEntryPrice = Decimal.MinValue AndAlso _potentialLowEntryPrice = Decimal.MinValue Then
+                        If IsFractalChangeSignalCandle(candle) Then
+                            signalFound = True
                         End If
-                        _targetRemark = "ATR Target"
-                        If _userInputs.ModifyNumberOfTrade Then
-                            _userInputs.NumberOfTrade = Math.Floor(_targetPoint / _slPoint) - 1
-                        End If
-                    Else
-                        _targetPoint = target - _potentialHighEntryPrice
-                        _targetPoint += _parentStrategy.TickSize * _userInputs.TargetMultiplier
-                        _targetRemark = "SL Target"
                     End If
+                Case SignalType.HalfVolume
+                    If lastExecutedTrade Is Nothing AndAlso Not _entryChanged Then
+                        If IsNVolumeSignalCandleSignalCandle(candle) Then
+                            signalFound = True
+                        End If
+                    End If
+                Case SignalType.HHHL_LLLH
+                    If lastExecutedTrade Is Nothing AndAlso Not _entryChanged Then
+                        If IsHHHLLHLLSignalCandle(candle) Then
+                            signalFound = True
+                        End If
+                    End If
+                Case SignalType.CloseOutsideFractal
+                    If lastExecutedTrade Is Nothing AndAlso Not _entryChanged Then
+                        If IsCloseOutsideFractalSignalCandle(candle) Then
+                            signalFound = True
+                        End If
+                    End If
+                Case SignalType.OpenCloseOutsideFractal
+                    If lastExecutedTrade Is Nothing AndAlso Not _entryChanged Then
+                        If IsOpenCloseOutsideFractalSignalCandle(candle) Then
+                            signalFound = True
+                        End If
+                    End If
+                Case SignalType.DipInATR
+                    If lastExecutedTrade Is Nothing AndAlso Not _entryChanged Then
+                        If IsDipInATRSignalCandle(candle) Then
+                            signalFound = True
+                        End If
+                    End If
+                Case SignalType.HalfVolumeThenIncreaseInVolume
+                    If _potentialHighEntryPrice = Decimal.MinValue AndAlso _potentialLowEntryPrice = Decimal.MinValue Then
+                        If IsHalfVolumeThenIncreaseInVolumeSignalCandle(candle) Then
+                            signalFound = True
+                        End If
+                    End If
+            End Select
+
+            If signalFound Then
+                _potentialHighEntryPrice = candle.High
+                _potentialLowEntryPrice = candle.Low
+                _signalCandle = candle
+                Dim atr As Decimal = _ATRPayload(_signalCandle.PayloadDate)
+                Dim pl As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, _potentialHighEntryPrice, _potentialHighEntryPrice - (_slPoint + _parentStrategy.TickSize), _quantity, _lotSize, _parentStrategy.StockType)
+                Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, _potentialHighEntryPrice, _quantity, Math.Abs(pl) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
+
+                If ConvertFloorCeling(atr * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing) >= target - _potentialHighEntryPrice Then
+                    _targetPoint = ConvertFloorCeling(atr * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
+                    If _targetPoint > _dayATR / 2 Then
+                        _potentialHighEntryPrice = Decimal.MinValue
+                        _potentialLowEntryPrice = Decimal.MinValue
+                        _signalCandle = Nothing
+                    End If
+                    _targetRemark = "ATR Target"
+                    If _userInputs.ModifyNumberOfTrade Then
+                        _userInputs.NumberOfTrade = Math.Floor(_targetPoint / _slPoint) - 1
+                    End If
+                Else
+                    _targetPoint = target - _potentialHighEntryPrice
+                    _targetPoint += _parentStrategy.TickSize * _userInputs.TargetMultiplier
+                    _targetRemark = "SL Target"
                 End If
             End If
 
@@ -329,7 +385,7 @@ Public Class LowStoplossStrategyRule
     End Function
 
 #Region "Fractal Change"
-    Private Function IsSignalCandle(ByVal candle As Payload) As Boolean
+    Private Function IsFractalChangeSignalCandle(ByVal candle As Payload) As Boolean
         Dim ret As Boolean = False
         If IsFractalChanged(candle.PayloadDate) = 1 AndAlso candle.Low < candle.PreviousCandlePayload.Low Then
             ret = True
@@ -360,82 +416,82 @@ Public Class LowStoplossStrategyRule
 #End Region
 
 #Region "n times Volume"
-    'Private Function IsSignalCandle(ByVal candle As Payload) As Boolean
-    '    Dim ret As Boolean = False
-    '    If candle.Volume <= candle.PreviousCandlePayload.Volume * 0.5 Then
-    '        ret = True
-    '    End If
-    '    Return ret
-    'End Function
+    Private Function IsNVolumeSignalCandleSignalCandle(ByVal candle As Payload) As Boolean
+        Dim ret As Boolean = False
+        If candle.Volume <= candle.PreviousCandlePayload.Volume * 0.5 Then
+            ret = True
+        End If
+        Return ret
+    End Function
 #End Region
 
 #Region "HH-HL/LH-LL"
-    'Private Function IsSignalCandle(ByVal candle As Payload) As Boolean
-    '    Dim ret As Boolean = False
-    '    If candle.High > candle.PreviousCandlePayload.High AndAlso candle.Low > candle.PreviousCandlePayload.Low Then
-    '        ret = True
-    '    ElseIf candle.High < candle.PreviousCandlePayload.High AndAlso candle.Low < candle.PreviousCandlePayload.Low Then
-    '        ret = True
-    '    End If
-    '    Return ret
-    'End Function
+    Private Function IsHHHLLHLLSignalCandle(ByVal candle As Payload) As Boolean
+        Dim ret As Boolean = False
+        If candle.High > candle.PreviousCandlePayload.High AndAlso candle.Low > candle.PreviousCandlePayload.Low Then
+            ret = True
+        ElseIf candle.High < candle.PreviousCandlePayload.High AndAlso candle.Low < candle.PreviousCandlePayload.Low Then
+            ret = True
+        End If
+        Return ret
+    End Function
 #End Region
 
 #Region "Close outside fractal"
-    'Private Function IsSignalCandle(ByVal candle As Payload) As Boolean
-    '    Dim ret As Boolean = False
-    '    If candle.Close > _FractalHighPayload(candle.PayloadDate) OrElse candle.Close < _FractalLowPayload(candle.PayloadDate) Then
-    '        ret = True
-    '    End If
-    '    Return ret
-    'End Function
+    Private Function IsCloseOutsideFractalSignalCandle(ByVal candle As Payload) As Boolean
+        Dim ret As Boolean = False
+        If candle.Close > _FractalHighPayload(candle.PayloadDate) OrElse candle.Close < _FractalLowPayload(candle.PayloadDate) Then
+            ret = True
+        End If
+        Return ret
+    End Function
 #End Region
 
 #Region "Candle whose open close is outslide fractal"
-    'Private Function IsSignalCandle(ByVal candle As Payload) As Boolean
-    '    Dim ret As Boolean = False
-    '    If candle.Open > _FractalHighPayload(candle.PayloadDate) AndAlso candle.Close > _FractalHighPayload(candle.PayloadDate) Then
-    '        ret = True
-    '    ElseIf candle.Open < _FractalLowPayload(candle.PayloadDate) AndAlso candle.Close < _FractalLowPayload(candle.PayloadDate) Then
-    '        ret = True
-    '    End If
-    '    Return ret
-    'End Function
+    Private Function IsOpenCloseOutsideFractalSignalCandle(ByVal candle As Payload) As Boolean
+        Dim ret As Boolean = False
+        If candle.Open > _FractalHighPayload(candle.PayloadDate) AndAlso candle.Close > _FractalHighPayload(candle.PayloadDate) Then
+            ret = True
+        ElseIf candle.Open < _FractalLowPayload(candle.PayloadDate) AndAlso candle.Close < _FractalLowPayload(candle.PayloadDate) Then
+            ret = True
+        End If
+        Return ret
+    End Function
 #End Region
 
 #Region "10% dip in ATR"
-    'Private Function IsSignalCandle(ByVal candle As Payload) As Boolean
-    '    Dim ret As Boolean = False
-    '    If _ATRPayload(candle.PayloadDate) <= _ATRPayload(candle.PreviousCandlePayload.PayloadDate) * 0.9 Then
-    '        ret = True
-    '    End If
-    '    Return ret
-    'End Function
+    Private Function IsDipInATRSignalCandle(ByVal candle As Payload) As Boolean
+        Dim ret As Boolean = False
+        If _ATRPayload(candle.PayloadDate) <= _ATRPayload(candle.PreviousCandlePayload.PayloadDate) * 0.9 Then
+            ret = True
+        End If
+        Return ret
+    End Function
 #End Region
 
 #Region "Half volume and then first increase in volume"
-    'Private Function IsSignalCandle(ByVal candle As Payload) As Boolean
-    '    Dim ret As Boolean = False
-    '    If candle.Volume > candle.PreviousCandlePayload.Volume Then
-    '        If IsHalfVolume(candle.PayloadDate) Then
-    '            ret = True
-    '        End If
-    '    End If
-    '    Return ret
-    'End Function
+    Private Function IsHalfVolumeThenIncreaseInVolumeSignalCandle(ByVal candle As Payload) As Boolean
+        Dim ret As Boolean = False
+        If candle.Volume > candle.PreviousCandlePayload.Volume Then
+            If IsHalfVolume(candle.PayloadDate) Then
+                ret = True
+            End If
+        End If
+        Return ret
+    End Function
 
-    'Private Function IsHalfVolume(ByVal currentTime As Date) As Boolean
-    '    Dim ret As Boolean = False
-    '    For Each runningPayload In _signalPayload
-    '        If runningPayload.Key.Date = _tradingDate.Date AndAlso runningPayload.Key < currentTime Then
-    '            If runningPayload.Value.Volume <= runningPayload.Value.PreviousCandlePayload.Volume / 2 Then
-    '                ret = True
-    '                Exit For
-    '            End If
-    '        End If
-    '    Next
-    '    Return ret
-    'End Function
+    Private Function IsHalfVolume(ByVal currentTime As Date) As Boolean
+        Dim ret As Boolean = False
+        For Each runningPayload In _signalPayload
+            If runningPayload.Key.Date = _tradingDate.Date AndAlso runningPayload.Key < currentTime Then
+                If runningPayload.Value.Volume <= runningPayload.Value.PreviousCandlePayload.Volume / 2 Then
+                    ret = True
+                    Exit For
+                End If
+            End If
+        Next
+        Return ret
+    End Function
 #End Region
 
 End Class

@@ -39,13 +39,14 @@ Namespace StrategyHelper
                 Me.StockMaxLossPerDay = Decimal.MinValue
             End If
             Dim ruleData As LowStoplossStrategyRule.StrategyRuleEntities = Me.RuleEntityData
-            Dim filename As String = String.Format("NoT {0},MdfyNoT {1},BrkEvnMvmnt {2},TMP {3},SMP {4},ML {5}",
+            Dim filename As String = String.Format("{6},NoT {0},MdfyNoT {1},BrkEvnMvmnt {2},TMP {3},SMP {4},ML {5}",
                                                    If(Me.NumberOfTradesPerStockPerDay = Integer.MaxValue, "∞", Me.NumberOfTradesPerStockPerDay),
                                                    ruleData.ModifyNumberOfTrade,
                                                    ruleData.BreakevenMovement,
                                                    If(ruleData.MaxTargetPerTrade = Decimal.MaxValue, "∞", ruleData.MaxTargetPerTrade),
                                                    If(Me.StockMaxProfitPerDay = Decimal.MaxValue, "∞", Me.StockMaxProfitPerDay),
-                                                   If(Me.OverAllLossPerDay = Decimal.MinValue, "∞", Me.OverAllLossPerDay))
+                                                   If(Me.OverAllLossPerDay = Decimal.MinValue, "∞", Me.OverAllLossPerDay),
+                                                   ruleData.TypeOfSignal)
 
             Dim tradesFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Trades.a2t", filename))
             Dim capitalFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Capital.a2t", filename))
@@ -593,8 +594,9 @@ Namespace StrategyHelper
                                         If capital < 25000 Then
                                             Dim stoploss As Decimal = CalculatorTargetOrStoploss(instrumentName, stockPrice, quantity, Math.Abs(CType(Me.RuleEntityData, LowStoplossStrategyRule.StrategyRuleEntities).MaxStoploss) * -1, Trade.TradeExecutionDirection.Buy, Me.StockType)
                                             Dim slPoint As Decimal = stockPrice - stoploss - Me.TickSize
-                                            If slPoint > 0.2 AndAlso slPoint * 4 <= dt.Rows(i).Item(7) / 2 Then
-                                                Dim detailsOfStock As StockDetails = New StockDetails With
+                                            If slPoint > 0.2 Then
+                                                If slPoint * 4 <= dt.Rows(i).Item(7) / 2 Then
+                                                    Dim detailsOfStock As StockDetails = New StockDetails With
                                                     {.StockName = instrumentName,
                                                     .LotSize = dt.Rows(i).Item(2),
                                                     .EligibleToTakeTrade = True,
@@ -602,9 +604,12 @@ Namespace StrategyHelper
                                                     .Supporting2 = dt.Rows(i).Item(7),
                                                     .Supporting3 = slPoint,
                                                     .Supporting4 = quantity}
-                                                ret.Add(instrumentName, detailsOfStock)
-                                                counter += 1
-                                                If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                                                    ret.Add(instrumentName, detailsOfStock)
+                                                    counter += 1
+                                                    If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                                                Else
+                                                    Console.WriteLine(String.Format("Stock Neglected. {0}, {1}", instrumentName, tradingDate))
+                                                End If
                                             End If
                                         End If
                                     End If
