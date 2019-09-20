@@ -24,6 +24,7 @@ Public Class LowStoplossStrategyRule
     Enum SignalType
         FractalChange = 1
         HalfVolume
+        DoubleVolume
         HHHL_LLLH
         CloseOutsideFractal
         OpenCloseOutsideFractal
@@ -290,7 +291,13 @@ Public Class LowStoplossStrategyRule
                     End If
                 Case SignalType.HalfVolume
                     If lastExecutedTrade Is Nothing AndAlso Not _entryChanged Then
-                        If IsNVolumeSignalCandleSignalCandle(candle) Then
+                        If IsHalfVolumeSignalCandle(candle) Then
+                            signalFound = True
+                        End If
+                    End If
+                Case SignalType.DoubleVolume
+                    If lastExecutedTrade Is Nothing AndAlso Not _entryChanged Then
+                        If IsDoubleSignalCandle(candle) Then
                             signalFound = True
                         End If
                     End If
@@ -415,10 +422,20 @@ Public Class LowStoplossStrategyRule
     End Function
 #End Region
 
-#Region "n times Volume"
-    Private Function IsNVolumeSignalCandleSignalCandle(ByVal candle As Payload) As Boolean
+#Region "Half Volume"
+    Private Function IsHalfVolumeSignalCandle(ByVal candle As Payload) As Boolean
         Dim ret As Boolean = False
         If candle.Volume <= candle.PreviousCandlePayload.Volume * 0.5 Then
+            ret = True
+        End If
+        Return ret
+    End Function
+#End Region
+
+#Region "Double Volume"
+    Private Function IsDoubleSignalCandle(ByVal candle As Payload) As Boolean
+        Dim ret As Boolean = False
+        If candle.Volume >= candle.PreviousCandlePayload.Volume * 1.9 Then
             ret = True
         End If
         Return ret
