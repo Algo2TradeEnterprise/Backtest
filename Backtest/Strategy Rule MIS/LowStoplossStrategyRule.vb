@@ -228,7 +228,7 @@ Public Class LowStoplossStrategyRule
                 Dim targetPL As Decimal = Math.Abs(slPL) * (_userInputs.TargetMultiplier + 1)
                 Dim excpectedTarget As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, targetPL, Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
                 If currentTick.Open <= excpectedTarget Then
-                    triggerPrice = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, Math.Abs(slPL) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
+                    triggerPrice = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, Math.Abs(slPL) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
                 End If
             End If
             If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
