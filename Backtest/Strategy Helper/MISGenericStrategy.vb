@@ -38,19 +38,13 @@ Namespace StrategyHelper
                 Me.StockMaxProfitPerDay = Decimal.MaxValue
                 Me.StockMaxLossPerDay = Decimal.MinValue
             End If
-            'Dim ruleData As FixedLevelBasedStrategyRule.StrategyRuleEntities = Me.RuleEntityData
-            'Dim filename As String = String.Format("NoT {0},MxLsCaptl {1},Tgt {2},MdfyCndlTgt {3},MdfyNoT {4},SLMkup {5},BrkMvt {6},TrlnMTM {7},MP {8},ML {9}",
-            '                                       If(Me.NumberOfTradesPerStockPerDay = Integer.MaxValue, "∞", Me.NumberOfTradesPerStockPerDay),
-            '                                       If(ruleData.MaxLossPercentageOfCapital = Decimal.MinValue, "∞", ruleData.MaxLossPercentageOfCapital),
-            '                                       ruleData.TargetMultiplier,
-            '                                       ruleData.ModifyCandleTarget,
-            '                                       ruleData.ModifyNumberOfTrade,
-            '                                       ruleData.StoplossMakeupTrade,
-            '                                       ruleData.BreakevenMovement,
-            '                                       Me.TrailingMTM,
-            '                                       If(Me.OverAllLossPerDay = Decimal.MinValue, "∞", Me.OverAllLossPerDay),
-            '                                       If(Me.OverAllProfitPerDay = Decimal.MaxValue, "∞", Me.OverAllProfitPerDay))
-            Dim filename As String = "Output file"
+            Dim ruleData As LowStoplossStrategyRule.StrategyRuleEntities = Me.RuleEntityData
+            Dim filename As String = String.Format("NoT {0},MdfyNoT {1},TMP {2},SMP {3},ML {4}",
+                                                   If(Me.NumberOfTradesPerStockPerDay = Integer.MaxValue, "∞", Me.NumberOfTradesPerStockPerDay),
+                                                   ruleData.ModifyNumberOfTrade,
+                                                   If(ruleData.MaxTargetPerTrade = Decimal.MaxValue, "∞", ruleData.MaxTargetPerTrade),
+                                                   If(Me.StockMaxProfitPerDay = Decimal.MaxValue, "∞", Me.StockMaxProfitPerDay),
+                                                   If(Me.OverAllLossPerDay = Decimal.MinValue, "∞", Me.OverAllLossPerDay))
 
             Dim tradesFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Trades.a2t", filename))
             Dim capitalFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Capital.a2t", filename))
@@ -145,7 +139,7 @@ Namespace StrategyHelper
                                         Case 12
                                             stockRule = New FixedLevelBasedStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                         Case 13
-                                            stockRule = New LowStoplossStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting3, stockList(stock).Supporting2)
+                                            stockRule = New LowStoplossStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2, stockList(stock).Supporting3, stockList(stock).Supporting4)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -580,36 +574,49 @@ Namespace StrategyHelper
                                 instrumentName = tradingSymbol
                             End If
 
-                            Dim stockPayload As Dictionary(Of Date, Payload) = Nothing
-                            If Me.DataSource = SourceOfData.Database Then
-                                stockPayload = Cmn.GetRawPayload(Me.DatabaseTable, instrumentName, tradingDate, tradingDate)
-                            ElseIf Me.DataSource = SourceOfData.Live Then
-                                stockPayload = Await Cmn.GetHistoricalData(Me.DatabaseTable, instrumentName, tradingDate, tradingDate).ConfigureAwait(False)
-                            End If
-                            If stockPayload IsNot Nothing AndAlso stockPayload.Count > 0 Then
-                                Dim time As Date = New Date(tradingDate.Year, tradingDate.Month, tradingDate.Day, 9, 16, 0)
-                                Dim stockPrice As Decimal = stockPayload.Where(Function(x)
-                                                                                   Return x.Key >= time
-                                                                               End Function).FirstOrDefault.Value.Close
-                                Dim quantity As Integer = CalculateQuantityFromInvestment(dt.Rows(i).Item(2), CType(Me.RuleEntityData, LowStoplossStrategyRule.StrategyRuleEntities).MinimumCapital, stockPrice, Me.StockType, True)
-                                Dim capital As Decimal = stockPrice * quantity / Me.MarginMultiplier
-                                If capital < 25000 Then
-                                    Dim stoploss As Decimal = CalculatorTargetOrStoploss(instrumentName, stockPrice, quantity, -1000, Trade.TradeExecutionDirection.Buy, Me.StockType)
-                                    Dim slPoint As Decimal = stockPrice - stoploss - Me.TickSize
-                                    If slPoint * 4 <= dt.Rows(i).Item(7) / 2 Then
-                                        Dim detailsOfStock As StockDetails = New StockDetails With
+                            Select Case Me.RuleNumber
+                                Case 13
+                                    Dim stockPayload As Dictionary(Of Date, Payload) = Nothing
+                                    If Me.DataSource = SourceOfData.Database Then
+                                        stockPayload = Cmn.GetRawPayload(Me.DatabaseTable, instrumentName, tradingDate, tradingDate)
+                                    ElseIf Me.DataSource = SourceOfData.Live Then
+                                        stockPayload = Await Cmn.GetHistoricalData(Me.DatabaseTable, instrumentName, tradingDate, tradingDate).ConfigureAwait(False)
+                                    End If
+                                    If stockPayload IsNot Nothing AndAlso stockPayload.Count > 0 Then
+                                        Dim time As Date = New Date(tradingDate.Year, tradingDate.Month, tradingDate.Day, 9, 16, 0)
+                                        Dim stockPrice As Decimal = stockPayload.Where(Function(x)
+                                                                                           Return x.Key >= time
+                                                                                       End Function).FirstOrDefault.Value.Close
+                                        Dim quantity As Integer = CalculateQuantityFromInvestment(dt.Rows(i).Item(2), CType(Me.RuleEntityData, LowStoplossStrategyRule.StrategyRuleEntities).MinimumCapital, stockPrice, Me.StockType, True)
+                                        Dim capital As Decimal = stockPrice * quantity / Me.MarginMultiplier
+                                        If capital < 25000 Then
+                                            Dim stoploss As Decimal = CalculatorTargetOrStoploss(instrumentName, stockPrice, quantity, -1000, Trade.TradeExecutionDirection.Buy, Me.StockType)
+                                            Dim slPoint As Decimal = stockPrice - stoploss - Me.TickSize
+                                            If slPoint * 4 <= dt.Rows(i).Item(6) / 2 Then
+                                                Dim detailsOfStock As StockDetails = New StockDetails With
+                                                    {.StockName = instrumentName,
+                                                    .LotSize = dt.Rows(i).Item(2),
+                                                    .EligibleToTakeTrade = True,
+                                                    .Supporting1 = dt.Rows(i).Item(3),
+                                                    .Supporting2 = dt.Rows(i).Item(6),
+                                                    .Supporting3 = slPoint,
+                                                    .Supporting4 = quantity}
+                                                ret.Add(instrumentName, detailsOfStock)
+                                                counter += 1
+                                                If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                                            End If
+                                        End If
+                                    End If
+                                Case Else
+                                    Dim detailsOfStock As StockDetails = New StockDetails With
                                         {.StockName = instrumentName,
                                         .LotSize = dt.Rows(i).Item(2),
                                         .EligibleToTakeTrade = True,
-                                        .Supporting1 = dt.Rows(i).Item(3),
-                                        .Supporting2 = slPoint,
-                                        .Supporting3 = dt.Rows(i).Item(7)}
-                                        ret.Add(instrumentName, detailsOfStock)
-                                        counter += 1
-                                        If counter = Me.NumberOfTradeableStockPerDay Then Exit For
-                                    End If
-                                End If
-                            End If
+                                        .Supporting1 = dt.Rows(i).Item(3)}
+                                    ret.Add(instrumentName, detailsOfStock)
+                                    counter += 1
+                                    If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                            End Select
                         End If
                     Next
                 End If

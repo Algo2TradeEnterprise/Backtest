@@ -15,11 +15,10 @@ Public Class LowStoplossStrategyRule
         Public BreakevenMultiplier As Decimal
         Public StoplossMakeupTrade As Boolean
         Public NumberOfTrade As Integer
-        Public ModifyCandleTarget As Boolean
         Public ModifyNumberOfTrade As Boolean
         Public MaxPLToModifyNumberOfTrade As Decimal
-        Public MaxLossPercentageOfCapital As Decimal
         Public MinimumCapital As Decimal
+        Public MaxTargetPerTrade As Decimal
     End Class
 #End Region
 
@@ -37,6 +36,7 @@ Public Class LowStoplossStrategyRule
     Private ReadOnly _stockATR As Decimal
     Private ReadOnly _dayATR As Decimal
     Private ReadOnly _slPoint As Decimal
+    Private ReadOnly _quantity As Integer
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -47,19 +47,19 @@ Public Class LowStoplossStrategyRule
                    ByVal entities As RuleEntities,
                    ByVal stockATR As Decimal,
                    ByVal dayATR As Decimal,
-                   ByVal slPoint As Decimal)
+                   ByVal slPoint As Decimal,
+                   ByVal quantity As Integer)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _stockATR = stockATR
         _dayATR = dayATR
         _slPoint = slPoint
+        _quantity = quantity
         _userInputs = New StrategyRuleEntities With {
             .TargetMultiplier = CType(_entities, StrategyRuleEntities).TargetMultiplier,
             .BreakevenMovement = CType(_entities, StrategyRuleEntities).BreakevenMovement,
             .BreakevenMultiplier = CType(_entities, StrategyRuleEntities).BreakevenMultiplier,
             .StoplossMakeupTrade = CType(_entities, StrategyRuleEntities).StoplossMakeupTrade,
-            .ModifyCandleTarget = CType(_entities, StrategyRuleEntities).ModifyCandleTarget,
             .ModifyNumberOfTrade = CType(_entities, StrategyRuleEntities).ModifyNumberOfTrade,
-            .MaxLossPercentageOfCapital = CType(_entities, StrategyRuleEntities).MaxLossPercentageOfCapital,
             .NumberOfTrade = _parentStrategy.NumberOfTradesPerStockPerDay,
             .MaxPLToModifyNumberOfTrade = CType(_entities, StrategyRuleEntities).MaxPLToModifyNumberOfTrade,
             .MinimumCapital = CType(_entities, StrategyRuleEntities).MinimumCapital
@@ -79,11 +79,13 @@ Public Class LowStoplossStrategyRule
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         Dim tradeStartTime As Date = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, _parentStrategy.TradeStartTime.Hours, _parentStrategy.TradeStartTime.Minutes, _parentStrategy.TradeStartTime.Seconds)
 
-        If _parentStrategy.TotalPLAfterBrokerage(currentTick.PayloadDate) > _userInputs.MaxPLToModifyNumberOfTrade Then
-            _userInputs.NumberOfTrade = _parentStrategy.NumberOfTradesPerStockPerDay
-        Else
-            If _targetRemark = "ATR Target" Then
-                _userInputs.NumberOfTrade = Math.Floor(_targetPoint / _slPoint) - 1
+        If _userInputs.ModifyNumberOfTrade Then
+            If _parentStrategy.TotalPLAfterBrokerage(currentTick.PayloadDate) > _userInputs.MaxPLToModifyNumberOfTrade Then
+                _userInputs.NumberOfTrade = _parentStrategy.NumberOfTradesPerStockPerDay
+            Else
+                If _targetRemark = "ATR Target" Then
+                    _userInputs.NumberOfTrade = Math.Floor(_targetPoint / _slPoint) - 1
+                End If
             End If
         End If
 
@@ -123,14 +125,16 @@ Public Class LowStoplossStrategyRule
             End If
 
             If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
+                Dim potentialTarget As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, signalCandleSatisfied.Item2, _quantity, _userInputs.MaxTargetPerTrade, signalCandleSatisfied.Item4, _parentStrategy.StockType)
                 If signalCandleSatisfied.Item4 = Trade.TradeExecutionDirection.Buy Then
+                    Dim target As Decimal = Math.Min(_targetPoint, (potentialTarget - signalCandleSatisfied.Item4))
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2, RoundOfType.Floor)
                     parameter = New PlaceOrderParameters With {
                         .EntryPrice = signalCandleSatisfied.Item2,
                         .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                        .Quantity = _lotSize,
+                        .Quantity = _quantity,
                         .Stoploss = signalCandleSatisfied.Item3,
-                        .Target = .EntryPrice + _targetPoint,
+                        .Target = .EntryPrice + target,
                         .Buffer = buffer,
                         .SignalCandle = signalCandle,
                         .OrderType = Trade.TypeOfOrder.SL,
@@ -141,13 +145,14 @@ Public Class LowStoplossStrategyRule
                         .Supporting5 = _dayATR
                     }
                 ElseIf signalCandleSatisfied.Item4 = Trade.TradeExecutionDirection.Sell Then
+                    Dim target As Decimal = Math.Min(_targetPoint, (signalCandleSatisfied.Item4 - potentialTarget))
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2, RoundOfType.Floor)
                     parameter = New PlaceOrderParameters With {
                         .EntryPrice = signalCandleSatisfied.Item2,
                         .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                        .Quantity = _lotSize,
+                        .Quantity = _quantity,
                         .Stoploss = signalCandleSatisfied.Item3,
-                        .Target = .EntryPrice - _targetPoint,
+                        .Target = .EntryPrice - target,
                         .Buffer = buffer,
                         .SignalCandle = signalCandle,
                         .OrderType = Trade.TypeOfOrder.SL,
@@ -173,43 +178,14 @@ Public Class LowStoplossStrategyRule
                 End If
             End If
 
-            'Quantity calculation
-            If _firstTradedQuantity = Integer.MinValue Then
-                _firstTradedQuantity = _parentStrategy.CalculateQuantityFromInvestment(_lotSize, _userInputs.MinimumCapital, parameter.EntryPrice, _parentStrategy.StockType, True)
-            End If
-            parameter.Quantity = _firstTradedQuantity
+            ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
 
-            'Stop taking trade if loss is greater that x% of capital
-            If _userInputs.MaxLossPercentageOfCapital <> Decimal.MinValue Then
-                Dim closeTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentMinuteCandlePayload, _parentStrategy.TradeType, Trade.TradeExecutionStatus.Close)
-                If closeTrades IsNot Nothing AndAlso closeTrades.Count > 0 Then
-                    Dim totalLoss As Decimal = closeTrades.Sum(Function(x)
-                                                                   Return x.PLAfterBrokerage
-                                                               End Function)
-
-                    If Math.Abs(totalLoss) >= (parameter.EntryPrice * parameter.Quantity / _parentStrategy.MarginMultiplier) * _userInputs.MaxLossPercentageOfCapital / 100 AndAlso
-                        _parentStrategy.TotalPLAfterBrokerage(currentTick.PayloadDate) < 0 Then
-                        'Neglect this trade
-                        'Console.WriteLine(String.Format("Trade neglected. Time: {0}, Direction:{1}, Symbol:{2}", currentTick.PayloadDate, parameter.EntryDirection, _tradingSymbol))
-                        Me.EligibleToTakeTrade = False
-                    Else
-                        ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
-                    End If
-                Else
-                    ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
-                End If
-            Else
-                ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
-            End If
-
-            'ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
-
-            If _parentStrategy.StockMaxProfitPercentagePerDay <> Decimal.MaxValue AndAlso Me.MaxProfitOfThisStock = Decimal.MaxValue Then
-                Me.MaxProfitOfThisStock = _parentStrategy.CalculatePL(currentTick.TradingSymbol, parameter.EntryPrice, ConvertFloorCeling(parameter.EntryPrice + parameter.EntryPrice * _parentStrategy.StockMaxProfitPercentagePerDay / 100, _parentStrategy.TickSize, RoundOfType.Celing), parameter.Quantity, _lotSize, _parentStrategy.StockType)
-            End If
-            If _parentStrategy.StockMaxLossPercentagePerDay <> Decimal.MinValue AndAlso Me.MaxLossOfThisStock = Decimal.MinValue Then
-                Me.MaxLossOfThisStock = _parentStrategy.CalculatePL(currentTick.TradingSymbol, parameter.EntryPrice, ConvertFloorCeling(parameter.EntryPrice - parameter.EntryPrice * _parentStrategy.StockMaxLossPercentagePerDay / 100, _parentStrategy.TickSize, RoundOfType.Celing), parameter.Quantity, _lotSize, _parentStrategy.StockType)
-            End If
+            'If _parentStrategy.StockMaxProfitPercentagePerDay <> Decimal.MaxValue AndAlso Me.MaxProfitOfThisStock = Decimal.MaxValue Then
+            '    Me.MaxProfitOfThisStock = _parentStrategy.CalculatePL(currentTick.TradingSymbol, parameter.EntryPrice, ConvertFloorCeling(parameter.EntryPrice + parameter.EntryPrice * _parentStrategy.StockMaxProfitPercentagePerDay / 100, _parentStrategy.TickSize, RoundOfType.Celing), parameter.Quantity, _lotSize, _parentStrategy.StockType)
+            'End If
+            'If _parentStrategy.StockMaxLossPercentagePerDay <> Decimal.MinValue AndAlso Me.MaxLossOfThisStock = Decimal.MinValue Then
+            '    Me.MaxLossOfThisStock = _parentStrategy.CalculatePL(currentTick.TradingSymbol, parameter.EntryPrice, ConvertFloorCeling(parameter.EntryPrice - parameter.EntryPrice * _parentStrategy.StockMaxLossPercentagePerDay / 100, _parentStrategy.TickSize, RoundOfType.Celing), parameter.Quantity, _lotSize, _parentStrategy.StockType)
+            'End If
         End If
         Return ret
     End Function
@@ -296,20 +272,21 @@ Public Class LowStoplossStrategyRule
                     _potentialHighEntryPrice = candle.High
                     _potentialLowEntryPrice = candle.Low
                     _signalCandle = candle
-                    Dim atr As Decimal = ConvertFloorCeling(_ATRPayload(_signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
-                    Dim quantity As Integer = _parentStrategy.CalculateQuantityFromInvestment(_lotSize, _userInputs.MinimumCapital, _potentialHighEntryPrice, _parentStrategy.StockType, True)
-                    Dim pl As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, _potentialHighEntryPrice, _potentialHighEntryPrice - _slPoint, quantity, _lotSize, _parentStrategy.StockType)
-                    Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, _potentialHighEntryPrice, quantity, Math.Abs(pl) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
+                    Dim atr As Decimal = _ATRPayload(_signalCandle.PayloadDate)
+                    Dim pl As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, _potentialHighEntryPrice, _potentialHighEntryPrice - _slPoint, _quantity, _lotSize, _parentStrategy.StockType)
+                    Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, _potentialHighEntryPrice, _quantity, Math.Abs(pl) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
 
-                    If atr * _userInputs.TargetMultiplier >= target - _potentialHighEntryPrice Then
-                        _targetPoint = atr * _userInputs.TargetMultiplier
+                    If ConvertFloorCeling(atr * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing) >= target - _potentialHighEntryPrice Then
+                        _targetPoint = ConvertFloorCeling(atr * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
                         If _targetPoint > _dayATR / 2 Then
                             _potentialHighEntryPrice = Decimal.MinValue
                             _potentialLowEntryPrice = Decimal.MinValue
                             _signalCandle = Nothing
                         End If
                         _targetRemark = "ATR Target"
-                        _userInputs.NumberOfTrade = Math.Floor(_targetPoint / _slPoint) - 1
+                        If _userInputs.ModifyNumberOfTrade Then
+                            _userInputs.NumberOfTrade = Math.Floor(_targetPoint / _slPoint) - 1
+                        End If
                     Else
                         _targetPoint = target - _potentialHighEntryPrice
                         _targetPoint += _parentStrategy.TickSize * _userInputs.TargetMultiplier
