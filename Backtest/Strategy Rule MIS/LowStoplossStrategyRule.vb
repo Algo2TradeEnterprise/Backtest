@@ -266,6 +266,8 @@ Public Class LowStoplossStrategyRule
         Dim ret As Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection) = Nothing
         If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing AndAlso
             Not candle.DeadCandle AndAlso Not candle.PreviousCandlePayload.DeadCandle Then
+            Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(candle, _parentStrategy.TradeType)
+            'If lastExecutedTrade Is Nothing Then
             If _potentialHighEntryPrice = Decimal.MinValue AndAlso _potentialLowEntryPrice = Decimal.MinValue Then
                 If IsSignalCandle(candle) Then
                     _potentialHighEntryPrice = candle.High
