@@ -59,7 +59,8 @@ Public Class LowStoplossStrategyRule
             .ModifyCandleTarget = CType(_entities, StrategyRuleEntities).ModifyCandleTarget,
             .ModifyNumberOfTrade = CType(_entities, StrategyRuleEntities).ModifyNumberOfTrade,
             .MaxLossPercentageOfCapital = CType(_entities, StrategyRuleEntities).MaxLossPercentageOfCapital,
-            .NumberOfTrade = _parentStrategy.NumberOfTradesPerStockPerDay
+            .NumberOfTrade = _parentStrategy.NumberOfTradesPerStockPerDay,
+            .MaxPLToModifyNumberOfTrade = CType(_entities, StrategyRuleEntities).MaxPLToModifyNumberOfTrade
         }
     End Sub
 
