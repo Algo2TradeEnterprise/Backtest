@@ -104,7 +104,7 @@ Public Class LowStoplossStrategyRule
             currentMinuteCandlePayload.PayloadDate >= tradeStartTime AndAlso Me.EligibleToTakeTrade Then
             Dim signalCandle As Payload = Nothing
 
-            Dim signalCandleSatisfied As Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection) = IsSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
+            Dim signalCandleSatisfied As Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
             If signalCandleSatisfied IsNot Nothing AndAlso signalCandleSatisfied.Item1 Then
                 Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandlePayload, _parentStrategy.TradeType)
                 If lastExecutedTrade Is Nothing Then
@@ -204,7 +204,7 @@ Public Class LowStoplossStrategyRule
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
             Dim signalCandle As Payload = currentTrade.SignalCandle
             If signalCandle IsNot Nothing Then
-                Dim signalCandleSatisfied As Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection) = IsSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
+                Dim signalCandleSatisfied As Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
                 If signalCandleSatisfied IsNot Nothing AndAlso signalCandleSatisfied.Item1 Then
                     Dim entryPrice As Decimal = Decimal.MinValue
                     If signalCandleSatisfied.Item4 = Trade.TradeExecutionDirection.Buy Then
@@ -269,7 +269,7 @@ Public Class LowStoplossStrategyRule
         End If
     End Function
 
-    Private Function IsSignalCandle(ByVal candle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)
+    Private Function GetSignalCandle(ByVal candle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)
         Dim ret As Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection) = Nothing
         If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing AndAlso
             Not candle.DeadCandle AndAlso Not candle.PreviousCandlePayload.DeadCandle Then
@@ -422,7 +422,9 @@ Public Class LowStoplossStrategyRule
     Private Function IsSignalCandle(ByVal candle As Payload) As Boolean
         Dim ret As Boolean = False
         If candle.Volume > candle.PreviousCandlePayload.Volume Then
-
+            If IsHalfVolume(candle.PayloadDate) Then
+                ret = True
+            End If
         End If
         Return ret
     End Function
