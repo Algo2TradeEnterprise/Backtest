@@ -10,10 +10,9 @@ Public Class LowStoplossStrategyRule
     Public Class StrategyRuleEntities
         Inherits RuleEntities
 
+        Public MaxStoploss As Decimal
         Public TargetMultiplier As Decimal
         Public BreakevenMovement As Boolean
-        Public BreakevenMultiplier As Decimal
-        Public StoplossMakeupTrade As Boolean
         Public NumberOfTrade As Integer
         Public ModifyNumberOfTrade As Boolean
         Public MaxPLToModifyNumberOfTrade As Decimal
@@ -55,10 +54,9 @@ Public Class LowStoplossStrategyRule
         _slPoint = slPoint
         _quantity = quantity
         _userInputs = New StrategyRuleEntities With {
+            .MaxStoploss = CType(_entities, StrategyRuleEntities).MaxStoploss,
             .TargetMultiplier = CType(_entities, StrategyRuleEntities).TargetMultiplier,
             .BreakevenMovement = CType(_entities, StrategyRuleEntities).BreakevenMovement,
-            .BreakevenMultiplier = CType(_entities, StrategyRuleEntities).BreakevenMultiplier,
-            .StoplossMakeupTrade = CType(_entities, StrategyRuleEntities).StoplossMakeupTrade,
             .NumberOfTrade = _parentStrategy.NumberOfTradesPerStockPerDay,
             .ModifyNumberOfTrade = CType(_entities, StrategyRuleEntities).ModifyNumberOfTrade,
             .MaxPLToModifyNumberOfTrade = CType(_entities, StrategyRuleEntities).MaxPLToModifyNumberOfTrade,
@@ -112,13 +110,14 @@ Public Class LowStoplossStrategyRule
                 Else
                     If lastExecutedTrade.ExitCondition = Trade.TradeExitCondition.StopLoss AndAlso lastExecutedTrade.PLPoint > 0 Then
                         'Breakeven exit
-                        If lastExecutedTrade.EntryDirection = signalCandleSatisfied.Item4 Then
-                            If IsSignalTriggered(signalCandleSatisfied.Item3, If(signalCandleSatisfied.Item4 = Trade.TradeExecutionDirection.Buy, Trade.TradeExecutionDirection.Sell, Trade.TradeExecutionDirection.Buy), lastExecutedTrade.ExitTime, currentTick.PayloadDate) Then
-                                signalCandle = _signalCandle
-                            End If
-                        Else
-                            signalCandle = _signalCandle
-                        End If
+                        'If lastExecutedTrade.EntryDirection = signalCandleSatisfied.Item4 Then
+                        '    If IsSignalTriggered(signalCandleSatisfied.Item3, If(signalCandleSatisfied.Item4 = Trade.TradeExecutionDirection.Buy, Trade.TradeExecutionDirection.Sell, Trade.TradeExecutionDirection.Buy), lastExecutedTrade.ExitTime, currentTick.PayloadDate) Then
+                        '        signalCandle = _signalCandle
+                        '    End If
+                        'Else
+                        '    signalCandle = _signalCandle
+                        'End If
+                        'Don't take trade anymore
                     Else
                         signalCandle = _signalCandle
                     End If
@@ -172,18 +171,6 @@ Public Class LowStoplossStrategyRule
             End If
         End If
         If parameter IsNot Nothing Then
-            'Stoploss makeup target calculation
-            If _userInputs.StoplossMakeupTrade AndAlso _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol) >= _userInputs.NumberOfTrade - 1 Then
-                Dim closeTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentMinuteCandlePayload, _parentStrategy.TradeType, Trade.TradeExecutionStatus.Close)
-                If closeTrades IsNot Nothing AndAlso closeTrades.Count > 0 Then
-                    Dim totalLoss As Decimal = closeTrades.Sum(Function(x)
-                                                                   Return x.PLAfterBrokerage
-                                                               End Function)
-                    Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(currentTick.TradingSymbol, parameter.EntryPrice, parameter.Quantity, Math.Abs(totalLoss), parameter.EntryDirection, _parentStrategy.StockType)
-                    If targetPrice <> Decimal.MinValue Then parameter.Target = targetPrice
-                End If
-            End If
-
             ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
 
             'If _parentStrategy.StockMaxProfitPercentagePerDay <> Decimal.MaxValue AndAlso Me.MaxProfitOfThisStock = Decimal.MaxValue Then
@@ -228,14 +215,20 @@ Public Class LowStoplossStrategyRule
         If _userInputs.BreakevenMovement AndAlso currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
             Dim triggerPrice As Decimal = Decimal.MinValue
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                Dim excpectedTarget As Decimal = currentTrade.EntryPrice + (currentTrade.PotentialTarget - currentTrade.EntryPrice) * _userInputs.BreakevenMultiplier
+                Dim slPoint As Decimal = currentTrade.EntryPrice - currentTrade.PotentialStopLoss
+                Dim slPL As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, currentTrade.EntryPrice, currentTrade.EntryPrice - slPoint, currentTrade.Quantity, _lotSize, _parentStrategy.StockType)
+                Dim targetPL As Decimal = Math.Abs(slPL) * (_userInputs.TargetMultiplier + 1)
+                Dim excpectedTarget As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, targetPL, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
                 If currentTick.Open >= excpectedTarget Then
-                    triggerPrice = currentTrade.EntryPrice + _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, _lotSize, _parentStrategy.StockType)
+                    triggerPrice = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, Math.Abs(slPL) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
                 End If
             ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                Dim excpectedTarget As Decimal = currentTrade.EntryPrice - (currentTrade.EntryPrice - currentTrade.PotentialTarget) * _userInputs.BreakevenMultiplier
+                Dim slPoint As Decimal = currentTrade.PotentialStopLoss - currentTrade.EntryPrice
+                Dim slPL As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, currentTrade.EntryPrice + slPoint, currentTrade.EntryPrice, currentTrade.Quantity, _lotSize, _parentStrategy.StockType)
+                Dim targetPL As Decimal = Math.Abs(slPL) * (_userInputs.TargetMultiplier + 1)
+                Dim excpectedTarget As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, targetPL, Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
                 If currentTick.Open <= excpectedTarget Then
-                    triggerPrice = currentTrade.EntryPrice - _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, _lotSize, _parentStrategy.StockType)
+                    triggerPrice = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, Math.Abs(slPL) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
                 End If
             End If
             If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
