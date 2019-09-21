@@ -34,6 +34,7 @@ Public Class LowStoplossStrategyRule
         FiveTime
         TenTime
         HKStrongCandle
+        TweezerPattern
     End Enum
 #End Region
 
@@ -362,6 +363,12 @@ Public Class LowStoplossStrategyRule
                             iSHeikenAshi = True
                         End If
                     End If
+                Case SignalType.TweezerPattern
+                    If lastExecutedTrade Is Nothing AndAlso Not _entryChanged Then
+                        If IsTweezerPatternSignalCandle(candle) Then
+                            signalFound = True
+                        End If
+                    End If
             End Select
 
             If signalFound Then
@@ -592,6 +599,38 @@ Public Class LowStoplossStrategyRule
                 End If
             End If
         Next
+        Return ret
+    End Function
+#End Region
+
+#Region "Tweezer Pattern"
+    Private Function IsTweezerPatternSignalCandle(ByVal candle As Payload) As Boolean
+        Dim ret As Boolean = False
+        Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(candle.PayloadDate.AddMinutes(_parentStrategy.SignalTimeFrame), _signalPayload))
+
+        If candle.CandleColor = Color.Green AndAlso
+            candle.CandleWicks.Top <= candle.CandleRange * 25 / 100 AndAlso
+            candle.CandleWicks.Bottom <= candle.CandleRange * 50 / 100 Then
+            Dim buffer As Decimal = _parentStrategy.CalculateBuffer(candle.Low, RoundOfType.Floor)
+            If currentMinuteCandlePayload.High >= candle.High + buffer AndAlso
+                currentMinuteCandlePayload.Low <= candle.Low - buffer AndAlso currentMinuteCandlePayload.CandleColor = Color.Red Then
+                MsgBox("Both side triggerd")
+                ret = True
+            ElseIf currentMinuteCandlePayload.Low <= candle.Low - buffer Then
+                ret = True
+            End If
+        ElseIf candle.CandleColor = Color.Red AndAlso
+            candle.CandleWicks.Top <= candle.CandleRange * 50 / 100 AndAlso
+            candle.CandleWicks.Bottom <= candle.CandleRange * 25 / 100 Then
+            Dim buffer As Decimal = _parentStrategy.CalculateBuffer(candle.Low, RoundOfType.Floor)
+            If currentMinuteCandlePayload.High >= candle.High + buffer AndAlso
+                currentMinuteCandlePayload.Low <= candle.Low - buffer AndAlso currentMinuteCandlePayload.CandleColor = Color.Green Then
+                MsgBox("Both side triggerd")
+                ret = True
+            ElseIf currentMinuteCandlePayload.High >= candle.High + buffer Then
+                ret = True
+            End If
+        End If
         Return ret
     End Function
 #End Region
