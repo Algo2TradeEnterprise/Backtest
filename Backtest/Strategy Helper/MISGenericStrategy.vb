@@ -595,13 +595,13 @@ Namespace StrategyHelper
                                             Dim stoploss As Decimal = CalculatorTargetOrStoploss(instrumentName, stockPrice, quantity, Math.Abs(CType(Me.RuleEntityData, LowStoplossStrategyRule.StrategyRuleEntities).MaxStoploss) * -1, Trade.TradeExecutionDirection.Buy, Me.StockType)
                                             Dim slPoint As Decimal = stockPrice - stoploss - Me.TickSize
                                             If slPoint > 0.2 Then
-                                                If slPoint * 4 <= dt.Rows(i).Item(7) / 2 Then
+                                                If slPoint * 4 <= dt.Rows(i).Item(6) / 2 Then
                                                     Dim detailsOfStock As StockDetails = New StockDetails With
                                                     {.StockName = instrumentName,
                                                     .LotSize = dt.Rows(i).Item(2),
                                                     .EligibleToTakeTrade = True,
                                                     .Supporting1 = dt.Rows(i).Item(3),
-                                                    .Supporting2 = dt.Rows(i).Item(7),
+                                                    .Supporting2 = dt.Rows(i).Item(6),
                                                     .Supporting3 = slPoint,
                                                     .Supporting4 = quantity}
                                                     ret.Add(instrumentName, detailsOfStock)

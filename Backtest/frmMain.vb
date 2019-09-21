@@ -286,7 +286,7 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            For signalType As Integer = 7 To 7 Step 1
+            For signalType As Integer = 1 To 1 Step 1
                 For nmbrOfTradePerStock As Integer = 4 To 4 Step 1
                     For mdfyNmbrOfTrd As Integer = 1 To 1 Step 1
                         For overallMaxLoss As Decimal = Decimal.MinValue To Decimal.MinValue Step 1
@@ -322,7 +322,8 @@ Public Class frmMain
                                                 '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
                                                 '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Volume spike Stock List.csv")
                                                 '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Volume spike With Low SL Stock List.csv")
-                                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Volume spike With Low SL Stock List Modified.csv")
+                                                '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Volume spike With Low SL Stock List Modified.csv")
+                                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Volume spike Stock List with abs ATR.csv")
 
                                                 .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
                                                 Select Case .RuleNumber

@@ -1,5 +1,7 @@
 ﻿Imports Utilities.DAL
 Imports System.Threading
+Imports System.IO
+
 Module ExcelModifier
 
     Private _cts As CancellationTokenSource
@@ -21,6 +23,7 @@ Module ExcelModifier
     Public Sub ModifyExcel(ByVal filePath As String, ByVal initialCapital As Decimal, ByVal capitalForPumpIn As Decimal, ByVal minimumEarnedCapitalToWithdraw As Decimal, ByVal amountToBeWithdrawn As Decimal)
         Try
             Console.WriteLine("Opening Excel")
+            Dim dayWinRatio As Decimal = Decimal.MinValue
             Using excelWriter As New ExcelHelper(filePath, ExcelHelper.ExcelOpenStatus.OpenExistingForReadWrite, ExcelHelper.ExcelSaveType.XLS_XLSX, New CancellationTokenSource)
                 excelWriter.SetActiveSheet("Data")
                 Dim rowCout As Long = excelWriter.GetLastRow
@@ -166,11 +169,19 @@ Module ExcelModifier
                 n = 6
                 excelWriter.SetData(n + 6, 6, "Day Win Ratio")
                 excelWriter.SetData(n + 6, 7, Math.Round((totalWinningDays / totalDays) * 100, 2), "##,##,##0.00", ExcelHelper.XLAlign.Right)
+                dayWinRatio = Math.Round((totalWinningDays / totalDays) * 100, 2)
 
                 excelWriter.SetActiveSheet("Summary")
                 Console.WriteLine("Saving excel...")
                 excelWriter.SaveExcel()
             End Using
+
+            Dim copiedFileName As String = Path.GetFileName(filePath)
+            copiedFileName = String.Format("WR {0},{1}", dayWinRatio, copiedFileName)
+            Dim copiedFilePath As String = Path.Combine(Path.GetDirectoryName(filePath), copiedFileName)
+            If File.Exists(copiedFilePath) Then File.Delete(copiedFilePath)
+            File.Copy(filePath, copiedFilePath)
+            File.Delete(filePath)
         Catch ex As Exception
             MsgBox(ex.ToString, MsgBoxStyle.Critical)
         Finally

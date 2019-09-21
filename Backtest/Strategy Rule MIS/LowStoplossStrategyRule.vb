@@ -46,7 +46,6 @@ Public Class LowStoplossStrategyRule
     Private _userInputs As StrategyRuleEntities
     Private _targetRemark As String = ""
     Private _targetPoint As Decimal = Decimal.MinValue
-    Private _firstTradedQuantity As Integer = Integer.MinValue
     Private ReadOnly _stockATR As Decimal
     Private ReadOnly _dayATR As Decimal
     Private ReadOnly _slPoint As Decimal
