@@ -225,6 +225,20 @@ Public Class Payload
             Return _CandleStrengthHeikenAshi
         End Get
     End Property
+    Public ReadOnly Property CandleStrengthHeikenAshi(ByVal buffer As Decimal) As StrongCandle
+        Get
+            If Me.CandleColor = Color.Green Then
+                If Math.Abs(Math.Round(Me.Open, 2) - Math.Round(Me.Low, 2)) <= buffer Then
+                    _CandleStrengthHeikenAshi = StrongCandle.Bullish
+                End If
+            ElseIf Me.CandleColor = Color.Red Then
+                If Math.Abs(Math.Round(Me.Open, 2) - Math.Round(Me.High, 2)) <= buffer Then
+                    _CandleStrengthHeikenAshi = StrongCandle.Bearish
+                End If
+            End If
+            Return _CandleStrengthHeikenAshi
+        End Get
+    End Property
 
     Private _CandleWicksPercentage As Wicks
     Public ReadOnly Property CandleWicksPercentage As Wicks

@@ -33,6 +33,7 @@ Public Class LowStoplossStrategyRule
         FirstTime
         FiveTime
         TenTime
+        HKStrongCandle
     End Enum
 #End Region
 
@@ -43,6 +44,7 @@ Public Class LowStoplossStrategyRule
     Private _ATRPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _FractalHighPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _FractalLowPayload As Dictionary(Of Date, Decimal) = Nothing
+    Private _HKPayload As Dictionary(Of Date, Payload) = Nothing
     Private _userInputs As StrategyRuleEntities
     Private _targetRemark As String = ""
     Private _targetPoint As Decimal = Decimal.MinValue
@@ -85,6 +87,7 @@ Public Class LowStoplossStrategyRule
 
         Indicator.ATR.CalculateATR(14, _signalPayload, _ATRPayload)
         Indicator.FractalBands.CalculateFractal(_signalPayload, _FractalHighPayload, _FractalLowPayload)
+        Indicator.HeikenAshi.ConvertToHeikenAshi(_signalPayload, _HKPayload)
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -283,6 +286,7 @@ Public Class LowStoplossStrategyRule
             Not candle.DeadCandle AndAlso Not candle.PreviousCandlePayload.DeadCandle Then
             Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(candle, _parentStrategy.TradeType)
             Dim signalFound As Boolean = False
+            Dim iSHeikenAshi As Boolean = False
 
             Select Case _userInputs.TypeOfSignal
                 Case SignalType.FractalChange
@@ -351,11 +355,24 @@ Public Class LowStoplossStrategyRule
                             signalFound = True
                         End If
                     End If
+                Case SignalType.HKStrongCandle
+                    If lastExecutedTrade Is Nothing AndAlso Not _entryChanged Then
+                        If IsHKStrongCandleSignalCandle(candle) Then
+                            signalFound = True
+                            iSHeikenAshi = True
+                        End If
+                    End If
             End Select
 
             If signalFound Then
-                _potentialHighEntryPrice = candle.High
-                _potentialLowEntryPrice = candle.Low
+                If iSHeikenAshi Then
+                    Dim hkCandle As Payload = _HKPayload(candle.PayloadDate)
+                    _potentialHighEntryPrice = ConvertFloorCeling(hkCandle.High, _parentStrategy.TickSize, RoundOfType.Floor)
+                    _potentialLowEntryPrice = ConvertFloorCeling(hkCandle.Low, _parentStrategy.TickSize, RoundOfType.Celing)
+                Else
+                    _potentialHighEntryPrice = candle.High
+                    _potentialLowEntryPrice = candle.Low
+                End If
                 _signalCandle = candle
                 Dim atr As Decimal = _ATRPayload(_signalCandle.PayloadDate)
                 Dim pl As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, _potentialHighEntryPrice, _potentialHighEntryPrice - (_slPoint + _parentStrategy.TickSize), _quantity, _lotSize, _parentStrategy.StockType)
@@ -363,10 +380,11 @@ Public Class LowStoplossStrategyRule
 
                 If ConvertFloorCeling(atr * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing) >= target - _potentialHighEntryPrice Then
                     _targetPoint = ConvertFloorCeling(atr * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
-                    If _targetPoint > _dayATR / 2 Then
+                    If _targetPoint > _dayATR / 2 OrElse _slPoint >= atr * 33 / 100 Then
                         _potentialHighEntryPrice = Decimal.MinValue
                         _potentialLowEntryPrice = Decimal.MinValue
                         _signalCandle = Nothing
+                        'Me.EligibleToTakeTrade = False
                     End If
                     _targetRemark = "ATR Target"
                     If _userInputs.ModifyNumberOfTrade Then
@@ -534,6 +552,44 @@ Public Class LowStoplossStrategyRule
                 If runningPayload.Value.Volume <= runningPayload.Value.PreviousCandlePayload.Volume / 2 Then
                     ret = True
                     Exit For
+                End If
+            End If
+        Next
+        Return ret
+    End Function
+#End Region
+
+#Region "HK 2 Strong Candle"
+    Private Function IsHKStrongCandleSignalCandle(ByVal candle As Payload) As Boolean
+        Dim ret As Boolean = False
+        Dim hkCandle As Payload = _HKPayload(candle.PayloadDate)
+        If IsHK2StrongCandleFound(candle.PayloadDate) Then
+            If hkCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish OrElse hkCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
+                ret = True
+            End If
+        End If
+        Return ret
+    End Function
+
+    Private Function IsHK2StrongCandleFound(ByVal currentTime As Date) As Boolean
+        Dim ret As Boolean = False
+        For Each runningPayload In _HKPayload
+            If runningPayload.Key.Date = _tradingDate.Date AndAlso
+                runningPayload.Value.PreviousCandlePayload.PayloadDate.Date = _tradingDate.Date AndAlso
+                runningPayload.Key <= currentTime Then
+                Dim buffer As Decimal = _parentStrategy.CalculateBuffer(runningPayload.Value.High, RoundOfType.Floor)
+                If runningPayload.Value.CandleStrengthHeikenAshi(buffer - _parentStrategy.TickSize) = Payload.StrongCandle.Bullish AndAlso
+                    runningPayload.Value.PreviousCandlePayload.CandleStrengthHeikenAshi(buffer - _parentStrategy.TickSize) = Payload.StrongCandle.Bullish Then
+                    If runningPayload.Value.High >= runningPayload.Value.PreviousCandlePayload.High Then
+                        ret = True
+                        Exit For
+                    End If
+                ElseIf runningPayload.Value.CandleStrengthHeikenAshi(buffer - _parentStrategy.TickSize) = Payload.StrongCandle.Bearish AndAlso
+                    runningPayload.Value.PreviousCandlePayload.CandleStrengthHeikenAshi(buffer - _parentStrategy.TickSize) = Payload.StrongCandle.Bearish Then
+                    If runningPayload.Value.Low <= runningPayload.Value.PreviousCandlePayload.Low Then
+                        ret = True
+                        Exit For
+                    End If
                 End If
             End If
         Next
