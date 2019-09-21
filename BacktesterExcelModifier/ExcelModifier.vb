@@ -180,8 +180,7 @@ Module ExcelModifier
             copiedFileName = String.Format("WR {0},{1}", dayWinRatio, copiedFileName)
             Dim copiedFilePath As String = Path.Combine(Path.GetDirectoryName(filePath), copiedFileName)
             If File.Exists(copiedFilePath) Then File.Delete(copiedFilePath)
-            File.Copy(filePath, copiedFilePath)
-            File.Delete(filePath)
+            File.Move(filePath, copiedFilePath)
         Catch ex As Exception
             MsgBox(ex.ToString, MsgBoxStyle.Critical)
         Finally

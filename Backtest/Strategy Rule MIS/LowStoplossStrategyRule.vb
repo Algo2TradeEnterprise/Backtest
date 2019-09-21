@@ -380,11 +380,10 @@ Public Class LowStoplossStrategyRule
 
                 If ConvertFloorCeling(atr * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing) >= target - _potentialHighEntryPrice Then
                     _targetPoint = ConvertFloorCeling(atr * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
-                    If _targetPoint > _dayATR / 2 OrElse _slPoint >= atr * 33 / 100 Then
+                    If _targetPoint > _dayATR / 2 Then
                         _potentialHighEntryPrice = Decimal.MinValue
                         _potentialLowEntryPrice = Decimal.MinValue
                         _signalCandle = Nothing
-                        'Me.EligibleToTakeTrade = False
                     End If
                     _targetRemark = "ATR Target"
                     If _userInputs.ModifyNumberOfTrade Then
