@@ -49,6 +49,7 @@ Public Class LowStoplossStrategyRule
     Private _userInputs As StrategyRuleEntities
     Private _targetRemark As String = ""
     Private _targetPoint As Decimal = Decimal.MinValue
+    Private _firstEntryDirection As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
     Private ReadOnly _stockATR As Decimal
     Private ReadOnly _dayATR As Decimal
     Private ReadOnly _slPoint As Decimal
@@ -269,14 +270,30 @@ Public Class LowStoplossStrategyRule
             _potentialHighEntryPrice <> Decimal.MinValue AndAlso _potentialLowEntryPrice <> Decimal.MinValue Then
             Dim highBuffer As Decimal = _parentStrategy.CalculateBuffer(_potentialHighEntryPrice, RoundOfType.Floor)
             Dim lowBuffer As Decimal = _parentStrategy.CalculateBuffer(_potentialLowEntryPrice, RoundOfType.Floor)
-            If currentTick.High >= _potentialHighEntryPrice + highBuffer Then
-                _potentialHighEntryPrice = _potentialHighEntryPrice + highBuffer
-                _potentialLowEntryPrice = _potentialHighEntryPrice - 2 * _slPoint
-                _entryChanged = True
-            ElseIf currentTick.Low <= _potentialLowEntryPrice - lowBuffer Then
-                _potentialLowEntryPrice = _potentialLowEntryPrice - lowBuffer
-                _potentialHighEntryPrice = _potentialLowEntryPrice + 2 * _slPoint
-                _entryChanged = True
+            If _firstEntryDirection = Trade.TradeExecutionDirection.None Then
+                If currentTick.High >= _potentialHighEntryPrice + highBuffer Then
+                    _potentialHighEntryPrice = _potentialHighEntryPrice + highBuffer
+                    _potentialLowEntryPrice = _potentialHighEntryPrice - 2 * _slPoint
+                    _entryChanged = True
+                ElseIf currentTick.Low <= _potentialLowEntryPrice - lowBuffer Then
+                    _potentialLowEntryPrice = _potentialLowEntryPrice - lowBuffer
+                    _potentialHighEntryPrice = _potentialLowEntryPrice + 2 * _slPoint
+                    _entryChanged = True
+                End If
+            Else
+                If _firstEntryDirection = Trade.TradeExecutionDirection.Buy Then
+                    If currentTick.High >= _potentialHighEntryPrice + highBuffer Then
+                        _potentialHighEntryPrice = _potentialHighEntryPrice + highBuffer
+                        _potentialLowEntryPrice = _potentialHighEntryPrice - 2 * _slPoint
+                        _entryChanged = True
+                    End If
+                ElseIf _firstEntryDirection = Trade.TradeExecutionDirection.Sell Then
+                    If currentTick.Low <= _potentialLowEntryPrice - lowBuffer Then
+                        _potentialLowEntryPrice = _potentialLowEntryPrice - lowBuffer
+                        _potentialHighEntryPrice = _potentialLowEntryPrice + 2 * _slPoint
+                        _entryChanged = True
+                    End If
+                End If
             End If
         End If
     End Function
@@ -367,6 +384,11 @@ Public Class LowStoplossStrategyRule
                     If lastExecutedTrade Is Nothing AndAlso Not _entryChanged Then
                         If IsTweezerPatternSignalCandle(candle) Then
                             signalFound = True
+                            If candle.CandleColor = Color.Red Then
+                                _firstEntryDirection = Trade.TradeExecutionDirection.Buy
+                            ElseIf candle.CandleColor = Color.Green Then
+                                _firstEntryDirection = Trade.TradeExecutionDirection.Sell
+                            End If
                         End If
                     End If
             End Select
@@ -414,15 +436,24 @@ Public Class LowStoplossStrategyRule
                     End If
                 Else
                     Dim tradeDirection As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
-                    Dim middlePoint As Decimal = (_potentialHighEntryPrice + _potentialLowEntryPrice) / 2
-                    Dim range As Decimal = _potentialHighEntryPrice - middlePoint
                     Dim buffer As Decimal = Decimal.MinValue
-                    If currentTick.Open >= middlePoint + range * 30 / 100 Then
-                        tradeDirection = Trade.TradeExecutionDirection.Buy
-                        buffer = _parentStrategy.CalculateBuffer(_potentialHighEntryPrice, RoundOfType.Floor)
-                    ElseIf currentTick.Open <= middlePoint - range * 30 / 100 Then
-                        tradeDirection = Trade.TradeExecutionDirection.Sell
-                        buffer = _parentStrategy.CalculateBuffer(_potentialLowEntryPrice, RoundOfType.Floor)
+                    If _firstEntryDirection = Trade.TradeExecutionDirection.None Then
+                        Dim middlePoint As Decimal = (_potentialHighEntryPrice + _potentialLowEntryPrice) / 2
+                        Dim range As Decimal = _potentialHighEntryPrice - middlePoint
+                        If currentTick.Open >= middlePoint + range * 30 / 100 Then
+                            tradeDirection = Trade.TradeExecutionDirection.Buy
+                            buffer = _parentStrategy.CalculateBuffer(_potentialHighEntryPrice, RoundOfType.Floor)
+                        ElseIf currentTick.Open <= middlePoint - range * 30 / 100 Then
+                            tradeDirection = Trade.TradeExecutionDirection.Sell
+                            buffer = _parentStrategy.CalculateBuffer(_potentialLowEntryPrice, RoundOfType.Floor)
+                        End If
+                    Else
+                        tradeDirection = _firstEntryDirection
+                        If tradeDirection = Trade.TradeExecutionDirection.Buy Then
+                            buffer = _parentStrategy.CalculateBuffer(_potentialHighEntryPrice, RoundOfType.Floor)
+                        ElseIf tradeDirection = Trade.TradeExecutionDirection.Sell Then
+                            buffer = _parentStrategy.CalculateBuffer(_potentialLowEntryPrice, RoundOfType.Floor)
+                        End If
                     End If
                     If tradeDirection = Trade.TradeExecutionDirection.Buy Then
                         ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, _potentialHighEntryPrice + buffer, _potentialHighEntryPrice + buffer - _slPoint, Trade.TradeExecutionDirection.Buy)
@@ -612,22 +643,14 @@ Public Class LowStoplossStrategyRule
             candle.CandleWicks.Top <= candle.CandleRange * 25 / 100 AndAlso
             candle.CandleWicks.Bottom <= candle.CandleRange * 50 / 100 Then
             Dim buffer As Decimal = _parentStrategy.CalculateBuffer(candle.Low, RoundOfType.Floor)
-            If currentMinuteCandlePayload.High >= candle.High + buffer AndAlso
-                currentMinuteCandlePayload.Low <= candle.Low - buffer AndAlso currentMinuteCandlePayload.CandleColor = Color.Red Then
-                MsgBox("Both side triggerd")
-                ret = True
-            ElseIf currentMinuteCandlePayload.Low <= candle.Low - buffer Then
+            If currentMinuteCandlePayload.Low <= candle.Low - buffer Then
                 ret = True
             End If
         ElseIf candle.CandleColor = Color.Red AndAlso
             candle.CandleWicks.Top <= candle.CandleRange * 50 / 100 AndAlso
             candle.CandleWicks.Bottom <= candle.CandleRange * 25 / 100 Then
             Dim buffer As Decimal = _parentStrategy.CalculateBuffer(candle.Low, RoundOfType.Floor)
-            If currentMinuteCandlePayload.High >= candle.High + buffer AndAlso
-                currentMinuteCandlePayload.Low <= candle.Low - buffer AndAlso currentMinuteCandlePayload.CandleColor = Color.Green Then
-                MsgBox("Both side triggerd")
-                ret = True
-            ElseIf currentMinuteCandlePayload.High >= candle.High + buffer Then
+            If currentMinuteCandlePayload.High >= candle.High + buffer Then
                 ret = True
             End If
         End If

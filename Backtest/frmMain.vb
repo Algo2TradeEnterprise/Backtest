@@ -286,14 +286,14 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            For signalType As Integer = 13 To 13 Step 1
-                For nmbrOfTradePerStock As Integer = 4 To 4 Step 1
-                    For mdfyNmbrOfTrd As Integer = 1 To 1 Step 1
-                        For overallMaxLoss As Decimal = Decimal.MinValue To Decimal.MinValue Step 1
+            For signalType As Integer = 7 To 7 Step 1
+                For nmbrOfTradePerStock As Integer = 20 To 20 Step 1
+                    For mdfyNmbrOfTrd As Integer = 0 To 0 Step 1
+                        For overallMaxLoss As Decimal = -9000 To -9000 Step 1
                             For brkEvnMvmnt As Integer = 0 To 0 Step 1
                                 For tradeMaxProfit As Decimal = Decimal.MaxValue To Decimal.MaxValue Step -1
                                     If brkEvnMvmnt = 1 AndAlso tradeMaxProfit <> Decimal.MaxValue Then Continue For
-                                    For stockMaxProfit As Decimal = Decimal.MaxValue To Decimal.MaxValue Step -1
+                                    For stockMaxProfit As Decimal = 4000 To 4000 Step -1
                                         If brkEvnMvmnt = 1 AndAlso stockMaxProfit <> Decimal.MaxValue Then Continue For
                                         Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                                           exchangeStartTime:=TimeSpan.Parse("09:15:00"),
