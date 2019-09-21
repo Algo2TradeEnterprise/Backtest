@@ -10,6 +10,9 @@ Public Class LowStoplossStrategyRule
     Public Class StrategyRuleEntities
         Inherits RuleEntities
 
+        Public StartingLevelMultiplier As Integer
+        Public ChangeAfterStoploss As Boolean
+        Public AfterStoplossLevelMultiplier As Integer
         Public MaxStoploss As Decimal
         Public TargetMultiplier As Decimal
         Public BreakevenMovement As Boolean
@@ -42,6 +45,7 @@ Public Class LowStoplossStrategyRule
     Private _potentialLowEntryPrice As Decimal = Decimal.MinValue
     Private _signalCandle As Payload
     Private _entryChanged As Boolean = False
+    Private _levelChanged As Boolean = False
     Private _ATRPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _FractalHighPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _FractalLowPayload As Dictionary(Of Date, Decimal) = Nothing
@@ -72,6 +76,9 @@ Public Class LowStoplossStrategyRule
         _slPoint = slPoint
         _quantity = quantity
         _userInputs = New StrategyRuleEntities With {
+            .StartingLevelMultiplier = CType(_entities, StrategyRuleEntities).StartingLevelMultiplier,
+            .ChangeAfterStoploss = CType(_entities, StrategyRuleEntities).ChangeAfterStoploss,
+            .AfterStoplossLevelMultiplier = CType(_entities, StrategyRuleEntities).AfterStoplossLevelMultiplier,
             .MaxStoploss = CType(_entities, StrategyRuleEntities).MaxStoploss,
             .TargetMultiplier = CType(_entities, StrategyRuleEntities).TargetMultiplier,
             .BreakevenMovement = CType(_entities, StrategyRuleEntities).BreakevenMovement,
@@ -120,6 +127,36 @@ Public Class LowStoplossStrategyRule
             _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) < Me.MaxProfitOfThisStock AndAlso
             _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) > Math.Abs(Me.MaxLossOfThisStock) * -1 AndAlso
             currentMinuteCandlePayload.PayloadDate >= tradeStartTime AndAlso Me.EligibleToTakeTrade Then
+
+            If _userInputs.ChangeAfterStoploss AndAlso Not _levelChanged Then
+                Dim closeTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentMinuteCandlePayload, _parentStrategy.TradeType, Trade.TradeExecutionStatus.Close)
+                If closeTrades IsNot Nothing AndAlso closeTrades.Count > 0 Then
+                    Dim buyStoplossDone As Boolean = False
+                    Dim sellStoplossDone As Boolean = False
+                    For Each runningTrade In closeTrades
+                        If runningTrade.ExitCondition = Trade.TradeExitCondition.StopLoss Then
+                            If runningTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                                buyStoplossDone = True
+                            ElseIf runningTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                                sellStoplossDone = True
+                            End If
+                        End If
+                        If buyStoplossDone AndAlso sellStoplossDone Then
+                            Exit For
+                        End If
+                    Next
+                    If buyStoplossDone AndAlso sellStoplossDone Then
+                        Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandlePayload, _parentStrategy.TradeType)
+                        If lastExecutedTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                            _potentialLowEntryPrice = _potentialHighEntryPrice - (_userInputs.AfterStoplossLevelMultiplier + 1) * _slPoint
+                        ElseIf lastExecutedTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                            _potentialHighEntryPrice = _potentialLowEntryPrice + (_userInputs.AfterStoplossLevelMultiplier + 1) * _slPoint
+                        End If
+                        _levelChanged = True
+                    End If
+                End If
+            End If
+
             Dim signalCandle As Payload = Nothing
 
             Dim signalCandleSatisfied As Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
@@ -273,24 +310,24 @@ Public Class LowStoplossStrategyRule
             If _firstEntryDirection = Trade.TradeExecutionDirection.None Then
                 If currentTick.High >= _potentialHighEntryPrice + highBuffer Then
                     _potentialHighEntryPrice = _potentialHighEntryPrice + highBuffer
-                    _potentialLowEntryPrice = _potentialHighEntryPrice - 2 * _slPoint
+                    _potentialLowEntryPrice = _potentialHighEntryPrice - (_userInputs.StartingLevelMultiplier + 1) * _slPoint
                     _entryChanged = True
                 ElseIf currentTick.Low <= _potentialLowEntryPrice - lowBuffer Then
                     _potentialLowEntryPrice = _potentialLowEntryPrice - lowBuffer
-                    _potentialHighEntryPrice = _potentialLowEntryPrice + 2 * _slPoint
+                    _potentialHighEntryPrice = _potentialLowEntryPrice + (_userInputs.StartingLevelMultiplier + 1) * _slPoint
                     _entryChanged = True
                 End If
             Else
                 If _firstEntryDirection = Trade.TradeExecutionDirection.Buy Then
                     If currentTick.High >= _potentialHighEntryPrice + highBuffer Then
                         _potentialHighEntryPrice = _potentialHighEntryPrice + highBuffer
-                        _potentialLowEntryPrice = _potentialHighEntryPrice - 2 * _slPoint
+                        _potentialLowEntryPrice = _potentialHighEntryPrice - (_userInputs.StartingLevelMultiplier + 1) * _slPoint
                         _entryChanged = True
                     End If
                 ElseIf _firstEntryDirection = Trade.TradeExecutionDirection.Sell Then
                     If currentTick.Low <= _potentialLowEntryPrice - lowBuffer Then
                         _potentialLowEntryPrice = _potentialLowEntryPrice - lowBuffer
-                        _potentialHighEntryPrice = _potentialLowEntryPrice + 2 * _slPoint
+                        _potentialHighEntryPrice = _potentialLowEntryPrice + (_userInputs.StartingLevelMultiplier + 1) * _slPoint
                         _entryChanged = True
                     End If
                 End If
@@ -430,9 +467,9 @@ Public Class LowStoplossStrategyRule
                     Dim middlePoint As Decimal = (_potentialHighEntryPrice + _potentialLowEntryPrice) / 2
                     Dim range As Decimal = _potentialHighEntryPrice - middlePoint
                     If currentTick.Open >= middlePoint + range * 60 / 100 Then
-                        ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, _potentialHighEntryPrice, middlePoint, Trade.TradeExecutionDirection.Buy)
+                        ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, _potentialHighEntryPrice, _potentialHighEntryPrice - _slPoint, Trade.TradeExecutionDirection.Buy)
                     ElseIf currentTick.Open <= middlePoint - range * 60 / 100 Then
-                        ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, _potentialLowEntryPrice, middlePoint, Trade.TradeExecutionDirection.Sell)
+                        ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, _potentialLowEntryPrice, _potentialLowEntryPrice + _slPoint, Trade.TradeExecutionDirection.Sell)
                     End If
                 Else
                     Dim tradeDirection As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None

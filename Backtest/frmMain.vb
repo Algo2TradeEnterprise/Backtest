@@ -356,7 +356,10 @@ Public Class frmMain
                                                         .ModifyNumberOfTrade = False}
                                                     Case 13
                                                         .RuleEntityData = New LowStoplossStrategyRule.StrategyRuleEntities With
-                                                        {.MaxStoploss = 1000,
+                                                        {.StartingLevelMultiplier = 1,
+                                                        .ChangeAfterStoploss = False,
+                                                        .AfterStoplossLevelMultiplier = 2,
+                                                        .MaxStoploss = 1000,
                                                         .TargetMultiplier = 4,
                                                         .BreakevenMovement = brkEvnMvmnt,
                                                         .ModifyNumberOfTrade = mdfyNmbrOfTrd,
