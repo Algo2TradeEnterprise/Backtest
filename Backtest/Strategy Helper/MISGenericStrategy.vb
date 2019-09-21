@@ -591,7 +591,7 @@ Namespace StrategyHelper
                                                                                        End Function).FirstOrDefault.Value.Close
                                         Dim quantity As Integer = CalculateQuantityFromInvestment(dt.Rows(i).Item(2), CType(Me.RuleEntityData, LowStoplossStrategyRule.StrategyRuleEntities).MinimumCapital, stockPrice, Me.StockType, True)
                                         Dim capital As Decimal = stockPrice * quantity / Me.MarginMultiplier
-                                        If capital < 25000 Then
+                                        If capital < 35000 Then
                                             Dim stoploss As Decimal = CalculatorTargetOrStoploss(instrumentName, stockPrice, quantity, Math.Abs(CType(Me.RuleEntityData, LowStoplossStrategyRule.StrategyRuleEntities).MaxStoploss) * -1, Trade.TradeExecutionDirection.Buy, Me.StockType)
                                             Dim slPoint As Decimal = stockPrice - stoploss - Me.TickSize
                                             If slPoint > 0.2 Then

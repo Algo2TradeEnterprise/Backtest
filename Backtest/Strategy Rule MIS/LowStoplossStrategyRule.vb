@@ -30,6 +30,9 @@ Public Class LowStoplossStrategyRule
         OpenCloseOutsideFractal
         DipInATR
         HalfVolumeThenIncreaseInVolume
+        FirstTime
+        FiveTime
+        TenTime
     End Enum
 #End Region
 
@@ -331,6 +334,24 @@ Public Class LowStoplossStrategyRule
                             signalFound = True
                         End If
                     End If
+                Case SignalType.FirstTime
+                    If lastExecutedTrade Is Nothing AndAlso Not _entryChanged Then
+                        If IsnMinutesSignalCandle(candle, "09:16:00") Then
+                            signalFound = True
+                        End If
+                    End If
+                Case SignalType.FiveTime
+                    If lastExecutedTrade Is Nothing AndAlso Not _entryChanged Then
+                        If IsnMinutesSignalCandle(candle, "09:20:00") Then
+                            signalFound = True
+                        End If
+                    End If
+                Case SignalType.TenTime
+                    If lastExecutedTrade Is Nothing AndAlso Not _entryChanged Then
+                        If IsnMinutesSignalCandle(candle, "09:25:00") Then
+                            signalFound = True
+                        End If
+                    End If
             End Select
 
             If signalFound Then
@@ -417,6 +438,16 @@ Public Class LowStoplossStrategyRule
                     End If
                 End If
             Next
+        End If
+        Return ret
+    End Function
+#End Region
+
+#Region "n Minutes"
+    Private Function IsnMinutesSignalCandle(ByVal candle As Payload, ByVal timeToMatch As String) As Boolean
+        Dim ret As Boolean = False
+        If candle.PayloadDate.Date = _tradingDate.Date AndAlso candle.PayloadDate.ToString("HH:mm:ss") = timeToMatch Then
+            ret = True
         End If
         Return ret
     End Function
