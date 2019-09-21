@@ -34,7 +34,7 @@ Public Class LowStoplossStrategyRule
         FiveTime
         TenTime
         HKStrongCandle
-        TweezerPattern
+        NormalStrongCandle
     End Enum
 #End Region
 
@@ -380,9 +380,9 @@ Public Class LowStoplossStrategyRule
                             iSHeikenAshi = True
                         End If
                     End If
-                Case SignalType.TweezerPattern
+                Case SignalType.NormalStrongCandle
                     If lastExecutedTrade Is Nothing AndAlso Not _entryChanged Then
-                        If IsTweezerPatternSignalCandle(candle) Then
+                        If IsNormalStrongCandleSignalCandle(candle) Then
                             signalFound = True
                             If candle.CandleColor = Color.Red Then
                                 _firstEntryDirection = Trade.TradeExecutionDirection.Buy
@@ -634,8 +634,8 @@ Public Class LowStoplossStrategyRule
     End Function
 #End Region
 
-#Region "Tweezer Pattern"
-    Private Function IsTweezerPatternSignalCandle(ByVal candle As Payload) As Boolean
+#Region "Normal Strong Candle"
+    Private Function IsNormalStrongCandleSignalCandle(ByVal candle As Payload) As Boolean
         Dim ret As Boolean = False
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(candle.PayloadDate.AddMinutes(_parentStrategy.SignalTimeFrame), _signalPayload))
 
