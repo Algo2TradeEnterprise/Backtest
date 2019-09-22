@@ -11,7 +11,7 @@ Public Class LowStoplossStrategyRule
         Inherits RuleEntities
 
         Public StartingLevelMultiplier As Integer
-        Public ChangeAfterStoploss As Boolean
+        Public ChangeLevelAfterStoploss As Boolean
         Public AfterStoplossLevelMultiplier As Integer
         Public MaxStoploss As Decimal
         Public TargetMultiplier As Decimal
@@ -77,7 +77,7 @@ Public Class LowStoplossStrategyRule
         _quantity = quantity
         _userInputs = New StrategyRuleEntities With {
             .StartingLevelMultiplier = CType(_entities, StrategyRuleEntities).StartingLevelMultiplier,
-            .ChangeAfterStoploss = CType(_entities, StrategyRuleEntities).ChangeAfterStoploss,
+            .ChangeLevelAfterStoploss = CType(_entities, StrategyRuleEntities).ChangeLevelAfterStoploss,
             .AfterStoplossLevelMultiplier = CType(_entities, StrategyRuleEntities).AfterStoplossLevelMultiplier,
             .MaxStoploss = CType(_entities, StrategyRuleEntities).MaxStoploss,
             .TargetMultiplier = CType(_entities, StrategyRuleEntities).TargetMultiplier,
@@ -128,7 +128,7 @@ Public Class LowStoplossStrategyRule
             _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) > Math.Abs(Me.MaxLossOfThisStock) * -1 AndAlso
             currentMinuteCandlePayload.PayloadDate >= tradeStartTime AndAlso Me.EligibleToTakeTrade Then
 
-            If _userInputs.ChangeAfterStoploss AndAlso Not _levelChanged Then
+            If _userInputs.ChangeLevelAfterStoploss AndAlso Not _levelChanged Then
                 Dim closeTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentMinuteCandlePayload, _parentStrategy.TradeType, Trade.TradeExecutionStatus.Close)
                 If closeTrades IsNot Nothing AndAlso closeTrades.Count > 0 Then
                     Dim buyStoplossDone As Boolean = False
