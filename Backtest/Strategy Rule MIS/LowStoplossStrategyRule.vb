@@ -38,8 +38,8 @@ Public Class LowStoplossStrategyRule
         TenTime
         HKStrongCandle
         NormalStrongCandle
-        LowATRCandle
         SwingHighLow
+        LowATRCandle
     End Enum
 #End Region
 
