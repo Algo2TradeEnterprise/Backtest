@@ -38,6 +38,8 @@ Public Class LowStoplossStrategyRule
         TenTime
         HKStrongCandle
         NormalStrongCandle
+        LowATRCandle
+        SwingHighLow
     End Enum
 #End Region
 
@@ -49,6 +51,8 @@ Public Class LowStoplossStrategyRule
     Private _ATRPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _FractalHighPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _FractalLowPayload As Dictionary(Of Date, Decimal) = Nothing
+    Private _SwingHighPayload As Dictionary(Of Date, Decimal) = Nothing
+    Private _SwingLowPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _HKPayload As Dictionary(Of Date, Payload) = Nothing
     Private _userInputs As StrategyRuleEntities
     Private _targetRemark As String = ""
@@ -96,6 +100,7 @@ Public Class LowStoplossStrategyRule
 
         Indicator.ATR.CalculateATR(14, _signalPayload, _ATRPayload)
         Indicator.FractalBands.CalculateFractal(_signalPayload, _FractalHighPayload, _FractalLowPayload)
+        Indicator.SwingHighLow.CalculateSwingHighLow(_signalPayload, True, _SwingHighPayload, _SwingLowPayload)
         Indicator.HeikenAshi.ConvertToHeikenAshi(_signalPayload, _HKPayload)
     End Sub
 
@@ -342,6 +347,7 @@ Public Class LowStoplossStrategyRule
             Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(candle, _parentStrategy.TradeType)
             Dim signalFound As Boolean = False
             Dim iSHeikenAshi As Boolean = False
+            Dim isPreviousCandle As Boolean = False
 
             Select Case _userInputs.TypeOfSignal
                 Case SignalType.FractalChange
@@ -428,6 +434,24 @@ Public Class LowStoplossStrategyRule
                             End If
                         End If
                     End If
+                Case SignalType.LowATRCandle
+                    If lastExecutedTrade Is Nothing AndAlso Not _entryChanged Then
+                        If IsLowATRSignalCandle(candle) Then
+                            signalFound = True
+                        End If
+                    End If
+                Case SignalType.SwingHighLow
+                    If lastExecutedTrade Is Nothing AndAlso Not _entryChanged Then
+                        If IsSwingHighLowSignalCandle(candle) Then
+                            signalFound = True
+                            If _SwingHighPayload(candle.PayloadDate) = candle.PreviousCandlePayload.High Then
+                                _firstEntryDirection = Trade.TradeExecutionDirection.Buy
+                            ElseIf _SwingLowPayload(candle.PayloadDate) = candle.PreviousCandlePayload.Low Then
+                                _firstEntryDirection = Trade.TradeExecutionDirection.Sell
+                            End If
+                            isPreviousCandle = True
+                        End If
+                    End If
             End Select
 
             If signalFound Then
@@ -435,6 +459,9 @@ Public Class LowStoplossStrategyRule
                     Dim hkCandle As Payload = _HKPayload(candle.PayloadDate)
                     _potentialHighEntryPrice = ConvertFloorCeling(hkCandle.High, _parentStrategy.TickSize, RoundOfType.Floor)
                     _potentialLowEntryPrice = ConvertFloorCeling(hkCandle.Low, _parentStrategy.TickSize, RoundOfType.Celing)
+                ElseIf isPreviousCandle Then
+                    _potentialHighEntryPrice = candle.PreviousCandlePayload.High
+                    _potentialLowEntryPrice = candle.PreviousCandlePayload.Low
                 Else
                     _potentialHighEntryPrice = candle.High
                     _potentialLowEntryPrice = candle.Low
@@ -457,7 +484,6 @@ Public Class LowStoplossStrategyRule
                     End If
                 Else
                     _targetPoint = target - _potentialHighEntryPrice
-                    _targetPoint += _parentStrategy.TickSize * _userInputs.TargetMultiplier
                     _targetRemark = "SL Target"
                 End If
             End If
@@ -690,6 +716,29 @@ Public Class LowStoplossStrategyRule
             If currentMinuteCandlePayload.High >= candle.High + buffer Then
                 ret = True
             End If
+        End If
+        Return ret
+    End Function
+#End Region
+
+#Region "Low ATR Candle"
+    Private Function IsLowATRSignalCandle(ByVal candle As Payload) As Boolean
+        Dim ret As Boolean = False
+        If candle.CandleRange <= _ATRPayload(candle.PayloadDate) Then
+            ret = True
+        End If
+        Return ret
+    End Function
+#End Region
+
+#Region "Swing High Low"
+    Private Function IsSwingHighLowSignalCandle(ByVal candle As Payload) As Boolean
+        Dim ret As Boolean = False
+        Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(candle.PayloadDate.AddMinutes(_parentStrategy.SignalTimeFrame), _signalPayload))
+        If _SwingHighPayload(candle.PayloadDate) = candle.PreviousCandlePayload.High Then
+            ret = True
+        ElseIf _SwingLowPayload(candle.PayloadDate) = candle.PreviousCandlePayload.Low Then
+            ret = True
         End If
         Return ret
     End Function
