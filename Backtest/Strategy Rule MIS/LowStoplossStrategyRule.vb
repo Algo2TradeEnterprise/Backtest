@@ -40,6 +40,7 @@ Public Class LowStoplossStrategyRule
         NormalStrongCandle
         SwingHighLow
         LowATRCandle
+        HighVolumeLowRange
     End Enum
 #End Region
 
@@ -452,6 +453,12 @@ Public Class LowStoplossStrategyRule
                             isPreviousCandle = True
                         End If
                     End If
+                Case SignalType.HighVolumeLowRange
+                    If _potentialHighEntryPrice = Decimal.MinValue AndAlso _potentialLowEntryPrice = Decimal.MinValue Then
+                        If IsHighVolumeLowRangeSignalCandle(candle) Then
+                            signalFound = True
+                        End If
+                    End If
             End Select
 
             If signalFound Then
@@ -724,7 +731,7 @@ Public Class LowStoplossStrategyRule
 #Region "Low ATR Candle"
     Private Function IsLowATRSignalCandle(ByVal candle As Payload) As Boolean
         Dim ret As Boolean = False
-        If candle.CandleRange <= _ATRPayload(candle.PayloadDate) Then
+        If candle.CandleRange <= _ATRPayload(candle.PayloadDate) / 2 Then
             ret = True
         End If
         Return ret
@@ -738,6 +745,17 @@ Public Class LowStoplossStrategyRule
         If _SwingHighPayload(candle.PayloadDate) = candle.PreviousCandlePayload.High Then
             ret = True
         ElseIf _SwingLowPayload(candle.PayloadDate) = candle.PreviousCandlePayload.Low Then
+            ret = True
+        End If
+        Return ret
+    End Function
+#End Region
+
+#Region "High Volume Low Range Candle"
+    Private Function IsHighVolumeLowRangeSignalCandle(ByVal candle As Payload) As Boolean
+        Dim ret As Boolean = False
+        If candle.Volume > candle.PreviousCandlePayload.Volume AndAlso
+            candle.CandleRange < candle.PreviousCandlePayload.CandleRange Then
             ret = True
         End If
         Return ret

@@ -286,7 +286,7 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            For signalType As Integer = 7 To 7 Step 1
+            For signalType As Integer = 15 To 16 Step 1
                 For strtLvlMul As Integer = 1 To 1 Step 1
                     For chngLvlAfterSl As Integer = 0 To 0 Step 1
                         For aftrSLLvlMul As Integer = 2 To 2 Step 1
