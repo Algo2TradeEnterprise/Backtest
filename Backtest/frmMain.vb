@@ -319,11 +319,11 @@ Public Class frmMain
                                                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                                                         With backtestStrategy
-                                                            '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Future Stock List ATR Based.csv")
+                                                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based Stocks.csv")
                                                             '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pre Market Data.csv")
                                                             '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "BANKNIFTY.csv")
                                                             '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
-                                                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Volume spike Stock List with abs ATR.csv")
+                                                            '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Volume spike Stock List with abs ATR.csv")
 
                                                             .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
                                                             Select Case .RuleNumber
