@@ -17,5 +17,6 @@
         Public Supporting3 As Decimal
         Public Supporting4 As Decimal
         Public Supporting5 As Decimal
+        Public Supporting6 As Decimal
     End Class
 End Namespace

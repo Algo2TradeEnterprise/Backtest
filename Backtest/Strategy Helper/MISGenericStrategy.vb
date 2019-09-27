@@ -614,12 +614,16 @@ Namespace StrategyHelper
                                                                                                   End Function).FirstOrDefault.Value.Open
                                                     Dim previousDayLow As Decimal = dt.Rows(i).Item(7)
                                                     Dim previousDayHigh As Decimal = dt.Rows(i).Item(8)
+                                                    Dim previousDayClose As Decimal = dt.Rows(i).Item(9)
                                                     If openPrice > previousDayHigh Then
                                                         detailsOfStock.Supporting5 = previousDayHigh - openPrice
+                                                        detailsOfStock.Supporting6 = 0
                                                     ElseIf openPrice < previousDayLow Then
                                                         detailsOfStock.Supporting5 = openPrice - previousDayLow
+                                                        detailsOfStock.Supporting6 = 0
                                                     Else
                                                         detailsOfStock.Supporting5 = 0
+                                                        detailsOfStock.Supporting6 = Math.Abs(previousDayClose - openPrice)
                                                     End If
                                                 Else
                                                     If counter = Me.NumberOfTradeableStockPerDay Then Exit For
@@ -666,6 +670,18 @@ Namespace StrategyHelper
                                             ret.Add(runningStock.Key, runningStock.Value)
                                             ctr += 1
                                             If ctr = nmbrOfGapdownStock Then Exit For
+                                        Next
+                                    End If
+                                    If ret Is Nothing OrElse ret.Count < totalNmbr Then
+                                        Dim nmbrOfStockNeedToAdd As Integer = totalNmbr - ret.Count
+                                        Dim ctr As Integer = 0
+                                        For Each runningStock In stockList.OrderByDescending(Function(x)
+                                                                                                 Return x.Value.Supporting6
+                                                                                             End Function)
+                                            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                            ret.Add(runningStock.Key, runningStock.Value)
+                                            ctr += 1
+                                            If ctr = nmbrOfStockNeedToAdd Then Exit For
                                         Next
                                     End If
                                 End If
