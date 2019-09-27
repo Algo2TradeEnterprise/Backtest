@@ -41,6 +41,7 @@ Public Class LowStoplossStrategyRule
         SwingHighLow
         LowATRCandle
         HighVolumeLowRange
+        PreviousDayHighLow
     End Enum
 #End Region
 
@@ -459,6 +460,10 @@ Public Class LowStoplossStrategyRule
                             signalFound = True
                         End If
                     End If
+                Case SignalType.PreviousDayHighLow
+                    If lastExecutedTrade Is Nothing AndAlso Not _entryChanged Then
+                        signalFound = True
+                    End If
             End Select
 
             If signalFound Then
@@ -480,12 +485,14 @@ Public Class LowStoplossStrategyRule
 
                 If ConvertFloorCeling(atr * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing) >= target - _potentialHighEntryPrice Then
                     _targetPoint = ConvertFloorCeling(atr * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
-                    If _targetPoint > _dayATR / 2 Then
-                        _potentialHighEntryPrice = Decimal.MinValue
-                        _potentialLowEntryPrice = Decimal.MinValue
-                        _signalCandle = Nothing
-                    End If
                     _targetRemark = "ATR Target"
+                    If _targetPoint > _dayATR / 2 Then
+                        '_potentialHighEntryPrice = Decimal.MinValue
+                        '_potentialLowEntryPrice = Decimal.MinValue
+                        '_signalCandle = Nothing
+                        _targetPoint = ConvertFloorCeling(_dayATR / 2, _parentStrategy.TickSize, RoundOfType.Celing)
+                        _targetRemark = "Day ATR Target"
+                    End If
                     If _userInputs.ModifyNumberOfTrade Then
                         _userInputs.NumberOfTrade = Math.Floor(_targetPoint / _slPoint) - 1
                     End If

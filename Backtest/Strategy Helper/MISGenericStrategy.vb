@@ -569,10 +569,11 @@ Namespace StrategyHelper
                     Select Case Me.RuleNumber
                         Case 13
                             Dim counter As Integer = 0
+                            Dim stockList As Dictionary(Of String, StockDetails) = Nothing
                             For i = 1 To dt.Rows.Count - 1
                                 Dim rowDate As Date = dt.Rows(i)(0)
                                 If rowDate.Date = tradingDate.Date Then
-                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                    If stockList Is Nothing Then stockList = New Dictionary(Of String, StockDetails)
                                     Dim tradingSymbol As String = dt.Rows(i).Item(1)
                                     Dim instrumentName As String = Nothing
                                     If tradingSymbol.Contains("FUT") Then
@@ -605,14 +606,72 @@ Namespace StrategyHelper
                                                 .Supporting2 = dt.Rows(i).Item(5),
                                                 .Supporting3 = slPoint,
                                                 .Supporting4 = quantity}
-                                                ret.Add(instrumentName, detailsOfStock)
+                                                stockList.Add(instrumentName, detailsOfStock)
                                                 counter += 1
-                                                If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                                                If CType(Me.RuleEntityData, LowStoplossStrategyRule.StrategyRuleEntities).TypeOfSignal = LowStoplossStrategyRule.SignalType.PreviousDayHighLow Then
+                                                    Dim openPrice As Decimal = stockPayload.Where(Function(x)
+                                                                                                      Return x.Key >= New Date(tradingDate.Year, tradingDate.Month, tradingDate.Day, 9, 15, 0)
+                                                                                                  End Function).FirstOrDefault.Value.Open
+                                                    Dim previousDayLow As Decimal = dt.Rows(i).Item(7)
+                                                    Dim previousDayHigh As Decimal = dt.Rows(i).Item(8)
+                                                    If openPrice > previousDayHigh Then
+                                                        detailsOfStock.Supporting5 = previousDayHigh - openPrice
+                                                    ElseIf openPrice < previousDayLow Then
+                                                        detailsOfStock.Supporting5 = openPrice - previousDayLow
+                                                    Else
+                                                        detailsOfStock.Supporting5 = 0
+                                                    End If
+                                                Else
+                                                    If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                                                End If
                                             End If
                                         End If
                                     End If
                                 End If
                             Next
+                            If CType(Me.RuleEntityData, LowStoplossStrategyRule.StrategyRuleEntities).TypeOfSignal = LowStoplossStrategyRule.SignalType.PreviousDayHighLow Then
+                                If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
+                                    Dim gapupStocks As IEnumerable(Of KeyValuePair(Of String, StockDetails)) = stockList.Where(Function(x)
+                                                                                                                                   Return x.Value.Supporting5 > 0
+                                                                                                                               End Function)
+                                    Dim gapdownStocks As IEnumerable(Of KeyValuePair(Of String, StockDetails)) = stockList.Where(Function(x)
+                                                                                                                                     Return x.Value.Supporting5 < 0
+                                                                                                                                 End Function)
+                                    Dim nmbrOfGapupStock As Integer = Math.Ceiling(Me.NumberOfTradeableStockPerDay / 2)
+                                    Dim nmbrOfGapdownStock As Integer = nmbrOfGapupStock
+                                    Dim totalNmbr As Integer = nmbrOfGapupStock + nmbrOfGapdownStock
+                                    If gapupStocks Is Nothing OrElse gapupStocks.Count < nmbrOfGapupStock Then
+                                        nmbrOfGapdownStock = totalNmbr - gapupStocks.Count
+                                    End If
+                                    If gapdownStocks Is Nothing OrElse gapdownStocks.Count < nmbrOfGapdownStock Then
+                                        nmbrOfGapupStock = totalNmbr - gapdownStocks.Count
+                                    End If
+                                    If gapupStocks IsNot Nothing AndAlso gapupStocks.Count > 0 Then
+                                        Dim ctr As Integer = 0
+                                        For Each runningStock In gapupStocks.OrderByDescending(Function(x)
+                                                                                                   Return x.Value.Supporting1
+                                                                                               End Function)
+                                            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                            ret.Add(runningStock.Key, runningStock.Value)
+                                            ctr += 1
+                                            If ctr = nmbrOfGapupStock Then Exit For
+                                        Next
+                                    End If
+                                    If gapdownStocks IsNot Nothing AndAlso gapdownStocks.Count > 0 Then
+                                        Dim ctr As Integer = 0
+                                        For Each runningStock In gapdownStocks.OrderByDescending(Function(x)
+                                                                                                     Return x.Value.Supporting1
+                                                                                                 End Function)
+                                            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                            ret.Add(runningStock.Key, runningStock.Value)
+                                            ctr += 1
+                                            If ctr = nmbrOfGapdownStock Then Exit For
+                                        Next
+                                    End If
+                                End If
+                            Else
+                                ret = stockList
+                            End If
                         Case Else
                             Dim counter As Integer = 0
                             For i = 1 To dt.Rows.Count - 1

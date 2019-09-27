@@ -286,13 +286,13 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            For signalType As Integer = 7 To 7 Step 1
+            For signalType As Integer = 17 To 17 Step 1
                 For strtLvlMul As Integer = 1 To 1 Step 1
                     For chngLvlAfterSl As Integer = 0 To 0 Step 1
                         For aftrSLLvlMul As Integer = 2 To 2 Step 1
                             For nmbrOfTradePerStock As Integer = 20 To 20 Step 1
                                 For mdfyNmbrOfTrd As Integer = 0 To 0 Step 1
-                                    For overallMaxLoss As Decimal = -9000 To -9000 Step -1000
+                                    For overallMaxLoss As Decimal = Decimal.MinValue To Decimal.MinValue Step 1
                                         For brkEvnMvmnt As Integer = 1 To 1 Step 1
                                             For tradeMaxProfit As Decimal = Decimal.MaxValue To Decimal.MaxValue Step -1
                                                 If brkEvnMvmnt = 1 AndAlso tradeMaxProfit <> Decimal.MaxValue Then Continue For
@@ -302,7 +302,7 @@ Public Class frmMain
                                                     Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                                                       exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                                                       exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                                                                      tradeStartTime:=TimeSpan.Parse("9:17:00"),
+                                                                                                      tradeStartTime:=TimeSpan.Parse("9:16:00"),
                                                                                                       lastTradeEntryTime:=TimeSpan.Parse("14:45:59"),
                                                                                                       eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                                                                       tickSize:=tick,
