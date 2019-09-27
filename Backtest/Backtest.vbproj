@@ -124,6 +124,7 @@
     <Compile Include="Strategy Rule MIS\ForwardMomentumStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\LowStoplossStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\MomentumReversalv2StrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\LowStoplossPreviousDayHighLowStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\SmallestCandleBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\SMIFractalStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\TIIOppositeBreakoutStrategyRule.vb" />

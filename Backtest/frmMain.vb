@@ -286,7 +286,7 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            For signalType As Integer = 15 To 16 Step 1
+            For signalType As Integer = 7 To 7 Step 1
                 For strtLvlMul As Integer = 1 To 1 Step 1
                     For chngLvlAfterSl As Integer = 0 To 0 Step 1
                         For aftrSLLvlMul As Integer = 2 To 2 Step 1
@@ -320,13 +320,9 @@ Public Class frmMain
 
                                                         With backtestStrategy
                                                             '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Future Stock List ATR Based.csv")
-                                                            '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based Stocks.csv")
                                                             '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pre Market Data.csv")
                                                             '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "BANKNIFTY.csv")
                                                             '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
-                                                            '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Volume spike Stock List.csv")
-                                                            '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Volume spike With Low SL Stock List.csv")
-                                                            '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Volume spike With Low SL Stock List Modified.csv")
                                                             .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Volume spike Stock List with abs ATR.csv")
 
                                                             .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)

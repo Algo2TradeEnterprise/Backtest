@@ -607,7 +607,7 @@ Public Class Common
         End If
         If activeInstruments IsNot Nothing AndAlso activeInstruments.Count > 0 Then
             Dim minExipry As Date = activeInstruments.Min(Function(x)
-                                                              If x.Expiry.Date = tradingDate.Date Then
+                                                              If x.Expiry.Date <= tradingDate.Date Then
                                                                   Return Date.MaxValue
                                                               Else
                                                                   Return x.Expiry
