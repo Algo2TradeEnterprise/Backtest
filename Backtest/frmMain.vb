@@ -421,10 +421,10 @@ Public Class frmMain
                                                               stockType:=stockType,
                                                               databaseTable:=database,
                                                               dataSource:=sourceData,
-                                                              initialCapital:=Decimal.MaxValue / 2,
-                                                              usableCapital:=Decimal.MaxValue / 2,
-                                                              minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
-                                                              amountToBeWithdrawn:=Decimal.MaxValue / 2)
+                                                              initialCapital:=600000,
+                                                              usableCapital:=500000,
+                                                              minimumEarnedCapitalToWithdraw:=700000,
+                                                              amountToBeWithdrawn:=100000)
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
@@ -489,7 +489,7 @@ Public Class frmMain
 
                     .TrailingStoploss = False
 
-                    .TickBasedStrategy = False
+                    .TickBasedStrategy = True
 
                     .StockMaxProfitPercentagePerDay = Decimal.MaxValue
                     .StockMaxLossPercentagePerDay = Decimal.MinValue

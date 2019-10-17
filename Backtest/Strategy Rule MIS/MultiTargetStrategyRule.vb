@@ -52,7 +52,7 @@ Public Class MultiTargetStrategyRule
             Dim signalCandleSatisfied As Tuple(Of Boolean, TradeDetails) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
             If signalCandleSatisfied IsNot Nothing AndAlso signalCandleSatisfied.Item1 Then
                 If Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) AndAlso
-                    signalCandleSatisfied.Item2.BuyEntry <> Decimal.MinValue Then
+                    signalCandleSatisfied.Item2.BuyEntry <> Decimal.MinValue AndAlso currentTick.Open >= signalCandleSatisfied.Item2.BuyEntry Then
                     Dim buffer As Decimal = Me._parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2.BuyEntry, RoundOfType.Floor)
                     If signalCandleSatisfied.Item2.BuyEntry < signalCandleSatisfied.Item2.BuyTarget1 Then
                         Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
@@ -63,7 +63,7 @@ Public Class MultiTargetStrategyRule
                                                                 .Target = signalCandleSatisfied.Item2.BuyTarget1,
                                                                 .Buffer = buffer,
                                                                 .SignalCandle = currentMinuteCandlePayload,
-                                                                .OrderType = Trade.TypeOfOrder.SL,
+                                                                .OrderType = Trade.TypeOfOrder.Market,
                                                                 .Supporting1 = "Target 1",
                                                                 .Supporting2 = signalCandleSatisfied.Item2.BuyLevel = signalCandleSatisfied.Item2.BuyEntry
                                                             }
@@ -78,7 +78,7 @@ Public Class MultiTargetStrategyRule
                                                                 .Target = signalCandleSatisfied.Item2.BuyTarget5,
                                                                 .Buffer = buffer,
                                                                 .SignalCandle = currentMinuteCandlePayload,
-                                                                .OrderType = Trade.TypeOfOrder.SL,
+                                                                .OrderType = Trade.TypeOfOrder.Market,
                                                                 .Supporting1 = "Target 5",
                                                                 .Supporting2 = signalCandleSatisfied.Item2.BuyLevel = signalCandleSatisfied.Item2.BuyEntry
                                                             }
@@ -94,7 +94,7 @@ Public Class MultiTargetStrategyRule
                                                                 .Target = signalCandleSatisfied.Item2.BuyTarget2,
                                                                 .Buffer = buffer,
                                                                 .SignalCandle = currentMinuteCandlePayload,
-                                                                .OrderType = Trade.TypeOfOrder.SL,
+                                                                .OrderType = Trade.TypeOfOrder.Market,
                                                                 .Supporting1 = "Target 2",
                                                                 .Supporting2 = signalCandleSatisfied.Item2.BuyLevel = signalCandleSatisfied.Item2.BuyEntry
                                                             }
@@ -110,7 +110,7 @@ Public Class MultiTargetStrategyRule
                                                                 .Target = signalCandleSatisfied.Item2.BuyTarget3,
                                                                 .Buffer = buffer,
                                                                 .SignalCandle = currentMinuteCandlePayload,
-                                                                .OrderType = Trade.TypeOfOrder.SL,
+                                                                .OrderType = Trade.TypeOfOrder.Market,
                                                                 .Supporting1 = "Target 3",
                                                                 .Supporting2 = signalCandleSatisfied.Item2.BuyLevel = signalCandleSatisfied.Item2.BuyEntry
                                                             }
@@ -126,7 +126,7 @@ Public Class MultiTargetStrategyRule
                                                                 .Target = signalCandleSatisfied.Item2.BuyTarget4,
                                                                 .Buffer = buffer,
                                                                 .SignalCandle = currentMinuteCandlePayload,
-                                                                .OrderType = Trade.TypeOfOrder.SL,
+                                                                .OrderType = Trade.TypeOfOrder.Market,
                                                                 .Supporting1 = "Target 4",
                                                                 .Supporting2 = signalCandleSatisfied.Item2.BuyLevel = signalCandleSatisfied.Item2.BuyEntry
                                                             }
@@ -134,7 +134,7 @@ Public Class MultiTargetStrategyRule
                         parameters.Add(parameter)
                     End If
                 ElseIf Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) AndAlso
-                    signalCandleSatisfied.Item2.SellEntry <> Decimal.MinValue Then
+                    signalCandleSatisfied.Item2.SellEntry <> Decimal.MinValue AndAlso currentTick.Open <= signalCandleSatisfied.Item2.SellEntry Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2.SellEntry, RoundOfType.Floor)
                     If signalCandleSatisfied.Item2.SellEntry > signalCandleSatisfied.Item2.SellTarget1 Then
                         Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
@@ -145,7 +145,7 @@ Public Class MultiTargetStrategyRule
                                                                 .Target = signalCandleSatisfied.Item2.SellTarget1,
                                                                 .Buffer = buffer,
                                                                 .SignalCandle = currentMinuteCandlePayload,
-                                                                .OrderType = Trade.TypeOfOrder.SL,
+                                                                .OrderType = Trade.TypeOfOrder.Market,
                                                                 .Supporting1 = "Target 1",
                                                                 .Supporting2 = signalCandleSatisfied.Item2.SellLevel = signalCandleSatisfied.Item2.SellEntry
                                                             }
@@ -160,7 +160,7 @@ Public Class MultiTargetStrategyRule
                                                                 .Target = signalCandleSatisfied.Item2.SellTarget5,
                                                                 .Buffer = buffer,
                                                                 .SignalCandle = currentMinuteCandlePayload,
-                                                                .OrderType = Trade.TypeOfOrder.SL,
+                                                                .OrderType = Trade.TypeOfOrder.Market,
                                                                 .Supporting1 = "Target 5",
                                                                 .Supporting2 = signalCandleSatisfied.Item2.SellLevel = signalCandleSatisfied.Item2.SellEntry
                                                             }
@@ -176,7 +176,7 @@ Public Class MultiTargetStrategyRule
                                                                 .Target = signalCandleSatisfied.Item2.SellTarget2,
                                                                 .Buffer = buffer,
                                                                 .SignalCandle = currentMinuteCandlePayload,
-                                                                .OrderType = Trade.TypeOfOrder.SL,
+                                                                .OrderType = Trade.TypeOfOrder.Market,
                                                                 .Supporting1 = "Target 2",
                                                                 .Supporting2 = signalCandleSatisfied.Item2.SellLevel = signalCandleSatisfied.Item2.SellEntry
                                                             }
@@ -192,7 +192,7 @@ Public Class MultiTargetStrategyRule
                                                                 .Target = signalCandleSatisfied.Item2.SellTarget3,
                                                                 .Buffer = buffer,
                                                                 .SignalCandle = currentMinuteCandlePayload,
-                                                                .OrderType = Trade.TypeOfOrder.SL,
+                                                                .OrderType = Trade.TypeOfOrder.Market,
                                                                 .Supporting1 = "Target 3",
                                                                 .Supporting2 = signalCandleSatisfied.Item2.SellLevel = signalCandleSatisfied.Item2.SellEntry
                                                             }
@@ -208,7 +208,7 @@ Public Class MultiTargetStrategyRule
                                                                 .Target = signalCandleSatisfied.Item2.SellTarget4,
                                                                 .Buffer = buffer,
                                                                 .SignalCandle = currentMinuteCandlePayload,
-                                                                .OrderType = Trade.TypeOfOrder.SL,
+                                                                .OrderType = Trade.TypeOfOrder.Market,
                                                                 .Supporting1 = "Target 4",
                                                                 .Supporting2 = signalCandleSatisfied.Item2.SellLevel = signalCandleSatisfied.Item2.SellEntry
                                                             }
