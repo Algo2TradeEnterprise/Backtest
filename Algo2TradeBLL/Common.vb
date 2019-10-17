@@ -631,7 +631,7 @@ Public Class Common
     End Function
 
     Public Function GetLotSize(ByVal tableName As DataBaseTable, ByVal tradingSymbol As String, ByVal currentDate As Date) As Integer
-        Dim ret As Integer = 0
+        Dim ret As Integer = Integer.MinValue
         Dim dt As DataTable = Nothing
         Dim conn As MySqlConnection = OpenDBConnection()
         Dim cm As MySqlCommand = Nothing

@@ -145,6 +145,8 @@ Namespace StrategyHelper
                                             stockRule = New FixedLevelBasedStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                         Case 13
                                             stockRule = New LowStoplossStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2, stockList(stock).Supporting3, stockList(stock).Supporting4)
+                                        Case 14
+                                            stockRule = New MultiTargetStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -688,6 +690,23 @@ Namespace StrategyHelper
                             Else
                                 ret = stockList
                             End If
+                        Case 14
+                            For i = 1 To dt.Rows.Count - 1
+                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                Dim instrumentName As String = dt.Rows(i).Item(1)
+                                Dim tradingSymbol As String = Cmn.GetCurrentTradingSymbol(Me.DatabaseTable, tradingDate, instrumentName)
+                                If tradingSymbol IsNot Nothing Then
+                                    Dim lotSize As Integer = Cmn.GetLotSize(Me.DatabaseTable, tradingSymbol, tradingDate)
+                                    If lotSize <> Integer.MinValue Then
+                                        Dim detailsOfStock As StockDetails = New StockDetails With
+                                                {.StockName = instrumentName,
+                                                .LotSize = dt.Rows(i).Item(2),
+                                                .EligibleToTakeTrade = True,
+                                                .Supporting1 = dt.Rows(i).Item(3)}
+                                        ret.Add(instrumentName, detailsOfStock)
+                                    End If
+                                End If
+                            Next
                         Case Else
                             Dim counter As Integer = 0
                             For i = 1 To dt.Rows.Count - 1

@@ -133,6 +133,10 @@ Namespace StrategyHelper
                                             Throw New ApplicationException("Not a CNC strategy")
                                         Case 12
                                             Throw New ApplicationException("Not a CNC strategy")
+                                        Case 13
+                                            Throw New ApplicationException("Not a CNC strategy")
+                                        Case 14
+                                            Throw New ApplicationException("Not a CNC strategy")
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
