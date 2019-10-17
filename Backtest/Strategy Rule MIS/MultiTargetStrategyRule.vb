@@ -6,9 +6,6 @@ Imports Utilities.Numbers.NumberManipulation
 Public Class MultiTargetStrategyRule
     Inherits StrategyRule
 
-#Region "Entity"
-#End Region
-
     Private _EODPayload As Dictionary(Of Date, Payload) = Nothing
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
@@ -67,7 +64,8 @@ Public Class MultiTargetStrategyRule
                                                                 .Buffer = buffer,
                                                                 .SignalCandle = currentMinuteCandlePayload,
                                                                 .OrderType = Trade.TypeOfOrder.SL,
-                                                                .Supporting1 = "Target 1"
+                                                                .Supporting1 = "Target 1",
+                                                                .Supporting2 = signalCandleSatisfied.Item2.BuyLevel = signalCandleSatisfied.Item2.BuyEntry
                                                             }
                         If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
                         parameters.Add(parameter)
@@ -81,7 +79,8 @@ Public Class MultiTargetStrategyRule
                                                                 .Buffer = buffer,
                                                                 .SignalCandle = currentMinuteCandlePayload,
                                                                 .OrderType = Trade.TypeOfOrder.SL,
-                                                                .Supporting1 = "Target 5"
+                                                                .Supporting1 = "Target 5",
+                                                                .Supporting2 = signalCandleSatisfied.Item2.BuyLevel = signalCandleSatisfied.Item2.BuyEntry
                                                             }
                         If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
                         parameters.Add(parameter)
@@ -96,7 +95,8 @@ Public Class MultiTargetStrategyRule
                                                                 .Buffer = buffer,
                                                                 .SignalCandle = currentMinuteCandlePayload,
                                                                 .OrderType = Trade.TypeOfOrder.SL,
-                                                                .Supporting1 = "Target 2"
+                                                                .Supporting1 = "Target 2",
+                                                                .Supporting2 = signalCandleSatisfied.Item2.BuyLevel = signalCandleSatisfied.Item2.BuyEntry
                                                             }
                         If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
                         parameters.Add(parameter)
@@ -111,7 +111,8 @@ Public Class MultiTargetStrategyRule
                                                                 .Buffer = buffer,
                                                                 .SignalCandle = currentMinuteCandlePayload,
                                                                 .OrderType = Trade.TypeOfOrder.SL,
-                                                                .Supporting1 = "Target 3"
+                                                                .Supporting1 = "Target 3",
+                                                                .Supporting2 = signalCandleSatisfied.Item2.BuyLevel = signalCandleSatisfied.Item2.BuyEntry
                                                             }
                         If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
                         parameters.Add(parameter)
@@ -126,7 +127,8 @@ Public Class MultiTargetStrategyRule
                                                                 .Buffer = buffer,
                                                                 .SignalCandle = currentMinuteCandlePayload,
                                                                 .OrderType = Trade.TypeOfOrder.SL,
-                                                                .Supporting1 = "Target 4"
+                                                                .Supporting1 = "Target 4",
+                                                                .Supporting2 = signalCandleSatisfied.Item2.BuyLevel = signalCandleSatisfied.Item2.BuyEntry
                                                             }
                         If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
                         parameters.Add(parameter)
@@ -144,7 +146,8 @@ Public Class MultiTargetStrategyRule
                                                                 .Buffer = buffer,
                                                                 .SignalCandle = currentMinuteCandlePayload,
                                                                 .OrderType = Trade.TypeOfOrder.SL,
-                                                                .Supporting1 = "Target 1"
+                                                                .Supporting1 = "Target 1",
+                                                                .Supporting2 = signalCandleSatisfied.Item2.SellLevel = signalCandleSatisfied.Item2.SellEntry
                                                             }
                         If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
                         parameters.Add(parameter)
@@ -158,7 +161,8 @@ Public Class MultiTargetStrategyRule
                                                                 .Buffer = buffer,
                                                                 .SignalCandle = currentMinuteCandlePayload,
                                                                 .OrderType = Trade.TypeOfOrder.SL,
-                                                                .Supporting1 = "Target 5"
+                                                                .Supporting1 = "Target 5",
+                                                                .Supporting2 = signalCandleSatisfied.Item2.SellLevel = signalCandleSatisfied.Item2.SellEntry
                                                             }
                         If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
                         parameters.Add(parameter)
@@ -173,7 +177,8 @@ Public Class MultiTargetStrategyRule
                                                                 .Buffer = buffer,
                                                                 .SignalCandle = currentMinuteCandlePayload,
                                                                 .OrderType = Trade.TypeOfOrder.SL,
-                                                                .Supporting1 = "Target 2"
+                                                                .Supporting1 = "Target 2",
+                                                                .Supporting2 = signalCandleSatisfied.Item2.SellLevel = signalCandleSatisfied.Item2.SellEntry
                                                             }
                         If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
                         parameters.Add(parameter)
@@ -188,7 +193,8 @@ Public Class MultiTargetStrategyRule
                                                                 .Buffer = buffer,
                                                                 .SignalCandle = currentMinuteCandlePayload,
                                                                 .OrderType = Trade.TypeOfOrder.SL,
-                                                                .Supporting1 = "Target 3"
+                                                                .Supporting1 = "Target 3",
+                                                                .Supporting2 = signalCandleSatisfied.Item2.SellLevel = signalCandleSatisfied.Item2.SellEntry
                                                             }
                         If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
                         parameters.Add(parameter)
@@ -203,7 +209,8 @@ Public Class MultiTargetStrategyRule
                                                                 .Buffer = buffer,
                                                                 .SignalCandle = currentMinuteCandlePayload,
                                                                 .OrderType = Trade.TypeOfOrder.SL,
-                                                                .Supporting1 = "Target 4"
+                                                                .Supporting1 = "Target 4",
+                                                                .Supporting2 = signalCandleSatisfied.Item2.SellLevel = signalCandleSatisfied.Item2.SellEntry
                                                             }
                         If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
                         parameters.Add(parameter)
@@ -282,20 +289,20 @@ Public Class MultiTargetStrategyRule
                     Dim pHL As Decimal = previousDayPayload.High - previousDayPayload.Low
 
                     Dim tradeEntryDetails As TradeDetails = New TradeDetails
-                    tradeEntryDetails.BuyLevel = (previousDayPayload.High + previousDayPayload.Low + previousDayPayload.Close) / 3
-                    tradeEntryDetails.BuyStoploss = pp3 - 0.51 * pHL
-                    tradeEntryDetails.BuyTarget1 = tradeEntryDetails.BuyLevel + 0.236 * pHL
-                    tradeEntryDetails.BuyTarget2 = tradeEntryDetails.BuyLevel + 0.382 * pHL
-                    tradeEntryDetails.BuyTarget3 = tradeEntryDetails.BuyLevel + 0.5 * pHL
-                    tradeEntryDetails.BuyTarget4 = tradeEntryDetails.BuyLevel + 0.618 * pHL
-                    tradeEntryDetails.BuyTarget5 = tradeEntryDetails.BuyLevel + 0.764 * pHL
-                    tradeEntryDetails.SellLevel = pp4 - 0.236 * pHL
-                    tradeEntryDetails.SellStoploss = pp4
-                    tradeEntryDetails.SellTarget1 = tradeEntryDetails.SellLevel - 0.236 * pHL
-                    tradeEntryDetails.SellTarget2 = tradeEntryDetails.SellLevel - 0.382 * pHL
-                    tradeEntryDetails.SellTarget3 = tradeEntryDetails.SellLevel - 0.5 * pHL
-                    tradeEntryDetails.SellTarget4 = tradeEntryDetails.SellLevel - 0.618 * pHL
-                    tradeEntryDetails.SellTarget5 = tradeEntryDetails.SellLevel - 0.764 * pHL
+                    tradeEntryDetails.BuyLevel = ConvertFloorCeling((previousDayPayload.High + previousDayPayload.Low + previousDayPayload.Close) / 3, Me._parentStrategy.TickSize, RoundOfType.Celing)
+                    tradeEntryDetails.BuyStoploss = ConvertFloorCeling(pp3 - 0.51 * pHL, Me._parentStrategy.TickSize, RoundOfType.Celing)
+                    tradeEntryDetails.BuyTarget1 = tradeEntryDetails.BuyLevel + ConvertFloorCeling(0.236 * pHL, Me._parentStrategy.TickSize, RoundOfType.Celing)
+                    tradeEntryDetails.BuyTarget2 = tradeEntryDetails.BuyLevel + ConvertFloorCeling(0.382 * pHL, Me._parentStrategy.TickSize, RoundOfType.Celing)
+                    tradeEntryDetails.BuyTarget3 = tradeEntryDetails.BuyLevel + ConvertFloorCeling(0.5 * pHL, Me._parentStrategy.TickSize, RoundOfType.Celing)
+                    tradeEntryDetails.BuyTarget4 = tradeEntryDetails.BuyLevel + ConvertFloorCeling(0.618 * pHL, Me._parentStrategy.TickSize, RoundOfType.Celing)
+                    tradeEntryDetails.BuyTarget5 = tradeEntryDetails.BuyLevel + ConvertFloorCeling(0.764 * pHL, Me._parentStrategy.TickSize, RoundOfType.Celing)
+                    tradeEntryDetails.SellLevel = ConvertFloorCeling(pp4 - 0.236 * pHL, Me._parentStrategy.TickSize, RoundOfType.Celing)
+                    tradeEntryDetails.SellStoploss = ConvertFloorCeling(pp4, Me._parentStrategy.TickSize, RoundOfType.Celing)
+                    tradeEntryDetails.SellTarget1 = tradeEntryDetails.SellLevel - ConvertFloorCeling(0.236 * pHL, Me._parentStrategy.TickSize, RoundOfType.Celing)
+                    tradeEntryDetails.SellTarget2 = tradeEntryDetails.SellLevel - ConvertFloorCeling(0.382 * pHL, Me._parentStrategy.TickSize, RoundOfType.Celing)
+                    tradeEntryDetails.SellTarget3 = tradeEntryDetails.SellLevel - ConvertFloorCeling(0.5 * pHL, Me._parentStrategy.TickSize, RoundOfType.Celing)
+                    tradeEntryDetails.SellTarget4 = tradeEntryDetails.SellLevel - ConvertFloorCeling(0.618 * pHL, Me._parentStrategy.TickSize, RoundOfType.Celing)
+                    tradeEntryDetails.SellTarget5 = tradeEntryDetails.SellLevel - ConvertFloorCeling(0.764 * pHL, Me._parentStrategy.TickSize, RoundOfType.Celing)
 
                     If dayHigh < tradeEntryDetails.BuyLevel Then
                         tradeEntryDetails.BuyEntry = tradeEntryDetails.BuyLevel
