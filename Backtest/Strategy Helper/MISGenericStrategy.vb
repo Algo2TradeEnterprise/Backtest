@@ -682,16 +682,15 @@ Namespace StrategyHelper
                         Case 14
                             For i = 1 To dt.Rows.Count - 1
                                 If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                Dim instrumentName As String = dt.Rows(i).Item(1)
-                                Dim tradingSymbol As String = Cmn.GetCurrentTradingSymbol(Me.DatabaseTable, tradingDate, instrumentName)
+                                Dim instrumentName As String = dt.Rows(i)(0)
+                                Dim tradingSymbol As String = Cmn.GetCurrentTradingSymbol(Common.DataBaseTable.EOD_Futures, tradingDate, instrumentName)
                                 If tradingSymbol IsNot Nothing Then
-                                    Dim lotSize As Integer = Cmn.GetLotSize(Me.DatabaseTable, tradingSymbol, tradingDate)
+                                    Dim lotSize As Integer = Cmn.GetLotSize(Common.DataBaseTable.EOD_Futures, tradingSymbol, tradingDate)
                                     If lotSize <> Integer.MinValue Then
                                         Dim detailsOfStock As StockDetails = New StockDetails With
                                                 {.StockName = instrumentName,
-                                                .LotSize = dt.Rows(i).Item(2),
-                                                .EligibleToTakeTrade = True,
-                                                .Supporting1 = dt.Rows(i).Item(3)}
+                                                .LotSize = lotSize,
+                                                .EligibleToTakeTrade = True}
                                         ret.Add(instrumentName, detailsOfStock)
                                     End If
                                 End If
