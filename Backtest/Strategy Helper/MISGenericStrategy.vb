@@ -38,18 +38,7 @@ Namespace StrategyHelper
                 Me.StockMaxProfitPerDay = Decimal.MaxValue
                 Me.StockMaxLossPerDay = Decimal.MinValue
             End If
-            Dim ruleData As LowStoplossStrategyRule.StrategyRuleEntities = Me.RuleEntityData
-            Dim filename As String = String.Format("{6},#T {0},Mdfy#T {1},BkEvMv {2},TMP {3},SMP {4},ML {5},StrtLvX {7},ChngLvlAftrSL {8},AftrSLLvlX {9}",
-                                                   If(Me.NumberOfTradesPerStockPerDay = Integer.MaxValue, "∞", Me.NumberOfTradesPerStockPerDay),
-                                                   ruleData.ModifyNumberOfTrade,
-                                                   ruleData.BreakevenMovement,
-                                                   If(ruleData.MaxTargetPerTrade = Decimal.MaxValue, "∞", ruleData.MaxTargetPerTrade),
-                                                   If(Me.StockMaxProfitPerDay = Decimal.MaxValue, "∞", Me.StockMaxProfitPerDay),
-                                                   If(Me.OverAllLossPerDay = Decimal.MinValue, "∞", Me.OverAllLossPerDay),
-                                                   ruleData.TypeOfSignal,
-                                                   ruleData.StartingLevelMultiplier,
-                                                   ruleData.ChangeLevelAfterStoploss,
-                                                   ruleData.AfterStoplossLevelMultiplier)
+            Dim filename As String = String.Format("Multi Target")
 
             Dim tradesFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Trades.a2t", filename))
             Dim capitalFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Capital.a2t", filename))
