@@ -270,7 +270,7 @@ Public Class frmMain
             Select Case stockType
                 Case Trade.TypeOfStock.Cash
                     database = Common.DataBaseTable.Intraday_Cash
-                    margin = 13
+                    margin = 30
                     tick = 0.05
                 Case Trade.TypeOfStock.Commodity
                     database = Common.DataBaseTable.Intraday_Commodity
@@ -489,7 +489,7 @@ Public Class frmMain
 
                     .TrailingStoploss = False
 
-                    .TickBasedStrategy = True
+                    .TickBasedStrategy = False
 
                     .StockMaxProfitPercentagePerDay = Decimal.MaxValue
                     .StockMaxLossPercentagePerDay = Decimal.MinValue

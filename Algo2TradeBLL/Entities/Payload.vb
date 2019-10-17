@@ -1,4 +1,5 @@
 ﻿Imports System.Drawing
+Imports Utilities.Numbers
 
 <Serializable>
 Public Class Payload
@@ -361,7 +362,7 @@ Public Class Payload
     Private _Ticks As List(Of Payload)
     Public ReadOnly Property Ticks As List(Of Payload)
         Get
-            Dim tickSize As Decimal = 0.05
+            Dim tickSize As Decimal = NumberManipulation.ConvertFloorCeling(Me.Close * 0.01 * 0.025, tickSize, RoundOfType.Floor)
             'TO DO: Change the vaue of tickSize to take the actual tick as per Exchange
             If _Ticks Is Nothing OrElse _Ticks.Count = 0 Then
                 Dim multiplier As Short = 0
