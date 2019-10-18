@@ -7,7 +7,7 @@ Public Class MultiTargetStrategyRule
     Inherits StrategyRule
 
     Private ReadOnly _maxLossPercentage As Decimal = 35
-    Private ReadOnly _minimumTargetPL As Decimal = 100
+    Private ReadOnly _minimumTargetPL As Decimal = 1000
 
     Private _EODPayload As Dictionary(Of Date, Payload) = Nothing
 
