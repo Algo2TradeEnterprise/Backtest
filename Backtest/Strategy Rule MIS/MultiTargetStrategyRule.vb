@@ -7,6 +7,7 @@ Public Class MultiTargetStrategyRule
     Inherits StrategyRule
 
     Private ReadOnly _maxLossPercentage As Decimal = 35
+    Private ReadOnly _minimumTargetPL As Decimal = 100
 
     Private _EODPayload As Dictionary(Of Date, Payload) = Nothing
 
@@ -56,7 +57,9 @@ Public Class MultiTargetStrategyRule
                 If Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) AndAlso
                     signalCandleSatisfied.Item2.BuyEntry <> Decimal.MinValue AndAlso currentTick.Open >= signalCandleSatisfied.Item2.BuyEntry Then
                     Dim buffer As Decimal = Me._parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2.BuyEntry, RoundOfType.Floor)
-                    If signalCandleSatisfied.Item2.BuyEntry < signalCandleSatisfied.Item2.BuyTarget1 Then
+                    Dim lastTargetEntryRequired As Boolean = False
+                    If signalCandleSatisfied.Item2.BuyEntry < signalCandleSatisfied.Item2.BuyTarget1 AndAlso
+                        IsTargetSatisfied(Trade.TradeExecutionDirection.Buy, signalCandleSatisfied.Item2.BuyEntry, signalCandleSatisfied.Item2.BuyTarget1) Then
                         Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                                                                 .EntryPrice = signalCandleSatisfied.Item2.BuyEntry,
                                                                 .EntryDirection = Trade.TradeExecutionDirection.Buy,
@@ -72,22 +75,10 @@ Public Class MultiTargetStrategyRule
                         If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
                         parameters.Add(parameter)
                     Else
-                        Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
-                                                                .EntryPrice = signalCandleSatisfied.Item2.BuyEntry,
-                                                                .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                                                .Quantity = _lotSize,
-                                                                .Stoploss = signalCandleSatisfied.Item2.BuyStoploss,
-                                                                .Target = signalCandleSatisfied.Item2.BuyTarget5,
-                                                                .Buffer = buffer,
-                                                                .SignalCandle = currentMinuteCandlePayload,
-                                                                .OrderType = Trade.TypeOfOrder.Market,
-                                                                .Supporting1 = "Target 5",
-                                                                .Supporting2 = signalCandleSatisfied.Item2.BuyLevel = signalCandleSatisfied.Item2.BuyEntry
-                                                            }
-                        If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
-                        parameters.Add(parameter)
+                        lastTargetEntryRequired = True
                     End If
-                    If signalCandleSatisfied.Item2.BuyEntry < signalCandleSatisfied.Item2.BuyTarget2 Then
+                    If signalCandleSatisfied.Item2.BuyEntry < signalCandleSatisfied.Item2.BuyTarget2 AndAlso
+                        IsTargetSatisfied(Trade.TradeExecutionDirection.Buy, signalCandleSatisfied.Item2.BuyEntry, signalCandleSatisfied.Item2.BuyTarget2) Then
                         Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                                                                 .EntryPrice = signalCandleSatisfied.Item2.BuyEntry,
                                                                 .EntryDirection = Trade.TradeExecutionDirection.Buy,
@@ -103,7 +94,8 @@ Public Class MultiTargetStrategyRule
                         If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
                         parameters.Add(parameter)
                     End If
-                    If signalCandleSatisfied.Item2.BuyEntry < signalCandleSatisfied.Item2.BuyTarget3 Then
+                    If signalCandleSatisfied.Item2.BuyEntry < signalCandleSatisfied.Item2.BuyTarget3 AndAlso
+                        IsTargetSatisfied(Trade.TradeExecutionDirection.Buy, signalCandleSatisfied.Item2.BuyEntry, signalCandleSatisfied.Item2.BuyTarget3) Then
                         Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                                                                 .EntryPrice = signalCandleSatisfied.Item2.BuyEntry,
                                                                 .EntryDirection = Trade.TradeExecutionDirection.Buy,
@@ -119,7 +111,8 @@ Public Class MultiTargetStrategyRule
                         If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
                         parameters.Add(parameter)
                     End If
-                    If signalCandleSatisfied.Item2.BuyEntry < signalCandleSatisfied.Item2.BuyTarget4 Then
+                    If signalCandleSatisfied.Item2.BuyEntry < signalCandleSatisfied.Item2.BuyTarget4 AndAlso
+                        IsTargetSatisfied(Trade.TradeExecutionDirection.Buy, signalCandleSatisfied.Item2.BuyEntry, signalCandleSatisfied.Item2.BuyTarget4) Then
                         Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                                                                 .EntryPrice = signalCandleSatisfied.Item2.BuyEntry,
                                                                 .EntryDirection = Trade.TradeExecutionDirection.Buy,
@@ -135,10 +128,29 @@ Public Class MultiTargetStrategyRule
                         If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
                         parameters.Add(parameter)
                     End If
+                    If lastTargetEntryRequired AndAlso signalCandleSatisfied.Item2.BuyEntry < signalCandleSatisfied.Item2.BuyTarget5 AndAlso
+                        IsTargetSatisfied(Trade.TradeExecutionDirection.Buy, signalCandleSatisfied.Item2.BuyEntry, signalCandleSatisfied.Item2.BuyTarget5) Then
+                        Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
+                                                                .EntryPrice = signalCandleSatisfied.Item2.BuyEntry,
+                                                                .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                                                                .Quantity = _lotSize,
+                                                                .Stoploss = signalCandleSatisfied.Item2.BuyStoploss,
+                                                                .Target = signalCandleSatisfied.Item2.BuyTarget5,
+                                                                .Buffer = buffer,
+                                                                .SignalCandle = currentMinuteCandlePayload,
+                                                                .OrderType = Trade.TypeOfOrder.Market,
+                                                                .Supporting1 = "Target 5",
+                                                                .Supporting2 = signalCandleSatisfied.Item2.BuyLevel = signalCandleSatisfied.Item2.BuyEntry
+                                                            }
+                        If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
+                        parameters.Add(parameter)
+                    End If
                 ElseIf Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) AndAlso
                     signalCandleSatisfied.Item2.SellEntry <> Decimal.MinValue AndAlso currentTick.Open <= signalCandleSatisfied.Item2.SellEntry Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2.SellEntry, RoundOfType.Floor)
-                    If signalCandleSatisfied.Item2.SellEntry > signalCandleSatisfied.Item2.SellTarget1 Then
+                    Dim lastTargetEntryRequired As Boolean = False
+                    If signalCandleSatisfied.Item2.SellEntry > signalCandleSatisfied.Item2.SellTarget1 AndAlso
+                        IsTargetSatisfied(Trade.TradeExecutionDirection.Sell, signalCandleSatisfied.Item2.SellEntry, signalCandleSatisfied.Item2.SellTarget1) Then
                         Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                                                                 .EntryPrice = signalCandleSatisfied.Item2.SellEntry,
                                                                 .EntryDirection = Trade.TradeExecutionDirection.Sell,
@@ -154,22 +166,10 @@ Public Class MultiTargetStrategyRule
                         If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
                         parameters.Add(parameter)
                     Else
-                        Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
-                                                                .EntryPrice = signalCandleSatisfied.Item2.SellEntry,
-                                                                .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                                                                .Quantity = _lotSize,
-                                                                .Stoploss = signalCandleSatisfied.Item2.SellStoploss,
-                                                                .Target = signalCandleSatisfied.Item2.SellTarget5,
-                                                                .Buffer = buffer,
-                                                                .SignalCandle = currentMinuteCandlePayload,
-                                                                .OrderType = Trade.TypeOfOrder.Market,
-                                                                .Supporting1 = "Target 5",
-                                                                .Supporting2 = signalCandleSatisfied.Item2.SellLevel = signalCandleSatisfied.Item2.SellEntry
-                                                            }
-                        If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
-                        parameters.Add(parameter)
+                        lastTargetEntryRequired = True
                     End If
-                    If signalCandleSatisfied.Item2.SellEntry > signalCandleSatisfied.Item2.SellTarget2 Then
+                    If signalCandleSatisfied.Item2.SellEntry > signalCandleSatisfied.Item2.SellTarget2 AndAlso
+                        IsTargetSatisfied(Trade.TradeExecutionDirection.Sell, signalCandleSatisfied.Item2.SellEntry, signalCandleSatisfied.Item2.SellTarget2) Then
                         Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                                                                 .EntryPrice = signalCandleSatisfied.Item2.SellEntry,
                                                                 .EntryDirection = Trade.TradeExecutionDirection.Sell,
@@ -185,7 +185,8 @@ Public Class MultiTargetStrategyRule
                         If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
                         parameters.Add(parameter)
                     End If
-                    If signalCandleSatisfied.Item2.SellEntry > signalCandleSatisfied.Item2.SellTarget3 Then
+                    If signalCandleSatisfied.Item2.SellEntry > signalCandleSatisfied.Item2.SellTarget3 AndAlso
+                        IsTargetSatisfied(Trade.TradeExecutionDirection.Sell, signalCandleSatisfied.Item2.SellEntry, signalCandleSatisfied.Item2.SellTarget3) Then
                         Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                                                                 .EntryPrice = signalCandleSatisfied.Item2.SellEntry,
                                                                 .EntryDirection = Trade.TradeExecutionDirection.Sell,
@@ -201,7 +202,8 @@ Public Class MultiTargetStrategyRule
                         If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
                         parameters.Add(parameter)
                     End If
-                    If signalCandleSatisfied.Item2.SellEntry > signalCandleSatisfied.Item2.SellTarget4 Then
+                    If signalCandleSatisfied.Item2.SellEntry > signalCandleSatisfied.Item2.SellTarget4 AndAlso
+                        IsTargetSatisfied(Trade.TradeExecutionDirection.Sell, signalCandleSatisfied.Item2.SellEntry, signalCandleSatisfied.Item2.SellTarget4) Then
                         Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                                                                 .EntryPrice = signalCandleSatisfied.Item2.SellEntry,
                                                                 .EntryDirection = Trade.TradeExecutionDirection.Sell,
@@ -212,6 +214,23 @@ Public Class MultiTargetStrategyRule
                                                                 .SignalCandle = currentMinuteCandlePayload,
                                                                 .OrderType = Trade.TypeOfOrder.Market,
                                                                 .Supporting1 = "Target 4",
+                                                                .Supporting2 = signalCandleSatisfied.Item2.SellLevel = signalCandleSatisfied.Item2.SellEntry
+                                                            }
+                        If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
+                        parameters.Add(parameter)
+                    End If
+                    If lastTargetEntryRequired AndAlso signalCandleSatisfied.Item2.SellEntry > signalCandleSatisfied.Item2.SellTarget5 AndAlso
+                        IsTargetSatisfied(Trade.TradeExecutionDirection.Sell, signalCandleSatisfied.Item2.SellEntry, signalCandleSatisfied.Item2.SellTarget5) Then
+                        Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
+                                                                .EntryPrice = signalCandleSatisfied.Item2.SellEntry,
+                                                                .EntryDirection = Trade.TradeExecutionDirection.Sell,
+                                                                .Quantity = _lotSize,
+                                                                .Stoploss = signalCandleSatisfied.Item2.SellStoploss,
+                                                                .Target = signalCandleSatisfied.Item2.SellTarget5,
+                                                                .Buffer = buffer,
+                                                                .SignalCandle = currentMinuteCandlePayload,
+                                                                .OrderType = Trade.TypeOfOrder.Market,
+                                                                .Supporting1 = "Target 5",
                                                                 .Supporting2 = signalCandleSatisfied.Item2.SellLevel = signalCandleSatisfied.Item2.SellEntry
                                                             }
                         If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
@@ -316,7 +335,7 @@ Public Class MultiTargetStrategyRule
 
                     If dayLow > tradeEntryDetails.SellLevel Then
                         tradeEntryDetails.SellEntry = tradeEntryDetails.SellLevel
-                    ElseIf daylow > tradeEntryDetails.SellTarget4 Then
+                    ElseIf dayLow > tradeEntryDetails.SellTarget4 Then
                         tradeEntryDetails.SellEntry = dayLow - Me._parentStrategy.CalculateBuffer(dayLow, RoundOfType.Floor)
                     Else
                         tradeEntryDetails.SellEntry = Decimal.MinValue
@@ -345,6 +364,20 @@ Public Class MultiTargetStrategyRule
                     ret = New Tuple(Of Boolean, TradeDetails)(True, tradeEntryDetails)
                 End If
             End If
+        End If
+        Return ret
+    End Function
+
+    Private Function IsTargetSatisfied(ByVal direction As Trade.TradeExecutionDirection, ByVal entryPrice As Decimal, ByVal exitPrice As Decimal) As Boolean
+        Dim ret As Boolean = False
+        Dim pl As Decimal = Decimal.MinValue
+        If direction = Trade.TradeExecutionDirection.Buy Then
+            pl = Me._parentStrategy.CalculatePL(_tradingSymbol, entryPrice, exitPrice, _lotSize, _lotSize, Me._parentStrategy.StockType)
+        ElseIf direction = Trade.TradeExecutionDirection.Sell Then
+            pl = Me._parentStrategy.CalculatePL(_tradingSymbol, exitPrice, entryPrice, _lotSize, _lotSize, Me._parentStrategy.StockType)
+        End If
+        If pl >= _minimumTargetPL Then
+            ret = True
         End If
         Return ret
     End Function
