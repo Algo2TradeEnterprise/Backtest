@@ -6,6 +6,8 @@ Imports Utilities.Numbers.NumberManipulation
 Public Class MultiTargetStrategyRule
     Inherits StrategyRule
 
+    Private ReadOnly _maxLossPercentage As Decimal = 35
+
     Private _EODPayload As Dictionary(Of Date, Payload) = Nothing
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
@@ -323,7 +325,7 @@ Public Class MultiTargetStrategyRule
                     If tradeEntryDetails.BuyEntry <> Decimal.MinValue Then
                         Dim stoplossPL As Decimal = Me._parentStrategy.CalculatePL(_tradingSymbol, tradeEntryDetails.BuyEntry, tradeEntryDetails.BuyStoploss, _lotSize, _lotSize, Me._parentStrategy.StockType)
                         Dim requiredCapital As Decimal = tradeEntryDetails.BuyEntry * _lotSize / Me._parentStrategy.MarginMultiplier
-                        If Math.Abs(stoplossPL) > requiredCapital * 20 / 100 Then
+                        If Math.Abs(stoplossPL) > requiredCapital * _maxLossPercentage / 100 Then
                             tradeEntryDetails.BuyEntry = Decimal.MinValue
                         End If
                     End If
@@ -331,9 +333,13 @@ Public Class MultiTargetStrategyRule
                     If tradeEntryDetails.SellEntry <> Decimal.MinValue Then
                         Dim stoplossPL As Decimal = Me._parentStrategy.CalculatePL(_tradingSymbol, tradeEntryDetails.SellStoploss, tradeEntryDetails.SellEntry, _lotSize, _lotSize, Me._parentStrategy.StockType)
                         Dim requiredCapital As Decimal = tradeEntryDetails.SellEntry * _lotSize / Me._parentStrategy.MarginMultiplier
-                        If Math.Abs(stoplossPL) > requiredCapital * 20 / 100 Then
+                        If Math.Abs(stoplossPL) > requiredCapital * _maxLossPercentage / 100 Then
                             tradeEntryDetails.SellEntry = Decimal.MinValue
                         End If
+                    End If
+
+                    If tradeEntryDetails.BuyEntry = Decimal.MinValue AndAlso tradeEntryDetails.SellEntry = Decimal.MinValue Then
+                        Me.EligibleToTakeTrade = False
                     End If
 
                     ret = New Tuple(Of Boolean, TradeDetails)(True, tradeEntryDetails)

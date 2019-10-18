@@ -679,22 +679,22 @@ Namespace StrategyHelper
                             Else
                                 ret = stockList
                             End If
-                            'Case 14
-                            '    For i = 1 To dt.Rows.Count - 1
-                            '        If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                            '        Dim instrumentName As String = dt.Rows(i)(0)
-                            '        Dim tradingSymbol As String = Cmn.GetCurrentTradingSymbol(Common.DataBaseTable.EOD_Futures, tradingDate, instrumentName)
-                            '        If tradingSymbol IsNot Nothing Then
-                            '            Dim lotSize As Integer = Cmn.GetLotSize(Common.DataBaseTable.EOD_Futures, tradingSymbol, tradingDate)
-                            '            If lotSize <> Integer.MinValue Then
-                            '                Dim detailsOfStock As StockDetails = New StockDetails With
-                            '                        {.StockName = instrumentName,
-                            '                        .LotSize = lotSize,
-                            '                        .EligibleToTakeTrade = True}
-                            '                ret.Add(instrumentName, detailsOfStock)
-                            '            End If
-                            '        End If
-                            '    Next
+                        Case 14
+                            For i = 1 To dt.Rows.Count - 1
+                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                Dim instrumentName As String = dt.Rows(i)(0)
+                                Dim tradingSymbol As String = Cmn.GetCurrentTradingSymbol(Common.DataBaseTable.EOD_Futures, tradingDate, instrumentName)
+                                If tradingSymbol IsNot Nothing Then
+                                    Dim lotSize As Integer = Cmn.GetLotSize(Common.DataBaseTable.EOD_Futures, tradingSymbol, tradingDate)
+                                    If lotSize <> Integer.MinValue Then
+                                        Dim detailsOfStock As StockDetails = New StockDetails With
+                                                {.StockName = instrumentName,
+                                                .LotSize = lotSize,
+                                                .EligibleToTakeTrade = True}
+                                        ret.Add(instrumentName, detailsOfStock)
+                                    End If
+                                End If
+                            Next
                         Case Else
                             Dim counter As Integer = 0
                             For i = 1 To dt.Rows.Count - 1
