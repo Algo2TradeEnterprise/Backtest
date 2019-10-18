@@ -320,6 +320,22 @@ Public Class MultiTargetStrategyRule
                         tradeEntryDetails.SellEntry = Decimal.MinValue
                     End If
 
+                    If tradeEntryDetails.BuyEntry <> Decimal.MinValue Then
+                        Dim stoplossPL As Decimal = Me._parentStrategy.CalculatePL(_tradingSymbol, tradeEntryDetails.BuyEntry, tradeEntryDetails.BuyStoploss, _lotSize, _lotSize, Me._parentStrategy.StockType)
+                        Dim requiredCapital As Decimal = tradeEntryDetails.BuyEntry * _lotSize / Me._parentStrategy.MarginMultiplier
+                        If Math.Abs(stoplossPL) > requiredCapital * 20 / 100 Then
+                            tradeEntryDetails.BuyEntry = Decimal.MinValue
+                        End If
+                    End If
+
+                    If tradeEntryDetails.SellEntry <> Decimal.MinValue Then
+                        Dim stoplossPL As Decimal = Me._parentStrategy.CalculatePL(_tradingSymbol, tradeEntryDetails.SellStoploss, tradeEntryDetails.SellEntry, _lotSize, _lotSize, Me._parentStrategy.StockType)
+                        Dim requiredCapital As Decimal = tradeEntryDetails.SellEntry * _lotSize / Me._parentStrategy.MarginMultiplier
+                        If Math.Abs(stoplossPL) > requiredCapital * 20 / 100 Then
+                            tradeEntryDetails.SellEntry = Decimal.MinValue
+                        End If
+                    End If
+
                     ret = New Tuple(Of Boolean, TradeDetails)(True, tradeEntryDetails)
                 End If
             End If
