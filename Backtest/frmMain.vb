@@ -433,7 +433,8 @@ Public Class frmMain
                     '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "BANKNIFTY.csv")
                     '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
                     '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Volume spike Stock List with abs ATR.csv")
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Nifty 50.csv")
+                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Nifty 50.csv")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Multi Target ATR Based Stocks.csv")
 
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
                     Select Case .RuleNumber
