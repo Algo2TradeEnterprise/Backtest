@@ -359,6 +359,8 @@ Public Class Payload
         End Get
     End Property
 
+    Public Property Supporting As String
+
     Private _Ticks As List(Of Payload)
     Public ReadOnly Property Ticks As List(Of Payload)
         Get

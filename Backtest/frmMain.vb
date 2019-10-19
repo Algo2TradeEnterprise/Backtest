@@ -497,15 +497,15 @@ Public Class frmMain
 
                     .TickBasedStrategy = False
 
-                    .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                    .StockMaxProfitPercentagePerDay = 30
                     .StockMaxLossPercentagePerDay = Decimal.MinValue
 
                     .ExitOnStockFixedTargetStoploss = False
                     .StockMaxProfitPerDay = Decimal.MaxValue
                     .StockMaxLossPerDay = Decimal.MinValue
 
-                    .ExitOnOverAllFixedTargetStoploss = False
-                    .OverAllProfitPerDay = Decimal.MaxValue
+                    .ExitOnOverAllFixedTargetStoploss = True
+                    .OverAllProfitPerDay = 10000
                     .OverAllLossPerDay = Decimal.MinValue
 
                     .TrailingMTM = False

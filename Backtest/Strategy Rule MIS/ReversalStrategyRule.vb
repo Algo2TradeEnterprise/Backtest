@@ -16,11 +16,12 @@ Public Class ReversalStrategyRule
     End Class
 #End Region
 
-    Private _highSignalCandle As Payload
-    Private _lowSignalCandle As Payload
-    Private _confirmationCandle As Payload
+    Private _highSignalCandle As Payload = Nothing
+    Private _lowSignalCandle As Payload = Nothing
+    Private _confirmationCandle As Payload = Nothing
+    Private _direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
     Private _ATRPayload As Dictionary(Of Date, Decimal) = Nothing
-    Private _userInputs As StrategyRuleEntities
+    Private ReadOnly _userInputs As StrategyRuleEntities
     Private ReadOnly _dayATR As Decimal
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
@@ -51,12 +52,16 @@ Public Class ReversalStrategyRule
         If currentMinuteCandlePayload IsNot Nothing AndAlso
             currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing Then
             If _highSignalCandle IsNot Nothing Then
-                If currentMinuteCandlePayload.PreviousCandlePayload.Close > _highSignalCandle.High Then
+                Dim highestPoint As Decimal = _highSignalCandle.High
+                If _confirmationCandle IsNot Nothing Then highestPoint = Math.Max(highestPoint, _confirmationCandle.High)
+                If currentMinuteCandlePayload.PreviousCandlePayload.Close > highestPoint Then
                     _highSignalCandle = Nothing
                 End If
             End If
             If _lowSignalCandle IsNot Nothing Then
-                If currentMinuteCandlePayload.PreviousCandlePayload.Close < _lowSignalCandle.Low Then
+                Dim lowestPoint As Decimal = _lowSignalCandle.Low
+                If _confirmationCandle IsNot Nothing Then lowestPoint = Math.Min(lowestPoint, _confirmationCandle.Low)
+                If currentMinuteCandlePayload.PreviousCandlePayload.Close < lowestPoint Then
                     _lowSignalCandle = Nothing
                 End If
             End If
@@ -96,12 +101,13 @@ Public Class ReversalStrategyRule
             If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
                 If signalCandleSatisfied.Item4 = Trade.TradeExecutionDirection.Buy Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2, RoundOfType.Floor)
+                    Dim targetMul As Decimal = _userInputs.TargetMultiplier
                     parameter = New PlaceOrderParameters With {
                                 .EntryPrice = signalCandleSatisfied.Item2 + buffer,
                                 .EntryDirection = Trade.TradeExecutionDirection.Buy,
                                 .Quantity = _lotSize,
                                 .Stoploss = signalCandleSatisfied.Item3 - buffer,
-                                .Target = .EntryPrice + (.EntryPrice - .Stoploss) * _userInputs.TargetMultiplier,
+                                .Target = .EntryPrice + (.EntryPrice - .Stoploss) * targetMul,
                                 .Buffer = buffer,
                                 .SignalCandle = signalCandle,
                                 .OrderType = Trade.TypeOfOrder.SL,
@@ -109,14 +115,19 @@ Public Class ReversalStrategyRule
                                 .Supporting2 = _lowSignalCandle.PayloadDate.ToString("HH:mm:ss"),
                                 .Supporting3 = _dayATR
                             }
+                    Dim slPoint As Decimal = parameter.EntryPrice - parameter.Stoploss
+                    If _dayATR / slPoint > 10 Then targetMul = _userInputs.TargetMultiplier + 1
+                    parameter.Target = parameter.EntryPrice + slPoint * targetMul
+                    parameter.Supporting4 = _dayATR / slPoint
                 ElseIf signalCandleSatisfied.Item4 = Trade.TradeExecutionDirection.Sell Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2, RoundOfType.Floor)
+                    Dim targetMul As Decimal = _userInputs.TargetMultiplier
                     parameter = New PlaceOrderParameters With {
                                 .EntryPrice = signalCandleSatisfied.Item2 - buffer,
                                 .EntryDirection = Trade.TradeExecutionDirection.Sell,
                                 .Quantity = _lotSize,
                                 .Stoploss = signalCandleSatisfied.Item3 + buffer,
-                                .Target = .EntryPrice - (.Stoploss - .EntryPrice) * _userInputs.TargetMultiplier,
+                                .Target = .EntryPrice - (.Stoploss - .EntryPrice) * targetMul,
                                 .Buffer = buffer,
                                 .SignalCandle = signalCandle,
                                 .OrderType = Trade.TypeOfOrder.SL,
@@ -124,18 +135,22 @@ Public Class ReversalStrategyRule
                                 .Supporting2 = _highSignalCandle.PayloadDate.ToString("HH:mm:ss"),
                                 .Supporting3 = _dayATR
                             }
+                    Dim slPoint As Decimal = parameter.Stoploss - parameter.EntryPrice
+                    If _dayATR / slPoint > 10 Then targetMul = _userInputs.TargetMultiplier + 1
+                    parameter.Target = parameter.EntryPrice - slPoint * targetMul
+                    parameter.Supporting4 = _dayATR / slPoint
                 End If
             End If
         End If
         If parameter IsNot Nothing Then
             ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
 
-            'If _parentStrategy.StockMaxProfitPercentagePerDay <> Decimal.MaxValue AndAlso Me.MaxProfitOfThisStock = Decimal.MaxValue Then
-            '    Me.MaxProfitOfThisStock = _parentStrategy.CalculatePL(currentTick.TradingSymbol, parameter.EntryPrice, ConvertFloorCeling(parameter.EntryPrice + parameter.EntryPrice * _parentStrategy.StockMaxProfitPercentagePerDay / 100, _parentStrategy.TickSize, RoundOfType.Celing), parameter.Quantity, _lotSize, _parentStrategy.StockType)
-            'End If
-            'If _parentStrategy.StockMaxLossPercentagePerDay <> Decimal.MinValue AndAlso Me.MaxLossOfThisStock = Decimal.MinValue Then
-            '    Me.MaxLossOfThisStock = _parentStrategy.CalculatePL(currentTick.TradingSymbol, parameter.EntryPrice, ConvertFloorCeling(parameter.EntryPrice - parameter.EntryPrice * _parentStrategy.StockMaxLossPercentagePerDay / 100, _parentStrategy.TickSize, RoundOfType.Celing), parameter.Quantity, _lotSize, _parentStrategy.StockType)
-            'End If
+            If _parentStrategy.StockMaxProfitPercentagePerDay <> Decimal.MaxValue AndAlso Me.MaxProfitOfThisStock = Decimal.MaxValue Then
+                Me.MaxProfitOfThisStock = (parameter.EntryPrice * parameter.Quantity / Me._parentStrategy.MarginMultiplier) * _parentStrategy.StockMaxProfitPercentagePerDay / 100
+            End If
+            If _parentStrategy.StockMaxLossPercentagePerDay <> Decimal.MinValue AndAlso Me.MaxLossOfThisStock = Decimal.MinValue Then
+                Me.MaxLossOfThisStock = (parameter.EntryPrice * parameter.Quantity / Me._parentStrategy.MarginMultiplier) * _parentStrategy.StockMaxLossPercentagePerDay / 100
+            End If
         End If
         Return ret
     End Function
@@ -148,12 +163,16 @@ Public Class ReversalStrategyRule
         If currentMinuteCandlePayload IsNot Nothing AndAlso
             currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing Then
             If _highSignalCandle IsNot Nothing Then
-                If currentMinuteCandlePayload.PreviousCandlePayload.Close > _highSignalCandle.High Then
+                Dim highestPoint As Decimal = _highSignalCandle.High
+                If _confirmationCandle IsNot Nothing Then highestPoint = Math.Max(highestPoint, _confirmationCandle.High)
+                If currentMinuteCandlePayload.PreviousCandlePayload.Close > highestPoint Then
                     _highSignalCandle = Nothing
                 End If
             End If
             If _lowSignalCandle IsNot Nothing Then
-                If currentMinuteCandlePayload.PreviousCandlePayload.Close < _lowSignalCandle.Low Then
+                Dim lowestPoint As Decimal = _lowSignalCandle.Low
+                If _confirmationCandle IsNot Nothing Then lowestPoint = Math.Min(lowestPoint, _confirmationCandle.Low)
+                If currentMinuteCandlePayload.PreviousCandlePayload.Close < lowestPoint Then
                     _lowSignalCandle = Nothing
                 End If
             End If
@@ -179,17 +198,22 @@ Public Class ReversalStrategyRule
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         If _userInputs.BreakevenMovement AndAlso currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            Dim potentialTargetMultiplier As Decimal = 1.5
             Dim triggerPrice As Decimal = Decimal.MinValue
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                 Dim targetPoint As Decimal = currentTrade.PotentialTarget - currentTrade.EntryPrice
-                If currentTrade.MaximumDrawUp - currentTrade.EntryPrice >= targetPoint / 2 Then
+                Dim slPoint As Decimal = targetPoint / _userInputs.TargetMultiplier
+                If _dayATR / slPoint > 10 Then potentialTargetMultiplier = 2
+                If currentTrade.MaximumDrawUp - currentTrade.EntryPrice >= slPoint * potentialTargetMultiplier Then
                     triggerPrice = currentTrade.EntryPrice + Me._parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, Trade.TradeExecutionDirection.Buy, _lotSize, Me._parentStrategy.StockType)
                     _lowSignalCandle = Nothing
                     _confirmationCandle = Nothing
                 End If
             ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
                 Dim targetPoint As Decimal = currentTrade.EntryPrice - currentTrade.PotentialTarget
-                If currentTrade.EntryPrice - currentTrade.MaximumDrawUp >= targetPoint / 2 Then
+                Dim slPoint As Decimal = targetPoint / _userInputs.TargetMultiplier
+                If _dayATR / slPoint > 10 Then potentialTargetMultiplier = 2
+                If currentTrade.EntryPrice - currentTrade.MaximumDrawUp >= slPoint * potentialTargetMultiplier Then
                     triggerPrice = currentTrade.EntryPrice - Me._parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, Trade.TradeExecutionDirection.Sell, _lotSize, Me._parentStrategy.StockType)
                     _highSignalCandle = Nothing
                     _confirmationCandle = Nothing
@@ -216,12 +240,14 @@ Public Class ReversalStrategyRule
         Dim ret As Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection) = Nothing
         If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then
             If _highSignalCandle Is Nothing AndAlso _confirmationCandle IsNot Nothing Then
-                If _confirmationCandle.CandleColor = Color.Red Then
+                If (_confirmationCandle.CandleColor = Color.Red AndAlso _confirmationCandle.Supporting Is Nothing) OrElse
+                    (_confirmationCandle.Supporting IsNot Nothing AndAlso _confirmationCandle.Supporting = Color.Red.ToString) Then
                     _confirmationCandle = Nothing
                 End If
             End If
             If _lowSignalCandle Is Nothing AndAlso _confirmationCandle IsNot Nothing Then
-                If _confirmationCandle.CandleColor = Color.Green Then
+                If (_confirmationCandle.CandleColor = Color.Green AndAlso _confirmationCandle.Supporting Is Nothing) OrElse
+                    (_confirmationCandle.Supporting IsNot Nothing AndAlso _confirmationCandle.Supporting = Color.Green.ToString) Then
                     _confirmationCandle = Nothing
                 End If
             End If
@@ -265,25 +291,29 @@ Public Class ReversalStrategyRule
             End If
 
             If _confirmationCandle IsNot Nothing Then
-                If _confirmationCandle.CandleColor = Color.Green Then
+                If (_confirmationCandle.CandleColor = Color.Green AndAlso _confirmationCandle.Supporting Is Nothing) OrElse
+                    (_confirmationCandle.Supporting IsNot Nothing AndAlso _confirmationCandle.Supporting = Color.Green.ToString) Then
                     Dim buffer As Decimal = Me._parentStrategy.CalculateBuffer(_confirmationCandle.High, RoundOfType.Floor)
-                    If (_confirmationCandle.High - _lowSignalCandle.Low) + 2 * buffer > _dayATR / 2 Then
-                        If candle.High < _confirmationCandle.High AndAlso candle.Low > _lowSignalCandle.Low Then
-                            _confirmationCandle = candle
-                        End If
+                    'If (_confirmationCandle.High - _lowSignalCandle.Low) + 2 * buffer > _dayATR / 2 Then
+                    If candle.High < _confirmationCandle.High AndAlso candle.Low > Math.Min(_lowSignalCandle.Low, _confirmationCandle.Low) Then
+                        _confirmationCandle = candle
+                        _confirmationCandle.Supporting = Color.Green.ToString
                     End If
+                    'End If
                     If (_confirmationCandle.High - _lowSignalCandle.Low) + 2 * buffer <= _dayATR / 2 Then
-                        ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, _confirmationCandle.High, _lowSignalCandle.Low, Trade.TradeExecutionDirection.Buy)
+                        ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, _confirmationCandle.High, Math.Min(_lowSignalCandle.Low, _confirmationCandle.Low), Trade.TradeExecutionDirection.Buy)
                     End If
-                ElseIf _confirmationCandle.CandleColor = Color.Red Then
+                ElseIf (_confirmationCandle.CandleColor = Color.Red AndAlso _confirmationCandle.Supporting Is Nothing) OrElse
+                    (_confirmationCandle.Supporting IsNot Nothing AndAlso _confirmationCandle.Supporting = Color.Red.ToString) Then
                     Dim buffer As Decimal = Me._parentStrategy.CalculateBuffer(_confirmationCandle.Low, RoundOfType.Floor)
-                    If (_highSignalCandle.High - _confirmationCandle.Low) + 2 * buffer > _dayATR / 2 Then
-                        If candle.Low > _confirmationCandle.Low AndAlso candle.High < _highSignalCandle.High Then
-                            _confirmationCandle = candle
-                        End If
+                    'If (_highSignalCandle.High - _confirmationCandle.Low) + 2 * buffer > _dayATR / 2 Then
+                    If candle.Low > _confirmationCandle.Low AndAlso candle.High < Math.Max(_highSignalCandle.High, _confirmationCandle.High) Then
+                        _confirmationCandle = candle
+                        _confirmationCandle.Supporting = Color.Red.ToString
                     End If
+                    'End If
                     If (_highSignalCandle.High - _confirmationCandle.Low) + 2 * buffer <= _dayATR / 2 Then
-                        ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, _confirmationCandle.Low, _highSignalCandle.High, Trade.TradeExecutionDirection.Sell)
+                        ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, _confirmationCandle.Low, Math.Max(_highSignalCandle.High, _confirmationCandle.High), Trade.TradeExecutionDirection.Sell)
                     End If
                 End If
             End If
