@@ -263,14 +263,14 @@ Public Class frmMain
             Else
                 sourceData = Strategy.SourceOfData.Database
             End If
-            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
+            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Futures
             Dim database As Common.DataBaseTable = Common.DataBaseTable.None
             Dim margin As Decimal = 0
             Dim tick As Decimal = 0
             Select Case stockType
                 Case Trade.TypeOfStock.Cash
                     database = Common.DataBaseTable.Intraday_Cash
-                    margin = 30
+                    margin = 13
                     tick = 0.05
                 Case Trade.TypeOfStock.Commodity
                     database = Common.DataBaseTable.Intraday_Commodity
@@ -411,7 +411,7 @@ Public Class frmMain
             Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                               exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                               exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                              tradeStartTime:=TimeSpan.Parse("9:30:00"),
+                                                              tradeStartTime:=TimeSpan.Parse("9:17:00"),
                                                               lastTradeEntryTime:=TimeSpan.Parse("14:45:59"),
                                                               eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                               tickSize:=tick,
@@ -433,8 +433,8 @@ Public Class frmMain
                     '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "BANKNIFTY.csv")
                     '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
                     '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Volume spike Stock List with abs ATR.csv")
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Nifty 50.csv")
-                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Multi Target ATR Based Stocks.csv")
+                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Nifty 50.csv")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Multi Target ATR Based Stocks.csv")
 
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
                     Select Case .RuleNumber
@@ -480,6 +480,11 @@ Public Class frmMain
                             .TypeOfSignal = LowStoplossStrategyRule.SignalType.DipInATR}
                         Case 14
                             .RuleEntityData = Nothing
+                        Case 15
+                            .RuleEntityData = New ReversalStrategyRule.StrategyRuleEntities With
+                             {.TargetMultiplier = 3,
+                              .NumberOfTradeOnNewSignal = 2,
+                              .BreakevenMovement = True}
                     End Select
 
 
@@ -490,7 +495,7 @@ Public Class frmMain
 
                     .TrailingStoploss = False
 
-                    .TickBasedStrategy = True
+                    .TickBasedStrategy = False
 
                     .StockMaxProfitPercentagePerDay = Decimal.MaxValue
                     .StockMaxLossPercentagePerDay = Decimal.MinValue

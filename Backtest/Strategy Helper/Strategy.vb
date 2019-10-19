@@ -1026,28 +1026,6 @@ Namespace StrategyHelper
             Return ret
         End Function
 
-        Public Function GetBreakevenPoints(ByVal tradingSymbol As String, ByVal entryPrice As Decimal, ByVal quantity As Integer, ByVal direction As Trade.TradeExecutionDirection) As Decimal
-            Dim ret As Decimal = TickSize
-            If direction = Trade.TradeExecutionDirection.Buy Then
-                For exitPrice As Decimal = entryPrice To Decimal.MaxValue Step ret
-                    Dim pl As Decimal = CalculatePL(tradingSymbol, entryPrice, exitPrice, quantity, 1, Trade.TypeOfStock.Futures)
-                    If pl >= 0 Then
-                        ret = Math.Round(exitPrice - entryPrice, 2)
-                        Exit For
-                    End If
-                Next
-            ElseIf direction = Trade.TradeExecutionDirection.Sell Then
-                For exitPrice As Decimal = entryPrice To Decimal.MinValue Step ret * -1
-                    Dim pl As Decimal = CalculatePL(tradingSymbol, exitPrice, entryPrice, quantity, 1, Trade.TypeOfStock.Futures)
-                    If pl >= 0 Then
-                        ret = Math.Round(entryPrice - exitPrice, 2)
-                        Exit For
-                    End If
-                Next
-            End If
-            Return ret
-        End Function
-
         Public Sub SetCurrentLTPForStock(ByVal currentMinutePayload As Payload, ByVal currentTickPayload As Payload, ByVal tradeType As Trade.TypeOfTrade)
             'If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentMinutePayload.PayloadDate.Date) AndAlso TradesTaken(currentMinutePayload.PayloadDate.Date).ContainsKey(currentMinutePayload.TradingSymbol) Then
             If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
@@ -1091,7 +1069,8 @@ Namespace StrategyHelper
 
         Public Function IsAnyTradeOfTheStockTargetReached(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TypeOfTrade) As Boolean
             Dim ret As Boolean = False
-            If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentMinutePayload.PayloadDate.Date) AndAlso TradesTaken(currentMinutePayload.PayloadDate.Date).ContainsKey(currentMinutePayload.TradingSymbol) Then
+            If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentMinutePayload.PayloadDate.Date) AndAlso
+                TradesTaken(currentMinutePayload.PayloadDate.Date).ContainsKey(currentMinutePayload.TradingSymbol) Then
                 Dim completeTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Close)
                 If completeTrades IsNot Nothing AndAlso completeTrades.Count > 0 Then
                     Dim targetTrades As List(Of Trade) = completeTrades.FindAll(Function(x)
@@ -1101,6 +1080,35 @@ Namespace StrategyHelper
                     If targetTrades IsNot Nothing AndAlso targetTrades.Count > 0 Then
                         ret = True
                     End If
+                End If
+            End If
+            Return ret
+        End Function
+
+        Public Function GetNumberOfUniqueSignalTradeOfTheStock(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TypeOfTrade) As Integer
+            Dim ret As Integer = 0
+            If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentMinutePayload.PayloadDate.Date) AndAlso
+                TradesTaken(currentMinutePayload.PayloadDate.Date).ContainsKey(currentMinutePayload.TradingSymbol) Then
+                Dim completeTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Close)
+                Dim inprogressTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Inprogress)
+                Dim allTrades As List(Of Trade) = New List(Of Trade)
+                If completeTrades IsNot Nothing AndAlso completeTrades.Count > 0 Then
+                    allTrades.AddRange(completeTrades)
+                End If
+                If inprogressTrades IsNot Nothing AndAlso inprogressTrades.Count > 0 Then
+                    allTrades.AddRange(inprogressTrades)
+                End If
+
+                If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
+                    Dim lastSignalCandleTime As Date = Date.MinValue
+                    For Each runningTrade In allTrades
+                        If runningTrade.SignalCandle IsNot Nothing Then
+                            If lastSignalCandleTime <> runningTrade.SignalCandle.PayloadDate Then
+                                ret += 1
+                                lastSignalCandleTime = runningTrade.SignalCandle.PayloadDate
+                            End If
+                        End If
+                    Next
                 End If
             End If
             Return ret

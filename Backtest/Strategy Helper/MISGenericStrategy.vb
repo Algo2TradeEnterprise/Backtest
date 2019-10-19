@@ -38,7 +38,7 @@ Namespace StrategyHelper
                 Me.StockMaxProfitPerDay = Decimal.MaxValue
                 Me.StockMaxLossPerDay = Decimal.MinValue
             End If
-            Dim filename As String = String.Format("Multi Target")
+            Dim filename As String = String.Format("Reversal")
 
             Dim tradesFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Trades.a2t", filename))
             Dim capitalFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Capital.a2t", filename))
@@ -136,6 +136,8 @@ Namespace StrategyHelper
                                             stockRule = New LowStoplossStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2, stockList(stock).Supporting3, stockList(stock).Supporting4)
                                         Case 14
                                             stockRule = New MultiTargetStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case 15
+                                            stockRule = New ReversalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting2)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -712,7 +714,8 @@ Namespace StrategyHelper
                                                 {.StockName = instrumentName,
                                                 .LotSize = dt.Rows(i).Item(2),
                                                 .EligibleToTakeTrade = True,
-                                                .Supporting1 = dt.Rows(i).Item(3)}
+                                                .Supporting1 = dt.Rows(i).Item(3),
+                                                .Supporting2 = dt.Rows(i).Item(5)}
                                     ret.Add(instrumentName, detailsOfStock)
                                     counter += 1
                                     If counter = Me.NumberOfTradeableStockPerDay Then Exit For
