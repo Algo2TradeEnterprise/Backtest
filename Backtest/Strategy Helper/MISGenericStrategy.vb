@@ -38,7 +38,17 @@ Namespace StrategyHelper
                 Me.StockMaxProfitPerDay = Decimal.MaxValue
                 Me.StockMaxLossPerDay = Decimal.MinValue
             End If
-            Dim filename As String = String.Format("Pinbar Breakout")
+
+            Dim ruleData As PinbarBreakoutStrategyRule.StrategyRuleEntities = Me.RuleEntityData
+            Dim filename As String = String.Format("DHL {0},TgtMul {1},Brkevn {2},StpFstTgt {3},StckMaxPrft {4},StckMaxLs {5},OvrAlPrft {6},OvrAlLs {7}",
+                                                   ruleData.SignalAtDayHighLow,
+                                                   ruleData.TargetMultiplier,
+                                                   ruleData.BreakevenMovement,
+                                                   ruleData.StopAtFirstTarget,
+                                                   If(Me.StockMaxProfitPercentagePerDay <> Decimal.MaxValue, Me.StockMaxProfitPercentagePerDay, "∞"),
+                                                   If(Me.StockMaxLossPercentagePerDay <> Decimal.MinValue, Me.StockMaxLossPercentagePerDay, "∞"),
+                                                   If(Me.OverAllProfitPerDay <> Decimal.MaxValue, Me.OverAllProfitPerDay, "∞"),
+                                                   If(Me.OverAllLossPerDay <> Decimal.MinValue, Me.OverAllLossPerDay, "∞"))
 
             Dim tradesFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Trades.a2t", filename))
             Dim capitalFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Capital.a2t", filename))

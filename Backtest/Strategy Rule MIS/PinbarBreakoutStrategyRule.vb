@@ -11,10 +11,13 @@ Public Class PinbarBreakoutStrategyRule
         Inherits RuleEntities
 
         Public MinimumInvestmentPerStock As Decimal
-        Public TargetMultiplier As Decimal
         Public PinbarTailPercentage As Decimal
         Public MaxLossPerTradeMultiplier As Decimal
         Public MinLossPercentagePerTrade As Decimal
+        Public TargetMultiplier As Decimal
+        Public BreakevenMovement As Boolean
+        Public SignalAtDayHighLow As Boolean
+        Public StopAtFirstTarget As Boolean
     End Class
 #End Region
 
@@ -51,6 +54,7 @@ Public Class PinbarBreakoutStrategyRule
         Dim parameter As PlaceOrderParameters = Nothing
         If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
             Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS) AndAlso Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS) AndAlso
+            (Not _userInputs.StopAtFirstTarget OrElse _parentStrategy.IsAnyTradeOfTheStockTargetReached(currentTick, Trade.TypeOfTrade.MIS)) AndAlso
             _parentStrategy.TotalPLAfterBrokerage(currentTick.PayloadDate) < _parentStrategy.OverAllProfitPerDay AndAlso
             _parentStrategy.TotalPLAfterBrokerage(currentTick.PayloadDate) > Math.Abs(_parentStrategy.OverAllLossPerDay) * -1 AndAlso
             _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) < _parentStrategy.StockMaxProfitPerDay AndAlso
@@ -213,17 +217,19 @@ Public Class PinbarBreakoutStrategyRule
                         End If
                     End If
                 End If
-                If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                    If currentMinuteCandlePayload.PreviousCandlePayload.Low > currentTrade.EntryPrice Then
-                        Dim potentialPrice As Decimal = currentTrade.EntryPrice + GetMovementPoint(currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection)
-                        triggerPrice = ConvertFloorCeling(potentialPrice, Me._parentStrategy.TickSize, RoundOfType.Celing)
-                        reason = "Breakeven movement"
-                    End If
-                ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                    If currentMinuteCandlePayload.PreviousCandlePayload.High < currentTrade.EntryPrice Then
-                        Dim potentialPrice As Decimal = currentTrade.EntryPrice - GetMovementPoint(currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection)
-                        triggerPrice = ConvertFloorCeling(potentialPrice, Me._parentStrategy.TickSize, RoundOfType.Floor)
-                        reason = "Breakeven movement"
+                If _userInputs.BreakevenMovement Then
+                    If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                        If currentMinuteCandlePayload.PreviousCandlePayload.Low > currentTrade.EntryPrice Then
+                            Dim potentialPrice As Decimal = currentTrade.EntryPrice + GetMovementPoint(currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection)
+                            triggerPrice = ConvertFloorCeling(potentialPrice, Me._parentStrategy.TickSize, RoundOfType.Celing)
+                            reason = "Breakeven movement"
+                        End If
+                    ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                        If currentMinuteCandlePayload.PreviousCandlePayload.High < currentTrade.EntryPrice Then
+                            Dim potentialPrice As Decimal = currentTrade.EntryPrice - GetMovementPoint(currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection)
+                            triggerPrice = ConvertFloorCeling(potentialPrice, Me._parentStrategy.TickSize, RoundOfType.Floor)
+                            reason = "Breakeven movement"
+                        End If
                     End If
                 End If
             End If
@@ -262,7 +268,14 @@ Public Class PinbarBreakoutStrategyRule
                     If slPoint < candle.Low * _userInputs.MinLossPercentagePerTrade / 100 Then
                         slPoint = ConvertFloorCeling(candle.Low * _userInputs.MinLossPercentagePerTrade / 100, Me._parentStrategy.TickSize, RoundOfType.Floor)
                     End If
-                    ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, candle.Low - lowBuffer, candle.Low - lowBuffer + slPoint, Trade.TradeExecutionDirection.Sell)
+                    If _userInputs.SignalAtDayHighLow Then
+                        Dim highestCandleOfTheDay As Payload = GetHighestCandleOfTheDay(candle.PayloadDate)
+                        If highestCandleOfTheDay IsNot Nothing AndAlso highestCandleOfTheDay.PayloadDate = candle.PayloadDate Then
+                            ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, candle.Low - lowBuffer, candle.Low - lowBuffer + slPoint, Trade.TradeExecutionDirection.Sell)
+                        End If
+                    Else
+                        ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, candle.Low - lowBuffer, candle.Low - lowBuffer + slPoint, Trade.TradeExecutionDirection.Sell)
+                    End If
                 End If
             ElseIf candle.CandleWicks.Bottom + highBuffer >= candle.CandleRange * _userInputs.PinbarTailPercentage / 100 Then
                 slPoint = slPoint + 2 * highBuffer
@@ -276,7 +289,14 @@ Public Class PinbarBreakoutStrategyRule
                     If slPoint < candle.High * _userInputs.MinLossPercentagePerTrade / 100 Then
                         slPoint = ConvertFloorCeling(candle.High * _userInputs.MinLossPercentagePerTrade / 100, Me._parentStrategy.TickSize, RoundOfType.Floor)
                     End If
-                    ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, candle.High + highBuffer, candle.High + highBuffer - slPoint, Trade.TradeExecutionDirection.Buy)
+                    If _userInputs.SignalAtDayHighLow Then
+                        Dim lowestCandleOfTheDay As Payload = GetLowestCandleOfTheDay(candle.PayloadDate)
+                        If lowestCandleOfTheDay IsNot Nothing AndAlso lowestCandleOfTheDay.PayloadDate = candle.PayloadDate Then
+                            ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, candle.High + highBuffer, candle.High + highBuffer - slPoint, Trade.TradeExecutionDirection.Buy)
+                        End If
+                    Else
+                        ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, candle.High + highBuffer, candle.High + highBuffer - slPoint, Trade.TradeExecutionDirection.Buy)
+                    End If
                 End If
             End If
         End If
@@ -459,4 +479,35 @@ Public Class PinbarBreakoutStrategyRule
         Return ret
     End Function
 
+    Private Function GetHighestCandleOfTheDay(ByVal currentTime As Date) As Payload
+        Dim ret As Payload = Nothing
+        For Each runningPayload In _signalPayload
+            If runningPayload.Key.Date = currentTime.Date AndAlso runningPayload.Key <= currentTime Then
+                If ret Is Nothing Then
+                    ret = runningPayload.Value
+                Else
+                    If runningPayload.Value.High >= ret.High Then
+                        ret = runningPayload.Value
+                    End If
+                End If
+            End If
+        Next
+        Return ret
+    End Function
+
+    Private Function GetLowestCandleOfTheDay(ByVal currentTime As Date) As Payload
+        Dim ret As Payload = Nothing
+        For Each runningPayload In _signalPayload
+            If runningPayload.Key.Date = currentTime.Date AndAlso runningPayload.Key <= currentTime Then
+                If ret Is Nothing Then
+                    ret = runningPayload.Value
+                Else
+                    If runningPayload.Value.Low <= ret.Low Then
+                        ret = runningPayload.Value
+                    End If
+                End If
+            End If
+        Next
+        Return ret
+    End Function
 End Class
