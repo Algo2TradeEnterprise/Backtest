@@ -374,18 +374,20 @@ Public Class PinbarBreakoutStrategyRule
                 End If
                 Dim signalCandle As Payload = lastExecutedOrder.SignalCandle
                 If blockDateInThisTimeframe = signalCandle.PayloadDate.AddMinutes(2 * timeframe) Then
-                    Dim lastTradeExitPrice As Decimal = lastExecutedOrder.ExitPrice
-                    If lastTradeExitPrice <> Decimal.MinValue Then
-                        If lastExecutedOrder.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                            If lastTradeExitPrice > signalCandle.Low AndAlso
-                                lastTradeExitPrice < signalCandle.High Then
-                                ret = True
-                            End If
-                        ElseIf lastExecutedOrder.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                            If lastTradeExitPrice < signalCandle.High AndAlso
-                                lastTradeExitPrice > signalCandle.Low Then
-                                ret = True
-                            End If
+                    Dim blockCandle As Payload = _signalPayload(blockDateInThisTimeframe)
+                    If lastExecutedOrder.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                        Dim buffer As Decimal = Me._parentStrategy.CalculateBuffer(signalCandle.High, RoundOfType.Floor)
+                        Dim potentialExitPrice As Decimal = signalCandle.High - GetCandleBody(signalCandle, Trade.TradeExecutionDirection.Buy) - buffer
+                        If blockCandle.Close > signalCandle.Low AndAlso
+                            blockCandle.Close <= potentialExitPrice Then
+                            ret = True
+                        End If
+                    ElseIf lastExecutedOrder.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                        Dim buffer As Decimal = Me._parentStrategy.CalculateBuffer(signalCandle.Low, RoundOfType.Floor)
+                        Dim potentialExitPrice As Decimal = signalCandle.Low + GetCandleBody(signalCandle, Trade.TradeExecutionDirection.Sell) + buffer
+                        If blockCandle.Close < signalCandle.High AndAlso
+                            blockCandle.Close > potentialExitPrice Then
+                            ret = True
                         End If
                     End If
                 End If
