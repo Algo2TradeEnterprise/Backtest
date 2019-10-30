@@ -38,7 +38,7 @@ Namespace StrategyHelper
                 Me.StockMaxProfitPerDay = Decimal.MaxValue
                 Me.StockMaxLossPerDay = Decimal.MinValue
             End If
-            Dim filename As String = String.Format("Reversal")
+            Dim filename As String = String.Format("Pinbar Breakout")
 
             Dim tradesFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Trades.a2t", filename))
             Dim capitalFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Capital.a2t", filename))
@@ -138,6 +138,8 @@ Namespace StrategyHelper
                                             stockRule = New MultiTargetStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 15
                                             stockRule = New ReversalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting2)
+                                        Case 16
+                                            stockRule = New PinbarBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting2)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat

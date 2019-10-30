@@ -416,15 +416,15 @@ Public Class frmMain
                                                               eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                               tickSize:=tick,
                                                               marginMultiplier:=margin,
-                                                              timeframe:=1,
+                                                              timeframe:=5,
                                                               heikenAshiCandle:=False,
                                                               stockType:=stockType,
                                                               databaseTable:=database,
                                                               dataSource:=sourceData,
-                                                              initialCapital:=600000,
-                                                              usableCapital:=500000,
-                                                              minimumEarnedCapitalToWithdraw:=700000,
-                                                              amountToBeWithdrawn:=100000)
+                                                              initialCapital:=6000000,
+                                                              usableCapital:=5000000,
+                                                              minimumEarnedCapitalToWithdraw:=7000000,
+                                                              amountToBeWithdrawn:=1000000)
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
@@ -434,7 +434,8 @@ Public Class frmMain
                     '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
                     '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Volume spike Stock List with abs ATR.csv")
                     '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Nifty 50.csv")
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Multi Target ATR Based Stocks.csv")
+                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Multi Target ATR Based Stocks.csv")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pinbar Stocklist.csv")
 
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
                     Select Case .RuleNumber
@@ -485,10 +486,17 @@ Public Class frmMain
                              {.TargetMultiplier = 3,
                               .NumberOfTradeOnNewSignal = 2,
                               .BreakevenMovement = True}
+                        Case 16
+                            .RuleEntityData = New PinbarBreakoutStrategyRule.StrategyRuleEntities With
+                             {.TargetMultiplier = 1,
+                              .MinimumInvestmentPerStock = 15000,
+                              .MaxLossPerTradeMultiplier = 0.5,
+                              .MinLossPercentagePerTrade = 0.1,
+                              .PinbarTailPercentage = 50}
                     End Select
 
 
-                    .NumberOfTradeableStockPerDay = Integer.MaxValue
+                    .NumberOfTradeableStockPerDay = 1
 
                     .NumberOfTradesPerDay = Integer.MaxValue
                     .NumberOfTradesPerStockPerDay = Integer.MaxValue
@@ -497,15 +505,15 @@ Public Class frmMain
 
                     .TickBasedStrategy = False
 
-                    .StockMaxProfitPercentagePerDay = 30
-                    .StockMaxLossPercentagePerDay = Decimal.MinValue
+                    .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                    .StockMaxLossPercentagePerDay = 2
 
                     .ExitOnStockFixedTargetStoploss = False
                     .StockMaxProfitPerDay = Decimal.MaxValue
                     .StockMaxLossPerDay = Decimal.MinValue
 
-                    .ExitOnOverAllFixedTargetStoploss = True
-                    .OverAllProfitPerDay = 10000
+                    .ExitOnOverAllFixedTargetStoploss = False
+                    .OverAllProfitPerDay = Decimal.MaxValue
                     .OverAllLossPerDay = Decimal.MinValue
 
                     .TrailingMTM = False
