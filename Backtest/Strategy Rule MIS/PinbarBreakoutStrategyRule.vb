@@ -438,8 +438,8 @@ Public Class PinbarBreakoutStrategyRule
         ElseIf signalCandle.High <= signalCandle.PreviousCandlePayload.High AndAlso
             signalCandle.Low >= signalCandle.PreviousCandlePayload.Low Then
             ret = "Inside Bar"
-        ElseIf signalCandle.High > signalCandle.PreviousCandlePayload.High AndAlso
-            signalCandle.Low < signalCandle.PreviousCandlePayload.Low Then
+        ElseIf signalCandle.High >= signalCandle.PreviousCandlePayload.High AndAlso
+            signalCandle.Low <= signalCandle.PreviousCandlePayload.Low Then
             ret = "Outside Bar"
         End If
 
