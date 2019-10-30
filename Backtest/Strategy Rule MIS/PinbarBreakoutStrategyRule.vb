@@ -443,14 +443,19 @@ Public Class PinbarBreakoutStrategyRule
             ret = "Outside Bar"
         End If
 
-        Dim result As Decimal = signalCandle.PreviousCandlePayload.Volume * signalCandle.CandleRange / signalCandle.PreviousCandlePayload.CandleRange
-        If result < signalCandle.Volume Then
-            ret = String.Format("{0} - Good", ret)
-        ElseIf result <= signalCandle.Volume * 90 / 100 Then
-            ret = String.Format("{0} - Ok", ret)
+        If signalCandle.PreviousCandlePayload.CandleRange > 0 Then
+            Dim result As Decimal = signalCandle.PreviousCandlePayload.Volume * signalCandle.CandleRange / signalCandle.PreviousCandlePayload.CandleRange
+            If result < signalCandle.Volume Then
+                ret = String.Format("{0} - Good", ret)
+            ElseIf result <= signalCandle.Volume * 90 / 100 Then
+                ret = String.Format("{0} - Ok", ret)
+            Else
+                ret = String.Format("{0} - Poor", ret)
+            End If
         Else
-            ret = String.Format("{0} - Poor", ret)
+            ret = String.Format("{0} - Infinity", ret)
         End If
+
         Return ret
     End Function
 
