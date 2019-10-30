@@ -378,15 +378,15 @@ Public Class PinbarBreakoutStrategyRule
                     If lastExecutedOrder.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                         Dim buffer As Decimal = Me._parentStrategy.CalculateBuffer(signalCandle.High, RoundOfType.Floor)
                         Dim potentialExitPrice As Decimal = signalCandle.High - GetCandleBody(signalCandle, Trade.TradeExecutionDirection.Buy) - buffer
-                        If blockCandle.Close > signalCandle.Low AndAlso
-                            blockCandle.Close <= potentialExitPrice Then
+                        If blockCandle.PreviousCandlePayload.Close > signalCandle.Low AndAlso
+                            blockCandle.PreviousCandlePayload.Close <= potentialExitPrice Then
                             ret = True
                         End If
                     ElseIf lastExecutedOrder.EntryDirection = Trade.TradeExecutionDirection.Sell Then
                         Dim buffer As Decimal = Me._parentStrategy.CalculateBuffer(signalCandle.Low, RoundOfType.Floor)
                         Dim potentialExitPrice As Decimal = signalCandle.Low + GetCandleBody(signalCandle, Trade.TradeExecutionDirection.Sell) + buffer
-                        If blockCandle.Close < signalCandle.High AndAlso
-                            blockCandle.Close > potentialExitPrice Then
+                        If blockCandle.PreviousCandlePayload.Close < signalCandle.High AndAlso
+                            blockCandle.PreviousCandlePayload.Close > potentialExitPrice Then
                             ret = True
                         End If
                     End If
