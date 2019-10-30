@@ -408,17 +408,19 @@ Public Class frmMain
             'Next
 #End Region
 
+            Dim stkPrftList As List(Of Decimal) = New List(Of Decimal) From {1, Decimal.MaxValue}
             For trdAtDayHL As Integer = 0 To 0 Step 1
                 For trgtMul As Decimal = 1 To 1 Step 1
                     For brkevnMvmnt As Integer = 0 To 0 Step 1
                         For stopAtFirstTarget As Integer = 0 To 0 Step 1
-                            For stockMaxProfitMultipler As Decimal = Decimal.MaxValue To Decimal.MaxValue Step -1
-                                For stockMaxLossMultipler As Decimal = 2 To 2 Step -1
+                            For stockMaxLossMultipler As Decimal = 1 To 2 Step -1
+                                For Each stockMaxProfitMultipler As Decimal In stkPrftList
+                                    If stockMaxProfitMultipler <> Decimal.MaxValue AndAlso stopAtFirstTarget = 1 Then Continue For
                                     Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                               exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                               exchangeEndTime:=TimeSpan.Parse("15:29:59"),
                                                               tradeStartTime:=TimeSpan.Parse("9:20:00"),
-                                                              lastTradeEntryTime:=TimeSpan.Parse("14:40:59"),
+                                                              lastTradeEntryTime:=TimeSpan.Parse("14:45:59"),
                                                               eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                               tickSize:=tick,
                                                               marginMultiplier:=margin,
