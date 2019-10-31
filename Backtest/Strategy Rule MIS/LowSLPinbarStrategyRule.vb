@@ -138,14 +138,28 @@ Public Class LowSLPinbarStrategyRule
                             ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                         End If
                     End If
-                    If signalCandle.PayloadDate <= currentMinuteCandlePayload.PreviousCandlePayload.PreviousCandlePayload.PreviousCandlePayload.PayloadDate Then
-                        If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                            If currentMinuteCandlePayload.PreviousCandlePayload.Low < signalCandle.Low Then
-                                ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                    If Not _userInputs.AllowMomentumReversal Then
+                        If signalCandle.PayloadDate <= currentMinuteCandlePayload.PreviousCandlePayload.PreviousCandlePayload.PreviousCandlePayload.PayloadDate Then
+                            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                                If currentMinuteCandlePayload.PreviousCandlePayload.Low < signalCandle.Low Then
+                                    ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                                End If
+                            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                                If currentMinuteCandlePayload.PreviousCandlePayload.High > signalCandle.High Then
+                                    ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                                End If
                             End If
-                        ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                            If currentMinuteCandlePayload.PreviousCandlePayload.High > signalCandle.High Then
-                                ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                        End If
+                    Else
+                        If signalCandle.PayloadDate <= currentMinuteCandlePayload.PreviousCandlePayload.PreviousCandlePayload.PayloadDate Then
+                            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                                If currentMinuteCandlePayload.PreviousCandlePayload.Low < signalCandle.Low Then
+                                    ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                                End If
+                            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                                If currentMinuteCandlePayload.PreviousCandlePayload.High > signalCandle.High Then
+                                    ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                                End If
                             End If
                         End If
                     End If
