@@ -418,22 +418,22 @@ Public Class frmMain
                                 For Each stockMaxProfitMultipler As Decimal In stkPrftList
                                     If stockMaxProfitMultipler <> Decimal.MaxValue AndAlso stopAtFirstTarget = 1 Then Continue For
                                     Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
-                                                              exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                              exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                              tradeStartTime:=TimeSpan.Parse("9:20:00"),
-                                                              lastTradeEntryTime:=TimeSpan.Parse("14:45:59"),
-                                                              eodExitTime:=TimeSpan.Parse("15:15:00"),
-                                                              tickSize:=tick,
-                                                              marginMultiplier:=margin,
-                                                              timeframe:=5,
-                                                              heikenAshiCandle:=False,
-                                                              stockType:=stockType,
-                                                              databaseTable:=database,
-                                                              dataSource:=sourceData,
-                                                              initialCapital:=250000,
-                                                              usableCapital:=200000,
-                                                              minimumEarnedCapitalToWithdraw:=300000,
-                                                              amountToBeWithdrawn:=100000)
+                                                                                      exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                                      exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                                      tradeStartTime:=TimeSpan.Parse("9:20:00"),
+                                                                                      lastTradeEntryTime:=TimeSpan.Parse("14:45:59"),
+                                                                                      eodExitTime:=TimeSpan.Parse("15:15:00"),
+                                                                                      tickSize:=tick,
+                                                                                      marginMultiplier:=margin,
+                                                                                      timeframe:=5,
+                                                                                      heikenAshiCandle:=False,
+                                                                                      stockType:=stockType,
+                                                                                      databaseTable:=database,
+                                                                                      dataSource:=sourceData,
+                                                                                      initialCapital:=250000,
+                                                                                      usableCapital:=200000,
+                                                                                      minimumEarnedCapitalToWithdraw:=300000,
+                                                                                      amountToBeWithdrawn:=100000)
                                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                                         With backtestStrategy

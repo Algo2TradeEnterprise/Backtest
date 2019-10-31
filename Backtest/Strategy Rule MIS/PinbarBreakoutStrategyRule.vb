@@ -89,7 +89,9 @@ Public Class PinbarBreakoutStrategyRule
                                 .OrderType = Trade.TypeOfOrder.SL,
                                 .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
                                 .Supporting2 = GetSignalCandleType(signalCandle, Trade.TradeExecutionDirection.Buy),
-                                .Supporting3 = GetCandleATR(signalCandle)
+                                .Supporting3 = GetCandleATR(signalCandle),
+                                .Supporting4 = GetCandleTypeValue(signalCandle),
+                                .Supporting5 = signalCandle.Volume
                             }
                 ElseIf signalCandleSatisfied.Item4 = Trade.TradeExecutionDirection.Sell Then
                     parameter = New PlaceOrderParameters With {
@@ -103,7 +105,9 @@ Public Class PinbarBreakoutStrategyRule
                                 .OrderType = Trade.TypeOfOrder.SL,
                                 .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
                                 .Supporting2 = GetSignalCandleType(signalCandle, Trade.TradeExecutionDirection.Sell),
-                                .Supporting3 = GetCandleATR(signalCandle)
+                                .Supporting3 = GetCandleATR(signalCandle),
+                                .Supporting4 = GetCandleTypeValue(signalCandle),
+                                .Supporting5 = signalCandle.Volume
                             }
                 End If
             End If
@@ -476,6 +480,17 @@ Public Class PinbarBreakoutStrategyRule
             ret = String.Format("{0} - Infinity", ret)
         End If
 
+        Return ret
+    End Function
+
+    Private Function GetCandleTypeValue(ByVal signalCandle As Payload) As String
+        Dim ret As String = ""
+        If signalCandle.PreviousCandlePayload.CandleRange > 0 Then
+            Dim result As Decimal = signalCandle.PreviousCandlePayload.Volume * signalCandle.CandleRange / signalCandle.PreviousCandlePayload.CandleRange
+            ret = result
+        Else
+            ret = "Infinity"
+        End If
         Return ret
     End Function
 
