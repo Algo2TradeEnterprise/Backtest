@@ -158,66 +158,33 @@ Public Class LowSLPinbarStrategyRule
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
-        'Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
-        'If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-        '    Dim triggerPrice As Decimal = Decimal.MinValue
-        '    Dim reason As String = Nothing
-        '    Dim signalCandle As Payload = currentTrade.SignalCandle
-        '    If signalCandle IsNot Nothing Then
-        '        Dim buffer As Decimal = currentTrade.StoplossBuffer
-        '        If signalCandle.PayloadDate = currentMinuteCandlePayload.PreviousCandlePayload.PreviousCandlePayload.PayloadDate Then
-        '            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-        '                Dim potentialSLPrice As Decimal = Decimal.MinValue
-        '                If signalCandle.CandleColor = Color.Red Then
-        '                    potentialSLPrice = signalCandle.Close - buffer
-        '                Else
-        '                    potentialSLPrice = signalCandle.Open - buffer
-        '                End If
-        '                Dim minimusSL As Decimal = currentTrade.EntryPrice * _userInputs.MinLossPercentagePerTrade / 100
-        '                If potentialSLPrice <= ConvertFloorCeling(currentTrade.EntryPrice - minimusSL, Me._parentStrategy.TickSize, RoundOfType.Floor) Then
-        '                    triggerPrice = potentialSLPrice
-        '                    reason = "Move to candle body"
-        '                Else
-        '                    triggerPrice = ConvertFloorCeling(currentTrade.EntryPrice - minimusSL, Me._parentStrategy.TickSize, RoundOfType.Floor)
-        '                    reason = "Minimum loss % per trade"
-        '                End If
-        '            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-        '                Dim potentialSLPrice As Decimal = Decimal.MinValue
-        '                If signalCandle.CandleColor = Color.Red Then
-        '                    potentialSLPrice = signalCandle.Open + buffer
-        '                Else
-        '                    potentialSLPrice = signalCandle.Close + buffer
-        '                End If
-        '                Dim minimusSL As Decimal = currentTrade.EntryPrice * _userInputs.MinLossPercentagePerTrade / 100
-        '                If potentialSLPrice >= ConvertFloorCeling(currentTrade.EntryPrice + minimusSL, Me._parentStrategy.TickSize, RoundOfType.Floor) Then
-        '                    triggerPrice = potentialSLPrice
-        '                    reason = "Move to candle body"
-        '                Else
-        '                    triggerPrice = ConvertFloorCeling(currentTrade.EntryPrice + minimusSL, Me._parentStrategy.TickSize, RoundOfType.Floor)
-        '                    reason = "Minimum loss % per trade"
-        '                End If
-        '            End If
-        '        End If
-        '        If _userInputs.BreakevenMovement Then
-        '            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-        '                If currentMinuteCandlePayload.PreviousCandlePayload.Low > currentTrade.EntryPrice Then
-        '                    Dim potentialPrice As Decimal = currentTrade.EntryPrice + GetMovementPoint(currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection)
-        '                    triggerPrice = ConvertFloorCeling(potentialPrice, Me._parentStrategy.TickSize, RoundOfType.Celing)
-        '                    reason = "Breakeven movement"
-        '                End If
-        '            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-        '                If currentMinuteCandlePayload.PreviousCandlePayload.High < currentTrade.EntryPrice Then
-        '                    Dim potentialPrice As Decimal = currentTrade.EntryPrice - GetMovementPoint(currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection)
-        '                    triggerPrice = ConvertFloorCeling(potentialPrice, Me._parentStrategy.TickSize, RoundOfType.Floor)
-        '                    reason = "Breakeven movement"
-        '                End If
-        '            End If
-        '        End If
-        '    End If
-        '    If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
-        '        ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, reason)
-        '    End If
-        'End If
+        Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
+        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            Dim triggerPrice As Decimal = Decimal.MinValue
+            Dim reason As String = Nothing
+            Dim signalCandle As Payload = currentTrade.SignalCandle
+            If signalCandle IsNot Nothing Then
+                If _userInputs.BreakevenMovement Then
+                    Dim targetPoint As Decimal = _slPoint * _userInputs.TargetMultiplier
+                    If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                        Dim potentialTarget As Decimal = currentTrade.EntryPrice + ConvertFloorCeling(targetPoint / 2, Me._parentStrategy.TickSize, RoundOfType.Celing)
+                        If currentTick.Open > potentialTarget Then
+                            triggerPrice = ConvertFloorCeling(currentTrade.EntryPrice, Me._parentStrategy.TickSize, RoundOfType.Floor)
+                            reason = "Breakeven movement"
+                        End If
+                    ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                        Dim potentialTarget As Decimal = currentTrade.EntryPrice - ConvertFloorCeling(targetPoint / 2, Me._parentStrategy.TickSize, RoundOfType.Celing)
+                        If currentTick.Open < potentialTarget Then
+                            triggerPrice = ConvertFloorCeling(currentTrade.EntryPrice, Me._parentStrategy.TickSize, RoundOfType.Celing)
+                            reason = "Breakeven movement"
+                        End If
+                    End If
+                End If
+            End If
+            If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
+                ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, reason)
+            End If
+        End If
         Return ret
     End Function
 
