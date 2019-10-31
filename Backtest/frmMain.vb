@@ -409,7 +409,7 @@ Public Class frmMain
 #End Region
 
             'Dim stkPrftList As List(Of Decimal) = New List(Of Decimal) From {1, Decimal.MaxValue}
-            Dim stkPrftList As List(Of Decimal) = New List(Of Decimal) From {1}
+            Dim stkPrftList As List(Of Decimal) = New List(Of Decimal) From {Decimal.MaxValue}
             For trdAtDayHL As Integer = 0 To 0 Step 1
                 For trgtMul As Decimal = 1 To 1 Step 1
                     For brkevnMvmnt As Integer = 1 To 1 Step 1
@@ -524,9 +524,9 @@ Public Class frmMain
                                             .StockMaxProfitPerDay = Decimal.MaxValue
                                             .StockMaxLossPerDay = Decimal.MinValue
 
-                                            .ExitOnOverAllFixedTargetStoploss = False
+                                            .ExitOnOverAllFixedTargetStoploss = True
                                             .OverAllProfitPerDay = Decimal.MaxValue
-                                            .OverAllLossPerDay = Decimal.MinValue
+                                            .OverAllLossPerDay = -15000
 
                                             .TrailingMTM = True
                                             .MTMSlab = 20000
