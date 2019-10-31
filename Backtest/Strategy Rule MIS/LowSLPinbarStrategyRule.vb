@@ -16,6 +16,7 @@ Public Class LowSLPinbarStrategyRule
         Public TargetMultiplier As Decimal
         Public BreakevenMovement As Boolean
         Public StopAtFirstTarget As Boolean
+        Public AllowMomentumReversal As Boolean
     End Class
 #End Region
 
@@ -231,20 +232,32 @@ Public Class LowSLPinbarStrategyRule
                 direction = Trade.TradeExecutionDirection.Buy
             End If
             If direction <> Trade.TradeExecutionDirection.None Then
-                Dim middlePoint As Decimal = (candle.High + candle.Low) / 2
-                Dim range As Decimal = candle.High + highBuffer - middlePoint
-                If currentTick.Open >= middlePoint + range * 30 / 100 Then
-                    ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection, Payload)(True, candle.High + highBuffer, candle.High + highBuffer - _slPoint, Trade.TradeExecutionDirection.Buy, candle)
-                ElseIf currentTick.Open <= middlePoint - range * 30 / 100 Then
-                    ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection, Payload)(True, candle.Low - lowBuffer, candle.Low - lowBuffer + _slPoint, Trade.TradeExecutionDirection.Sell, candle)
+                If _userInputs.AllowMomentumReversal Then
+                    Dim middlePoint As Decimal = (candle.High + candle.Low) / 2
+                    Dim range As Decimal = candle.High + highBuffer - middlePoint
+                    If currentTick.Open >= middlePoint + range * 30 / 100 Then
+                        ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection, Payload)(True, candle.High + highBuffer, candle.High + highBuffer - _slPoint, Trade.TradeExecutionDirection.Buy, candle)
+                    ElseIf currentTick.Open <= middlePoint - range * 30 / 100 Then
+                        ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection, Payload)(True, candle.Low - lowBuffer, candle.Low - lowBuffer + _slPoint, Trade.TradeExecutionDirection.Sell, candle)
+                    End If
+                Else
+                    If direction = Trade.TradeExecutionDirection.Buy Then
+                        ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection, Payload)(True, candle.High + highBuffer, candle.High + highBuffer - _slPoint, Trade.TradeExecutionDirection.Buy, candle)
+                    ElseIf direction = Trade.TradeExecutionDirection.Sell Then
+                        ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection, Payload)(True, candle.Low - lowBuffer, candle.Low - lowBuffer + _slPoint, Trade.TradeExecutionDirection.Sell, candle)
+                    End If
                 End If
             ElseIf direction = Trade.TradeExecutionDirection.None Then
                 Dim previousLowBuffer As Decimal = Me._parentStrategy.CalculateBuffer(candle.PreviousCandlePayload.Low, RoundOfType.Floor)
                 Dim previousHighBuffer As Decimal = Me._parentStrategy.CalculateBuffer(candle.PreviousCandlePayload.High, RoundOfType.Floor)
                 If candle.PreviousCandlePayload.CandleWicks.Top + previousLowBuffer >= candle.PreviousCandlePayload.CandleRange * _userInputs.PinbarTailPercentage / 100 Then
-                    ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection, Payload)(True, candle.PreviousCandlePayload.Low - previousLowBuffer, candle.PreviousCandlePayload.Low - previousLowBuffer + _slPoint, Trade.TradeExecutionDirection.Sell, candle.PreviousCandlePayload)
+                    If candle.Low >= candle.PreviousCandlePayload.Low Then
+                        ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection, Payload)(True, candle.PreviousCandlePayload.Low - previousLowBuffer, candle.PreviousCandlePayload.Low - previousLowBuffer + _slPoint, Trade.TradeExecutionDirection.Sell, candle.PreviousCandlePayload)
+                    End If
                 ElseIf candle.PreviousCandlePayload.CandleWicks.Bottom + previousHighBuffer >= candle.PreviousCandlePayload.CandleRange * _userInputs.PinbarTailPercentage / 100 Then
-                    ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection, Payload)(True, candle.PreviousCandlePayload.High + previousHighBuffer, candle.PreviousCandlePayload.High + previousHighBuffer - _slPoint, Trade.TradeExecutionDirection.Buy, candle.PreviousCandlePayload)
+                    If candle.High <= candle.PreviousCandlePayload.High Then
+                        ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection, Payload)(True, candle.PreviousCandlePayload.High + previousHighBuffer, candle.PreviousCandlePayload.High + previousHighBuffer - _slPoint, Trade.TradeExecutionDirection.Buy, candle.PreviousCandlePayload)
+                    End If
                 End If
             End If
         End If

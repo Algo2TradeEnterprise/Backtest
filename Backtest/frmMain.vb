@@ -647,7 +647,8 @@ Public Class frmMain
                               .PinbarTailPercentage = 70,
                               .TargetMultiplier = 2,
                               .BreakevenMovement = True,
-                              .StopAtFirstTarget = False}
+                              .StopAtFirstTarget = False,
+                              .AllowMomentumReversal = True}
                     End Select
 
 
