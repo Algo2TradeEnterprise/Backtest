@@ -138,7 +138,7 @@ Public Class LowSLPinbarStrategyRule
                             ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                         End If
                     End If
-                    If Not _userInputs.AllowMomentumReversal Then
+                    If _userInputs.AllowMomentumReversal Then
                         If signalCandle.PayloadDate <= currentMinuteCandlePayload.PreviousCandlePayload.PreviousCandlePayload.PreviousCandlePayload.PayloadDate Then
                             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                                 If currentMinuteCandlePayload.PreviousCandlePayload.Low < signalCandle.Low Then
