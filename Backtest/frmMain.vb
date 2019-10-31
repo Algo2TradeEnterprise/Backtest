@@ -408,12 +408,13 @@ Public Class frmMain
             'Next
 #End Region
 
-            Dim stkPrftList As List(Of Decimal) = New List(Of Decimal) From {1, Decimal.MaxValue}
+            'Dim stkPrftList As List(Of Decimal) = New List(Of Decimal) From {1, Decimal.MaxValue}
+            Dim stkPrftList As List(Of Decimal) = New List(Of Decimal) From {1}
             For trdAtDayHL As Integer = 0 To 0 Step 1
                 For trgtMul As Decimal = 1 To 1 Step 1
-                    For brkevnMvmnt As Integer = 0 To 0 Step 1
+                    For brkevnMvmnt As Integer = 1 To 1 Step 1
                         For stopAtFirstTarget As Integer = 0 To 0 Step 1
-                            For stockMaxLossMultipler As Decimal = 1 To 2 Step -1
+                            For stockMaxLossMultipler As Decimal = 2 To 2 Step 1
                                 For Each stockMaxProfitMultipler As Decimal In stkPrftList
                                     If stockMaxProfitMultipler <> Decimal.MaxValue AndAlso stopAtFirstTarget = 1 Then Continue For
                                     Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
@@ -429,10 +430,10 @@ Public Class frmMain
                                                               stockType:=stockType,
                                                               databaseTable:=database,
                                                               dataSource:=sourceData,
-                                                              initialCapital:=6000000,
-                                                              usableCapital:=5000000,
-                                                              minimumEarnedCapitalToWithdraw:=7000000,
-                                                              amountToBeWithdrawn:=1000000)
+                                                              initialCapital:=250000,
+                                                              usableCapital:=200000,
+                                                              minimumEarnedCapitalToWithdraw:=300000,
+                                                              amountToBeWithdrawn:=100000)
                                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                                         With backtestStrategy
@@ -527,8 +528,8 @@ Public Class frmMain
                                             .OverAllProfitPerDay = Decimal.MaxValue
                                             .OverAllLossPerDay = Decimal.MinValue
 
-                                            .TrailingMTM = False
-                                            .MTMSlab = 10000
+                                            .TrailingMTM = True
+                                            .MTMSlab = 20000
                                         End With
                                         Await backtestStrategy.TestStrategyAsync(startDate, endDate).ConfigureAwait(False)
                                     End Using
