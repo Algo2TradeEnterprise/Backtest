@@ -39,9 +39,9 @@ Namespace StrategyHelper
                 Me.StockMaxLossPerDay = Decimal.MinValue
             End If
 
-            Dim ruleData As PinbarBreakoutStrategyRule.StrategyRuleEntities = Me.RuleEntityData
-            Dim filename As String = String.Format("DHL {0},TgtMul {1},Brkevn {2},StpFstTgt {3},StckMaxPrft {4},StckMaxLs {5},OvrAlPrft {6},OvrAlLs {7}",
-                                                   ruleData.SignalAtDayHighLow,
+            Dim ruleData As LowSLPinbarStrategyRule.StrategyRuleEntities = Me.RuleEntityData
+            Dim filename As String = String.Format("TF {0},TgtMul {1},Brkevn {2},StpFstTgt {3},StckMaxPrft {4},StckMaxLs {5},OvrAlPrft {6},OvrAlLs {7}",
+                                                   Me.SignalTimeFrame,
                                                    ruleData.TargetMultiplier,
                                                    ruleData.BreakevenMovement,
                                                    ruleData.StopAtFirstTarget,
