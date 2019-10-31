@@ -363,11 +363,11 @@ Namespace StrategyHelper
                                                                 Select Case runningOrder.OrderType
                                                                     Case Trade.TypeOfOrder.SL
                                                                         If runningOrder.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                                                                            If runningTick.High > runningOrder.EntryPrice Then
+                                                                            If runningTick.High >= runningOrder.EntryPrice Then
                                                                                 Continue For
                                                                             End If
                                                                         ElseIf runningOrder.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                                                                            If runningTick.Low < runningOrder.EntryPrice Then
+                                                                            If runningTick.Low <= runningOrder.EntryPrice Then
                                                                                 Continue For
                                                                             End If
                                                                         End If
@@ -447,11 +447,11 @@ Namespace StrategyHelper
                                                                 Select Case runningOrder.OrderType
                                                                     Case Trade.TypeOfOrder.SL
                                                                         If runningOrder.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                                                                            If runningTick.High > runningOrder.EntryPrice Then
+                                                                            If runningTick.High >= runningOrder.EntryPrice Then
                                                                                 Continue For
                                                                             End If
                                                                         ElseIf runningOrder.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                                                                            If runningTick.Low < runningOrder.EntryPrice Then
+                                                                            If runningTick.Low <= runningOrder.EntryPrice Then
                                                                                 Continue For
                                                                             End If
                                                                         End If

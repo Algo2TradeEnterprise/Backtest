@@ -644,11 +644,11 @@ Public Class frmMain
                             .RuleEntityData = New LowSLPinbarStrategyRule.StrategyRuleEntities With
                              {.MinimumInvestmentPerStock = 15000,
                               .MaxLossPerTrade = -1000,
-                              .PinbarTailPercentage = 70,
+                              .PinbarTailPercentage = 65,
                               .TargetMultiplier = 2,
                               .BreakevenMovement = True,
                               .StopAtFirstTarget = False,
-                              .AllowMomentumReversal = True}
+                              .AllowMomentumReversal = False}
                     End Select
 
 
