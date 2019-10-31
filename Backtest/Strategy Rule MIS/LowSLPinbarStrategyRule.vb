@@ -138,6 +138,17 @@ Public Class LowSLPinbarStrategyRule
                             ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                         End If
                     End If
+                    If signalCandle.PayloadDate <= currentMinuteCandlePayload.PreviousCandlePayload.PreviousCandlePayload.PreviousCandlePayload.PayloadDate Then
+                        If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                            If currentMinuteCandlePayload.PreviousCandlePayload.Low < signalCandle.Low Then
+                                ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                            End If
+                        ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                            If currentMinuteCandlePayload.PreviousCandlePayload.High > signalCandle.High Then
+                                ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                            End If
+                        End If
+                    End If
                 End If
             End If
         End If
@@ -248,14 +259,13 @@ Public Class LowSLPinbarStrategyRule
                     End If
                 End If
             ElseIf direction = Trade.TradeExecutionDirection.None Then
-                Dim previousLowBuffer As Decimal = Me._parentStrategy.CalculateBuffer(candle.PreviousCandlePayload.Low, RoundOfType.Floor)
-                Dim previousHighBuffer As Decimal = Me._parentStrategy.CalculateBuffer(candle.PreviousCandlePayload.High, RoundOfType.Floor)
-                If candle.PreviousCandlePayload.CandleWicks.Top + previousLowBuffer >= candle.PreviousCandlePayload.CandleRange * _userInputs.PinbarTailPercentage / 100 Then
-                    If candle.Low >= candle.PreviousCandlePayload.Low Then
+                If candle.High <= candle.PreviousCandlePayload.High AndAlso
+                    candle.Low >= candle.PreviousCandlePayload.Low Then
+                    Dim previousLowBuffer As Decimal = Me._parentStrategy.CalculateBuffer(candle.PreviousCandlePayload.Low, RoundOfType.Floor)
+                    Dim previousHighBuffer As Decimal = Me._parentStrategy.CalculateBuffer(candle.PreviousCandlePayload.High, RoundOfType.Floor)
+                    If candle.PreviousCandlePayload.CandleWicks.Top + previousLowBuffer >= candle.PreviousCandlePayload.CandleRange * _userInputs.PinbarTailPercentage / 100 Then
                         ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection, Payload)(True, candle.PreviousCandlePayload.Low - previousLowBuffer, candle.PreviousCandlePayload.Low - previousLowBuffer + _slPoint, Trade.TradeExecutionDirection.Sell, candle.PreviousCandlePayload)
-                    End If
-                ElseIf candle.PreviousCandlePayload.CandleWicks.Bottom + previousHighBuffer >= candle.PreviousCandlePayload.CandleRange * _userInputs.PinbarTailPercentage / 100 Then
-                    If candle.High <= candle.PreviousCandlePayload.High Then
+                    ElseIf candle.PreviousCandlePayload.CandleWicks.Bottom + previousHighBuffer >= candle.PreviousCandlePayload.CandleRange * _userInputs.PinbarTailPercentage / 100 Then
                         ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection, Payload)(True, candle.PreviousCandlePayload.High + previousHighBuffer, candle.PreviousCandlePayload.High + previousHighBuffer - _slPoint, Trade.TradeExecutionDirection.Buy, candle.PreviousCandlePayload)
                     End If
                 End If
