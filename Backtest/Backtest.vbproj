@@ -122,6 +122,7 @@
     <Compile Include="Strategy Rule MIS\HighVolumePinBarStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\HighVolumePinBarv2StrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\ForwardMomentumStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\LowSLPinbarStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\LowStoplossStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\MomentumReversalv2StrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\LowStoplossPreviousDayHighLowStrategyRule.vb" />

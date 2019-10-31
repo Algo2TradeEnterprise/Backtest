@@ -151,6 +151,8 @@ Namespace StrategyHelper
                                             stockRule = New ReversalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting2)
                                         Case 16
                                             stockRule = New PinbarBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting2)
+                                        Case 17
+                                            stockRule = New LowSLPinbarStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2, stockList(stock).Supporting3, stockList(stock).Supporting4)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -707,6 +709,50 @@ Namespace StrategyHelper
                                                 .LotSize = lotSize,
                                                 .EligibleToTakeTrade = True}
                                         ret.Add(instrumentName, detailsOfStock)
+                                    End If
+                                End If
+                            Next
+                        Case 17
+                            Dim counter As Integer = 0
+                            For i = 1 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i)(0)
+                                If rowDate.Date = tradingDate.Date Then
+                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                    Dim tradingSymbol As String = dt.Rows(i).Item(1)
+                                    Dim instrumentName As String = Nothing
+                                    If tradingSymbol.Contains("FUT") Then
+                                        instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                                    Else
+                                        instrumentName = tradingSymbol
+                                    End If
+                                    Dim stockPayload As Dictionary(Of Date, Payload) = Nothing
+                                    If Me.DataSource = SourceOfData.Database Then
+                                        stockPayload = Cmn.GetRawPayload(Me.DatabaseTable, instrumentName, tradingDate, tradingDate)
+                                    ElseIf Me.DataSource = SourceOfData.Live Then
+                                        stockPayload = Await Cmn.GetHistoricalData(Me.DatabaseTable, instrumentName, tradingDate, tradingDate).ConfigureAwait(False)
+                                    End If
+                                    If stockPayload IsNot Nothing AndAlso stockPayload.Count > 0 Then
+                                        Dim time As Date = New Date(tradingDate.Year, tradingDate.Month, tradingDate.Day, 9, 16, 0)
+                                        Dim stockPrice As Decimal = stockPayload.Where(Function(x)
+                                                                                           Return x.Key >= time
+                                                                                       End Function).FirstOrDefault.Value.Close
+                                        Dim quantity As Integer = CalculateQuantityFromInvestment(dt.Rows(i).Item(2), CType(Me.RuleEntityData, LowSLPinbarStrategyRule.StrategyRuleEntities).MinimumInvestmentPerStock, stockPrice, Me.StockType, True)
+                                        Dim capital As Decimal = stockPrice * quantity / Me.MarginMultiplier
+                                        If capital < 25000 Then
+                                            Dim stoploss As Decimal = CalculatorTargetOrStoploss(instrumentName, stockPrice, quantity, Math.Abs(CType(Me.RuleEntityData, LowSLPinbarStrategyRule.StrategyRuleEntities).MaxLossPerTrade) * -1, Trade.TradeExecutionDirection.Buy, Me.StockType)
+                                            Dim slPoint As Decimal = stockPrice - stoploss
+                                            Dim detailsOfStock As StockDetails = New StockDetails With
+                                            {.StockName = instrumentName,
+                                            .LotSize = dt.Rows(i).Item(2),
+                                            .EligibleToTakeTrade = True,
+                                            .Supporting1 = dt.Rows(i).Item(3),
+                                            .Supporting2 = dt.Rows(i).Item(5),
+                                            .Supporting3 = slPoint,
+                                            .Supporting4 = quantity}
+                                            ret.Add(instrumentName, detailsOfStock)
+                                            counter += 1
+                                            If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                                        End If
                                     End If
                                 End If
                             Next
