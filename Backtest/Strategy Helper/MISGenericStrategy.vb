@@ -67,10 +67,11 @@ Namespace StrategyHelper
                 If File.Exists(capitalFileName) Then File.Delete(capitalFileName)
                 Dim totalPL As Decimal = 0
                 Dim tradeCheckingDate As Date = startDate.Date
+                Dim portfolioLossPerDay As Decimal = Me.OverAllLossPerDay
                 While tradeCheckingDate <= endDate.Date
                     _canceller.Token.ThrowIfCancellationRequested()
                     Me.AvailableCapital = Me.UsableCapital
-                    'If Me.TrailingMTM Then Me.OverAllLossPerDay = Decimal.MinValue
+                    If Me.TrailingMTM Then Me.OverAllLossPerDay = portfolioLossPerDay
                     TradesTaken = New Dictionary(Of Date, Dictionary(Of String, List(Of Trade)))
                     Dim stockList As Dictionary(Of String, StockDetails) = Await GetStockData(tradeCheckingDate).ConfigureAwait(False)
 
