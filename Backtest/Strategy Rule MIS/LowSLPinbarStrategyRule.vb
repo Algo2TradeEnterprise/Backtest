@@ -204,7 +204,8 @@ Public Class LowSLPinbarStrategyRule
             Dim direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
             Dim lowBuffer As Decimal = Me._parentStrategy.CalculateBuffer(candle.Low, RoundOfType.Floor)
             Dim highBuffer As Decimal = Me._parentStrategy.CalculateBuffer(candle.High, RoundOfType.Floor)
-            If candle.CandleRange > _ATRPayload(candle.PayloadDate) / 3 AndAlso candle.CandleRange < _ATRPayload(candle.PayloadDate) Then
+            'If candle.CandleRange > _ATRPayload(candle.PayloadDate) / 3 AndAlso candle.CandleRange < _ATRPayload(candle.PayloadDate) Then
+            If candle.CandleRange > _ATRPayload(candle.PayloadDate) / 3 Then
                 If candle.CandleWicks.Top <> 0 AndAlso candle.CandleWicks.Top + lowBuffer >= candle.CandleRange * _userInputs.PinbarTailPercentage / 100 Then
                     direction = Trade.TradeExecutionDirection.Sell
                 ElseIf candle.CandleWicks.Bottom <> 0 AndAlso candle.CandleWicks.Bottom + highBuffer >= candle.CandleRange * _userInputs.PinbarTailPercentage / 100 Then
@@ -230,8 +231,9 @@ Public Class LowSLPinbarStrategyRule
             ElseIf direction = Trade.TradeExecutionDirection.None Then
                 If candle.High <= candle.PreviousCandlePayload.High AndAlso
                     candle.Low >= candle.PreviousCandlePayload.Low Then
-                    If candle.PreviousCandlePayload.CandleRange > _ATRPayload(candle.PreviousCandlePayload.PayloadDate) / 3 AndAlso
-                        candle.PreviousCandlePayload.CandleRange < _ATRPayload(candle.PreviousCandlePayload.PayloadDate) Then
+                    'If candle.PreviousCandlePayload.CandleRange > _ATRPayload(candle.PreviousCandlePayload.PayloadDate) / 3 AndAlso
+                    '    candle.PreviousCandlePayload.CandleRange < _ATRPayload(candle.PreviousCandlePayload.PayloadDate) Then
+                    If candle.PreviousCandlePayload.CandleRange > _ATRPayload(candle.PreviousCandlePayload.PayloadDate) / 3 Then
                         Dim previousLowBuffer As Decimal = Me._parentStrategy.CalculateBuffer(candle.PreviousCandlePayload.Low, RoundOfType.Floor)
                         Dim previousHighBuffer As Decimal = Me._parentStrategy.CalculateBuffer(candle.PreviousCandlePayload.High, RoundOfType.Floor)
                         If candle.PreviousCandlePayload.CandleWicks.Top <> 0 AndAlso
