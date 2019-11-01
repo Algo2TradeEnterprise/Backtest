@@ -28,6 +28,7 @@ Namespace StrategyHelper
                        ByVal minimumEarnedCapitalToWithdraw As Decimal,
                        ByVal amountToBeWithdrawn As Decimal)
             MyBase.New(canceller, exchangeStartTime, exchangeEndTime, tradeStartTime, lastTradeEntryTime, eodExitTime, tickSize, marginMultiplier, timeframe, heikenAshiCandle, stockType, Trade.TypeOfTrade.MIS, databaseTable, dataSource, initialCapital, usableCapital, minimumEarnedCapitalToWithdraw, amountToBeWithdrawn)
+            Me.NumberOfTradesPerDay = Integer.MaxValue
         End Sub
         Public Overrides Async Function TestStrategyAsync(startDate As Date, endDate As Date) As Task
             If Not Me.ExitOnOverAllFixedTargetStoploss Then
@@ -39,7 +40,7 @@ Namespace StrategyHelper
                 Me.StockMaxLossPerDay = Decimal.MinValue
             End If
 
-            Dim ruleData As LowSLPinbarStrategyRule.StrategyRuleEntities = Me.RuleEntityData
+            Dim ruleData As PinbarBreakoutStrategyRule.StrategyRuleEntities = Me.RuleEntityData
             Dim filename As String = String.Format("TF {0},TgtMul {1},Brkevn {2},StpFstTgt {3},StckMaxPrft {4},StckMaxLs {5},OvrAlPrft {6},OvrAlLs {7}",
                                                    Me.SignalTimeFrame,
                                                    ruleData.TargetMultiplier,
@@ -329,7 +330,8 @@ Namespace StrategyHelper
                                                     Dim placeOrderDetails As Tuple(Of Boolean, List(Of PlaceOrderParameters)) = Nothing
                                                     If stockList(stockName).EligibleToTakeTrade Then
                                                         If Me.TickBasedStrategy OrElse Not stockList(stockName).PlaceOrderDoneForTheMinute Then
-                                                            If Me.TotalPLAfterBrokerage(runningTick.PayloadDate) < Me.OverAllProfitPerDay AndAlso
+                                                            If Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.NumberOfTradesPerStockPerDay AndAlso
+                                                                Me.TotalPLAfterBrokerage(runningTick.PayloadDate) < Me.OverAllProfitPerDay AndAlso
                                                                 Me.TotalPLAfterBrokerage(runningTick.PayloadDate) > Math.Abs(Me.OverAllLossPerDay) * -1 AndAlso
                                                                 Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.StockMaxProfitPerDay AndAlso
                                                                 Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso
@@ -425,7 +427,8 @@ Namespace StrategyHelper
                                                     _canceller.Token.ThrowIfCancellationRequested()
                                                     Dim placeOrderTrigger As Tuple(Of Boolean, List(Of PlaceOrderParameters)) = Nothing
                                                     If exitOrderSuccessful Then
-                                                        If Me.TotalPLAfterBrokerage(runningTick.PayloadDate) < Me.OverAllProfitPerDay AndAlso
+                                                        If Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.NumberOfTradesPerStockPerDay AndAlso
+                                                            Me.TotalPLAfterBrokerage(runningTick.PayloadDate) < Me.OverAllProfitPerDay AndAlso
                                                             Me.TotalPLAfterBrokerage(runningTick.PayloadDate) > Math.Abs(Me.OverAllLossPerDay) * -1 AndAlso
                                                             Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.StockMaxProfitPerDay AndAlso
                                                             Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso

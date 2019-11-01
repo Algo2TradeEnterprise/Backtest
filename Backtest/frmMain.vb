@@ -554,12 +554,12 @@ Public Class frmMain
             Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                               exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                               exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                              tradeStartTime:=TimeSpan.Parse("9:18:00"),
-                                                              lastTradeEntryTime:=TimeSpan.Parse("14:45:59"),
+                                                              tradeStartTime:=TimeSpan.Parse("9:20:00"),
+                                                              lastTradeEntryTime:=TimeSpan.Parse("14:40:59"),
                                                               eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                               tickSize:=tick,
                                                               marginMultiplier:=margin,
-                                                              timeframe:=1,
+                                                              timeframe:=5,
                                                               heikenAshiCandle:=False,
                                                               stockType:=stockType,
                                                               databaseTable:=database,
@@ -578,8 +578,8 @@ Public Class frmMain
                     '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Volume spike Stock List with abs ATR.csv")
                     '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Nifty 50.csv")
                     '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Multi Target ATR Based Stocks.csv")
-                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pinbar Stocklist.csv")
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Low SL Pinbar Stocklist.csv")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pinbar Stocklist.csv")
+                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Low SL Pinbar Stocklist.csv")
 
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
                     Select Case .RuleNumber
@@ -652,9 +652,8 @@ Public Class frmMain
                     End Select
 
 
-                    .NumberOfTradeableStockPerDay = 1
+                    .NumberOfTradeableStockPerDay = Integer.MaxValue
 
-                    .NumberOfTradesPerDay = Integer.MaxValue
                     .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
                     .TrailingStoploss = False
