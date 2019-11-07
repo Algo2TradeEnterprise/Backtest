@@ -738,6 +738,56 @@ Public Class Common
         Return ret
     End Function
 
+    Public Function GetAllStockList(ByVal tableName As DataBaseTable, ByVal tradingDate As Date) As List(Of String)
+        Dim ret As List(Of String) = Nothing
+        Dim dt As DataTable = Nothing
+        Dim conn As MySqlConnection = OpenDBConnection()
+        Dim cm As MySqlCommand = Nothing
+
+        Select Case tableName
+            Case DataBaseTable.Intraday_Cash, DataBaseTable.EOD_Cash
+                cm = New MySqlCommand("SELECT `TRADING_SYMBOL` FROM `active_instruments_cash` WHERE `AS_ON_DATE`=@sd", conn)
+            Case DataBaseTable.Intraday_Currency, DataBaseTable.EOD_Currency
+                cm = New MySqlCommand("SELECT `TRADING_SYMBOL` FROM `active_instruments_currency` WHERE `AS_ON_DATE`=@sd", conn)
+            Case DataBaseTable.Intraday_Commodity, DataBaseTable.EOD_Commodity
+                cm = New MySqlCommand("SELECT `TRADING_SYMBOL` FROM `active_instruments_commodity` WHERE `AS_ON_DATE`=@sd", conn)
+            Case DataBaseTable.Intraday_Futures, DataBaseTable.EOD_Futures
+                cm = New MySqlCommand("SELECT `TRADING_SYMBOL` FROM `active_instruments_futures` WHERE `AS_ON_DATE`=@sd", conn)
+        End Select
+
+        OnHeartbeat(String.Format("Getting all stock list from DataBase for {0}", tradingDate.ToShortDateString))
+
+        cm.Parameters.AddWithValue("@sd", tradingDate.Date.ToString("yyyy-MM-dd"))
+        Dim adapter As New MySqlDataAdapter(cm)
+        adapter.SelectCommand.CommandTimeout = 300
+        dt = New DataTable()
+        adapter.Fill(dt)
+        If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
+            For i = 0 To dt.Rows.Count - 1
+                Dim tradingSymbol As String = dt.Rows(i).Item(0).ToString.ToUpper
+                Dim instrumentName As String = Nothing
+                If tradingSymbol.Contains("FUT") Then
+                    instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                Else
+                    instrumentName = tradingSymbol
+                End If
+                If ret Is Nothing Then ret = New List(Of String)
+                If Not ret.Contains(instrumentName) Then ret.Add(instrumentName)
+            Next
+        End If
+        Return ret
+    End Function
+
+    Public Async Function IsTradingDay(ByVal tradingDate As Date) As Task(Of Boolean)
+        Dim ret As Boolean = False
+        Dim eodHistoricalData As Dictionary(Of Date, Payload) = Await GetHistoricalDataAsync(DataBaseTable.EOD_Cash, "JINDALSTEL", tradingDate, tradingDate).ConfigureAwait(False)
+        _cts.Token.ThrowIfCancellationRequested()
+        If eodHistoricalData IsNot Nothing AndAlso eodHistoricalData.Count > 0 Then
+            _cts.Token.ThrowIfCancellationRequested()
+            ret = True
+        End If
+        Return ret
+    End Function
 #End Region
 
 #Region "DB Connection"
