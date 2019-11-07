@@ -7,6 +7,10 @@ Namespace StrategyHelper
     Public Class CNCGenericStrategy
         Inherits Strategy
         Implements IDisposable
+
+        Private IntradayPayload As Dictionary(Of String, Dictionary(Of Date, Payload))
+        Private EODPayload As Dictionary(Of String, Dictionary(Of Date, Payload))
+
         Public Property StockFileName As String
         Public Property RuleNumber As Integer
         Public Property RuleEntityData As RuleEntities
@@ -29,6 +33,7 @@ Namespace StrategyHelper
                        ByVal amountToBeWithdrawn As Decimal)
             MyBase.New(canceller, exchangeStartTime, exchangeEndTime, tradeStartTime, lastTradeEntryTime, eodExitTime, tickSize, marginMultiplier, timeframe, heikenAshiCandle, stockType, Trade.TypeOfTrade.CNC, databaseTable, dataSource, initialCapital, usableCapital, minimumEarnedCapitalToWithdraw, amountToBeWithdrawn)
         End Sub
+
         Public Overrides Async Function TestStrategyAsync(startDate As Date, endDate As Date) As Task
             If Not Me.ExitOnOverAllFixedTargetStoploss Then
                 Me.OverAllProfitPerDay = Decimal.MaxValue
@@ -39,7 +44,7 @@ Namespace StrategyHelper
                 Me.StockMaxLossPerDay = Decimal.MinValue
             End If
             Dim filename As String = String.Format("CNC Output Capital {3} {0}_{1}_{2}", Now.Hour, Now.Minute, Now.Second,
-                                                   If(Me.UsableCapital = Decimal.MaxValue / 2, "Infinite", Me.UsableCapital))
+                                                   If(Me.UsableCapital = Decimal.MaxValue / 2, "∞", Me.UsableCapital))
 
             Dim tradesFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Trades.a2t", filename))
             Dim capitalFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Capital.a2t", filename))
@@ -59,14 +64,66 @@ Namespace StrategyHelper
                 Dim totalPL As Decimal = 0
                 Dim tradeCheckingDate As Date = startDate.Date
                 TradesTaken = New Dictionary(Of Date, Dictionary(Of String, List(Of Trade)))
+                Me.AvailableCapital = Me.UsableCapital
                 While tradeCheckingDate <= endDate.Date
                     _canceller.Token.ThrowIfCancellationRequested()
-                    Me.AvailableCapital = Me.UsableCapital
+                    'Me.AvailableCapital = Me.UsableCapital
                     'TradesTaken = New Dictionary(Of Date, Dictionary(Of String, List(Of Trade)))
                     Dim stockList As Dictionary(Of String, StockDetails) = GetStockData(tradeCheckingDate)
 
                     _canceller.Token.ThrowIfCancellationRequested()
                     If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
+                        OnHeartbeat("Deserializing candles")
+                        If IntradayPayload Is Nothing Then
+                            For Each stock In stockList.Keys
+                                If EODPayload Is Nothing Then EODPayload = New Dictionary(Of String, Dictionary(Of Date, Payload))
+                                Dim eodFilename As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0} EOD Data.a2t", stock))
+                                If File.Exists(eodFilename) Then
+                                    If Not EODPayload.ContainsKey(stock) Then
+                                        Dim candleData As Dictionary(Of Date, Payload) = Nothing
+                                        Using stream As New FileStream(eodFilename, FileMode.Open)
+                                            Dim binaryFormatter = New System.Runtime.Serialization.Formatters.Binary.BinaryFormatter()
+                                            While stream.Position <> stream.Length
+                                                Dim tempData As Dictionary(Of Date, Payload) = binaryFormatter.Deserialize(stream)
+                                                If tempData IsNot Nothing AndAlso tempData.Count > 0 Then
+                                                    For Each runningData In tempData
+                                                        If candleData Is Nothing Then candleData = New Dictionary(Of Date, Payload)
+                                                        If Not candleData.ContainsKey(runningData.Key) Then
+                                                            candleData.Add(runningData.Key, runningData.Value)
+                                                        End If
+                                                    Next
+                                                End If
+                                            End While
+                                        End Using
+                                        EODPayload.Add(stock, candleData)
+                                    End If
+                                End If
+
+                                If IntradayPayload Is Nothing Then IntradayPayload = New Dictionary(Of String, Dictionary(Of Date, Payload))
+                                Dim intradayFilename As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0} Intraday Data.a2t", stock))
+                                If File.Exists(intradayFilename) Then
+                                    If Not IntradayPayload.ContainsKey(stock) Then
+                                        Dim candleData As Dictionary(Of Date, Payload) = Nothing
+                                        Using stream As New FileStream(intradayFilename, FileMode.Open)
+                                            Dim binaryFormatter = New System.Runtime.Serialization.Formatters.Binary.BinaryFormatter()
+                                            While stream.Position <> stream.Length
+                                                Dim tempData As Dictionary(Of Date, Payload) = binaryFormatter.Deserialize(stream)
+                                                If tempData IsNot Nothing AndAlso tempData.Count > 0 Then
+                                                    For Each runningData In tempData
+                                                        If candleData Is Nothing Then candleData = New Dictionary(Of Date, Payload)
+                                                        If Not candleData.ContainsKey(runningData.Key) Then
+                                                            candleData.Add(runningData.Key, runningData.Value)
+                                                        End If
+                                                    Next
+                                                End If
+                                            End While
+                                        End Using
+                                        IntradayPayload.Add(stock, candleData)
+                                    End If
+                                End If
+                            Next
+                        End If
+
                         Dim currentDayOneMinuteStocksPayload As Dictionary(Of String, Dictionary(Of Date, Payload)) = Nothing
                         Dim XDayOneMinuteStocksPayload As Dictionary(Of String, Dictionary(Of Date, Payload)) = Nothing
                         Dim stocksRuleData As Dictionary(Of String, StrategyRule) = Nothing
@@ -80,9 +137,9 @@ Namespace StrategyHelper
                             Dim XDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             Dim currentDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             If Me.DataSource = SourceOfData.Database Then
-                                XDayOneMinutePayload = Cmn.GetRawPayload(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate)
+                                XDayOneMinutePayload = Await GetCandleData(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate).ConfigureAwait(False)
                             ElseIf Me.DataSource = SourceOfData.Live Then
-                                XDayOneMinutePayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate).ConfigureAwait(False)
+                                XDayOneMinutePayload = Await GetCandleData(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate).ConfigureAwait(False)
                             End If
 
                             _canceller.Token.ThrowIfCancellationRequested()
@@ -143,6 +200,9 @@ Namespace StrategyHelper
                                             Throw New ApplicationException("Not a CNC strategy")
                                         Case 17
                                             Throw New ApplicationException("Not a CNC strategy")
+                                        Case 18
+                                            Dim eodPayload As Dictionary(Of Date, Payload) = Await GetCandleData(Common.DataBaseTable.EOD_Cash, stock, tradeCheckingDate.AddYears(-3), tradeCheckingDate)
+                                            stockRule = New InvestmentCNCStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, eodPayload)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -200,7 +260,7 @@ Namespace StrategyHelper
                                         _canceller.Token.ThrowIfCancellationRequested()
                                         Dim currentMinuteCandlePayload As Payload = Nothing
                                         If currentDayOneMinuteStocksPayload.ContainsKey(stockName) AndAlso
-                                            currentDayOneMinuteStocksPayload(stockName).ContainsKey(potentialCandleSignalTime) Then
+                                        currentDayOneMinuteStocksPayload(stockName).ContainsKey(potentialCandleSignalTime) Then
                                             currentMinuteCandlePayload = currentDayOneMinuteStocksPayload(stockName)(potentialCandleSignalTime)
                                         End If
 
@@ -257,24 +317,24 @@ Namespace StrategyHelper
                                                     Dim placeOrderDetails As Tuple(Of Boolean, List(Of PlaceOrderParameters)) = Nothing
                                                     If Me.TickBasedStrategy OrElse Not stockList(stockName).PlaceOrderDoneForTheMinute Then
                                                         If Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.NumberOfTradesPerStockPerDay AndAlso
-                                                            Me.TotalPLAfterBrokerage(runningTick.PayloadDate) < Me.OverAllProfitPerDay AndAlso
-                                                            Me.TotalPLAfterBrokerage(runningTick.PayloadDate) > Math.Abs(Me.OverAllLossPerDay) * -1 AndAlso
-                                                            Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.StockMaxProfitPerDay AndAlso
-                                                            Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso
-                                                            Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < stockStrategyRule.MaxProfitOfThisStock AndAlso
-                                                            Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
+                                                        Me.TotalPLAfterBrokerage(runningTick.PayloadDate) < Me.OverAllProfitPerDay AndAlso
+                                                        Me.TotalPLAfterBrokerage(runningTick.PayloadDate) > Math.Abs(Me.OverAllLossPerDay) * -1 AndAlso
+                                                        Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.StockMaxProfitPerDay AndAlso
+                                                        Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso
+                                                        Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < stockStrategyRule.MaxProfitOfThisStock AndAlso
+                                                        Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
                                                             placeOrderDetails = Await stockStrategyRule.IsTriggerReceivedForPlaceOrderAsync(runningTick).ConfigureAwait(False)
                                                             stockList(stockName).PlaceOrderTrigger = placeOrderDetails
                                                             stockList(stockName).PlaceOrderDoneForTheMinute = True
                                                         End If
                                                     Else
                                                         If Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.NumberOfTradesPerStockPerDay AndAlso
-                                                            Me.TotalPLAfterBrokerage(runningTick.PayloadDate) < Me.OverAllProfitPerDay AndAlso
-                                                            Me.TotalPLAfterBrokerage(runningTick.PayloadDate) > Math.Abs(Me.OverAllLossPerDay) * -1 AndAlso
-                                                            Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.StockMaxProfitPerDay AndAlso
-                                                            Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso
-                                                            Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < stockStrategyRule.MaxProfitOfThisStock AndAlso
-                                                            Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
+                                                        Me.TotalPLAfterBrokerage(runningTick.PayloadDate) < Me.OverAllProfitPerDay AndAlso
+                                                        Me.TotalPLAfterBrokerage(runningTick.PayloadDate) > Math.Abs(Me.OverAllLossPerDay) * -1 AndAlso
+                                                        Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.StockMaxProfitPerDay AndAlso
+                                                        Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso
+                                                        Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < stockStrategyRule.MaxProfitOfThisStock AndAlso
+                                                        Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
                                                             placeOrderDetails = stockList(stockName).PlaceOrderTrigger
                                                         End If
                                                     End If
@@ -304,31 +364,31 @@ Namespace StrategyHelper
                                                                         Throw New NotImplementedException
                                                                 End Select
                                                                 Dim runningTrade As Trade = New Trade(originatingStrategy:=Me,
-                                                                                                      tradingSymbol:=runningTick.TradingSymbol,
-                                                                                                      stockType:=Me.StockType,
-                                                                                                      orderType:=runningOrder.OrderType,
-                                                                                                      tradingDate:=runningTick.PayloadDate,
-                                                                                                      entryDirection:=runningOrder.EntryDirection,
-                                                                                                      entryPrice:=runningOrder.EntryPrice,
-                                                                                                      entryBuffer:=runningOrder.Buffer,
-                                                                                                      squareOffType:=Trade.TypeOfTrade.CNC,
-                                                                                                      entryCondition:=Trade.TradeEntryCondition.Original,
-                                                                                                      entryRemark:="Original Entry",
-                                                                                                      quantity:=runningOrder.Quantity,
-                                                                                                      potentialTarget:=runningOrder.Target,
-                                                                                                      targetRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Target),
-                                                                                                      potentialStopLoss:=runningOrder.Stoploss,
-                                                                                                      stoplossBuffer:=runningOrder.Buffer,
-                                                                                                      slRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Stoploss),
-                                                                                                      signalCandle:=runningOrder.SignalCandle)
+                                                                                                  tradingSymbol:=runningTick.TradingSymbol,
+                                                                                                  stockType:=Me.StockType,
+                                                                                                  orderType:=runningOrder.OrderType,
+                                                                                                  tradingDate:=runningTick.PayloadDate,
+                                                                                                  entryDirection:=runningOrder.EntryDirection,
+                                                                                                  entryPrice:=runningOrder.EntryPrice,
+                                                                                                  entryBuffer:=runningOrder.Buffer,
+                                                                                                  squareOffType:=Trade.TypeOfTrade.CNC,
+                                                                                                  entryCondition:=Trade.TradeEntryCondition.Original,
+                                                                                                  entryRemark:="Original Entry",
+                                                                                                  quantity:=runningOrder.Quantity,
+                                                                                                  potentialTarget:=runningOrder.Target,
+                                                                                                  targetRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Target),
+                                                                                                  potentialStopLoss:=runningOrder.Stoploss,
+                                                                                                  stoplossBuffer:=runningOrder.Buffer,
+                                                                                                  slRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Stoploss),
+                                                                                                  signalCandle:=runningOrder.SignalCandle)
 
                                                                 runningTrade.UpdateTrade(Tag:=tradeTag,
-                                                                                         SquareOffValue:=Math.Abs(runningOrder.EntryPrice - runningOrder.Target),
-                                                                                         Supporting1:=runningOrder.Supporting1,
-                                                                                         Supporting2:=runningOrder.Supporting2,
-                                                                                         Supporting3:=runningOrder.Supporting3,
-                                                                                         Supporting4:=runningOrder.Supporting4,
-                                                                                         Supporting5:=runningOrder.Supporting5)
+                                                                                     SquareOffValue:=Math.Abs(runningOrder.EntryPrice - runningOrder.Target),
+                                                                                     Supporting1:=runningOrder.Supporting1,
+                                                                                     Supporting2:=runningOrder.Supporting2,
+                                                                                     Supporting3:=runningOrder.Supporting3,
+                                                                                     Supporting4:=runningOrder.Supporting4,
+                                                                                     Supporting5:=runningOrder.Supporting5)
 
                                                                 If PlaceOrModifyOrder(runningTrade, Nothing) Then
                                                                     runningOrder.Used = True
@@ -353,12 +413,12 @@ Namespace StrategyHelper
                                                     Dim placeOrderTrigger As Tuple(Of Boolean, List(Of PlaceOrderParameters)) = Nothing
                                                     If exitOrderSuccessful Then
                                                         If Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.NumberOfTradesPerStockPerDay AndAlso
-                                                            Me.TotalPLAfterBrokerage(runningTick.PayloadDate) < Me.OverAllProfitPerDay AndAlso
-                                                            Me.TotalPLAfterBrokerage(runningTick.PayloadDate) > Math.Abs(Me.OverAllLossPerDay) * -1 AndAlso
-                                                            Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.StockMaxProfitPerDay AndAlso
-                                                            Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso
-                                                            Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < stockStrategyRule.MaxProfitOfThisStock AndAlso
-                                                            Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
+                                                        Me.TotalPLAfterBrokerage(runningTick.PayloadDate) < Me.OverAllProfitPerDay AndAlso
+                                                        Me.TotalPLAfterBrokerage(runningTick.PayloadDate) > Math.Abs(Me.OverAllLossPerDay) * -1 AndAlso
+                                                        Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.StockMaxProfitPerDay AndAlso
+                                                        Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso
+                                                        Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < stockStrategyRule.MaxProfitOfThisStock AndAlso
+                                                        Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
                                                             placeOrderTrigger = Await stockStrategyRule.IsTriggerReceivedForPlaceOrderAsync(runningTick).ConfigureAwait(False)
                                                             stockList(stockName).PlaceOrderTrigger = placeOrderTrigger
                                                         End If
@@ -389,31 +449,31 @@ Namespace StrategyHelper
                                                                         Throw New NotImplementedException
                                                                 End Select
                                                                 Dim runningTrade As Trade = New Trade(originatingStrategy:=Me,
-                                                                                                      tradingSymbol:=runningTick.TradingSymbol,
-                                                                                                      stockType:=Me.StockType,
-                                                                                                      orderType:=runningOrder.OrderType,
-                                                                                                      tradingDate:=runningTick.PayloadDate,
-                                                                                                      entryDirection:=runningOrder.EntryDirection,
-                                                                                                      entryPrice:=runningOrder.EntryPrice,
-                                                                                                      entryBuffer:=runningOrder.Buffer,
-                                                                                                      squareOffType:=Trade.TypeOfTrade.CNC,
-                                                                                                      entryCondition:=Trade.TradeEntryCondition.Original,
-                                                                                                      entryRemark:="Original Entry",
-                                                                                                      quantity:=runningOrder.Quantity,
-                                                                                                      potentialTarget:=runningOrder.Target,
-                                                                                                      targetRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Target),
-                                                                                                      potentialStopLoss:=runningOrder.Stoploss,
-                                                                                                      stoplossBuffer:=runningOrder.Buffer,
-                                                                                                      slRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Stoploss),
-                                                                                                      signalCandle:=runningOrder.SignalCandle)
+                                                                                                  tradingSymbol:=runningTick.TradingSymbol,
+                                                                                                  stockType:=Me.StockType,
+                                                                                                  orderType:=runningOrder.OrderType,
+                                                                                                  tradingDate:=runningTick.PayloadDate,
+                                                                                                  entryDirection:=runningOrder.EntryDirection,
+                                                                                                  entryPrice:=runningOrder.EntryPrice,
+                                                                                                  entryBuffer:=runningOrder.Buffer,
+                                                                                                  squareOffType:=Trade.TypeOfTrade.CNC,
+                                                                                                  entryCondition:=Trade.TradeEntryCondition.Original,
+                                                                                                  entryRemark:="Original Entry",
+                                                                                                  quantity:=runningOrder.Quantity,
+                                                                                                  potentialTarget:=runningOrder.Target,
+                                                                                                  targetRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Target),
+                                                                                                  potentialStopLoss:=runningOrder.Stoploss,
+                                                                                                  stoplossBuffer:=runningOrder.Buffer,
+                                                                                                  slRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Stoploss),
+                                                                                                  signalCandle:=runningOrder.SignalCandle)
 
                                                                 runningTrade.UpdateTrade(Tag:=tradeTag,
-                                                                                         SquareOffValue:=Math.Abs(runningOrder.EntryPrice - runningOrder.Target),
-                                                                                         Supporting1:=runningOrder.Supporting1,
-                                                                                         Supporting2:=runningOrder.Supporting2,
-                                                                                         Supporting3:=runningOrder.Supporting3,
-                                                                                         Supporting4:=runningOrder.Supporting4,
-                                                                                         Supporting5:=runningOrder.Supporting5)
+                                                                                     SquareOffValue:=Math.Abs(runningOrder.EntryPrice - runningOrder.Target),
+                                                                                     Supporting1:=runningOrder.Supporting1,
+                                                                                     Supporting2:=runningOrder.Supporting2,
+                                                                                     Supporting3:=runningOrder.Supporting3,
+                                                                                     Supporting4:=runningOrder.Supporting4,
+                                                                                     Supporting5:=runningOrder.Supporting5)
 
                                                                 If PlaceOrModifyOrder(runningTrade, Nothing) Then
                                                                     runningOrder.Used = True
@@ -481,20 +541,80 @@ Namespace StrategyHelper
                     SetOverallDrawUpDrawDownForTheDay(tradeCheckingDate)
                     totalPL += TotalPLAfterBrokerage(tradeCheckingDate)
                     tradeCheckingDate = tradeCheckingDate.AddDays(1)
-
-                    'Serialization
-                    If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
-                        OnHeartbeat("Serializing Trades collection")
-                        SerializeFromCollectionUsingFileStream(Of Dictionary(Of Date, Dictionary(Of String, List(Of Trade))))(tradesFileName, TradesTaken, False)
-                    End If
                 End While   'Date Loop
 
+                'Serialization
+                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
+                    OnHeartbeat("Serializing Trades collection")
+                    SerializeFromCollectionUsingFileStream(Of Dictionary(Of Date, Dictionary(Of String, List(Of Trade))))(tradesFileName, TradesTaken, False)
+                End If
                 If CapitalMovement IsNot Nothing Then Utilities.Strings.SerializeFromCollection(Of Dictionary(Of Date, List(Of Capital)))(capitalFileName, CapitalMovement)
 
                 PrintArrayToExcel(filename, tradesFileName, capitalFileName)
             End If
         End Function
 
+#Region "Private Function"
+        Private Async Function GetCandleData(ByVal tablename As Common.DataBaseTable, ByVal rawInstrumentName As String,
+                                             ByVal startDate As Date, ByVal endDate As Date) As Task(Of Dictionary(Of Date, Payload))
+            OnHeartbeat(String.Format("Getting Candle Data for {0} on {1}", rawInstrumentName, endDate.ToString("yyyy-MM-dd")))
+            Dim ret As Dictionary(Of Date, Payload) = Nothing
+            Dim intradayFilename As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0} Intraday Data.a2t", rawInstrumentName))
+            Dim eodFilename As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0} EOD Data.a2t", rawInstrumentName))
+            Dim fileName As String = Nothing
+            Dim workingPayload As Dictionary(Of String, Dictionary(Of Date, Payload)) = Nothing
+            Select Case tablename
+                Case Common.DataBaseTable.EOD_Cash, Common.DataBaseTable.EOD_Commodity, Common.DataBaseTable.EOD_Currency, Common.DataBaseTable.EOD_Futures
+                    fileName = eodFilename
+                    workingPayload = EODPayload
+                Case Common.DataBaseTable.Intraday_Cash, Common.DataBaseTable.Intraday_Commodity, Common.DataBaseTable.Intraday_Currency, Common.DataBaseTable.Intraday_Futures
+                    fileName = intradayFilename
+                    workingPayload = IntradayPayload
+            End Select
+            Dim dataNotAvailable As Boolean = False
+            If File.Exists(fileName) Then
+                If workingPayload IsNot Nothing AndAlso workingPayload.ContainsKey(rawInstrumentName) Then
+                    For Each runningPayload In workingPayload(rawInstrumentName)
+                        If runningPayload.Key.Date >= startDate AndAlso runningPayload.Key.Date <= endDate Then
+                            If ret Is Nothing Then ret = New Dictionary(Of Date, Payload)
+                            ret.Add(runningPayload.Key, runningPayload.Value)
+                        End If
+                    Next
+                    If ret Is Nothing Then dataNotAvailable = True
+                Else
+                    dataNotAvailable = True
+                End If
+            Else
+                dataNotAvailable = True
+            End If
+            If dataNotAvailable Then
+                If Me.DataSource = SourceOfData.Database Then
+                    ret = Cmn.GetRawPayload(tablename, rawInstrumentName, startDate, endDate)
+                ElseIf Me.DataSource = SourceOfData.Live Then
+                    ret = Await Cmn.GetHistoricalDataAsync(tablename, rawInstrumentName, startDate, endDate).ConfigureAwait(False)
+                End If
+
+                If File.Exists(fileName) Then
+                    If workingPayload IsNot Nothing AndAlso workingPayload.ContainsKey(rawInstrumentName) Then
+                        Dim dataToSerialise As Dictionary(Of Date, Payload) = Nothing
+                        Dim availableData As Dictionary(Of Date, Payload) = workingPayload(rawInstrumentName)
+                        For Each runningPayload In ret
+                            If Not availableData.ContainsKey(runningPayload.Key) Then
+                                If dataToSerialise Is Nothing Then dataToSerialise = New Dictionary(Of Date, Payload)
+                                dataToSerialise.Add(runningPayload.Key, runningPayload.Value)
+                            End If
+                        Next
+                        SerializeFromCollectionUsingFileStream(Of Dictionary(Of Date, Payload))(fileName, dataToSerialise)
+                    Else
+                        SerializeFromCollectionUsingFileStream(Of Dictionary(Of Date, Payload))(fileName, ret)
+                    End If
+                Else
+                    SerializeFromCollectionUsingFileStream(Of Dictionary(Of Date, Payload))(fileName, ret)
+                End If
+            End If
+            Return ret
+        End Function
+#End Region
 
 #Region "Stock Selection"
         Private Function GetStockData(tradingDate As Date) As Dictionary(Of String, StockDetails)
@@ -505,28 +625,51 @@ Namespace StrategyHelper
                     dt = csvHelper.GetDataTableFromCSV(1)
                 End Using
                 If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
-                    Dim counter As Integer = 0
-                    For i = 1 To dt.Rows.Count - 1
-                        Dim rowDate As Date = dt.Rows(i)(0)
-                        'If rowDate.Date = tradingDate.Date Then
-                        If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                        Dim tradingSymbol As String = dt.Rows(i).Item(1)
-                        Dim instrumentName As String = Nothing
-                        If tradingSymbol.Contains("FUT") Then
-                            instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
-                        Else
-                            instrumentName = tradingSymbol
-                        End If
-                        Dim detailsOfStock As StockDetails = New StockDetails With
-                            {.StockName = instrumentName,
-                            .LotSize = dt.Rows(i).Item(2),
-                            .EligibleToTakeTrade = True,
-                            .Supporting1 = dt.Rows(i).Item(5)}
-                        ret.Add(instrumentName, detailsOfStock)
-                        counter += 1
-                        If counter = Me.NumberOfTradeableStockPerDay Then Exit For
-                        'End If
-                    Next
+                    Select Case Me.RuleNumber
+                        Case 10
+                            Dim counter As Integer = 0
+                            For i = 1 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i)(0)
+                                'If rowDate.Date = tradingDate.Date Then
+                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                Dim tradingSymbol As String = dt.Rows(i).Item(1)
+                                Dim instrumentName As String = Nothing
+                                If tradingSymbol.Contains("FUT") Then
+                                    instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                                Else
+                                    instrumentName = tradingSymbol
+                                End If
+                                Dim detailsOfStock As StockDetails = New StockDetails With
+                                    {.StockName = instrumentName,
+                                    .LotSize = dt.Rows(i).Item(2),
+                                    .EligibleToTakeTrade = True,
+                                    .Supporting1 = dt.Rows(i).Item(5)}
+                                ret.Add(instrumentName, detailsOfStock)
+                                counter += 1
+                                If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                                'End If
+                            Next
+                        Case 18
+                            For i = 1 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i)(0)
+                                'If rowDate.Date = tradingDate.Date Then
+                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                Dim tradingSymbol As String = dt.Rows(i).Item(1)
+                                Dim instrumentName As String = Nothing
+                                If tradingSymbol.Contains("FUT") Then
+                                    instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                                Else
+                                    instrumentName = tradingSymbol
+                                End If
+                                Dim detailsOfStock As StockDetails = New StockDetails With
+                                    {.StockName = instrumentName,
+                                    .LotSize = 1,
+                                    .EligibleToTakeTrade = True,
+                                    .Supporting1 = dt.Rows(i).Item(2)}
+                                ret.Add(instrumentName, detailsOfStock)
+                                'End If
+                            Next
+                    End Select
                 End If
             End If
             Return ret

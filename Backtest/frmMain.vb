@@ -733,18 +733,21 @@ Public Class frmMain
                                                             dataSource:=sourceData,
                                                             initialCapital:=Decimal.MaxValue / 2,
                                                             usableCapital:=Decimal.MaxValue / 2,
-                                                            minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                            minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
                                                             amountToBeWithdrawn:=Decimal.MaxValue / 2)
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
+                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Investment Stock List.csv")
 
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
                     Select Case .RuleNumber
                         Case 10
                             .RuleEntityData = New VijayCNCStrategyRule.StrategyRuleEntities With {.RefreshQuantityAtDayStart = False}
+                        Case 18
+                            .RuleEntityData = New InvestmentCNCStrategyRule.StrategyRuleEntities With {.QuantityType = InvestmentCNCStrategyRule.TypeOfQuantity.TargetBasedQuantity}
                     End Select
 
                     .NumberOfTradeableStockPerDay = 1
