@@ -93,7 +93,7 @@ Namespace StrategyHelper
                             If Me.DataSource = SourceOfData.Database Then
                                 XDayOneMinutePayload = Cmn.GetRawPayload(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate)
                             ElseIf Me.DataSource = SourceOfData.Live Then
-                                XDayOneMinutePayload = Await Cmn.GetHistoricalData(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate).ConfigureAwait(False)
+                                XDayOneMinutePayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate).ConfigureAwait(False)
                             End If
 
                             _canceller.Token.ThrowIfCancellationRequested()
@@ -596,7 +596,7 @@ Namespace StrategyHelper
                                     If Me.DataSource = SourceOfData.Database Then
                                         stockPayload = Cmn.GetRawPayload(Me.DatabaseTable, instrumentName, tradingDate, tradingDate)
                                     ElseIf Me.DataSource = SourceOfData.Live Then
-                                        stockPayload = Await Cmn.GetHistoricalData(Me.DatabaseTable, instrumentName, tradingDate, tradingDate).ConfigureAwait(False)
+                                        stockPayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, instrumentName, tradingDate, tradingDate).ConfigureAwait(False)
                                     End If
                                     If stockPayload IsNot Nothing AndAlso stockPayload.Count > 0 Then
                                         Dim time As Date = New Date(tradingDate.Year, tradingDate.Month, tradingDate.Day, 9, 16, 0)
@@ -732,7 +732,7 @@ Namespace StrategyHelper
                                     If Me.DataSource = SourceOfData.Database Then
                                         stockPayload = Cmn.GetRawPayload(Me.DatabaseTable, instrumentName, tradingDate, tradingDate)
                                     ElseIf Me.DataSource = SourceOfData.Live Then
-                                        stockPayload = Await Cmn.GetHistoricalData(Me.DatabaseTable, instrumentName, tradingDate, tradingDate).ConfigureAwait(False)
+                                        stockPayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, instrumentName, tradingDate, tradingDate).ConfigureAwait(False)
                                     End If
                                     If stockPayload IsNot Nothing AndAlso stockPayload.Count > 0 Then
                                         Dim time As Date = New Date(tradingDate.Year, tradingDate.Month, tradingDate.Day, 9, 16, 0)
