@@ -814,10 +814,10 @@ Public Class frmMain
                                                                 stockType:=stockType,
                                                                 databaseTable:=database,
                                                                 dataSource:=sourceData,
-                                                                initialCapital:=Decimal.MaxValue / 2,
-                                                                usableCapital:=Decimal.MaxValue / 2,
-                                                                minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
-                                                                amountToBeWithdrawn:=0)
+                                                                initialCapital:=100000,
+                                                                usableCapital:=50000,
+                                                                minimumEarnedCapitalToWithdraw:=200000,
+                                                                amountToBeWithdrawn:=50000)
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
@@ -830,10 +830,11 @@ Public Class frmMain
                         Case 10
                             .RuleEntityData = New VijayCNCStrategyRule.StrategyRuleEntities With {.RefreshQuantityAtDayStart = False}
                         Case 18
-                            .RuleEntityData = New InvestmentCNCStrategyRule.StrategyRuleEntities With {.QuantityType = InvestmentCNCStrategyRule.TypeOfQuantity.Linear}
+                            .RuleEntityData = New InvestmentCNCStrategyRule.StrategyRuleEntities With
+                                {.QuantityType = InvestmentCNCStrategyRule.TypeOfQuantity.AP}
                     End Select
 
-                    .NumberOfTradeableStockPerDay = 1
+                    .NumberOfTradeableStockPerDay = 10
 
                     .NumberOfTradesPerDay = Integer.MaxValue
                     .NumberOfTradesPerStockPerDay = Integer.MaxValue

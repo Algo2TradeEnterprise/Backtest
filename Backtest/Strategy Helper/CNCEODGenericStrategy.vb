@@ -540,7 +540,7 @@ Namespace StrategyHelper
                                     .EligibleToTakeTrade = True,
                                     .Supporting1 = dt.Rows(i).Item(2)}
                                 ret.Add(instrumentName, detailsOfStock)
-                                Exit For
+                                If i = Me.NumberOfTradeableStockPerDay Then Exit For
                                 'End If
                             Next
                     End Select

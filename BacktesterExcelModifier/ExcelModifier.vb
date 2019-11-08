@@ -38,6 +38,13 @@ Module ExcelModifier
                 pivotValue.Add("Overall Draw Down PL for the day", ExcelHelper.XLFunction.Average)
                 excelWriter.CreatPivotTable("Data", range, "Day Pivot", "Trading Date", pivotValue)
 
+
+                excelWriter.CreateNewSheet("CNC Capital")
+                Dim temppivotValue As Dictionary(Of String, Utilities.DAL.ExcelHelper.XLFunction) = New Dictionary(Of String, ExcelHelper.XLFunction)
+                temppivotValue.Add("Capital Required With Margin", ExcelHelper.XLFunction.Sum)
+                temppivotValue.Add("PL Before Brokerage", ExcelHelper.XLFunction.Sum)
+                excelWriter.CreatPivotTable("Data", range, "CNC Capital", "Supporting2", temppivotValue)
+
                 excelWriter.SetActiveSheet("Day Pivot")
                 Dim dayPivotData As Object(,) = excelWriter.GetExcelInMemory()
 
