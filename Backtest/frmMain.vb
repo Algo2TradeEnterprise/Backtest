@@ -731,10 +731,10 @@ Public Class frmMain
                                                             stockType:=stockType,
                                                             databaseTable:=database,
                                                             dataSource:=sourceData,
-                                                            initialCapital:=Decimal.MaxValue / 2,
-                                                            usableCapital:=Decimal.MaxValue / 2,
-                                                            minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
-                                                            amountToBeWithdrawn:=Decimal.MaxValue / 2)
+                                                            initialCapital:=20000,
+                                                            usableCapital:=15000,
+                                                            minimumEarnedCapitalToWithdraw:=25000,
+                                                            amountToBeWithdrawn:=5000)
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
@@ -747,7 +747,7 @@ Public Class frmMain
                         Case 10
                             .RuleEntityData = New VijayCNCStrategyRule.StrategyRuleEntities With {.RefreshQuantityAtDayStart = False}
                         Case 18
-                            .RuleEntityData = New InvestmentCNCStrategyRule.StrategyRuleEntities With {.QuantityType = InvestmentCNCStrategyRule.TypeOfQuantity.TargetBasedQuantity}
+                            .RuleEntityData = New InvestmentCNCStrategyRule.StrategyRuleEntities With {.QuantityType = InvestmentCNCStrategyRule.TypeOfQuantity.NormalQuantity}
                     End Select
 
                     .NumberOfTradeableStockPerDay = 1

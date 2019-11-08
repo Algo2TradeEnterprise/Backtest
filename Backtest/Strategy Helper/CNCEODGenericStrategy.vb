@@ -4,9 +4,13 @@ Imports System.Threading
 Imports Utilities.Strings
 
 Namespace StrategyHelper
-    Public Class CNCGenericStrategy
+    Public Class CNCEODGenericStrategy
         Inherits Strategy
         Implements IDisposable
+
+        Private IntradayPayload As Dictionary(Of String, Dictionary(Of Date, Payload))
+        Private EODPayload As Dictionary(Of String, Dictionary(Of Date, Payload))
+
         Public Property StockFileName As String
         Public Property RuleNumber As Integer
         Public Property RuleEntityData As RuleEntities
@@ -63,9 +67,63 @@ Namespace StrategyHelper
                 Me.AvailableCapital = Me.UsableCapital
                 While tradeCheckingDate <= endDate.Date
                     _canceller.Token.ThrowIfCancellationRequested()
+                    'Me.AvailableCapital = Me.UsableCapital
+                    'TradesTaken = New Dictionary(Of Date, Dictionary(Of String, List(Of Trade)))
                     Dim stockList As Dictionary(Of String, StockDetails) = GetStockData(tradeCheckingDate)
+
                     _canceller.Token.ThrowIfCancellationRequested()
                     If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
+                        OnHeartbeat("Deserializing candles")
+                        If IntradayPayload Is Nothing Then
+                            For Each stock In stockList.Keys
+                                If EODPayload Is Nothing Then EODPayload = New Dictionary(Of String, Dictionary(Of Date, Payload))
+                                Dim eodFilename As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0} EOD Data.a2t", stock))
+                                If File.Exists(eodFilename) Then
+                                    If Not EODPayload.ContainsKey(stock) Then
+                                        Dim candleData As Dictionary(Of Date, Payload) = Nothing
+                                        Using stream As New FileStream(eodFilename, FileMode.Open)
+                                            Dim binaryFormatter = New System.Runtime.Serialization.Formatters.Binary.BinaryFormatter()
+                                            While stream.Position <> stream.Length
+                                                Dim tempData As Dictionary(Of Date, Payload) = binaryFormatter.Deserialize(stream)
+                                                If tempData IsNot Nothing AndAlso tempData.Count > 0 Then
+                                                    For Each runningData In tempData
+                                                        If candleData Is Nothing Then candleData = New Dictionary(Of Date, Payload)
+                                                        If Not candleData.ContainsKey(runningData.Key) Then
+                                                            candleData.Add(runningData.Key, runningData.Value)
+                                                        End If
+                                                    Next
+                                                End If
+                                            End While
+                                        End Using
+                                        EODPayload.Add(stock, candleData)
+                                    End If
+                                End If
+
+                                If IntradayPayload Is Nothing Then IntradayPayload = New Dictionary(Of String, Dictionary(Of Date, Payload))
+                                Dim intradayFilename As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0} Intraday Data.a2t", stock))
+                                If File.Exists(intradayFilename) Then
+                                    If Not IntradayPayload.ContainsKey(stock) Then
+                                        Dim candleData As Dictionary(Of Date, Payload) = Nothing
+                                        Using stream As New FileStream(intradayFilename, FileMode.Open)
+                                            Dim binaryFormatter = New System.Runtime.Serialization.Formatters.Binary.BinaryFormatter()
+                                            While stream.Position <> stream.Length
+                                                Dim tempData As Dictionary(Of Date, Payload) = binaryFormatter.Deserialize(stream)
+                                                If tempData IsNot Nothing AndAlso tempData.Count > 0 Then
+                                                    For Each runningData In tempData
+                                                        If candleData Is Nothing Then candleData = New Dictionary(Of Date, Payload)
+                                                        If Not candleData.ContainsKey(runningData.Key) Then
+                                                            candleData.Add(runningData.Key, runningData.Value)
+                                                        End If
+                                                    Next
+                                                End If
+                                            End While
+                                        End Using
+                                        IntradayPayload.Add(stock, candleData)
+                                    End If
+                                End If
+                            Next
+                        End If
+
                         Dim currentDayOneMinuteStocksPayload As Dictionary(Of String, Dictionary(Of Date, Payload)) = Nothing
                         Dim XDayOneMinuteStocksPayload As Dictionary(Of String, Dictionary(Of Date, Payload)) = Nothing
                         Dim stocksRuleData As Dictionary(Of String, StrategyRule) = Nothing
@@ -79,9 +137,9 @@ Namespace StrategyHelper
                             Dim XDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             Dim currentDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             If Me.DataSource = SourceOfData.Database Then
-                                XDayOneMinutePayload = Cmn.GetRawPayload(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate)
+                                XDayOneMinutePayload = Await GetCandleData(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate).ConfigureAwait(False)
                             ElseIf Me.DataSource = SourceOfData.Live Then
-                                XDayOneMinutePayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate).ConfigureAwait(False)
+                                XDayOneMinutePayload = Await GetCandleData(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate).ConfigureAwait(False)
                             End If
 
                             _canceller.Token.ThrowIfCancellationRequested()
@@ -143,7 +201,7 @@ Namespace StrategyHelper
                                         Case 17
                                             Throw New ApplicationException("Not a CNC strategy")
                                         Case 18
-                                            Dim eodPayload As Dictionary(Of Date, Payload) = Await Cmn.GetHistoricalDataAsync(Common.DataBaseTable.EOD_Cash, stock, tradeCheckingDate.AddYears(-3), tradeCheckingDate)
+                                            Dim eodPayload As Dictionary(Of Date, Payload) = Await GetCandleData(Common.DataBaseTable.EOD_Cash, stock, tradeCheckingDate.AddYears(-3), tradeCheckingDate)
                                             stockRule = New InvestmentCNCStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, eodPayload)
                                     End Select
 
@@ -496,6 +554,68 @@ Namespace StrategyHelper
             End If
         End Function
 
+#Region "Private Function"
+        Private Async Function GetCandleData(ByVal tablename As Common.DataBaseTable, ByVal rawInstrumentName As String,
+                                             ByVal startDate As Date, ByVal endDate As Date) As Task(Of Dictionary(Of Date, Payload))
+            OnHeartbeat(String.Format("Getting Candle Data for {0} on {1}", rawInstrumentName, endDate.ToString("yyyy-MM-dd")))
+            Dim ret As Dictionary(Of Date, Payload) = Nothing
+            Dim intradayFilename As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0} Intraday Data.a2t", rawInstrumentName))
+            Dim eodFilename As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0} EOD Data.a2t", rawInstrumentName))
+            Dim fileName As String = Nothing
+            Dim workingPayload As Dictionary(Of String, Dictionary(Of Date, Payload)) = Nothing
+            Select Case tablename
+                Case Common.DataBaseTable.EOD_Cash, Common.DataBaseTable.EOD_Commodity, Common.DataBaseTable.EOD_Currency, Common.DataBaseTable.EOD_Futures
+                    fileName = eodFilename
+                    workingPayload = EODPayload
+                Case Common.DataBaseTable.Intraday_Cash, Common.DataBaseTable.Intraday_Commodity, Common.DataBaseTable.Intraday_Currency, Common.DataBaseTable.Intraday_Futures
+                    fileName = intradayFilename
+                    workingPayload = IntradayPayload
+            End Select
+            Dim dataNotAvailable As Boolean = False
+            If File.Exists(fileName) Then
+                If workingPayload IsNot Nothing AndAlso workingPayload.ContainsKey(rawInstrumentName) Then
+                    For Each runningPayload In workingPayload(rawInstrumentName)
+                        If runningPayload.Key.Date >= startDate AndAlso runningPayload.Key.Date <= endDate Then
+                            If ret Is Nothing Then ret = New Dictionary(Of Date, Payload)
+                            ret.Add(runningPayload.Key, runningPayload.Value)
+                        End If
+                    Next
+                    If ret Is Nothing Then dataNotAvailable = True
+                Else
+                    dataNotAvailable = True
+                End If
+            Else
+                dataNotAvailable = True
+            End If
+            If dataNotAvailable Then
+                If Me.DataSource = SourceOfData.Database Then
+                    ret = Cmn.GetRawPayload(tablename, rawInstrumentName, startDate, endDate)
+                ElseIf Me.DataSource = SourceOfData.Live Then
+                    ret = Await Cmn.GetHistoricalDataAsync(tablename, rawInstrumentName, startDate, endDate).ConfigureAwait(False)
+                End If
+
+                If File.Exists(fileName) Then
+                    If workingPayload IsNot Nothing AndAlso workingPayload.ContainsKey(rawInstrumentName) Then
+                        Dim dataToSerialise As Dictionary(Of Date, Payload) = Nothing
+                        Dim availableData As Dictionary(Of Date, Payload) = workingPayload(rawInstrumentName)
+                        For Each runningPayload In ret
+                            If Not availableData.ContainsKey(runningPayload.Key) Then
+                                If dataToSerialise Is Nothing Then dataToSerialise = New Dictionary(Of Date, Payload)
+                                dataToSerialise.Add(runningPayload.Key, runningPayload.Value)
+                            End If
+                        Next
+                        SerializeFromCollectionUsingFileStream(Of Dictionary(Of Date, Payload))(fileName, dataToSerialise)
+                    Else
+                        SerializeFromCollectionUsingFileStream(Of Dictionary(Of Date, Payload))(fileName, ret)
+                    End If
+                Else
+                    SerializeFromCollectionUsingFileStream(Of Dictionary(Of Date, Payload))(fileName, ret)
+                End If
+            End If
+            Return ret
+        End Function
+#End Region
+
 #Region "Stock Selection"
         Private Function GetStockData(tradingDate As Date) As Dictionary(Of String, StockDetails)
             Dim ret As Dictionary(Of String, StockDetails) = Nothing
@@ -547,7 +667,6 @@ Namespace StrategyHelper
                                     .EligibleToTakeTrade = True,
                                     .Supporting1 = dt.Rows(i).Item(2)}
                                 ret.Add(instrumentName, detailsOfStock)
-                                Exit For
                                 'End If
                             Next
                     End Select
