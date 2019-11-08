@@ -159,6 +159,10 @@ Public Class BANKNIFTYDayLongSMIStrategyRule
         Return ret
     End Function
 
+    Public Overrides Function IsTriggerReceivedForExitCNCEODOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
+        Throw New NotImplementedException()
+    End Function
+
     'Private Function GetSignals(ByVal candle As Payload, ByVal direction As Trade.TradeExecutionDirection) As Tuple(Of Boolean, Decimal, Decimal)
     '    Dim ret As Tuple(Of Boolean, Decimal, Decimal) = Nothing
     '    If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then

@@ -274,6 +274,10 @@ Public Class MultiTargetStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
     End Function
 
+    Public Overrides Function IsTriggerReceivedForExitCNCEODOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
+        Throw New NotImplementedException()
+    End Function
+
     Private Function GetSignalCandle(ByVal candle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, TradeDetails)
         Dim ret As Tuple(Of Boolean, TradeDetails) = Nothing
         If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then

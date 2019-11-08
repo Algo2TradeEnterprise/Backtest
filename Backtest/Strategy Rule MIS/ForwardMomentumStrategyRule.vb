@@ -257,6 +257,10 @@ Public Class ForwardMomentumStrategyRule
         Return ret
     End Function
 
+    Public Overrides Function IsTriggerReceivedForExitCNCEODOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
+        Throw New NotImplementedException()
+    End Function
+
     Private Function IsSignalCandle(ByVal candle As Payload) As Boolean
         Dim ret As Boolean = False
         If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then

@@ -143,8 +143,7 @@ Namespace StrategyHelper
                                         Case 17
                                             Throw New ApplicationException("Not a CNC strategy")
                                         Case 18
-                                            Dim eodPayload As Dictionary(Of Date, Payload) = Await Cmn.GetHistoricalDataAsync(Common.DataBaseTable.EOD_Cash, stock, tradeCheckingDate.AddYears(-3), tradeCheckingDate)
-                                            stockRule = New InvestmentCNCStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, eodPayload)
+                                            stockRule = New InvestmentCNCStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat

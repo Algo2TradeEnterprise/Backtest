@@ -249,7 +249,7 @@ Public Class frmMain
         If rdbMIS.Checked Then
             Await Task.Run(AddressOf ViewDataMISAsync).ConfigureAwait(False)
         ElseIf rdbCNC.Checked Then
-            Await Task.Run(AddressOf ViewDataCNCAsync).ConfigureAwait(False)
+            Await Task.Run(AddressOf ViewDataCNCEODAsync).ConfigureAwait(False)
         End If
     End Sub
 
@@ -747,7 +747,90 @@ Public Class frmMain
                         Case 10
                             .RuleEntityData = New VijayCNCStrategyRule.StrategyRuleEntities With {.RefreshQuantityAtDayStart = False}
                         Case 18
-                            .RuleEntityData = New InvestmentCNCStrategyRule.StrategyRuleEntities With {.QuantityType = InvestmentCNCStrategyRule.TypeOfQuantity.NormalQuantity}
+                            .RuleEntityData = New InvestmentCNCStrategyRule.StrategyRuleEntities With {.QuantityType = InvestmentCNCStrategyRule.TypeOfQuantity.Linear}
+                    End Select
+
+                    .NumberOfTradeableStockPerDay = 1
+
+                    .NumberOfTradesPerDay = Integer.MaxValue
+                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
+
+                    .TickBasedStrategy = True
+                End With
+                Await backtestStrategy.TestStrategyAsync(startDate, endDate).ConfigureAwait(False)
+            End Using
+        Catch ex As Exception
+            MsgBox(ex.ToString, MsgBoxStyle.Critical)
+        Finally
+            OnHeartbeat("Process Complete")
+            SetObjectEnableDisable_ThreadSafe(btnStart, True)
+            SetObjectEnableDisable_ThreadSafe(btnStop, False)
+        End Try
+    End Function
+
+    Private Async Function ViewDataCNCEODAsync() As Task
+        Try
+            Dim startDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrStartDate)
+            Dim endDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrEndDate)
+            Dim sourceData As Strategy.SourceOfData = Strategy.SourceOfData.None
+            If GetRadioButtonChecked_ThreadSafe(rdbLive) Then
+                sourceData = Strategy.SourceOfData.Live
+            Else
+                sourceData = Strategy.SourceOfData.Database
+            End If
+            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
+            Dim database As Common.DataBaseTable = Common.DataBaseTable.None
+            Dim margin As Decimal = 0
+            Dim tick As Decimal = 0
+            Select Case stockType
+                Case Trade.TypeOfStock.Cash
+                    database = Common.DataBaseTable.EOD_Cash
+                    margin = 1
+                    tick = 0.05
+                Case Trade.TypeOfStock.Commodity
+                    database = Common.DataBaseTable.EOD_Commodity
+                    margin = 1
+                    tick = 1
+                Case Trade.TypeOfStock.Currency
+                    database = Common.DataBaseTable.EOD_Currency
+                    margin = 1
+                    tick = 0.0025
+                Case Trade.TypeOfStock.Futures
+                    database = Common.DataBaseTable.EOD_Futures
+                    margin = 1
+                    tick = 0.05
+            End Select
+
+            Using backtestStrategy As New CNCEODGenericStrategy(canceller:=_canceller,
+                                                                exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                tradeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                lastTradeEntryTime:=TimeSpan.Parse("15:29:59"),
+                                                                eodExitTime:=TimeSpan.Parse("15:29:59"),
+                                                                tickSize:=tick,
+                                                                marginMultiplier:=margin,
+                                                                timeframe:=1,
+                                                                heikenAshiCandle:=False,
+                                                                stockType:=stockType,
+                                                                databaseTable:=database,
+                                                                dataSource:=sourceData,
+                                                                initialCapital:=Decimal.MaxValue / 2,
+                                                                usableCapital:=Decimal.MaxValue / 2,
+                                                                minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
+                                                                amountToBeWithdrawn:=0)
+                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+
+                With backtestStrategy
+                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Investment Stock List.csv")
+
+                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+
+                    Select Case .RuleNumber
+                        Case 10
+                            .RuleEntityData = New VijayCNCStrategyRule.StrategyRuleEntities With {.RefreshQuantityAtDayStart = False}
+                        Case 18
+                            .RuleEntityData = New InvestmentCNCStrategyRule.StrategyRuleEntities With {.QuantityType = InvestmentCNCStrategyRule.TypeOfQuantity.Linear}
                     End Select
 
                     .NumberOfTradeableStockPerDay = 1

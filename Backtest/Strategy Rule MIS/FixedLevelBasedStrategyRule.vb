@@ -513,4 +513,8 @@ Public Class FixedLevelBasedStrategyRule
         End If
         Return ret
     End Function
+
+    Public Overrides Function IsTriggerReceivedForExitCNCEODOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
+        Throw New NotImplementedException()
+    End Function
 End Class

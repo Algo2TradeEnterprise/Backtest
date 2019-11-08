@@ -8,9 +8,9 @@ Public Class InvestmentCNCStrategyRule
 
 #Region "Entity"
     Enum TypeOfQuantity
-        NormalQuantity = 1
-        MartingaleBasedQuantity
-        TargetBasedQuantity
+        Linear = 1
+        GP
+        AP
     End Enum
     Public Class StrategyRuleEntities
         Inherits RuleEntities
@@ -25,7 +25,6 @@ Public Class InvestmentCNCStrategyRule
 
     Private ReadOnly _userInputs As StrategyRuleEntities
     Private ReadOnly _stockSMAPercentage As Decimal
-    Private ReadOnly _EODPayload As Dictionary(Of Date, Payload)
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
                    ByVal parentStrategy As Strategy,
@@ -33,19 +32,17 @@ Public Class InvestmentCNCStrategyRule
                    ByVal tradingSymbol As String,
                    ByVal canceller As CancellationTokenSource,
                    ByVal entities As RuleEntities,
-                   ByVal stockSMAPer As Decimal,
-                   ByVal eodPayload As Dictionary(Of Date, Payload))
+                   ByVal stockSMAPer As Decimal)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _userInputs = entities
         _stockSMAPercentage = stockSMAPer
-        _EODPayload = eodPayload
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
         MyBase.CompletePreProcessing()
 
-        Indicator.FractalBands.CalculateFractal(_EODPayload, _fractalHighPayload, _fractalLowPayload)
-        Indicator.SMA.CalculateSMA(200, Payload.PayloadFields.Close, _EODPayload, _smaPayload)
+        Indicator.FractalBands.CalculateFractal(_signalPayload, _fractalHighPayload, _fractalLowPayload)
+        Indicator.SMA.CalculateSMA(200, Payload.PayloadFields.Close, _signalPayload, _smaPayload)
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -56,33 +53,36 @@ Public Class InvestmentCNCStrategyRule
 
         Dim parameter As PlaceOrderParameters = Nothing
         If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
-            Not _parentStrategy.IsTradeOpen(currentTick, _parentStrategy.TradeType) AndAlso currentMinuteCandlePayload.PayloadDate >= tradeStartTime Then
+            Not _parentStrategy.IsTradeOpen(currentTick, _parentStrategy.TradeType) AndAlso GetAboveSMAPercentage() > 90 Then
             Dim signalCandle As Payload = Nothing
 
-            Dim signalReceivedForEntry As Tuple(Of Boolean, Integer) = GetSignalForEntry(currentTick)
+            Dim signalReceivedForEntry As Tuple(Of Boolean, Decimal, Integer) = GetSignalForEntry(currentTick)
             If signalReceivedForEntry IsNot Nothing AndAlso signalReceivedForEntry.Item1 Then
                 Dim firstQuantity As Integer = 0
-                Dim quantity As Integer = 0
-                Select Case _userInputs.QuantityType
-                    Case TypeOfQuantity.NormalQuantity, TypeOfQuantity.MartingaleBasedQuantity
-                        quantity = 1
-                    Case TypeOfQuantity.TargetBasedQuantity
-                        quantity = signalReceivedForEntry.Item2
-                End Select
+                Dim firstEntryDate As Date = currentTick.PayloadDate
+                Dim quantity As Integer = signalReceivedForEntry.Item3
                 firstQuantity = quantity
                 Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, _parentStrategy.TradeType)
                 If lastExecutedTrade IsNot Nothing Then
-                    If _userInputs.QuantityType = TypeOfQuantity.MartingaleBasedQuantity Then
+                    If _userInputs.QuantityType = TypeOfQuantity.GP Then
                         If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
                             quantity = lastExecutedTrade.Quantity * 2
                         End If
-                    ElseIf _userInputs.QuantityType = TypeOfQuantity.TargetBasedQuantity Then
+                    ElseIf _userInputs.QuantityType = TypeOfQuantity.AP Then
                         If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
                             quantity = lastExecutedTrade.Quantity + CInt(lastExecutedTrade.Supporting1)
+                            firstQuantity = lastExecutedTrade.Supporting1
+                        End If
+                    ElseIf _userInputs.QuantityType = TypeOfQuantity.Linear Then
+                        If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                            quantity = lastExecutedTrade.Quantity
                         End If
                     End If
                     If lastExecutedTrade.EntryTime.Date <> _tradingDate.Date Then
                         signalCandle = currentMinuteCandlePayload
+                    End If
+                    If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                        firstEntryDate = Date.Parse(lastExecutedTrade.Supporting2)
                     End If
                 Else
                     signalCandle = currentMinuteCandlePayload
@@ -90,7 +90,7 @@ Public Class InvestmentCNCStrategyRule
 
                 If signalCandle IsNot Nothing Then
                     parameter = New PlaceOrderParameters With {
-                        .EntryPrice = currentTick.Open,
+                        .EntryPrice = signalReceivedForEntry.Item2,
                         .EntryDirection = Trade.TradeExecutionDirection.Buy,
                         .Quantity = quantity,
                         .Stoploss = .EntryPrice - 1000000,
@@ -98,7 +98,8 @@ Public Class InvestmentCNCStrategyRule
                         .Buffer = 0,
                         .SignalCandle = signalCandle,
                         .OrderType = Trade.TypeOfOrder.Market,
-                        .Supporting1 = firstQuantity
+                        .Supporting1 = firstQuantity,
+                        .Supporting2 = firstEntryDate.ToString("yyyy-MM-dd")
                     }
                 End If
             End If
@@ -109,13 +110,17 @@ Public Class InvestmentCNCStrategyRule
         Return ret
     End Function
 
-    Public Overrides Async Function IsTriggerReceivedForExitOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, String))
-        Dim ret As Tuple(Of Boolean, String) = Nothing
+    Public Overrides Function IsTriggerReceivedForExitOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, String))
+        Throw New NotImplementedException()
+    End Function
+
+    Public Overrides Async Function IsTriggerReceivedForExitCNCEODOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
+        Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-            Dim signalReceivedForExit As Tuple(Of Boolean, String) = GetSignalForExit(currentTick)
+            Dim signalReceivedForExit As Tuple(Of Boolean, Decimal, String) = GetSignalForExit(currentTick, currentTrade)
             If signalReceivedForExit IsNot Nothing AndAlso signalReceivedForExit.Item1 Then
-                ret = New Tuple(Of Boolean, String)(True, signalReceivedForExit.Item2)
+                ret = New Tuple(Of Boolean, Decimal, String)(True, signalReceivedForExit.Item2, signalReceivedForExit.Item3)
             End If
         End If
         Return ret
@@ -133,10 +138,88 @@ Public Class InvestmentCNCStrategyRule
         Return ret
     End Function
 
-    Private Function GetSignalForEntry(ByVal currentTick As Payload) As Tuple(Of Boolean, Integer)
-        Dim ret As Tuple(Of Boolean, Integer) = Nothing
-        If _EODPayload IsNot Nothing AndAlso _EODPayload.Count > 0 AndAlso _EODPayload.ContainsKey(currentTick.PayloadDate.Date) Then
-            Dim currentDayPayload As Payload = _EODPayload(currentTick.PayloadDate.Date)
+    Private Function GetAboveSMAPercentage() As Decimal
+        Dim ret As Decimal = Decimal.MinValue
+
+        Dim avgChkFrom As Date = _tradingDate.AddYears(-2)
+        Dim totalDayCount As Integer = 0
+        Dim aboveSMACount As Integer = 0
+        For Each runningPayload In _signalPayload.Values
+            _cts.Token.ThrowIfCancellationRequested()
+            If runningPayload.PayloadDate.Date >= avgChkFrom.Date AndAlso
+                runningPayload.PayloadDate.Date <= _tradingDate.Date Then
+                totalDayCount += 1
+                If runningPayload.Close > _smaPayload(runningPayload.PayloadDate) Then
+                    aboveSMACount += 1
+                End If
+            End If
+        Next
+        If totalDayCount <> 0 Then
+            Dim aboveSMA200Avg As Decimal = Math.Round((aboveSMACount / totalDayCount) * 100, 2)
+            ret = aboveSMA200Avg
+        End If
+        Return ret
+    End Function
+
+#Region "Fractal Low Entry, Fractal High Exit"
+    'Private Function GetSignalForEntry(ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Integer)
+    '    Dim ret As Tuple(Of Boolean, Decimal, Integer) = Nothing
+    '    If _signalPayload IsNot Nothing AndAlso _signalPayload.Count > 0 AndAlso _signalPayload.ContainsKey(currentTick.PayloadDate.Date) Then
+    '        Dim currentDayPayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
+    '        Dim fractalLow As Decimal = _fractalLowPayload(currentDayPayload.PreviousCandlePayload.PayloadDate)
+    '        Dim fractalHigh As Decimal = _fractalHighPayload(currentDayPayload.PreviousCandlePayload.PayloadDate)
+    '        Dim sma As Decimal = _smaPayload(currentDayPayload.PreviousCandlePayload.PayloadDate)
+    '        Dim entryPoint As Decimal = fractalLow
+
+    '        If entryPoint > 100 AndAlso (fractalHigh >= sma OrElse fractalLow >= sma) Then
+    '            If currentDayPayload.Open >= entryPoint Then
+    '                If currentDayPayload.Low <= entryPoint Then
+    '                    Dim quantity As Integer = Math.Ceiling(100 / (_fractalHighPayload(currentDayPayload.PreviousCandlePayload.PayloadDate) - entryPoint))
+    '                    ret = New Tuple(Of Boolean, Decimal, Integer)(True, entryPoint, quantity)
+    '                End If
+    '            Else
+    '                Dim tradeEntryTime As Date = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, 15, 25, 0)
+    '                If currentDayPayload.CandleColor = Color.Red Then
+    '                    Dim quantity As Integer = Math.Ceiling(100 / (_fractalHighPayload(currentDayPayload.PreviousCandlePayload.PayloadDate) - entryPoint))
+    '                    Dim r As New Random()
+    '                    Dim pricePercentage As Integer = r.Next(1, 5)
+    '                    Dim direction As Integer = r.Next(0, 1)
+    '                    Dim price As Decimal = Decimal.MinValue
+    '                    If currentDayPayload.Close = currentDayPayload.Low Then
+    '                        price = currentDayPayload.Close + ConvertFloorCeling(currentDayPayload.Close * pricePercentage / 1000, Me._parentStrategy.TickSize, RoundOfType.Celing)
+    '                    Else
+    '                        If direction = 0 Then
+    '                            price = currentDayPayload.Close + ConvertFloorCeling(currentDayPayload.Close * pricePercentage / 1000, Me._parentStrategy.TickSize, RoundOfType.Celing)
+    '                        ElseIf direction = 1 Then
+    '                            price = currentDayPayload.Close - ConvertFloorCeling(currentDayPayload.Close * pricePercentage / 1000, Me._parentStrategy.TickSize, RoundOfType.Celing)
+    '                        End If
+    '                    End If
+    '                    ret = New Tuple(Of Boolean, Decimal, Integer)(True, price, quantity)
+    '                End If
+    '            End If
+    '        End If
+    '    End If
+    '    Return ret
+    'End Function
+
+    'Private Function GetSignalForExit(ByVal currentTick As Payload, ByVal currentTrade As Trade) As Tuple(Of Boolean, Decimal, String)
+    '    Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
+    '    If _signalPayload IsNot Nothing AndAlso _signalPayload.Count > 0 AndAlso _signalPayload.ContainsKey(currentTick.PayloadDate.Date) Then
+    '        Dim currentDayPayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
+    '        Dim exitPoint As Decimal = _fractalHighPayload(currentDayPayload.PreviousCandlePayload.PayloadDate)
+    '        If currentDayPayload.High >= exitPoint Then
+    '            ret = New Tuple(Of Boolean, Decimal, String)(True, exitPoint, "Target Hit")
+    '        End If
+    '    End If
+    '    Return ret
+    'End Function
+#End Region
+
+#Region "Fractal Low Entry,Upper Fractal High Exit"
+    Private Function GetSignalForEntry(ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Integer)
+        Dim ret As Tuple(Of Boolean, Decimal, Integer) = Nothing
+        If _signalPayload IsNot Nothing AndAlso _signalPayload.Count > 0 AndAlso _signalPayload.ContainsKey(currentTick.PayloadDate.Date) Then
+            Dim currentDayPayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
             Dim fractalLow As Decimal = _fractalLowPayload(currentDayPayload.PreviousCandlePayload.PayloadDate)
             Dim fractalHigh As Decimal = _fractalHighPayload(currentDayPayload.PreviousCandlePayload.PayloadDate)
             Dim sma As Decimal = _smaPayload(currentDayPayload.PreviousCandlePayload.PayloadDate)
@@ -144,17 +227,28 @@ Public Class InvestmentCNCStrategyRule
 
             If entryPoint > 100 AndAlso (fractalHigh >= sma OrElse fractalLow >= sma) Then
                 If currentDayPayload.Open >= entryPoint Then
-                    If currentTick.Open <= entryPoint Then
+                    If currentDayPayload.Low <= entryPoint Then
                         Dim quantity As Integer = Math.Ceiling(100 / (_fractalHighPayload(currentDayPayload.PreviousCandlePayload.PayloadDate) - entryPoint))
-                        ret = New Tuple(Of Boolean, Integer)(True, quantity)
+                        ret = New Tuple(Of Boolean, Decimal, Integer)(True, entryPoint, quantity)
                     End If
                 Else
                     Dim tradeEntryTime As Date = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, 15, 25, 0)
-                    If currentTick.PayloadDate >= tradeEntryTime Then
-                        If currentDayPayload.CandleColor = Color.Red Then
-                            Dim quantity As Integer = Math.Ceiling(100 / (_fractalHighPayload(currentDayPayload.PreviousCandlePayload.PayloadDate) - entryPoint))
-                            ret = New Tuple(Of Boolean, Integer)(True, quantity)
+                    If currentDayPayload.CandleColor = Color.Red Then
+                        Dim quantity As Integer = Math.Ceiling(100 / (_fractalHighPayload(currentDayPayload.PreviousCandlePayload.PayloadDate) - entryPoint))
+                        Dim r As New Random()
+                        Dim pricePercentage As Integer = r.Next(1, 5)
+                        Dim direction As Integer = r.Next(0, 1)
+                        Dim price As Decimal = Decimal.MinValue
+                        If currentDayPayload.Close = currentDayPayload.Low Then
+                            price = currentDayPayload.Close + ConvertFloorCeling(currentDayPayload.Close * pricePercentage / 1000, Me._parentStrategy.TickSize, RoundOfType.Celing)
+                        Else
+                            If direction = 0 Then
+                                price = currentDayPayload.Close + ConvertFloorCeling(currentDayPayload.Close * pricePercentage / 1000, Me._parentStrategy.TickSize, RoundOfType.Celing)
+                            ElseIf direction = 1 Then
+                                price = currentDayPayload.Close - ConvertFloorCeling(currentDayPayload.Close * pricePercentage / 1000, Me._parentStrategy.TickSize, RoundOfType.Celing)
+                            End If
                         End If
+                        ret = New Tuple(Of Boolean, Decimal, Integer)(True, price, quantity)
                     End If
                 End If
             End If
@@ -162,15 +256,32 @@ Public Class InvestmentCNCStrategyRule
         Return ret
     End Function
 
-    Private Function GetSignalForExit(ByVal currentTick As Payload) As Tuple(Of Boolean, String)
-        Dim ret As Tuple(Of Boolean, String) = Nothing
-        If _EODPayload IsNot Nothing AndAlso _EODPayload.Count > 0 AndAlso _EODPayload.ContainsKey(currentTick.PayloadDate.Date) Then
-            Dim currentDayPayload As Payload = _EODPayload(currentTick.PayloadDate.Date)
-            Dim exitPoint As Decimal = _fractalHighPayload(currentDayPayload.PreviousCandlePayload.PayloadDate)
-            If currentTick.Open >= exitPoint Then
-                ret = New Tuple(Of Boolean, String)(True, "Target Hit")
+    Private Function GetSignalForExit(ByVal currentTick As Payload, ByVal currentTrade As Trade) As Tuple(Of Boolean, Decimal, String)
+        Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
+        If _signalPayload IsNot Nothing AndAlso _signalPayload.Count > 0 AndAlso _signalPayload.ContainsKey(currentTick.PayloadDate.Date) Then
+            Dim currentDayPayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
+            Dim exitPoint As Decimal = GetUpperHighFractal(Date.Parse(currentTrade.Supporting2), currentTick.PayloadDate.Date)
+            If exitPoint <> Decimal.MinValue AndAlso currentDayPayload.High >= exitPoint Then
+                ret = New Tuple(Of Boolean, Decimal, String)(True, exitPoint, "Target Hit")
             End If
         End If
         Return ret
     End Function
+
+    Private Function GetUpperHighFractal(ByVal startDate As Date, ByVal endDate As Date) As Decimal
+        Dim ret As Decimal = Decimal.MinValue
+        If _fractalHighPayload IsNot Nothing AndAlso _fractalHighPayload.Count > 0 Then
+            Dim previousFractal As Decimal = Decimal.MinValue
+            For Each runningDate In _fractalHighPayload.Keys
+                If runningDate.Date > startDate.Date AndAlso runningDate.Date < endDate.Date Then
+                    If previousFractal <> Decimal.MinValue AndAlso _fractalHighPayload(runningDate) > previousFractal Then
+                        ret = _fractalHighPayload(runningDate)
+                    End If
+                    previousFractal = _fractalHighPayload(runningDate)
+                End If
+            Next
+        End If
+        Return ret
+    End Function
+#End Region
 End Class
