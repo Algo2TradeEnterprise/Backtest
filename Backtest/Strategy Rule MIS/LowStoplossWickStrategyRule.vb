@@ -183,19 +183,19 @@ Public Class LowStoplossWickStrategyRule
             Dim sellSLPrice As Decimal = GetStoplossPrice(candle, Trade.TradeExecutionDirection.Sell)
             If firstDirectionToCheck = Trade.TradeExecutionDirection.Buy Then
                 If Math.Abs(buySLPrice) >= _userInputs.MinStoploss AndAlso Math.Abs(buySLPrice) <= _userInputs.MaxStoploss Then
-                    Dim targetPoint As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, candle.High, _quantity, Math.Abs(buySLPrice) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
-                    ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, targetPoint, Trade.TradeExecutionDirection.Buy)
+                    Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, candle.High, _quantity, Math.Abs(buySLPrice) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
+                    ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, targetPrice - candle.High, Trade.TradeExecutionDirection.Buy)
                 ElseIf Math.Abs(sellSLPrice) >= _userInputs.MinStoploss AndAlso Math.Abs(sellSLPrice) <= _userInputs.MaxStoploss Then
-                    Dim targetPoint As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, candle.Low, _quantity, Math.Abs(sellSLPrice) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
-                    ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, targetPoint, Trade.TradeExecutionDirection.Sell)
+                    Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, candle.Low, _quantity, Math.Abs(sellSLPrice) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
+                    ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, candle.Low - targetPrice, Trade.TradeExecutionDirection.Sell)
                 End If
             ElseIf firstDirectionToCheck = Trade.TradeExecutionDirection.Sell Then
                 If Math.Abs(sellSLPrice) >= _userInputs.MinStoploss AndAlso Math.Abs(sellSLPrice) <= _userInputs.MaxStoploss Then
-                    Dim targetPoint As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, candle.Low, _quantity, Math.Abs(sellSLPrice) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
-                    ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, targetPoint, Trade.TradeExecutionDirection.Sell)
+                    Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, candle.Low, _quantity, Math.Abs(sellSLPrice) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
+                    ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, candle.Low - targetPrice, Trade.TradeExecutionDirection.Sell)
                 ElseIf Math.Abs(buySLPrice) >= _userInputs.MinStoploss AndAlso Math.Abs(buySLPrice) <= _userInputs.MaxStoploss Then
-                    Dim targetPoint As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, candle.High, _quantity, Math.Abs(buySLPrice) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
-                    ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, targetPoint, Trade.TradeExecutionDirection.Buy)
+                    Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, candle.High, _quantity, Math.Abs(buySLPrice) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
+                    ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, targetPrice - candle.High, Trade.TradeExecutionDirection.Buy)
                 End If
             End If
         End If
