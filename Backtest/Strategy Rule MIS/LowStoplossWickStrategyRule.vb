@@ -60,12 +60,16 @@ Public Class LowStoplossWickStrategyRule
 
             Dim signalCandle As Payload = Nothing
             Dim signalCandleSatisfied As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
+            Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandlePayload, _parentStrategy.TradeType)
             If signalCandleSatisfied IsNot Nothing AndAlso signalCandleSatisfied.Item1 Then
-                signalCandle = currentMinuteCandlePayload.PreviousCandlePayload
+                If lastExecutedTrade Is Nothing Then
+                    signalCandle = currentMinuteCandlePayload.PreviousCandlePayload
+                ElseIf lastExecutedTrade.SignalCandle.PayloadDate <> currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate Then
+                    signalCandle = currentMinuteCandlePayload.PreviousCandlePayload
+                End If
             End If
 
             If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
-                Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandlePayload, _parentStrategy.TradeType)
                 Dim targetPoint As Decimal = signalCandleSatisfied.Item2
                 Dim targetRemark As String = "Original Target"
                 If lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.ExitCondition = Trade.TradeExitCondition.StopLoss Then
