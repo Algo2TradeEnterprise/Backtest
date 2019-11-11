@@ -155,6 +155,18 @@ Public Class LowStoplossWickStrategyRule
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
+        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            Dim slPoint As Decimal = CDec(currentTrade.Supporting4)
+            Dim triggerPrice As Decimal = Decimal.MinValue
+            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                triggerPrice = currentTrade.EntryPrice - slPoint
+            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                triggerPrice = currentTrade.EntryPrice + slPoint
+            End If
+            If triggerPrice <> Decimal.MinValue AndAlso currentTrade.PotentialStopLoss <> triggerPrice Then
+                ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, slPoint)
+            End If
+        End If
         Return ret
     End Function
 
