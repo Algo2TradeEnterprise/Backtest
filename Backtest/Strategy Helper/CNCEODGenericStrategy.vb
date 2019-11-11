@@ -65,6 +65,7 @@ Namespace StrategyHelper
                 TradesTaken = New Dictionary(Of Date, Dictionary(Of String, List(Of Trade)))
                 Me.AvailableCapital = Me.UsableCapital
                 While tradeCheckingDate <= endDate.Date
+                    Console.WriteLine(String.Format("Capital available:{0},{1},", tradeCheckingDate.ToShortDateString, Me.AvailableCapital))
                     Dim tradingDay As Boolean = True
                     If tradingDay Then
                         _canceller.Token.ThrowIfCancellationRequested()
@@ -124,6 +125,10 @@ Namespace StrategyHelper
                                 'Now transfer only the current date payload into the workable payload (this will be used for the main loop and checking if the date is a valid date)
                                 If XDayPayload IsNot Nothing AndAlso XDayPayload.Count > 0 Then
                                     OnHeartbeat(String.Format("Processing for {0} on {1}. Stock Counter: [ {2}/{3} ]", stock, tradeCheckingDate.ToShortDateString, stockCount, stockList.Count))
+
+                                    If XDayStocksPayload Is Nothing Then XDayStocksPayload = New Dictionary(Of String, Dictionary(Of Date, Payload))
+                                    XDayStocksPayload.Add(stock, XDayPayload)
+
                                     For Each runningPayload In XDayPayload.Keys
                                         _canceller.Token.ThrowIfCancellationRequested()
                                         If runningPayload.Date = tradeCheckingDate.Date Then
@@ -136,8 +141,6 @@ Namespace StrategyHelper
                                     If currentDayPayload IsNot Nothing AndAlso currentDayPayload.Count > 0 Then
                                         If currentDayStocksPayload Is Nothing Then currentDayStocksPayload = New Dictionary(Of String, Dictionary(Of Date, Payload))
                                         currentDayStocksPayload.Add(stock, currentDayPayload)
-                                        If XDayStocksPayload Is Nothing Then XDayStocksPayload = New Dictionary(Of String, Dictionary(Of Date, Payload))
-                                        XDayStocksPayload.Add(stock, XDayPayload)
                                         If stocksRuleData Is Nothing Then stocksRuleData = New Dictionary(Of String, StrategyRule)
                                         Dim stockRule As StrategyRule = Nothing
 
@@ -283,7 +286,7 @@ Namespace StrategyHelper
                                                                     .PayloadDate = runningTick.PayloadDate,
                                                                     .TradingSymbol = runningTick.TradingSymbol
                                                                 }
-                                                        ExitTradeByForce(runningExitTrade, exitTick, exitOrderDetails.Item2)
+                                                        ExitTradeByForce(runningExitTrade, exitTick, exitOrderDetails.Item3)
                                                     End If
                                                 Next
                                                 stockList(stockName).ExitOrderDoneForTheMinute = True
@@ -402,17 +405,21 @@ Namespace StrategyHelper
                                 Next
                             End If
                             If tradeCheckingDate.Date = endDate.Date Then
-                                If currentDayStocksPayload IsNot Nothing AndAlso currentDayStocksPayload.Count > 0 Then
+                                If XDayStocksPayload IsNot Nothing AndAlso XDayStocksPayload.Count > 0 Then
                                     Dim currentDayStocksExitPayload As Dictionary(Of String, Dictionary(Of Date, Payload)) = Nothing
-                                    For Each runningStock In currentDayStocksPayload.Keys
+                                    For Each runningStock In XDayStocksPayload.Keys
+                                        Dim lastAvailableDayPayload As KeyValuePair(Of Date, Payload) =
+                                            XDayStocksPayload(runningStock).Where(Function(X)
+                                                                                      Return X.Key.Date <= tradeCheckingDate.Date
+                                                                                  End Function).LastOrDefault
                                         If currentDayStocksExitPayload Is Nothing Then currentDayStocksExitPayload = New Dictionary(Of String, Dictionary(Of Date, Payload))
                                         Dim dummyPayload As Payload = New Payload(Payload.CandleDataSource.Calculated) With {
-                                            .Open = currentDayStocksPayload(runningStock).LastOrDefault.Value.Close,
-                                            .Low = currentDayStocksPayload(runningStock).LastOrDefault.Value.Close,
-                                            .High = currentDayStocksPayload(runningStock).LastOrDefault.Value.Close,
-                                            .Close = currentDayStocksPayload(runningStock).LastOrDefault.Value.Close,
-                                            .PayloadDate = currentDayStocksPayload(runningStock).LastOrDefault.Value.PayloadDate,
-                                            .TradingSymbol = currentDayStocksPayload(runningStock).LastOrDefault.Value.TradingSymbol
+                                            .Open = lastAvailableDayPayload.Value.Close,
+                                            .Low = lastAvailableDayPayload.Value.Close,
+                                            .High = lastAvailableDayPayload.Value.Close,
+                                            .Close = lastAvailableDayPayload.Value.Close,
+                                            .PayloadDate = lastAvailableDayPayload.Value.PayloadDate,
+                                            .TradingSymbol = lastAvailableDayPayload.Value.TradingSymbol
                                         }
                                         currentDayStocksExitPayload.Add(runningStock, New Dictionary(Of Date, Payload) From {{dummyPayload.PayloadDate, dummyPayload}})
                                     Next

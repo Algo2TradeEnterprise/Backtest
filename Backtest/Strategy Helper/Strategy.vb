@@ -526,6 +526,8 @@ Namespace StrategyHelper
 
                 InsertCapitalRequired(currentTrade.EntryTime, capitalToBeAdded, capitalToBeReleased, "Placed Or Modify Order")
                 ret = True
+            Else
+                Console.WriteLine(String.Format("Trade Neglected:{0},{1}", tradeDate.ToShortDateString, tradingSymbol))
             End If
             Return ret
         End Function
@@ -698,6 +700,7 @@ Namespace StrategyHelper
                                     currentPayload = allOneMinutePayload(stock)(lastPayloadTime)
                                 End If
                                 If currentPayload IsNot Nothing Then
+                                    If currentPayload.PayloadDate.Date <> currentTimeOfExit.Date Then exitRemark = String.Format("Open Trade No Candle {0}", currentPayload.PayloadDate.ToShortDateString)
                                     ExitStockTradesByForce(currentPayload, tradeType, exitRemark)
                                 Else
                                     Throw New ApplicationException("Current Payload is NULL in 'ExitAllTradeByForce'")
