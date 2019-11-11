@@ -646,7 +646,8 @@ Public Class frmMain
                                 {.MinimumInvestmentPerStock = 15000,
                                  .MinStoploss = 700,
                                  .MaxStoploss = 1500,
-                                 .TargetMultiplier = 2
+                                 .TargetMultiplier = 2,
+                                 .MinimumStockMaxExitPerTrade = False
                                 }
                     End Select
 

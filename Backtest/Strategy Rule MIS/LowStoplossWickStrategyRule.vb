@@ -14,6 +14,7 @@ Public Class LowStoplossWickStrategyRule
         Public MinStoploss As Decimal
         Public MaxStoploss As Decimal
         Public TargetMultiplier As Decimal
+        Public MinimumStockMaxExitPerTrade As Boolean
     End Class
 #End Region
 
@@ -200,21 +201,29 @@ Public Class LowStoplossWickStrategyRule
             Dim sellSLPrice As Decimal = GetStoplossPrice(candle, Trade.TradeExecutionDirection.Sell)
             If firstDirectionToCheck = Trade.TradeExecutionDirection.Buy Then
                 If buySLPrice <> Decimal.MinValue AndAlso Math.Abs(buySLPrice) >= _userInputs.MinStoploss AndAlso Math.Abs(buySLPrice) <= _userInputs.MaxStoploss Then
-                    Dim targetPL As Decimal = Math.Max(2000, Math.Abs(buySLPrice) * _userInputs.TargetMultiplier)
+                    Dim minStockMaxProft As Decimal = _parentStrategy.StockMaxProfitPerDay
+                    If Not _userInputs.MinimumStockMaxExitPerTrade Then minStockMaxProft = 0
+                    Dim targetPL As Decimal = Math.Max(minStockMaxProft, Math.Abs(buySLPrice) * _userInputs.TargetMultiplier)
                     Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, candle.High, _quantity, targetPL, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
                     ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, targetPrice - candle.High, Trade.TradeExecutionDirection.Buy)
                 ElseIf sellSLPrice <> Decimal.MinValue AndAlso Math.Abs(sellSLPrice) >= _userInputs.MinStoploss AndAlso Math.Abs(sellSLPrice) <= _userInputs.MaxStoploss Then
-                    Dim targetPL As Decimal = Math.Max(2000, Math.Abs(sellSLPrice) * _userInputs.TargetMultiplier)
+                    Dim minStockMaxProft As Decimal = _parentStrategy.StockMaxProfitPerDay
+                    If Not _userInputs.MinimumStockMaxExitPerTrade Then minStockMaxProft = 0
+                    Dim targetPL As Decimal = Math.Max(minStockMaxProft, Math.Abs(sellSLPrice) * _userInputs.TargetMultiplier)
                     Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, candle.Low, _quantity, targetPL, Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
                     ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, candle.Low - targetPrice, Trade.TradeExecutionDirection.Sell)
                 End If
             ElseIf firstDirectionToCheck = Trade.TradeExecutionDirection.Sell Then
                 If sellSLPrice <> Decimal.MinValue AndAlso Math.Abs(sellSLPrice) >= _userInputs.MinStoploss AndAlso Math.Abs(sellSLPrice) <= _userInputs.MaxStoploss Then
-                    Dim targetPL As Decimal = Math.Max(2000, Math.Abs(sellSLPrice) * _userInputs.TargetMultiplier)
+                    Dim minStockMaxProft As Decimal = _parentStrategy.StockMaxProfitPerDay
+                    If Not _userInputs.MinimumStockMaxExitPerTrade Then minStockMaxProft = 0
+                    Dim targetPL As Decimal = Math.Max(minStockMaxProft, Math.Abs(sellSLPrice) * _userInputs.TargetMultiplier)
                     Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, candle.Low, _quantity, targetPL, Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
                     ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, candle.Low - targetPrice, Trade.TradeExecutionDirection.Sell)
                 ElseIf buySLPrice <> Decimal.MinValue AndAlso Math.Abs(buySLPrice) >= _userInputs.MinStoploss AndAlso Math.Abs(buySLPrice) <= _userInputs.MaxStoploss Then
-                    Dim targetPL As Decimal = Math.Max(2000, Math.Abs(buySLPrice) * _userInputs.TargetMultiplier)
+                    Dim minStockMaxProft As Decimal = _parentStrategy.StockMaxProfitPerDay
+                    If Not _userInputs.MinimumStockMaxExitPerTrade Then minStockMaxProft = 0
+                    Dim targetPL As Decimal = Math.Max(minStockMaxProft, Math.Abs(buySLPrice) * _userInputs.TargetMultiplier)
                     Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, candle.High, _quantity, targetPL, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
                     ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, targetPrice - candle.High, Trade.TradeExecutionDirection.Buy)
                 End If
