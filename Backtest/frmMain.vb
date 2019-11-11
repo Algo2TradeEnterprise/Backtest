@@ -651,7 +651,7 @@ Public Class frmMain
                     End Select
 
 
-                    .NumberOfTradeableStockPerDay = 1
+                    .NumberOfTradeableStockPerDay = 5
 
                     .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
@@ -662,9 +662,9 @@ Public Class frmMain
                     .StockMaxProfitPercentagePerDay = Decimal.MaxValue
                     .StockMaxLossPercentagePerDay = Decimal.MinValue
 
-                    .ExitOnStockFixedTargetStoploss = False
-                    .StockMaxProfitPerDay = Decimal.MaxValue
-                    .StockMaxLossPerDay = Decimal.MinValue
+                    .ExitOnStockFixedTargetStoploss = True
+                    .StockMaxProfitPerDay = 2000
+                    .StockMaxLossPerDay = -4000
 
                     .ExitOnOverAllFixedTargetStoploss = False
                     .OverAllProfitPerDay = Decimal.MaxValue

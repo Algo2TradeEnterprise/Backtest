@@ -199,18 +199,18 @@ Public Class LowStoplossWickStrategyRule
             Dim buySLPrice As Decimal = GetStoplossPrice(candle, Trade.TradeExecutionDirection.Buy)
             Dim sellSLPrice As Decimal = GetStoplossPrice(candle, Trade.TradeExecutionDirection.Sell)
             If firstDirectionToCheck = Trade.TradeExecutionDirection.Buy Then
-                If Math.Abs(buySLPrice) >= _userInputs.MinStoploss AndAlso Math.Abs(buySLPrice) <= _userInputs.MaxStoploss Then
+                If buySLPrice <> Decimal.MinValue AndAlso Math.Abs(buySLPrice) >= _userInputs.MinStoploss AndAlso Math.Abs(buySLPrice) <= _userInputs.MaxStoploss Then
                     Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, candle.High, _quantity, Math.Abs(buySLPrice) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
                     ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, targetPrice - candle.High, Trade.TradeExecutionDirection.Buy)
-                ElseIf Math.Abs(sellSLPrice) >= _userInputs.MinStoploss AndAlso Math.Abs(sellSLPrice) <= _userInputs.MaxStoploss Then
+                ElseIf sellSLPrice <> Decimal.MinValue AndAlso Math.Abs(sellSLPrice) >= _userInputs.MinStoploss AndAlso Math.Abs(sellSLPrice) <= _userInputs.MaxStoploss Then
                     Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, candle.Low, _quantity, Math.Abs(sellSLPrice) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
                     ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, candle.Low - targetPrice, Trade.TradeExecutionDirection.Sell)
                 End If
             ElseIf firstDirectionToCheck = Trade.TradeExecutionDirection.Sell Then
-                If Math.Abs(sellSLPrice) >= _userInputs.MinStoploss AndAlso Math.Abs(sellSLPrice) <= _userInputs.MaxStoploss Then
+                If sellSLPrice <> Decimal.MinValue AndAlso Math.Abs(sellSLPrice) >= _userInputs.MinStoploss AndAlso Math.Abs(sellSLPrice) <= _userInputs.MaxStoploss Then
                     Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, candle.Low, _quantity, Math.Abs(sellSLPrice) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
                     ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, candle.Low - targetPrice, Trade.TradeExecutionDirection.Sell)
-                ElseIf Math.Abs(buySLPrice) >= _userInputs.MinStoploss AndAlso Math.Abs(buySLPrice) <= _userInputs.MaxStoploss Then
+                ElseIf buySLPrice <> Decimal.MinValue AndAlso Math.Abs(buySLPrice) >= _userInputs.MinStoploss AndAlso Math.Abs(buySLPrice) <= _userInputs.MaxStoploss Then
                     Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, candle.High, _quantity, Math.Abs(buySLPrice) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
                     ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, targetPrice - candle.High, Trade.TradeExecutionDirection.Buy)
                 End If
@@ -223,12 +223,16 @@ Public Class LowStoplossWickStrategyRule
         Dim ret As Decimal = Decimal.MinValue
         If direction = Trade.TradeExecutionDirection.Buy Then
             Dim buffer As Decimal = _parentStrategy.CalculateBuffer(candle.High, RoundOfType.Floor)
-            Dim slPoint As Decimal = candle.CandleWicks.Top + buffer
-            ret = _parentStrategy.CalculatePL(_tradingSymbol, candle.High, candle.High - slPoint, _quantity, _lotSize, _parentStrategy.StockType)
+            If candle.CandleWicks.Top >= buffer Then
+                Dim slPoint As Decimal = candle.CandleWicks.Top + buffer
+                ret = _parentStrategy.CalculatePL(_tradingSymbol, candle.High, candle.High - slPoint, _quantity, _lotSize, _parentStrategy.StockType)
+            End If
         ElseIf direction = Trade.TradeExecutionDirection.Sell Then
             Dim buffer As Decimal = _parentStrategy.CalculateBuffer(candle.Low, RoundOfType.Floor)
-            Dim slPoint As Decimal = candle.CandleWicks.Bottom + buffer
-            ret = _parentStrategy.CalculatePL(_tradingSymbol, candle.Low + slPoint, candle.Low, _quantity, _lotSize, _parentStrategy.StockType)
+            If candle.CandleWicks.Bottom >= buffer Then
+                Dim slPoint As Decimal = candle.CandleWicks.Bottom + buffer
+                ret = _parentStrategy.CalculatePL(_tradingSymbol, candle.Low + slPoint, candle.Low, _quantity, _lotSize, _parentStrategy.StockType)
+            End If
         End If
         Return ret
     End Function
