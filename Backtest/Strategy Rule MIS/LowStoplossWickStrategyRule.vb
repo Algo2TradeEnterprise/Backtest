@@ -69,7 +69,8 @@ Public Class LowStoplossWickStrategyRule
                 Dim targetPoint As Decimal = signalCandleSatisfied.Item2
                 Dim targetRemark As Decimal = "Original Target"
                 If lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.ExitCondition = Trade.TradeExitCondition.StopLoss Then
-                    targetPoint = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, signalCandle.Open, _quantity, Math.Abs(lastExecutedTrade.PLAfterBrokerage), signalCandleSatisfied.Item3, _parentStrategy.StockType)
+                    Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, signalCandle.Open, _quantity, Math.Abs(lastExecutedTrade.PLAfterBrokerage), Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
+                    targetPoint = targetPrice - signalCandle.Open
                     targetRemark = "SL Makeup Trade"
                 End If
                 If signalCandleSatisfied.Item3 = Trade.TradeExecutionDirection.Buy Then
