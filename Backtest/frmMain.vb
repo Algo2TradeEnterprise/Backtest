@@ -813,15 +813,15 @@ Public Class frmMain
                                                                 stockType:=stockType,
                                                                 databaseTable:=database,
                                                                 dataSource:=sourceData,
-                                                                initialCapital:=100000,
-                                                                usableCapital:=50000,
+                                                                initialCapital:=150000,
+                                                                usableCapital:=100000,
                                                                 minimumEarnedCapitalToWithdraw:=200000,
                                                                 amountToBeWithdrawn:=50000)
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
                     '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Investment Stock List.csv")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Investment Stock List 06_08_18 to 06_08_18.csv")
 
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
@@ -833,7 +833,7 @@ Public Class frmMain
                                 {.QuantityType = InvestmentCNCStrategyRule.TypeOfQuantity.AP}
                     End Select
 
-                    .NumberOfTradeableStockPerDay = 10
+                    .NumberOfTradeableStockPerDay = 200
 
                     .NumberOfTradesPerDay = Integer.MaxValue
                     .NumberOfTradesPerStockPerDay = Integer.MaxValue

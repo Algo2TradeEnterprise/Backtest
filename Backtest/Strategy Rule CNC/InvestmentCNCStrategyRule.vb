@@ -251,7 +251,6 @@ Public Class InvestmentCNCStrategyRule
 
             If entryPoint > 100 AndAlso (fractalHigh >= sma OrElse fractalLow >= sma) Then
                 If currentDayPayload.High < fractalLow Then
-                    Dim quantity As Integer = Math.Ceiling(100 / (_fractalHighPayload(currentDayPayload.PreviousCandlePayload.PayloadDate) - entryPoint))
                     Dim r As New Random()
                     Dim pricePercentage As Integer = r.Next(1, 5)
                     Dim direction As Integer = r.Next(0, 1)
@@ -268,6 +267,7 @@ Public Class InvestmentCNCStrategyRule
                         End If
                     End If
                     If price <= currentDayPayload.PreviousCandlePayload.Low Then
+                        Dim quantity As Integer = Math.Ceiling(100 / (_fractalHighPayload(currentDayPayload.PreviousCandlePayload.PayloadDate) - price))
                         ret = New Tuple(Of Boolean, Decimal, Integer)(True, price, quantity)
                     End If
                 End If
