@@ -75,7 +75,7 @@ Namespace StrategyHelper
                 While tradeCheckingDate <= endDate.Date
                     _canceller.Token.ThrowIfCancellationRequested()
                     Me.AvailableCapital = Me.UsableCapital
-                    If Me.TrailingMTM Then Me.OverAllLossPerDay = portfolioLossPerDay
+                    If Me.TrailingMTM OrElse Me.RealtimeTrailingMTM Then Me.OverAllLossPerDay = portfolioLossPerDay
                     TradesTaken = New Dictionary(Of Date, Dictionary(Of String, List(Of Trade)))
                     Dim stockList As Dictionary(Of String, StockDetails) = Await GetStockData(tradeCheckingDate).ConfigureAwait(False)
 
@@ -251,7 +251,7 @@ Namespace StrategyHelper
                                                         If portfolioLossPerDay <> Decimal.MinValue AndAlso
                                                             TotalPLAfterBrokerage(tradeCheckingDate) >= Math.Abs(portfolioLossPerDay) Then
                                                             Me.ExitOnOverAllFixedTargetStoploss = True
-                                                            Dim trailingMTMLoss As Decimal = TotalPLAfterBrokerage(tradeCheckingDate) * Me.RealtimeTrailingMTM / 100
+                                                            Dim trailingMTMLoss As Decimal = TotalPLAfterBrokerage(tradeCheckingDate) * Me.RealtimeTrailingPercentage / 100
                                                             If trailingMTMLoss <> Decimal.MinValue AndAlso trailingMTMLoss > Me.OverAllLossPerDay Then
                                                                 Me.OverAllLossPerDay = trailingMTMLoss
                                                             End If
