@@ -41,13 +41,14 @@ Namespace StrategyHelper
             End If
 
             Dim ruleData As LowStoplossWickStrategyRule.StrategyRuleEntities = Me.RuleEntityData
-            Dim filename As String = String.Format("TF {0},TgtMul {1},StckMaxPrft {2},StckMaxLs {3},OvrAlPrft {4},OvrAlLs {5}",
+            Dim filename As String = String.Format("TF {0},StckMaxPrft {1},StckMaxLs {2},OvrAlPrft {3},OvrAlLs {4},TgtMul {5},MinStkMaxExtPTrd {6}",
                                                    Me.SignalTimeFrame,
-                                                   ruleData.TargetMultiplier,
-                                                   If(Me.StockMaxProfitPercentagePerDay <> Decimal.MaxValue, Me.StockMaxProfitPercentagePerDay, "∞"),
-                                                   If(Me.StockMaxLossPercentagePerDay <> Decimal.MinValue, Me.StockMaxLossPercentagePerDay, "∞"),
+                                                   If(Me.StockMaxProfitPerDay <> Decimal.MaxValue, Me.StockMaxProfitPerDay, "∞"),
+                                                   If(Me.StockMaxLossPerDay <> Decimal.MinValue, Me.StockMaxLossPerDay, "∞"),
                                                    If(Me.OverAllProfitPerDay <> Decimal.MaxValue, Me.OverAllProfitPerDay, "∞"),
-                                                   If(Me.OverAllLossPerDay <> Decimal.MinValue, Me.OverAllLossPerDay, "∞"))
+                                                   If(Me.OverAllLossPerDay <> Decimal.MinValue, Me.OverAllLossPerDay, "∞"),
+                                                   ruleData.TargetMultiplier,
+                                                   ruleData.MinimumStockMaxExitPerTrade)
 
             Dim tradesFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Trades.a2t", filename))
             Dim capitalFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Capital.a2t", filename))
@@ -237,16 +238,8 @@ Namespace StrategyHelper
                                                     'Set Overall MTM
                                                     If TrailingMTM Then
                                                         Me.ExitOnOverAllFixedTargetStoploss = True
-                                                        Dim trailingMTMLoss As Decimal = CalculateTrailingMTM(Me.MTMSlab, TotalPLAfterBrokerage(tradeCheckingDate))
+                                                        Dim trailingMTMLoss As Decimal = CalculateTrailingMTM(Me.MTMSlab, Me.MovementSlab, TotalPLAfterBrokerage(tradeCheckingDate))
                                                         If trailingMTMLoss <> Decimal.MinValue AndAlso trailingMTMLoss > Me.OverAllLossPerDay Then
-                                                            'If trailingMTMLoss = 0 Then
-                                                            '    'If Me.TotalMaxDrawDownPLAfterBrokerage(tradeCheckingDate, runningTick.PayloadDate) >= -1000 Then
-                                                            '    '    trailingMTMLoss = -5000
-                                                            '    'Else
-                                                            '    '    trailingMTMLoss = Math.Max(Me.TotalMaxDrawDownPLAfterBrokerage(tradeCheckingDate, runningTick.PayloadDate), -10000)
-                                                            '    'End If
-                                                            '    Me.OverAllLossPerDay = -10000
-                                                            'End If
                                                             Me.OverAllLossPerDay = trailingMTMLoss
                                                         End If
                                                     End If

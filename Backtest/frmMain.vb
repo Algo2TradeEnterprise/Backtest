@@ -564,9 +564,9 @@ Public Class frmMain
                                                               stockType:=stockType,
                                                               databaseTable:=database,
                                                               dataSource:=sourceData,
-                                                              initialCapital:=20000000,
-                                                              usableCapital:=10000000,
-                                                              minimumEarnedCapitalToWithdraw:=30000000,
+                                                              initialCapital:=300000,
+                                                              usableCapital:=300000,
+                                                              minimumEarnedCapitalToWithdraw:=400000,
                                                               amountToBeWithdrawn:=100000)
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
@@ -671,8 +671,9 @@ Public Class frmMain
                     .OverAllProfitPerDay = Decimal.MaxValue
                     .OverAllLossPerDay = -8000
 
-                    .TrailingMTM = False
-                    .MTMSlab = 20000
+                    .TrailingMTM = True
+                    .MTMSlab = Math.Abs(.OverAllLossPerDay)
+                    .MovementSlab = .MTMSlab / 2
                 End With
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate).ConfigureAwait(False)
             End Using

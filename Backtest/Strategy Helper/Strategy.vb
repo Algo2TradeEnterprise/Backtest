@@ -139,6 +139,7 @@ Namespace StrategyHelper
         Public TrailingStoploss As Boolean = False
         Public TrailingMTM As Boolean = False
         Public MTMSlab As Decimal = Decimal.MinValue
+        Public MovementSlab As Decimal = Decimal.MinValue
 #End Region
 
 #Region "Public Calculated Property"
@@ -1187,11 +1188,11 @@ Namespace StrategyHelper
             Return ret
         End Function
 
-        Public Function CalculateTrailingMTM(ByVal slab As Decimal, ByVal pl As Decimal) As Decimal
+        Public Function CalculateTrailingMTM(ByVal mtmSlab As Decimal, ByVal mvmntSlab As Decimal, ByVal pl As Decimal) As Decimal
             Dim ret As Decimal = Decimal.MinValue
-            If pl >= slab Then
-                Dim multiplier As Decimal = pl / slab
-                ret = (Math.Floor(multiplier) - 1) * slab
+            If pl >= mtmSlab Then
+                Dim multiplier As Decimal = pl / mtmSlab
+                ret = Math.Floor(multiplier) * mvmntSlab
             End If
             Return ret
         End Function
