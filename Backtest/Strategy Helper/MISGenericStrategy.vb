@@ -41,13 +41,15 @@ Namespace StrategyHelper
             End If
 
             Dim ruleData As LowStoplossWickStrategyRule.StrategyRuleEntities = Me.RuleEntityData
-            Dim filename As String = String.Format("TF {0},StckMaxPrft {1},StckMaxLs {2},OvrAlPrft {3},OvrAlLs {4},TgtMul {5},MinStkMaxExtPTrd {6}",
+            Dim filename As String = String.Format("TF {0},StkMxPft {1},StkMxLs {2},OvrAlPft {3},OvrAlLs {4},TrlMTM {5},MTMSlb {6},MvmntSlb {7},ExtPTrd {8}",
                                                    Me.SignalTimeFrame,
                                                    If(Me.StockMaxProfitPerDay <> Decimal.MaxValue, Me.StockMaxProfitPerDay, "∞"),
                                                    If(Me.StockMaxLossPerDay <> Decimal.MinValue, Me.StockMaxLossPerDay, "∞"),
                                                    If(Me.OverAllProfitPerDay <> Decimal.MaxValue, Me.OverAllProfitPerDay, "∞"),
                                                    If(Me.OverAllLossPerDay <> Decimal.MinValue, Me.OverAllLossPerDay, "∞"),
-                                                   ruleData.TargetMultiplier,
+                                                   Me.TrailingMTM,
+                                                   Me.MTMSlab,
+                                                   Me.MovementSlab,
                                                    ruleData.MinimumStockMaxExitPerTrade)
 
             Dim tradesFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Trades.a2t", filename))
