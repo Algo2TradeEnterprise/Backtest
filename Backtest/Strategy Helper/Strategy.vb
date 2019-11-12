@@ -530,7 +530,7 @@ Namespace StrategyHelper
                 InsertCapitalRequired(currentTrade.EntryTime, capitalToBeAdded, capitalToBeReleased, "Placed Or Modify Order")
                 ret = True
             Else
-                Console.WriteLine(String.Format("Trade Neglected:{0},{1}", tradeDate.ToShortDateString, tradingSymbol))
+                Console.WriteLine(String.Format("Trade Neglected:{0},{1},{2}", tradeDate.ToShortDateString, tradingSymbol, usableTrade.EntryTime.ToString("HH:mm:ss")))
             End If
             Return ret
         End Function
