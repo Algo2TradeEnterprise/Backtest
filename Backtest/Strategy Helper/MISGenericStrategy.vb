@@ -39,9 +39,10 @@ Namespace StrategyHelper
                 Me.StockMaxProfitPerDay = Decimal.MaxValue
                 Me.StockMaxLossPerDay = Decimal.MinValue
             End If
+            If Me.RealtimeTrailingMTM Then Me.TrailingMTM = False
 
             Dim ruleData As LowStoplossWickStrategyRule.StrategyRuleEntities = Me.RuleEntityData
-            Dim filename As String = String.Format("TF {0},StkMxPft {1},StkMxLs {2},OvrAlPft {3},OvrAlLs {4},TrlMTM {5},MTMSlb {6},MvmntSlb {7},ExtPTrd {8}",
+            Dim filename As String = String.Format("TF {0},StkMxPft {1},StkMxLs {2},OvrAlPft {3},OvrAlLs {4},TrlMTM {5},MTMSlb {6},MvmntSlb {7},RlTmTrng {8},ExtPTrd {9}",
                                                    Me.SignalTimeFrame,
                                                    If(Me.StockMaxProfitPerDay <> Decimal.MaxValue, Me.StockMaxProfitPerDay, "∞"),
                                                    If(Me.StockMaxLossPerDay <> Decimal.MinValue, Me.StockMaxLossPerDay, "∞"),
@@ -50,6 +51,7 @@ Namespace StrategyHelper
                                                    Me.TrailingMTM,
                                                    Me.MTMSlab,
                                                    Me.MovementSlab,
+                                                   Me.RealtimeTrailingMTM,
                                                    ruleData.MinimumStockMaxExitPerTrade)
 
             Dim tradesFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Trades.a2t", filename))
@@ -245,6 +247,16 @@ Namespace StrategyHelper
                                                             Me.OverAllLossPerDay = trailingMTMLoss
                                                         End If
                                                     End If
+                                                    If RealtimeTrailingMTM Then
+                                                        If portfolioLossPerDay <> Decimal.MinValue AndAlso
+                                                            TotalPLAfterBrokerage(tradeCheckingDate) >= Math.Abs(portfolioLossPerDay) Then
+                                                            Me.ExitOnOverAllFixedTargetStoploss = True
+                                                            Dim trailingMTMLoss As Decimal = TotalPLAfterBrokerage(tradeCheckingDate) * Me.RealtimeTrailingMTM / 100
+                                                            If trailingMTMLoss <> Decimal.MinValue AndAlso trailingMTMLoss > Me.OverAllLossPerDay Then
+                                                                Me.OverAllLossPerDay = trailingMTMLoss
+                                                            End If
+                                                        End If
+                                                    End If
 
                                                     'Specific Stock MTM Check
                                                     _canceller.Token.ThrowIfCancellationRequested()
@@ -288,6 +300,9 @@ Namespace StrategyHelper
                                                         ElseIf Me.TrailingMTM AndAlso TotalPLAfterBrokerage(tradeCheckingDate) <= OverAllLossPerDay Then
                                                             ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Trailing MTM reached for the day")
                                                             stockList(stockName).EligibleToTakeTrade = False
+                                                        ElseIf Me.RealtimeTrailingMTM AndAlso TotalPLAfterBrokerage(tradeCheckingDate) <= OverAllLossPerDay Then
+                                                            ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Realtime Trailing MTM reached for the day")
+                                                            stockList(stockName).EligibleToTakeTrade = False
                                                         End If
                                                     End If
 
@@ -329,7 +344,7 @@ Namespace StrategyHelper
                                                         If Me.TickBasedStrategy OrElse Not stockList(stockName).PlaceOrderDoneForTheMinute Then
                                                             If Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.NumberOfTradesPerStockPerDay AndAlso
                                                                 Me.TotalPLAfterBrokerage(runningTick.PayloadDate) < Me.OverAllProfitPerDay AndAlso
-                                                                Me.TotalPLAfterBrokerage(runningTick.PayloadDate) > Math.Abs(Me.OverAllLossPerDay) * -1 AndAlso
+                                                                Me.TotalPLAfterBrokerage(runningTick.PayloadDate) > Me.OverAllLossPerDay AndAlso
                                                                 Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.StockMaxProfitPerDay AndAlso
                                                                 Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso
                                                                 Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < stockStrategyRule.MaxProfitOfThisStock AndAlso
@@ -341,7 +356,7 @@ Namespace StrategyHelper
                                                         Else
                                                             If Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.NumberOfTradesPerStockPerDay AndAlso
                                                                 Me.TotalPLAfterBrokerage(runningTick.PayloadDate) < Me.OverAllProfitPerDay AndAlso
-                                                                Me.TotalPLAfterBrokerage(runningTick.PayloadDate) > Math.Abs(Me.OverAllLossPerDay) * -1 AndAlso
+                                                                Me.TotalPLAfterBrokerage(runningTick.PayloadDate) > Me.OverAllLossPerDay AndAlso
                                                                 Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.StockMaxProfitPerDay AndAlso
                                                                 Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso
                                                                 Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < stockStrategyRule.MaxProfitOfThisStock AndAlso
@@ -426,7 +441,7 @@ Namespace StrategyHelper
                                                     If exitOrderSuccessful Then
                                                         If Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.NumberOfTradesPerStockPerDay AndAlso
                                                             Me.TotalPLAfterBrokerage(runningTick.PayloadDate) < Me.OverAllProfitPerDay AndAlso
-                                                            Me.TotalPLAfterBrokerage(runningTick.PayloadDate) > Math.Abs(Me.OverAllLossPerDay) * -1 AndAlso
+                                                            Me.TotalPLAfterBrokerage(runningTick.PayloadDate) > Me.OverAllLossPerDay AndAlso
                                                             Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.StockMaxProfitPerDay AndAlso
                                                             Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso
                                                             Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < stockStrategyRule.MaxProfitOfThisStock AndAlso

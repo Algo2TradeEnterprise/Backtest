@@ -674,6 +674,9 @@ Public Class frmMain
                     .TrailingMTM = True
                     .MTMSlab = Math.Abs(.OverAllLossPerDay)
                     .MovementSlab = .MTMSlab / 2
+
+                    .RealtimeTrailingMTM = True
+                    .RealtimeTrailingPercentage = 50
                 End With
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate).ConfigureAwait(False)
             End Using

@@ -140,6 +140,8 @@ Namespace StrategyHelper
         Public TrailingMTM As Boolean = False
         Public MTMSlab As Decimal = Decimal.MinValue
         Public MovementSlab As Decimal = Decimal.MinValue
+        Public RealtimeTrailingMTM As Boolean = False
+        Public RealtimeTrailingPercentage As Decimal = Decimal.MinValue
 #End Region
 
 #Region "Public Calculated Property"
