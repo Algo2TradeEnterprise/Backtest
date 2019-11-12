@@ -665,11 +665,11 @@ Public Class frmMain
 
                     .ExitOnStockFixedTargetStoploss = True
                     .StockMaxProfitPerDay = 4000
-                    .StockMaxLossPerDay = -3000
+                    .StockMaxLossPerDay = -4000
 
                     .ExitOnOverAllFixedTargetStoploss = True
                     .OverAllProfitPerDay = Decimal.MaxValue
-                    .OverAllLossPerDay = -8000
+                    .OverAllLossPerDay = -10000
 
                     .TrailingMTM = True
                     .MTMSlab = Math.Abs(.OverAllLossPerDay)
