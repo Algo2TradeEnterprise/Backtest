@@ -554,12 +554,12 @@ Public Class frmMain
             Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                               exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                               exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                              tradeStartTime:=TimeSpan.Parse("9:20:00"),
+                                                              tradeStartTime:=TimeSpan.Parse("9:17:00"),
                                                               lastTradeEntryTime:=TimeSpan.Parse("14:40:59"),
                                                               eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                               tickSize:=tick,
                                                               marginMultiplier:=margin,
-                                                              timeframe:=5,
+                                                              timeframe:=1,
                                                               heikenAshiCandle:=False,
                                                               stockType:=stockType,
                                                               databaseTable:=database,
@@ -571,7 +571,7 @@ Public Class frmMain
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Intraday Volume Spike for first 5 minute.csv")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Intraday Volume Spike for first 2 minute.csv")
 
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
                     Select Case .RuleNumber
@@ -647,12 +647,12 @@ Public Class frmMain
                                  .MinStoploss = 700,
                                  .MaxStoploss = 1500,
                                  .TargetMultiplier = 2,
-                                 .MinimumStockMaxExitPerTrade = False
+                                 .MinimumStockMaxExitPerTrade = True
                                 }
                     End Select
 
 
-                    .NumberOfTradeableStockPerDay = 5
+                    .NumberOfTradeableStockPerDay = 10
 
                     .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
@@ -664,12 +664,12 @@ Public Class frmMain
                     .StockMaxLossPercentagePerDay = Decimal.MinValue
 
                     .ExitOnStockFixedTargetStoploss = True
-                    .StockMaxProfitPerDay = 2000
-                    .StockMaxLossPerDay = -4000
+                    .StockMaxProfitPerDay = 4000
+                    .StockMaxLossPerDay = -3000
 
-                    .ExitOnOverAllFixedTargetStoploss = False
+                    .ExitOnOverAllFixedTargetStoploss = True
                     .OverAllProfitPerDay = Decimal.MaxValue
-                    .OverAllLossPerDay = Decimal.MinValue
+                    .OverAllLossPerDay = -8000
 
                     .TrailingMTM = False
                     .MTMSlab = 20000
