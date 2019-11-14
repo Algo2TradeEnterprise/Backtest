@@ -867,8 +867,6 @@ Namespace StrategyHelper
                     calculator.Currency_Futures(buyPrice, sellPrice, quantity / lotSize, potentialBrokerage)
                 Case Trade.TypeOfStock.Commodity
                     calculator.Commodity_MCX(stockName, buyPrice, sellPrice, quantity / lotSize, potentialBrokerage)
-                Case Trade.TypeOfStock.Currency
-                    Throw New ApplicationException("Not Implemented")
                 Case Trade.TypeOfStock.Futures
                     calculator.FO_Futures(buyPrice, sellPrice, quantity, potentialBrokerage)
             End Select
@@ -941,7 +939,7 @@ Namespace StrategyHelper
                             Case Trade.TypeOfStock.Commodity
                                 calculator.Commodity_MCX(coreStockName, entryPrice, exitPrice, quantity, potentialBrokerage)
                             Case Trade.TypeOfStock.Currency
-                                Throw New ApplicationException("Not Implemented")
+                                calculator.Currency_Futures(entryPrice, exitPrice, quantity, potentialBrokerage)
                             Case Trade.TypeOfStock.Futures
                                 calculator.FO_Futures(entryPrice, exitPrice, quantity, potentialBrokerage)
                         End Select
@@ -994,7 +992,7 @@ Namespace StrategyHelper
                 End While
             End If
 
-            Return Math.Round(exitPrice, 2)
+            Return exitPrice
         End Function
 
         ''' <summary>
