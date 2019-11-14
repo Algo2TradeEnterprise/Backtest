@@ -556,11 +556,11 @@ Public Class frmMain
                     For trlngMTMType As Integer = 4 To 4
                         For slMakeupType As Integer = 1 To 1
                             Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
-                                                                              exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                                              exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                              exchangeStartTime:=TimeSpan.Parse("09:00:00"),
+                                                                              exchangeEndTime:=TimeSpan.Parse("16:59:59"),
                                                                               tradeStartTime:=TimeSpan.Parse("9:01:00"),
-                                                                              lastTradeEntryTime:=TimeSpan.Parse("14:40:59"),
-                                                                              eodExitTime:=TimeSpan.Parse("15:15:00"),
+                                                                              lastTradeEntryTime:=TimeSpan.Parse("15:45:00"),
+                                                                              eodExitTime:=TimeSpan.Parse("16:30:00"),
                                                                               tickSize:=tick,
                                                                               marginMultiplier:=margin,
                                                                               timeframe:=1,
