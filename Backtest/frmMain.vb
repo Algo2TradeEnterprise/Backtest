@@ -551,14 +551,14 @@ Public Class frmMain
             'Next
 #End Region
 
-            For ovralLoss As Decimal = -10000 To -10000 Step 2000
-                For stkLoss As Decimal = -4000 To -3000 Step 1000
-                    For trlngMTMType As Integer = 2 To 4
+            For ovralLoss As Decimal = 1 To 1 Step 2000
+                For stkLoss As Decimal = Decimal.MinValue To Decimal.MinValue Step 1000
+                    For trlngMTMType As Integer = 4 To 4
                         For slMakeupType As Integer = 1 To 1
                             Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                               exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                               exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                                              tradeStartTime:=TimeSpan.Parse("9:17:00"),
+                                                                              tradeStartTime:=TimeSpan.Parse("9:16:00"),
                                                                               lastTradeEntryTime:=TimeSpan.Parse("14:40:59"),
                                                                               eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                                               tickSize:=tick,
@@ -664,10 +664,14 @@ Public Class frmMain
                                                  .MinimumStockMaxExitPerTrade = True,
                                                  .TypeOfSLMakeup = slMakeupType
                                                 }
+                                        Case 21
+                                            .RuleEntityData = New PairTradingStrategyRule.StrategyRuleEntities With
+                                                {.TargetMultiplier = 2
+                                                }
                                     End Select
 
 
-                                    .NumberOfTradeableStockPerDay = 10
+                                    .NumberOfTradeableStockPerDay = 1
 
                                     .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
@@ -679,10 +683,10 @@ Public Class frmMain
                                     .StockMaxLossPercentagePerDay = Decimal.MinValue
 
                                     .ExitOnStockFixedTargetStoploss = True
-                                    .StockMaxProfitPerDay = 4000
+                                    .StockMaxProfitPerDay = 5000
                                     .StockMaxLossPerDay = stkLoss
 
-                                    .ExitOnOverAllFixedTargetStoploss = True
+                                    .ExitOnOverAllFixedTargetStoploss = False
                                     .OverAllProfitPerDay = Decimal.MaxValue
                                     .OverAllLossPerDay = ovralLoss
 
