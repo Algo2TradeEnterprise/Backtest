@@ -73,11 +73,17 @@ Public Class LowStoplossWickStrategyRule
             If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
                 Dim targetPoint As Decimal = signalCandleSatisfied.Item2
                 Dim targetRemark As String = "Original Target"
-                If lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.ExitCondition = Trade.TradeExitCondition.StopLoss Then
-                    Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, signalCandle.Open, _quantity, Math.Abs(lastExecutedTrade.PLAfterBrokerage), Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
+                'If lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.ExitCondition = Trade.TradeExitCondition.StopLoss Then
+                '    Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, signalCandle.Open, _quantity, Math.Abs(lastExecutedTrade.PLAfterBrokerage), Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
+                '    targetPoint = targetPrice - signalCandle.Open
+                '    targetRemark = "SL Makeup Trade"
+                'End If
+                If _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) < 0 Then
+                    Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, signalCandle.Open, _quantity, (_userInputs.MinStoploss + _userInputs.MaxStoploss) / 2, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
                     targetPoint = targetPrice - signalCandle.Open
                     targetRemark = "SL Makeup Trade"
                 End If
+
                 If signalCandleSatisfied.Item3 = Trade.TradeExecutionDirection.Buy Then
                     Dim slPrice As Decimal = Decimal.MinValue
                     If signalCandle.CandleColor = Color.Red Then

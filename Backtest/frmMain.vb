@@ -551,9 +551,9 @@ Public Class frmMain
             'Next
 #End Region
 
-            For ovralLoss As Decimal = -10000 To -8000 Step 2000
-                For stkLoss As Decimal = -4000 To -3000 Step 1000
-                    For trlngMTMType As Integer = 1 To 4
+            For ovralLoss As Decimal = -8000 To -8000 Step 2000
+                For stkLoss As Decimal = -4000 To -4000 Step 1000
+                    For trlngMTMType As Integer = 4 To 4
                         Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                           exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                           exchangeEndTime:=TimeSpan.Parse("15:29:59"),
