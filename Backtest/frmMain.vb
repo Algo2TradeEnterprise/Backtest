@@ -652,6 +652,14 @@ Public Class frmMain
                                              .TargetMultiplier = 2,
                                              .MinimumStockMaxExitPerTrade = True
                                             }
+                                    Case 20
+                                        .RuleEntityData = New LowStoplossCandleStrategyRule.StrategyRuleEntities With
+                                            {.MinimumInvestmentPerStock = 15000,
+                                             .MinStoploss = 700,
+                                             .MaxStoploss = 1500,
+                                             .TargetMultiplier = 2,
+                                             .MinimumStockMaxExitPerTrade = True
+                                            }
                                 End Select
 
 

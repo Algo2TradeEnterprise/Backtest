@@ -160,6 +160,8 @@ Namespace StrategyHelper
                                             Throw New ApplicationException("Not a MIS strategy")
                                         Case 19
                                             stockRule = New LowStoplossWickStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case 20
+                                            stockRule = New LowStoplossCandleStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat

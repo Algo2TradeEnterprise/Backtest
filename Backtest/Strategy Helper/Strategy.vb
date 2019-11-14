@@ -1213,6 +1213,7 @@ Namespace StrategyHelper
                 Dim plmultiplier As Decimal = Math.Floor(pl / mtmSlab)
                 Dim multiplier As Decimal = Math.Log(mtmSlab * plmultiplier, mtmSlab)
                 ret = Math.Round((mtmSlab * (plmultiplier - 1)) * multiplier, 4)
+                If ret = 0 Then ret = mtmSlab / 2
             End If
             Return ret
         End Function
