@@ -95,18 +95,12 @@ Public Class LowStoplossCandleStrategyRule
                 End If
 
                 If signalCandleSatisfied.Item3 = Trade.TradeExecutionDirection.Buy Then
-                    Dim slPrice As Decimal = Decimal.MinValue
-                    If signalCandle.CandleColor = Color.Red Then
-                        slPrice = signalCandle.Open
-                    Else
-                        slPrice = signalCandle.Close
-                    End If
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.High, RoundOfType.Floor)
                     parameter = New PlaceOrderParameters With {
                     .EntryPrice = signalCandle.High + buffer,
                     .EntryDirection = Trade.TradeExecutionDirection.Buy,
                     .Quantity = _quantity,
-                    .Stoploss = slPrice,
+                    .Stoploss = signalCandle.Low - buffer,
                     .Target = .EntryPrice + targetPoint,
                     .Buffer = buffer,
                     .SignalCandle = signalCandle,
@@ -117,18 +111,12 @@ Public Class LowStoplossCandleStrategyRule
                     .Supporting4 = (.EntryPrice - .Stoploss)
                 }
                 ElseIf signalCandleSatisfied.Item3 = Trade.TradeExecutionDirection.Sell Then
-                    Dim slPrice As Decimal = Decimal.MinValue
-                    If signalCandle.CandleColor = Color.Green Then
-                        slPrice = signalCandle.Open
-                    Else
-                        slPrice = signalCandle.Close
-                    End If
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Low, RoundOfType.Floor)
                     parameter = New PlaceOrderParameters With {
                     .EntryPrice = signalCandle.Low - buffer,
                     .EntryDirection = Trade.TradeExecutionDirection.Sell,
                     .Quantity = _quantity,
-                    .Stoploss = slPrice,
+                    .Stoploss = signalCandle.High + buffer,
                     .Target = .EntryPrice - targetPoint,
                     .Buffer = buffer,
                     .SignalCandle = signalCandle,
