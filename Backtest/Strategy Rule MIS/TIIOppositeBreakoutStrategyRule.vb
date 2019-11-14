@@ -85,7 +85,7 @@ Public Class TIIOppositeBreakoutStrategyRule
                                                              Return x.PLAfterBrokerage
                                                          End Function)
                         End If
-                        Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(Me._tradingSymbol, signalCandle.High + buffer, _lotSize, Math.Abs(totalLoss), Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
+                        Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(Me._tradingSymbol, signalCandle.High + buffer, LotSize, Math.Abs(totalLoss), Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
                         targetPoint = target - signalCandle.High + buffer
                     Else
                         targetPoint = Math.Max((signalCandle.High + buffer) * _userInputs.TargetMultiplier / 100, (signalCandle.CandleRange + 2 * buffer) * 2)
@@ -93,7 +93,7 @@ Public Class TIIOppositeBreakoutStrategyRule
                     parameter = New PlaceOrderParameters With {
                         .EntryPrice = signalCandle.High + buffer,
                         .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                        .Quantity = _lotSize,
+                        .Quantity = LotSize,
                         .Stoploss = signalCandle.Low - buffer,
                         .Target = .EntryPrice + ConvertFloorCeling(targetPoint, _parentStrategy.TickSize, RoundOfType.Celing),
                         .Buffer = buffer,
@@ -113,7 +113,7 @@ Public Class TIIOppositeBreakoutStrategyRule
                                                              Return x.PLAfterBrokerage
                                                          End Function)
                         End If
-                        Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(Me._tradingSymbol, signalCandle.Low - buffer, _lotSize, Math.Abs(totalLoss), Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
+                        Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(Me._tradingSymbol, signalCandle.Low - buffer, LotSize, Math.Abs(totalLoss), Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
                         targetPoint = signalCandle.Low - buffer - target
                     Else
                         targetPoint = Math.Max((signalCandle.Low - buffer) * _userInputs.TargetMultiplier / 100, (signalCandle.CandleRange + 2 * buffer) * 2)
@@ -121,7 +121,7 @@ Public Class TIIOppositeBreakoutStrategyRule
                     parameter = New PlaceOrderParameters With {
                         .EntryPrice = signalCandle.Low - buffer,
                         .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                        .Quantity = _lotSize,
+                        .Quantity = LotSize,
                         .Stoploss = signalCandle.High + buffer,
                         .Target = .EntryPrice - ConvertFloorCeling(targetPoint, _parentStrategy.TickSize, RoundOfType.Celing),
                         .Buffer = buffer,

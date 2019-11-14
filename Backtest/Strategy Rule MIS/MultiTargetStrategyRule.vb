@@ -63,7 +63,7 @@ Public Class MultiTargetStrategyRule
                         Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                                                                 .EntryPrice = signalCandleSatisfied.Item2.BuyEntry,
                                                                 .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                                                .Quantity = _lotSize,
+                                                                .Quantity = LotSize,
                                                                 .Stoploss = signalCandleSatisfied.Item2.BuyStoploss,
                                                                 .Target = signalCandleSatisfied.Item2.BuyTarget1,
                                                                 .Buffer = buffer,
@@ -82,7 +82,7 @@ Public Class MultiTargetStrategyRule
                         Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                                                                 .EntryPrice = signalCandleSatisfied.Item2.BuyEntry,
                                                                 .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                                                .Quantity = _lotSize,
+                                                                .Quantity = LotSize,
                                                                 .Stoploss = signalCandleSatisfied.Item2.BuyStoploss,
                                                                 .Target = signalCandleSatisfied.Item2.BuyTarget2,
                                                                 .Buffer = buffer,
@@ -99,7 +99,7 @@ Public Class MultiTargetStrategyRule
                         Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                                                                 .EntryPrice = signalCandleSatisfied.Item2.BuyEntry,
                                                                 .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                                                .Quantity = _lotSize,
+                                                                .Quantity = LotSize,
                                                                 .Stoploss = signalCandleSatisfied.Item2.BuyStoploss,
                                                                 .Target = signalCandleSatisfied.Item2.BuyTarget3,
                                                                 .Buffer = buffer,
@@ -116,7 +116,7 @@ Public Class MultiTargetStrategyRule
                         Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                                                                 .EntryPrice = signalCandleSatisfied.Item2.BuyEntry,
                                                                 .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                                                .Quantity = _lotSize,
+                                                                .Quantity = LotSize,
                                                                 .Stoploss = signalCandleSatisfied.Item2.BuyStoploss,
                                                                 .Target = signalCandleSatisfied.Item2.BuyTarget4,
                                                                 .Buffer = buffer,
@@ -133,7 +133,7 @@ Public Class MultiTargetStrategyRule
                         Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                                                                 .EntryPrice = signalCandleSatisfied.Item2.BuyEntry,
                                                                 .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                                                .Quantity = _lotSize,
+                                                                .Quantity = LotSize,
                                                                 .Stoploss = signalCandleSatisfied.Item2.BuyStoploss,
                                                                 .Target = signalCandleSatisfied.Item2.BuyTarget5,
                                                                 .Buffer = buffer,
@@ -154,7 +154,7 @@ Public Class MultiTargetStrategyRule
                         Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                                                                 .EntryPrice = signalCandleSatisfied.Item2.SellEntry,
                                                                 .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                                                                .Quantity = _lotSize,
+                                                                .Quantity = LotSize,
                                                                 .Stoploss = signalCandleSatisfied.Item2.SellStoploss,
                                                                 .Target = signalCandleSatisfied.Item2.SellTarget1,
                                                                 .Buffer = buffer,
@@ -173,7 +173,7 @@ Public Class MultiTargetStrategyRule
                         Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                                                                 .EntryPrice = signalCandleSatisfied.Item2.SellEntry,
                                                                 .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                                                                .Quantity = _lotSize,
+                                                                .Quantity = LotSize,
                                                                 .Stoploss = signalCandleSatisfied.Item2.SellStoploss,
                                                                 .Target = signalCandleSatisfied.Item2.SellTarget2,
                                                                 .Buffer = buffer,
@@ -190,7 +190,7 @@ Public Class MultiTargetStrategyRule
                         Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                                                                 .EntryPrice = signalCandleSatisfied.Item2.SellEntry,
                                                                 .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                                                                .Quantity = _lotSize,
+                                                                .Quantity = LotSize,
                                                                 .Stoploss = signalCandleSatisfied.Item2.SellStoploss,
                                                                 .Target = signalCandleSatisfied.Item2.SellTarget3,
                                                                 .Buffer = buffer,
@@ -207,7 +207,7 @@ Public Class MultiTargetStrategyRule
                         Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                                                                 .EntryPrice = signalCandleSatisfied.Item2.SellEntry,
                                                                 .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                                                                .Quantity = _lotSize,
+                                                                .Quantity = LotSize,
                                                                 .Stoploss = signalCandleSatisfied.Item2.SellStoploss,
                                                                 .Target = signalCandleSatisfied.Item2.SellTarget4,
                                                                 .Buffer = buffer,
@@ -224,7 +224,7 @@ Public Class MultiTargetStrategyRule
                         Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                                                                 .EntryPrice = signalCandleSatisfied.Item2.SellEntry,
                                                                 .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                                                                .Quantity = _lotSize,
+                                                                .Quantity = LotSize,
                                                                 .Stoploss = signalCandleSatisfied.Item2.SellStoploss,
                                                                 .Target = signalCandleSatisfied.Item2.SellTarget5,
                                                                 .Buffer = buffer,
@@ -346,16 +346,16 @@ Public Class MultiTargetStrategyRule
                     End If
 
                     If tradeEntryDetails.BuyEntry <> Decimal.MinValue Then
-                        Dim stoplossPL As Decimal = Me._parentStrategy.CalculatePL(_tradingSymbol, tradeEntryDetails.BuyEntry, tradeEntryDetails.BuyStoploss, _lotSize, _lotSize, Me._parentStrategy.StockType)
-                        Dim requiredCapital As Decimal = tradeEntryDetails.BuyEntry * _lotSize / Me._parentStrategy.MarginMultiplier
+                        Dim stoplossPL As Decimal = Me._parentStrategy.CalculatePL(_tradingSymbol, tradeEntryDetails.BuyEntry, tradeEntryDetails.BuyStoploss, LotSize, LotSize, Me._parentStrategy.StockType)
+                        Dim requiredCapital As Decimal = tradeEntryDetails.BuyEntry * LotSize / Me._parentStrategy.MarginMultiplier
                         If Math.Abs(stoplossPL) > requiredCapital * _maxLossPercentage / 100 Then
                             tradeEntryDetails.BuyEntry = Decimal.MinValue
                         End If
                     End If
 
                     If tradeEntryDetails.SellEntry <> Decimal.MinValue Then
-                        Dim stoplossPL As Decimal = Me._parentStrategy.CalculatePL(_tradingSymbol, tradeEntryDetails.SellStoploss, tradeEntryDetails.SellEntry, _lotSize, _lotSize, Me._parentStrategy.StockType)
-                        Dim requiredCapital As Decimal = tradeEntryDetails.SellEntry * _lotSize / Me._parentStrategy.MarginMultiplier
+                        Dim stoplossPL As Decimal = Me._parentStrategy.CalculatePL(_tradingSymbol, tradeEntryDetails.SellStoploss, tradeEntryDetails.SellEntry, LotSize, LotSize, Me._parentStrategy.StockType)
+                        Dim requiredCapital As Decimal = tradeEntryDetails.SellEntry * LotSize / Me._parentStrategy.MarginMultiplier
                         If Math.Abs(stoplossPL) > requiredCapital * _maxLossPercentage / 100 Then
                             tradeEntryDetails.SellEntry = Decimal.MinValue
                         End If
@@ -376,9 +376,9 @@ Public Class MultiTargetStrategyRule
         Dim ret As Boolean = False
         Dim pl As Decimal = Decimal.MinValue
         If direction = Trade.TradeExecutionDirection.Buy Then
-            pl = Me._parentStrategy.CalculatePL(_tradingSymbol, entryPrice, exitPrice, _lotSize, _lotSize, Me._parentStrategy.StockType)
+            pl = Me._parentStrategy.CalculatePL(_tradingSymbol, entryPrice, exitPrice, LotSize, LotSize, Me._parentStrategy.StockType)
         ElseIf direction = Trade.TradeExecutionDirection.Sell Then
-            pl = Me._parentStrategy.CalculatePL(_tradingSymbol, exitPrice, entryPrice, _lotSize, _lotSize, Me._parentStrategy.StockType)
+            pl = Me._parentStrategy.CalculatePL(_tradingSymbol, exitPrice, entryPrice, LotSize, LotSize, Me._parentStrategy.StockType)
         End If
         If pl >= _minimumTargetPL Then
             ret = True

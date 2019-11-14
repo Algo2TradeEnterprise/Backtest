@@ -70,7 +70,7 @@ Public Class DayStartSMIStrategyRule
                     parameter1 = New PlaceOrderParameters With {
                         .EntryPrice = currentSignal.Item2 + buffer,
                         .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                        .Quantity = _lotSize,
+                        .Quantity = LotSize,
                         .Stoploss = currentSignal.Item3 - buffer,
                         .Target = .EntryPrice + ConvertFloorCeling(.EntryPrice * _userInputs.TargetPercentage / 100, _parentStrategy.TickSize, RoundOfType.Celing),
                         .Buffer = buffer,
@@ -89,7 +89,7 @@ Public Class DayStartSMIStrategyRule
                     parameter2 = New PlaceOrderParameters With {
                         .EntryPrice = currentSignal.Item3 - buffer,
                         .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                        .Quantity = _lotSize,
+                        .Quantity = LotSize,
                         .Stoploss = currentSignal.Item2 + buffer,
                         .Target = .EntryPrice - ConvertFloorCeling(.EntryPrice * _userInputs.TargetPercentage / 100, _parentStrategy.TickSize, RoundOfType.Celing),
                         .Buffer = buffer,

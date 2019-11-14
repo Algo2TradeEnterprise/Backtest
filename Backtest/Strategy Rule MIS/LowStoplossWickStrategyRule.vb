@@ -63,7 +63,7 @@ Public Class LowStoplossWickStrategyRule
             currentMinuteCandlePayload.PayloadDate >= tradeStartTime AndAlso Me.EligibleToTakeTrade Then
 
             If _quantity = Integer.MinValue Then
-                _quantity = _parentStrategy.CalculateQuantityFromInvestment(_lotSize, _userInputs.MinimumInvestmentPerStock, currentMinuteCandlePayload.PreviousCandlePayload.Close, _parentStrategy.StockType, True)
+                _quantity = _parentStrategy.CalculateQuantityFromInvestment(LotSize, _userInputs.MinimumInvestmentPerStock, currentMinuteCandlePayload.PreviousCandlePayload.Close, _parentStrategy.StockType, True)
             End If
 
             Dim signalCandle As Payload = Nothing
@@ -254,13 +254,13 @@ Public Class LowStoplossWickStrategyRule
             Dim buffer As Decimal = _parentStrategy.CalculateBuffer(candle.High, RoundOfType.Floor)
             If candle.CandleWicks.Top >= buffer Then
                 Dim slPoint As Decimal = candle.CandleWicks.Top + buffer
-                ret = _parentStrategy.CalculatePL(_tradingSymbol, candle.High, candle.High - slPoint, _quantity, _lotSize, _parentStrategy.StockType)
+                ret = _parentStrategy.CalculatePL(_tradingSymbol, candle.High, candle.High - slPoint, _quantity, LotSize, _parentStrategy.StockType)
             End If
         ElseIf direction = Trade.TradeExecutionDirection.Sell Then
             Dim buffer As Decimal = _parentStrategy.CalculateBuffer(candle.Low, RoundOfType.Floor)
             If candle.CandleWicks.Bottom >= buffer Then
                 Dim slPoint As Decimal = candle.CandleWicks.Bottom + buffer
-                ret = _parentStrategy.CalculatePL(_tradingSymbol, candle.Low + slPoint, candle.Low, _quantity, _lotSize, _parentStrategy.StockType)
+                ret = _parentStrategy.CalculatePL(_tradingSymbol, candle.Low + slPoint, candle.Low, _quantity, LotSize, _parentStrategy.StockType)
             End If
         End If
         Return ret

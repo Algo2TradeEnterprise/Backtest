@@ -121,7 +121,7 @@ Public Class FixedLevelBasedStrategyRule
                     parameter = New PlaceOrderParameters With {
                         .EntryPrice = signalCandleSatisfied.Item2 + buffer,
                         .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                        .Quantity = _lotSize,
+                        .Quantity = LotSize,
                         .Stoploss = signalCandleSatisfied.Item3 - If(_userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.Candle, buffer, 0),
                         .Target = .EntryPrice + ConvertFloorCeling((.EntryPrice - .Stoploss) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing),
                         .Buffer = buffer,
@@ -138,7 +138,7 @@ Public Class FixedLevelBasedStrategyRule
                     parameter = New PlaceOrderParameters With {
                         .EntryPrice = signalCandleSatisfied.Item2 - buffer,
                         .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                        .Quantity = _lotSize,
+                        .Quantity = LotSize,
                         .Stoploss = signalCandleSatisfied.Item3 + If(_userInputs.LevelType = StrategyRuleEntities.TypeOfLevel.Candle, buffer, 0),
                         .Target = .EntryPrice - ConvertFloorCeling((.Stoploss - .EntryPrice) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing),
                         .Buffer = buffer,
@@ -168,7 +168,7 @@ Public Class FixedLevelBasedStrategyRule
 
             'Quantity calculation
             If _firstTradedQuantity = Integer.MinValue Then
-                _firstTradedQuantity = _parentStrategy.CalculateQuantityFromInvestment(_lotSize, 15000, parameter.EntryPrice, _parentStrategy.StockType, True)
+                _firstTradedQuantity = _parentStrategy.CalculateQuantityFromInvestment(LotSize, 15000, parameter.EntryPrice, _parentStrategy.StockType, True)
             End If
             parameter.Quantity = _firstTradedQuantity
 
@@ -198,10 +198,10 @@ Public Class FixedLevelBasedStrategyRule
             'ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
 
             If _parentStrategy.StockMaxProfitPercentagePerDay <> Decimal.MaxValue AndAlso Me.MaxProfitOfThisStock = Decimal.MaxValue Then
-                Me.MaxProfitOfThisStock = _parentStrategy.CalculatePL(currentTick.TradingSymbol, parameter.EntryPrice, ConvertFloorCeling(parameter.EntryPrice + parameter.EntryPrice * _parentStrategy.StockMaxProfitPercentagePerDay / 100, _parentStrategy.TickSize, RoundOfType.Celing), parameter.Quantity, _lotSize, _parentStrategy.StockType)
+                Me.MaxProfitOfThisStock = _parentStrategy.CalculatePL(currentTick.TradingSymbol, parameter.EntryPrice, ConvertFloorCeling(parameter.EntryPrice + parameter.EntryPrice * _parentStrategy.StockMaxProfitPercentagePerDay / 100, _parentStrategy.TickSize, RoundOfType.Celing), parameter.Quantity, LotSize, _parentStrategy.StockType)
             End If
             If _parentStrategy.StockMaxLossPercentagePerDay <> Decimal.MinValue AndAlso Me.MaxLossOfThisStock = Decimal.MinValue Then
-                Me.MaxLossOfThisStock = _parentStrategy.CalculatePL(currentTick.TradingSymbol, parameter.EntryPrice, ConvertFloorCeling(parameter.EntryPrice - parameter.EntryPrice * _parentStrategy.StockMaxLossPercentagePerDay / 100, _parentStrategy.TickSize, RoundOfType.Celing), parameter.Quantity, _lotSize, _parentStrategy.StockType)
+                Me.MaxLossOfThisStock = _parentStrategy.CalculatePL(currentTick.TradingSymbol, parameter.EntryPrice, ConvertFloorCeling(parameter.EntryPrice - parameter.EntryPrice * _parentStrategy.StockMaxLossPercentagePerDay / 100, _parentStrategy.TickSize, RoundOfType.Celing), parameter.Quantity, LotSize, _parentStrategy.StockType)
             End If
         End If
         Return ret
@@ -242,12 +242,12 @@ Public Class FixedLevelBasedStrategyRule
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                 Dim excpectedTarget As Decimal = currentTrade.EntryPrice + (currentTrade.PotentialTarget - currentTrade.EntryPrice) * _userInputs.BreakevenMultiplier
                 If currentTick.Open >= excpectedTarget Then
-                    triggerPrice = currentTrade.EntryPrice + _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, _lotSize, _parentStrategy.StockType)
+                    triggerPrice = currentTrade.EntryPrice + _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, LotSize, _parentStrategy.StockType)
                 End If
             ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
                 Dim excpectedTarget As Decimal = currentTrade.EntryPrice - (currentTrade.EntryPrice - currentTrade.PotentialTarget) * _userInputs.BreakevenMultiplier
                 If currentTick.Open <= excpectedTarget Then
-                    triggerPrice = currentTrade.EntryPrice - _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, _lotSize, _parentStrategy.StockType)
+                    triggerPrice = currentTrade.EntryPrice - _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, LotSize, _parentStrategy.StockType)
                 End If
             End If
             If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
@@ -496,9 +496,9 @@ Public Class FixedLevelBasedStrategyRule
         Dim ret As Boolean = False
         Dim buffer As Decimal = _parentStrategy.CalculateBuffer(candle.High, RoundOfType.Floor)
         Dim entryPrice As Decimal = candle.High + buffer
-        Dim potentialCapital As Decimal = entryPrice * _lotSize / _parentStrategy.MarginMultiplier
-        Dim quantity As Integer = _lotSize
-        If potentialCapital < 15000 Then quantity = _lotSize * 2
+        Dim potentialCapital As Decimal = entryPrice * LotSize / _parentStrategy.MarginMultiplier
+        Dim quantity As Integer = LotSize
+        If potentialCapital < 15000 Then quantity = LotSize * 2
         Dim requiredCapital As Decimal = entryPrice * quantity / _parentStrategy.MarginMultiplier
         Dim slPoint As Decimal = 0
         If levelType = StrategyRuleEntities.TypeOfLevel.Candle Then
@@ -507,7 +507,7 @@ Public Class FixedLevelBasedStrategyRule
             slPoint = ConvertFloorCeling(_ATRPayload(candle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
         End If
         Dim stoploss As Decimal = entryPrice - slPoint
-        Dim pl As Decimal = _parentStrategy.CalculatePL(Me._tradingSymbol, entryPrice, stoploss, quantity, _lotSize, _parentStrategy.StockType)
+        Dim pl As Decimal = _parentStrategy.CalculatePL(Me._tradingSymbol, entryPrice, stoploss, quantity, LotSize, _parentStrategy.StockType)
         If Math.Abs(pl) < requiredCapital * 20 / 100 Then
             ret = True
         End If

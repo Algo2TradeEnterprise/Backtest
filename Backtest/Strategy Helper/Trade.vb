@@ -62,6 +62,7 @@ Namespace StrategyHelper
                        ByVal entryCondition As TradeEntryCondition,
                        ByVal entryRemark As String,
                        ByVal quantity As Integer,
+                       ByVal lotSize As Integer,
                        ByVal potentialTarget As Double,
                        ByVal targetRemark As String,
                        ByVal potentialStopLoss As Double,
@@ -81,6 +82,7 @@ Namespace StrategyHelper
             Me._EntryCondition = entryCondition
             Me._EntryRemark = entryRemark
             Me._Quantity = quantity
+            Me._LotSize = lotSize
             Me._PotentialTarget = Math.Round(potentialTarget, 4)
             Me._TargetRemark = targetRemark
             Me._PotentialStopLoss = Math.Round(potentialStopLoss, 4)

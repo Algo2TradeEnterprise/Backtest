@@ -41,7 +41,7 @@ Public Class SmallestCandleBreakoutStrategyRule
                 If currentMinuteCandlePayload.PreviousCandlePayload.CandleRange < currentMinuteCandlePayload.PreviousCandlePayload.PreviousCandlePayload.CandleRange Then
                     signalCandle = currentMinuteCandlePayload.PreviousCandlePayload
                     setMTM = True
-                    _firstEntryQuantity = _parentStrategy.CalculateQuantityFromInvestment(_lotSize, 25000, signalCandle.High, _parentStrategy.StockType, True)
+                    _firstEntryQuantity = _parentStrategy.CalculateQuantityFromInvestment(LotSize, 25000, signalCandle.High, _parentStrategy.StockType, True)
                 End If
             ElseIf lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close AndAlso lastExecutedTrade.ExitCondition = Trade.TradeExitCondition.StopLoss Then
                 Dim slCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(lastExecutedTrade.ExitTime, _signalPayload))
@@ -96,9 +96,9 @@ Public Class SmallestCandleBreakoutStrategyRule
                 Dim pl As Decimal = Decimal.MaxValue
                 Dim targetPoint As Decimal = ConvertFloorCeling(parameter.EntryPrice * 2 / 100, _parentStrategy.TickSize, RoundOfType.Celing)
                 If parameter.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                    pl = _parentStrategy.CalculatePL(Me._tradingSymbol, parameter.EntryPrice, parameter.EntryPrice + targetPoint, parameter.Quantity, Me._lotSize, _parentStrategy.StockType)
+                    pl = _parentStrategy.CalculatePL(Me._tradingSymbol, parameter.EntryPrice, parameter.EntryPrice + targetPoint, parameter.Quantity, Me.LotSize, _parentStrategy.StockType)
                 ElseIf parameter.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                    pl = _parentStrategy.CalculatePL(Me._tradingSymbol, parameter.EntryPrice - targetPoint, parameter.EntryPrice, parameter.Quantity, Me._lotSize, _parentStrategy.StockType)
+                    pl = _parentStrategy.CalculatePL(Me._tradingSymbol, parameter.EntryPrice - targetPoint, parameter.EntryPrice, parameter.Quantity, Me.LotSize, _parentStrategy.StockType)
                 End If
                 Me.MaxProfitOfThisStock = pl
             End If

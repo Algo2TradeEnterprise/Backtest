@@ -49,7 +49,7 @@ Public Class HighVolumePinBarStrategyRule
                     parameter = New PlaceOrderParameters With {
                         .EntryPrice = signalCandle.High + buffer,
                         .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                        .Quantity = _lotSize,
+                        .Quantity = LotSize,
                         .Stoploss = signalCandle.Low - buffer,
                         .Target = .EntryPrice + ConvertFloorCeling((.EntryPrice - .Stoploss) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing),
                         .Buffer = buffer,
@@ -62,7 +62,7 @@ Public Class HighVolumePinBarStrategyRule
                     parameter = New PlaceOrderParameters With {
                         .EntryPrice = signalCandle.Low - buffer,
                         .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                        .Quantity = _lotSize,
+                        .Quantity = LotSize,
                         .Stoploss = signalCandle.High + buffer,
                         .Target = .EntryPrice - ConvertFloorCeling((.Stoploss - .EntryPrice) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing),
                         .Buffer = buffer,

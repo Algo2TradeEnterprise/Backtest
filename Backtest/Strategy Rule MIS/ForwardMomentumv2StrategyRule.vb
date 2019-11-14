@@ -69,7 +69,7 @@ Public Class ForwardMomentumv2StrategyRule
                             parameter1 = New PlaceOrderParameters With {
                                         .EntryPrice = signalCandle.High + buffer,
                                         .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                        .Quantity = _lotSize,
+                                        .Quantity = LotSize,
                                         .Stoploss = ConvertFloorCeling(Math.Max(sl, (.EntryPrice - .EntryPrice * 1 / 100)), _parentStrategy.TickSize, RoundOfType.Floor),
                                         .Target = .EntryPrice + ConvertFloorCeling(.EntryPrice * 50 / 100, _parentStrategy.TickSize, RoundOfType.Celing),
                                         .Buffer = buffer,
@@ -88,7 +88,7 @@ Public Class ForwardMomentumv2StrategyRule
                             parameter2 = New PlaceOrderParameters With {
                                         .EntryPrice = signalCandle.Low - buffer,
                                         .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                                        .Quantity = _lotSize,
+                                        .Quantity = LotSize,
                                         .Stoploss = ConvertFloorCeling(Math.Min(sl, (.EntryPrice + .EntryPrice * 1 / 100)), _parentStrategy.TickSize, RoundOfType.Celing),
                                         .Target = .EntryPrice - ConvertFloorCeling(.EntryPrice * 50 / 100, _parentStrategy.TickSize, RoundOfType.Celing),
                                         .Buffer = buffer,

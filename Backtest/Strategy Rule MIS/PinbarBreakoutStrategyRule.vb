@@ -69,7 +69,7 @@ Public Class PinbarBreakoutStrategyRule
                 If IsLastTradeForceExitForCandleClose(currentMinuteCandlePayload) OrElse Not IsLastTradeExitedAtCurrentCandle(currentMinuteCandlePayload) Then
                     signalCandle = currentMinuteCandlePayload.PreviousCandlePayload
                     If _firstTradedQuantity = Integer.MinValue Then
-                        _firstTradedQuantity = Me._parentStrategy.CalculateQuantityFromInvestment(_lotSize, _userInputs.MinimumInvestmentPerStock, signalCandleSatisfied.Item2, Me._parentStrategy.StockType, True)
+                        _firstTradedQuantity = Me._parentStrategy.CalculateQuantityFromInvestment(LotSize, _userInputs.MinimumInvestmentPerStock, signalCandleSatisfied.Item2, Me._parentStrategy.StockType, True)
                     End If
                 End If
             End If
@@ -117,11 +117,11 @@ Public Class PinbarBreakoutStrategyRule
 
             If _parentStrategy.StockMaxProfitPercentagePerDay <> Decimal.MaxValue AndAlso Me.MaxProfitOfThisStock = Decimal.MaxValue Then
                 Dim stockMaxProfitPoint As Decimal = ConvertFloorCeling(GetCandleATR(parameter.SignalCandle), Me._parentStrategy.TickSize, RoundOfType.Celing) * _parentStrategy.StockMaxProfitPercentagePerDay
-                Me.MaxProfitOfThisStock = Me._parentStrategy.CalculatePL(_tradingSymbol, parameter.EntryPrice, parameter.EntryPrice + stockMaxProfitPoint, parameter.Quantity, _lotSize, Me._parentStrategy.StockType)
+                Me.MaxProfitOfThisStock = Me._parentStrategy.CalculatePL(_tradingSymbol, parameter.EntryPrice, parameter.EntryPrice + stockMaxProfitPoint, parameter.Quantity, LotSize, Me._parentStrategy.StockType)
             End If
             If _parentStrategy.StockMaxLossPercentagePerDay <> Decimal.MinValue AndAlso Me.MaxLossOfThisStock = Decimal.MinValue Then
                 Dim stockMaxLossPoint As Decimal = ConvertFloorCeling(GetCandleATR(parameter.SignalCandle), Me._parentStrategy.TickSize, RoundOfType.Floor) * _parentStrategy.StockMaxLossPercentagePerDay
-                Me.MaxLossOfThisStock = Me._parentStrategy.CalculatePL(_tradingSymbol, parameter.EntryPrice, parameter.EntryPrice - stockMaxLossPoint, parameter.Quantity, _lotSize, Me._parentStrategy.StockType)
+                Me.MaxLossOfThisStock = Me._parentStrategy.CalculatePL(_tradingSymbol, parameter.EntryPrice, parameter.EntryPrice - stockMaxLossPoint, parameter.Quantity, LotSize, Me._parentStrategy.StockType)
             End If
         End If
         Return ret
@@ -425,7 +425,7 @@ Public Class PinbarBreakoutStrategyRule
         Dim potentialExitPoint As Decimal = ConvertFloorCeling(entryPrice * 0.1 / 100, Me._parentStrategy.TickSize, RoundOfType.Floor)
         If direction = Trade.TradeExecutionDirection.Buy Then
             For exitPrice As Decimal = (entryPrice - potentialExitPoint) To Decimal.MaxValue Step ret
-                Dim pl As Decimal = Me._parentStrategy.CalculatePL(_tradingSymbol, entryPrice, exitPrice, quantity, _lotSize, Me._parentStrategy.StockType)
+                Dim pl As Decimal = Me._parentStrategy.CalculatePL(_tradingSymbol, entryPrice, exitPrice, quantity, LotSize, Me._parentStrategy.StockType)
                 If pl >= -100 Then
                     ret = ConvertFloorCeling(exitPrice - entryPrice, Me._parentStrategy.TickSize, RoundOfType.Celing)
                     Exit For
@@ -433,7 +433,7 @@ Public Class PinbarBreakoutStrategyRule
             Next
         ElseIf direction = Trade.TradeExecutionDirection.Sell Then
             For exitPrice As Decimal = (entryPrice + potentialExitPoint) To Decimal.MinValue Step ret * -1
-                Dim pl As Decimal = Me._parentStrategy.CalculatePL(_tradingSymbol, exitPrice, entryPrice, quantity, _lotSize, Me._parentStrategy.StockType)
+                Dim pl As Decimal = Me._parentStrategy.CalculatePL(_tradingSymbol, exitPrice, entryPrice, quantity, LotSize, Me._parentStrategy.StockType)
                 If pl >= -100 Then
                     ret = ConvertFloorCeling(entryPrice - exitPrice, Me._parentStrategy.TickSize, RoundOfType.Celing)
                     Exit For

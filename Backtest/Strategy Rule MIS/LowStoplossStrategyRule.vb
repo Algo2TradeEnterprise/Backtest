@@ -280,7 +280,7 @@ Public Class LowStoplossStrategyRule
             Dim triggerPrice As Decimal = Decimal.MinValue
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                 Dim slPoint As Decimal = currentTrade.EntryPrice - currentTrade.PotentialStopLoss
-                Dim slPL As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, currentTrade.EntryPrice, currentTrade.EntryPrice - slPoint, currentTrade.Quantity, _lotSize, _parentStrategy.StockType)
+                Dim slPL As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, currentTrade.EntryPrice, currentTrade.EntryPrice - slPoint, currentTrade.Quantity, LotSize, _parentStrategy.StockType)
                 Dim targetPL As Decimal = Math.Abs(slPL) * (_userInputs.TargetMultiplier + 1)
                 Dim excpectedTarget As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, targetPL, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
                 If currentTick.Open >= excpectedTarget Then
@@ -288,7 +288,7 @@ Public Class LowStoplossStrategyRule
                 End If
             ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
                 Dim slPoint As Decimal = currentTrade.PotentialStopLoss - currentTrade.EntryPrice
-                Dim slPL As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, currentTrade.EntryPrice + slPoint, currentTrade.EntryPrice, currentTrade.Quantity, _lotSize, _parentStrategy.StockType)
+                Dim slPL As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, currentTrade.EntryPrice + slPoint, currentTrade.EntryPrice, currentTrade.Quantity, LotSize, _parentStrategy.StockType)
                 Dim targetPL As Decimal = Math.Abs(slPL) * (_userInputs.TargetMultiplier + 1)
                 Dim excpectedTarget As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, targetPL, Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
                 If currentTick.Open <= excpectedTarget Then
@@ -480,7 +480,7 @@ Public Class LowStoplossStrategyRule
                 End If
                 _signalCandle = candle
                 Dim atr As Decimal = _ATRPayload(_signalCandle.PayloadDate)
-                Dim pl As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, _potentialHighEntryPrice, _potentialHighEntryPrice - (_slPoint + _parentStrategy.TickSize), _quantity, _lotSize, _parentStrategy.StockType)
+                Dim pl As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, _potentialHighEntryPrice, _potentialHighEntryPrice - (_slPoint + _parentStrategy.TickSize), _quantity, LotSize, _parentStrategy.StockType)
                 Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, _potentialHighEntryPrice, _quantity, Math.Abs(pl) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
 
                 If ConvertFloorCeling(atr * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing) >= target - _potentialHighEntryPrice Then

@@ -80,7 +80,7 @@ Public Class HighVolumePinBarv2StrategyRule
                     parameter = New PlaceOrderParameters With {
                         .EntryPrice = signalCandle.High + buffer,
                         .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                        .Quantity = _lotSize,
+                        .Quantity = LotSize,
                         .Stoploss = Math.Max(signalCandle.Low - buffer, .EntryPrice - potentialSLPoint),
                         .Target = .EntryPrice + targetPoint,
                         .Buffer = buffer,
@@ -93,7 +93,7 @@ Public Class HighVolumePinBarv2StrategyRule
                     parameter = New PlaceOrderParameters With {
                         .EntryPrice = signalCandle.Low - buffer,
                         .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                        .Quantity = _lotSize,
+                        .Quantity = LotSize,
                         .Stoploss = Math.Min(signalCandle.High + buffer, .EntryPrice + potentialSLPoint),
                         .Target = .EntryPrice - targetPoint,
                         .Buffer = buffer,

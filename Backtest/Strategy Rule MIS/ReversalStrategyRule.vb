@@ -105,7 +105,7 @@ Public Class ReversalStrategyRule
                     parameter = New PlaceOrderParameters With {
                                 .EntryPrice = signalCandleSatisfied.Item2 + buffer,
                                 .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                .Quantity = _lotSize,
+                                .Quantity = LotSize,
                                 .Stoploss = signalCandleSatisfied.Item3 - buffer,
                                 .Target = .EntryPrice + (.EntryPrice - .Stoploss) * targetMul,
                                 .Buffer = buffer,
@@ -125,7 +125,7 @@ Public Class ReversalStrategyRule
                     parameter = New PlaceOrderParameters With {
                                 .EntryPrice = signalCandleSatisfied.Item2 - buffer,
                                 .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                                .Quantity = _lotSize,
+                                .Quantity = LotSize,
                                 .Stoploss = signalCandleSatisfied.Item3 + buffer,
                                 .Target = .EntryPrice - (.Stoploss - .EntryPrice) * targetMul,
                                 .Buffer = buffer,
@@ -205,7 +205,7 @@ Public Class ReversalStrategyRule
                 Dim slPoint As Decimal = targetPoint / _userInputs.TargetMultiplier
                 If _dayATR / slPoint > 10 Then potentialTargetMultiplier = 2
                 If currentTrade.MaximumDrawUp - currentTrade.EntryPrice >= slPoint * potentialTargetMultiplier Then
-                    triggerPrice = currentTrade.EntryPrice + Me._parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, Trade.TradeExecutionDirection.Buy, _lotSize, Me._parentStrategy.StockType)
+                    triggerPrice = currentTrade.EntryPrice + Me._parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, Trade.TradeExecutionDirection.Buy, LotSize, Me._parentStrategy.StockType)
                     _lowSignalCandle = Nothing
                     _confirmationCandle = Nothing
                 End If
@@ -214,7 +214,7 @@ Public Class ReversalStrategyRule
                 Dim slPoint As Decimal = targetPoint / _userInputs.TargetMultiplier
                 If _dayATR / slPoint > 10 Then potentialTargetMultiplier = 2
                 If currentTrade.EntryPrice - currentTrade.MaximumDrawUp >= slPoint * potentialTargetMultiplier Then
-                    triggerPrice = currentTrade.EntryPrice - Me._parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, Trade.TradeExecutionDirection.Sell, _lotSize, Me._parentStrategy.StockType)
+                    triggerPrice = currentTrade.EntryPrice - Me._parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, Trade.TradeExecutionDirection.Sell, LotSize, Me._parentStrategy.StockType)
                     _highSignalCandle = Nothing
                     _confirmationCandle = Nothing
                 End If

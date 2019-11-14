@@ -31,11 +31,11 @@ Namespace StrategyHelper
 
         Public MaxProfitOfThisStock As Decimal = Decimal.MaxValue
         Public MaxLossOfThisStock As Decimal = Decimal.MinValue
+        Public LotSize As Integer
 
         Public EligibleToTakeTrade As Boolean = True
         Protected _signalPayload As Dictionary(Of Date, Payload)
 
-        Protected ReadOnly _lotSize As Integer
         Protected ReadOnly _parentStrategy As Strategy
         Protected ReadOnly _tradingDate As Date
         Protected ReadOnly _tradingSymbol As String
@@ -51,7 +51,7 @@ Namespace StrategyHelper
                        ByVal canceller As CancellationTokenSource,
                        ByVal entities As RuleEntities)
             _inputPayload = inputPayload
-            _lotSize = lotSize
+            Me.LotSize = lotSize
             _parentStrategy = parentStrategy
             _tradingDate = tradingDate
             _tradingSymbol = tradingSymbol

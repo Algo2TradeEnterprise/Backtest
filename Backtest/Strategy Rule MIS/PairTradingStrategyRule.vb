@@ -64,15 +64,15 @@ Public Class PairTradingStrategyRule
 
             If signalCandle IsNot Nothing Then
                 Dim slPoint As Decimal = ConvertFloorCeling(GetHighestATR(signalCandle), _parentStrategy.TickSize, RoundOfType.Celing)
-                Dim slPL As Decimal = Me._parentStrategy.CalculatePL(_tradingSymbol, currentTick.Open, currentTick.Open - slPoint, _lotSize, _lotSize, Me._parentStrategy.StockType)
-                Dim targetPrice As Decimal = Me._parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, currentTick.Open, _lotSize / _lotSize, Math.Abs(slPL) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, Me._parentStrategy.StockType)
+                Dim slPL As Decimal = Me._parentStrategy.CalculatePL(_tradingSymbol, currentTick.Open, currentTick.Open - slPoint, LotSize, LotSize, Me._parentStrategy.StockType)
+                Dim targetPrice As Decimal = Me._parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, currentTick.Open, LotSize / LotSize, Math.Abs(slPL) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, Me._parentStrategy.StockType)
                 Dim targetPoint As Decimal = targetPrice - currentTick.Open
 
                 Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentTick.Open, RoundOfType.Floor)
                 Dim parameter1 As PlaceOrderParameters = New PlaceOrderParameters With {
                                                         .EntryPrice = currentTick.Open,
                                                         .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                                        .Quantity = _lotSize,
+                                                        .Quantity = LotSize,
                                                         .Stoploss = .EntryPrice - slPoint,
                                                         .Target = .EntryPrice + targetPoint,
                                                         .Buffer = buffer,
@@ -85,7 +85,7 @@ Public Class PairTradingStrategyRule
                 Dim parameter2 As PlaceOrderParameters = New PlaceOrderParameters With {
                                                         .EntryPrice = currentTick.Open,
                                                         .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                                                        .Quantity = _lotSize,
+                                                        .Quantity = LotSize,
                                                         .Stoploss = .EntryPrice + slPoint,
                                                         .Target = .EntryPrice - targetPoint,
                                                         .Buffer = buffer,

@@ -99,7 +99,7 @@ Public Class SMIFractalStrategyRule
                         parameter = New PlaceOrderParameters With {
                             .EntryPrice = entryPrice + buffer,
                             .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                            .Quantity = _lotSize,
+                            .Quantity = LotSize,
                             .Stoploss = ConvertFloorCeling(_FractalLowPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing) - buffer,
                             .Target = .EntryPrice + 100000,
                             .Buffer = buffer,
@@ -137,7 +137,7 @@ Public Class SMIFractalStrategyRule
                         parameter = New PlaceOrderParameters With {
                             .EntryPrice = entryPrice - buffer,
                             .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                            .Quantity = _lotSize,
+                            .Quantity = LotSize,
                             .Stoploss = ConvertFloorCeling(_FractalHighPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing) + buffer,
                             .Target = .EntryPrice - 100000,
                             .Buffer = buffer,

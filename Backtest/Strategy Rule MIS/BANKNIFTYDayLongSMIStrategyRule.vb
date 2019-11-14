@@ -59,7 +59,7 @@ Public Class BANKNIFTYDayLongSMIStrategyRule
                     parameter1 = New PlaceOrderParameters With {
                         .EntryPrice = currentSignal.Item2 + buffer,
                         .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                        .Quantity = _lotSize * 10,
+                        .Quantity = LotSize * 10,
                         .Stoploss = currentSignal.Item3 - buffer,
                         .Target = .EntryPrice + 100000,
                         .Buffer = buffer,
@@ -79,7 +79,7 @@ Public Class BANKNIFTYDayLongSMIStrategyRule
                     parameter2 = New PlaceOrderParameters With {
                         .EntryPrice = currentSignal.Item3 - buffer,
                         .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                        .Quantity = _lotSize * 10,
+                        .Quantity = LotSize * 10,
                         .Stoploss = currentSignal.Item2 + buffer,
                         .Target = .EntryPrice - 100000,
                         .Buffer = buffer,

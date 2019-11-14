@@ -63,7 +63,7 @@ Public Class LowStoplossCandleStrategyRule
             currentMinuteCandlePayload.PayloadDate >= tradeStartTime AndAlso Me.EligibleToTakeTrade Then
 
             If _quantity = Integer.MinValue Then
-                _quantity = _parentStrategy.CalculateQuantityFromInvestment(_lotSize, _userInputs.MinimumInvestmentPerStock, currentMinuteCandlePayload.PreviousCandlePayload.Close, _parentStrategy.StockType, True)
+                _quantity = _parentStrategy.CalculateQuantityFromInvestment(LotSize, _userInputs.MinimumInvestmentPerStock, currentMinuteCandlePayload.PreviousCandlePayload.Close, _parentStrategy.StockType, True)
             End If
 
             Dim signalCandle As Payload = Nothing
@@ -221,7 +221,7 @@ Public Class LowStoplossCandleStrategyRule
         Dim ret As Decimal = Decimal.MinValue
         Dim buffer As Decimal = _parentStrategy.CalculateBuffer(candle.High, RoundOfType.Floor)
         If candle.CandleRange >= buffer Then
-            ret = _parentStrategy.CalculatePL(_tradingSymbol, candle.High + buffer, candle.Low - buffer, _quantity, _lotSize, _parentStrategy.StockType)
+            ret = _parentStrategy.CalculatePL(_tradingSymbol, candle.High + buffer, candle.Low - buffer, _quantity, LotSize, _parentStrategy.StockType)
         End If
         Return ret
     End Function

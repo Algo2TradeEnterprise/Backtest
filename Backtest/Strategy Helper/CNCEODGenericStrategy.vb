@@ -332,6 +332,7 @@ Namespace StrategyHelper
                                                                                           entryCondition:=Trade.TradeEntryCondition.Original,
                                                                                           entryRemark:="Original Entry",
                                                                                           quantity:=runningOrder.Quantity,
+                                                                                          lotSize:=stockStrategyRule.LotSize,
                                                                                           potentialTarget:=runningOrder.Target,
                                                                                           targetRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Target),
                                                                                           potentialStopLoss:=runningOrder.Stoploss,
