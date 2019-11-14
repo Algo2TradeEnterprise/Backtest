@@ -661,7 +661,8 @@ Public Class frmMain
                                                  .MinStoploss = 700,
                                                  .MaxStoploss = 1500,
                                                  .TargetMultiplier = 2,
-                                                 .MinimumStockMaxExitPerTrade = True
+                                                 .MinimumStockMaxExitPerTrade = True,
+                                                 .TypeOfSLMakeup = slMakeupType
                                                 }
                                     End Select
 
