@@ -41,17 +41,15 @@ Namespace StrategyHelper
             End If
 
             Dim ruleData As LowStoplossWickStrategyRule.StrategyRuleEntities = Me.RuleEntityData
-            Dim filename As String = String.Format("TF {0},StkMxPft {1},StkMxLs {2},OvrAlPft {3},OvrAlLs {4},TrlMTMTyp {5},MTMSlb {6},MvmntSlb {7},RlTmTrlg {8},ExtPTrd {9}",
+            Dim filename As String = String.Format("TF {0},StkMxPft {1},StkMxLs {2},OvrAlPft {3},OvrAlLs {4},TrlMTMTyp {5},ExtPTrd {6},SLMkupTyp {7}",
                                                    Me.SignalTimeFrame,
                                                    If(Me.StockMaxProfitPerDay <> Decimal.MaxValue, Me.StockMaxProfitPerDay, "∞"),
                                                    If(Me.StockMaxLossPerDay <> Decimal.MinValue, Me.StockMaxLossPerDay, "∞"),
                                                    If(Me.OverAllProfitPerDay <> Decimal.MaxValue, Me.OverAllProfitPerDay, "∞"),
                                                    If(Me.OverAllLossPerDay <> Decimal.MinValue, Me.OverAllLossPerDay, "∞"),
                                                    Me.TypeOfMTMTrailing.ToString,
-                                                   Me.MTMSlab,
-                                                   Me.MovementSlab,
-                                                   Me.RealtimeTrailingPercentage,
-                                                   ruleData.MinimumStockMaxExitPerTrade)
+                                                   ruleData.MinimumStockMaxExitPerTrade,
+                                                   ruleData.TypeOfSLMakeup.ToString)
 
             Dim tradesFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Trades.a2t", filename))
             Dim capitalFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Capital.a2t", filename))
@@ -241,13 +239,13 @@ Namespace StrategyHelper
                                                     Await stockStrategyRule.UpdateRequiredCollectionsAsync(runningTick).ConfigureAwait(False)
 
                                                     'Set Overall MTM
-                                                    If Me.TypeOfMTMTrailing = MTMTrailingType.FixedMTMTrailing Then
+                                                    If Me.TypeOfMTMTrailing = MTMTrailingType.FixedSlabTrailing Then
                                                         Me.ExitOnOverAllFixedTargetStoploss = True
                                                         Dim trailingMTMLoss As Decimal = CalculateTrailingMTM(Me.MTMSlab, Me.MovementSlab, TotalPLAfterBrokerage(tradeCheckingDate))
                                                         If trailingMTMLoss <> Decimal.MinValue AndAlso trailingMTMLoss > Me.OverAllLossPerDay Then
                                                             Me.OverAllLossPerDay = trailingMTMLoss
                                                         End If
-                                                    ElseIf Me.TypeOfMTMTrailing = MTMTrailingType.LogMTMTrailing Then
+                                                    ElseIf Me.TypeOfMTMTrailing = MTMTrailingType.LogSlabTrailing Then
                                                         Me.ExitOnOverAllFixedTargetStoploss = True
                                                         Dim trailingMTMLoss As Decimal = CalculateLogTrailingMTM(Me.MTMSlab, TotalPLAfterBrokerage(tradeCheckingDate))
                                                         If trailingMTMLoss <> Decimal.MinValue AndAlso trailingMTMLoss > Me.OverAllLossPerDay Then
@@ -303,10 +301,10 @@ Namespace StrategyHelper
                                                         ElseIf TotalPLAfterBrokerage(tradeCheckingDate) <= Math.Abs(OverAllLossPerDay) * -1 Then
                                                             ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Max Loss reached for the day")
                                                             stockList(stockName).EligibleToTakeTrade = False
-                                                        ElseIf Me.TypeOfMTMTrailing = MTMTrailingType.FixedMTMTrailing AndAlso TotalPLAfterBrokerage(tradeCheckingDate) <= OverAllLossPerDay Then
+                                                        ElseIf Me.TypeOfMTMTrailing = MTMTrailingType.FixedSlabTrailing AndAlso TotalPLAfterBrokerage(tradeCheckingDate) <= OverAllLossPerDay Then
                                                             ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Trailing MTM reached for the day")
                                                             stockList(stockName).EligibleToTakeTrade = False
-                                                        ElseIf Me.TypeOfMTMTrailing = MTMTrailingType.LogMTMTrailing AndAlso TotalPLAfterBrokerage(tradeCheckingDate) <= OverAllLossPerDay Then
+                                                        ElseIf Me.TypeOfMTMTrailing = MTMTrailingType.LogSlabTrailing AndAlso TotalPLAfterBrokerage(tradeCheckingDate) <= OverAllLossPerDay Then
                                                             ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Log MTM reached for the day")
                                                             stockList(stockName).EligibleToTakeTrade = False
                                                         ElseIf Me.TypeOfMTMTrailing = MTMTrailingType.RealtimeTrailing AndAlso TotalPLAfterBrokerage(tradeCheckingDate) <= OverAllLossPerDay Then

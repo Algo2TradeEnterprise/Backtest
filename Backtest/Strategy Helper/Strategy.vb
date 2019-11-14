@@ -96,9 +96,9 @@ Namespace StrategyHelper
         End Enum
 
         Enum MTMTrailingType
-            FixedMTMTrailing = 1
-            LogMTMTrailing
-            RealtimeTrailing
+            RealtimeTrailing = 1
+            FixedSlabTrailing
+            LogSlabTrailing
             None
         End Enum
 #End Region

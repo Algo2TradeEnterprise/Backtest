@@ -7,6 +7,12 @@ Public Class LowStoplossCandleStrategyRule
     Inherits StrategyRule
 
 #Region "Entity"
+    Enum StoplossMakeupType
+        SingleSLMakeup = 1
+        AllSLMakeup
+        None
+    End Enum
+
     Public Class StrategyRuleEntities
         Inherits RuleEntities
 
@@ -15,6 +21,7 @@ Public Class LowStoplossCandleStrategyRule
         Public MaxStoploss As Decimal
         Public TargetMultiplier As Decimal
         Public MinimumStockMaxExitPerTrade As Boolean
+        Public TypeOfSLMakeup As StoplossMakeupType
     End Class
 #End Region
 
@@ -73,11 +80,20 @@ Public Class LowStoplossCandleStrategyRule
             If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
                 Dim targetPoint As Decimal = signalCandleSatisfied.Item2
                 Dim targetRemark As String = "Original Target"
-                If lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.ExitCondition = Trade.TradeExitCondition.StopLoss Then
-                    Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, signalCandle.Open, _quantity, Math.Abs(lastExecutedTrade.PLAfterBrokerage), Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
-                    targetPoint = targetPrice - signalCandle.Open
-                    targetRemark = "SL Makeup Trade"
+                If _userInputs.TypeOfSLMakeup = StoplossMakeupType.SingleSLMakeup Then
+                    If lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.ExitCondition = Trade.TradeExitCondition.StopLoss Then
+                        Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, signalCandle.Open, _quantity, Math.Abs(lastExecutedTrade.PLAfterBrokerage), Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
+                        targetPoint = targetPrice - signalCandle.Open
+                        targetRemark = "SL Makeup Trade"
+                    End If
+                ElseIf _userInputs.TypeOfSLMakeup = StoplossMakeupType.AllSLMakeup Then
+                    If _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) < 0 Then
+                        Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, signalCandle.Open, _quantity, (_userInputs.MinStoploss + _userInputs.MaxStoploss) / 2, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
+                        targetPoint = targetPrice - signalCandle.Open
+                        targetRemark = "SL Makeup Trade"
+                    End If
                 End If
+
                 If signalCandleSatisfied.Item3 = Trade.TradeExecutionDirection.Buy Then
                     Dim slPrice As Decimal = Decimal.MinValue
                     If signalCandle.CandleColor = Color.Red Then
@@ -87,19 +103,19 @@ Public Class LowStoplossCandleStrategyRule
                     End If
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.High, RoundOfType.Floor)
                     parameter = New PlaceOrderParameters With {
-                        .EntryPrice = signalCandle.High + buffer,
-                        .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                        .Quantity = _quantity,
-                        .Stoploss = slPrice,
-                        .Target = .EntryPrice + targetPoint,
-                        .buffer = buffer,
-                        .signalCandle = signalCandle,
-                        .OrderType = Trade.TypeOfOrder.SL,
-                        .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
-                        .Supporting2 = targetRemark,
-                        .Supporting3 = targetPoint,
-                        .Supporting4 = (.EntryPrice - .Stoploss)
-                    }
+                    .EntryPrice = signalCandle.High + buffer,
+                    .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                    .Quantity = _quantity,
+                    .Stoploss = slPrice,
+                    .Target = .EntryPrice + targetPoint,
+                    .Buffer = buffer,
+                    .SignalCandle = signalCandle,
+                    .OrderType = Trade.TypeOfOrder.SL,
+                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                    .Supporting2 = targetRemark,
+                    .Supporting3 = targetPoint,
+                    .Supporting4 = (.EntryPrice - .Stoploss)
+                }
                 ElseIf signalCandleSatisfied.Item3 = Trade.TradeExecutionDirection.Sell Then
                     Dim slPrice As Decimal = Decimal.MinValue
                     If signalCandle.CandleColor = Color.Green Then
@@ -109,19 +125,19 @@ Public Class LowStoplossCandleStrategyRule
                     End If
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Low, RoundOfType.Floor)
                     parameter = New PlaceOrderParameters With {
-                        .EntryPrice = signalCandle.Low - buffer,
-                        .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                        .Quantity = _quantity,
-                        .Stoploss = slPrice,
-                        .Target = .EntryPrice - targetPoint,
-                        .buffer = buffer,
-                        .signalCandle = signalCandle,
-                        .OrderType = Trade.TypeOfOrder.SL,
-                        .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
-                        .Supporting2 = targetRemark,
-                        .Supporting3 = targetPoint,
-                        .Supporting4 = (.Stoploss - .EntryPrice)
-                    }
+                    .EntryPrice = signalCandle.Low - buffer,
+                    .EntryDirection = Trade.TradeExecutionDirection.Sell,
+                    .Quantity = _quantity,
+                    .Stoploss = slPrice,
+                    .Target = .EntryPrice - targetPoint,
+                    .Buffer = buffer,
+                    .SignalCandle = signalCandle,
+                    .OrderType = Trade.TypeOfOrder.SL,
+                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                    .Supporting2 = targetRemark,
+                    .Supporting3 = targetPoint,
+                    .Supporting4 = (.Stoploss - .EntryPrice)
+                }
                 End If
             End If
         End If
@@ -146,6 +162,8 @@ Public Class LowStoplossCandleStrategyRule
             Dim signalCandleSatisfied As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
             If signalCandleSatisfied IsNot Nothing AndAlso signalCandleSatisfied.Item1 Then
                 If currentTrade.SignalCandle.PayloadDate <> currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate Then
+                    ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                ElseIf currentTrade.EntryDirection <> signalCandleSatisfied.Item3 Then
                     ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                 End If
             End If
@@ -189,63 +207,33 @@ Public Class LowStoplossCandleStrategyRule
         Dim ret As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection) = Nothing
         If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing AndAlso
             Not candle.DeadCandle AndAlso Not candle.PreviousCandlePayload.DeadCandle Then
-            Dim firstDirectionToCheck As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
-            If candle.CandleColor = Color.Green Then
-                firstDirectionToCheck = Trade.TradeExecutionDirection.Buy
-            ElseIf candle.CandleColor = Color.Red Then
-                firstDirectionToCheck = Trade.TradeExecutionDirection.Sell
-            Else
-                firstDirectionToCheck = Trade.TradeExecutionDirection.Buy
-            End If
-            Dim buySLPrice As Decimal = GetStoplossPrice(candle, Trade.TradeExecutionDirection.Buy)
-            Dim sellSLPrice As Decimal = GetStoplossPrice(candle, Trade.TradeExecutionDirection.Sell)
-            If firstDirectionToCheck = Trade.TradeExecutionDirection.Buy Then
-                If buySLPrice <> Decimal.MinValue AndAlso Math.Abs(buySLPrice) >= _userInputs.MinStoploss AndAlso Math.Abs(buySLPrice) <= _userInputs.MaxStoploss Then
-                    Dim minStockMaxProft As Decimal = _parentStrategy.StockMaxProfitPerDay
-                    If Not _userInputs.MinimumStockMaxExitPerTrade Then minStockMaxProft = 0
-                    Dim targetPL As Decimal = Math.Max(minStockMaxProft, Math.Abs(buySLPrice) * _userInputs.TargetMultiplier)
+            Dim slPrice As Decimal = GetStoplossPrice(candle)
+            If slPrice <> Decimal.MinValue AndAlso Math.Abs(slPrice) >= _userInputs.MinStoploss AndAlso
+                Math.Abs(slPrice) <= _userInputs.MaxStoploss Then
+                Dim minStockMaxProft As Decimal = _parentStrategy.StockMaxProfitPerDay
+                If Not _userInputs.MinimumStockMaxExitPerTrade Then minStockMaxProft = 0
+                Dim targetPL As Decimal = Math.Max(minStockMaxProft, Math.Abs(slPrice) * _userInputs.TargetMultiplier)
+
+                Dim middlePoint As Decimal = (candle.High + candle.Low) / 2
+                Dim buyEntry As Decimal = ConvertFloorCeling(middlePoint + candle.CandleRange * 30 / 100, Me._parentStrategy.TickSize, RoundOfType.Floor)
+                Dim sellEntry As Decimal = ConvertFloorCeling(middlePoint - candle.CandleRange * 30 / 100, Me._parentStrategy.TickSize, RoundOfType.Celing)
+                If currentTick.Open >= buyEntry Then
                     Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, candle.High, _quantity, targetPL, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
                     ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, targetPrice - candle.High, Trade.TradeExecutionDirection.Buy)
-                ElseIf sellSLPrice <> Decimal.MinValue AndAlso Math.Abs(sellSLPrice) >= _userInputs.MinStoploss AndAlso Math.Abs(sellSLPrice) <= _userInputs.MaxStoploss Then
-                    Dim minStockMaxProft As Decimal = _parentStrategy.StockMaxProfitPerDay
-                    If Not _userInputs.MinimumStockMaxExitPerTrade Then minStockMaxProft = 0
-                    Dim targetPL As Decimal = Math.Max(minStockMaxProft, Math.Abs(sellSLPrice) * _userInputs.TargetMultiplier)
+                ElseIf currentTick.Open <= sellEntry Then
                     Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, candle.Low, _quantity, targetPL, Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
                     ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, candle.Low - targetPrice, Trade.TradeExecutionDirection.Sell)
-                End If
-            ElseIf firstDirectionToCheck = Trade.TradeExecutionDirection.Sell Then
-                If sellSLPrice <> Decimal.MinValue AndAlso Math.Abs(sellSLPrice) >= _userInputs.MinStoploss AndAlso Math.Abs(sellSLPrice) <= _userInputs.MaxStoploss Then
-                    Dim minStockMaxProft As Decimal = _parentStrategy.StockMaxProfitPerDay
-                    If Not _userInputs.MinimumStockMaxExitPerTrade Then minStockMaxProft = 0
-                    Dim targetPL As Decimal = Math.Max(minStockMaxProft, Math.Abs(sellSLPrice) * _userInputs.TargetMultiplier)
-                    Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, candle.Low, _quantity, targetPL, Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
-                    ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, candle.Low - targetPrice, Trade.TradeExecutionDirection.Sell)
-                ElseIf buySLPrice <> Decimal.MinValue AndAlso Math.Abs(buySLPrice) >= _userInputs.MinStoploss AndAlso Math.Abs(buySLPrice) <= _userInputs.MaxStoploss Then
-                    Dim minStockMaxProft As Decimal = _parentStrategy.StockMaxProfitPerDay
-                    If Not _userInputs.MinimumStockMaxExitPerTrade Then minStockMaxProft = 0
-                    Dim targetPL As Decimal = Math.Max(minStockMaxProft, Math.Abs(buySLPrice) * _userInputs.TargetMultiplier)
-                    Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, candle.High, _quantity, targetPL, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
-                    ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, targetPrice - candle.High, Trade.TradeExecutionDirection.Buy)
                 End If
             End If
         End If
         Return ret
     End Function
 
-    Private Function GetStoplossPrice(ByVal candle As Payload, ByVal direction As Trade.TradeExecutionDirection) As Decimal
+    Private Function GetStoplossPrice(ByVal candle As Payload) As Decimal
         Dim ret As Decimal = Decimal.MinValue
-        If direction = Trade.TradeExecutionDirection.Buy Then
-            Dim buffer As Decimal = _parentStrategy.CalculateBuffer(candle.High, RoundOfType.Floor)
-            If candle.CandleWicks.Top >= buffer Then
-                Dim slPoint As Decimal = candle.CandleWicks.Top + buffer
-                ret = _parentStrategy.CalculatePL(_tradingSymbol, candle.High, candle.High - slPoint, _quantity, _lotSize, _parentStrategy.StockType)
-            End If
-        ElseIf direction = Trade.TradeExecutionDirection.Sell Then
-            Dim buffer As Decimal = _parentStrategy.CalculateBuffer(candle.Low, RoundOfType.Floor)
-            If candle.CandleWicks.Bottom >= buffer Then
-                Dim slPoint As Decimal = candle.CandleWicks.Bottom + buffer
-                ret = _parentStrategy.CalculatePL(_tradingSymbol, candle.Low + slPoint, candle.Low, _quantity, _lotSize, _parentStrategy.StockType)
-            End If
+        Dim buffer As Decimal = _parentStrategy.CalculateBuffer(candle.High, RoundOfType.Floor)
+        If candle.CandleRange >= buffer Then
+            ret = _parentStrategy.CalculatePL(_tradingSymbol, candle.High + buffer, candle.Low - buffer, _quantity, _lotSize, _parentStrategy.StockType)
         End If
         Return ret
     End Function

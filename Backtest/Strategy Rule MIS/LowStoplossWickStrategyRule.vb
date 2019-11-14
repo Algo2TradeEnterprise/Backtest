@@ -7,6 +7,12 @@ Public Class LowStoplossWickStrategyRule
     Inherits StrategyRule
 
 #Region "Entity"
+    Enum StoplossMakeupType
+        SingleSLMakeup = 1
+        AllSLMakeup
+        None
+    End Enum
+
     Public Class StrategyRuleEntities
         Inherits RuleEntities
 
@@ -15,6 +21,7 @@ Public Class LowStoplossWickStrategyRule
         Public MaxStoploss As Decimal
         Public TargetMultiplier As Decimal
         Public MinimumStockMaxExitPerTrade As Boolean
+        Public TypeOfSLMakeup As StoplossMakeupType
     End Class
 #End Region
 
@@ -73,26 +80,29 @@ Public Class LowStoplossWickStrategyRule
             If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
                 Dim targetPoint As Decimal = signalCandleSatisfied.Item2
                 Dim targetRemark As String = "Original Target"
-                'If lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.ExitCondition = Trade.TradeExitCondition.StopLoss Then
-                '    Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, signalCandle.Open, _quantity, Math.Abs(lastExecutedTrade.PLAfterBrokerage), Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
-                '    targetPoint = targetPrice - signalCandle.Open
-                '    targetRemark = "SL Makeup Trade"
-                'End If
-                If _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) < 0 Then
-                    Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, signalCandle.Open, _quantity, (_userInputs.MinStoploss + _userInputs.MaxStoploss) / 2, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
-                    targetPoint = targetPrice - signalCandle.Open
-                    targetRemark = "SL Makeup Trade"
+                If _userInputs.TypeOfSLMakeup = StoplossMakeupType.SingleSLMakeup Then
+                    If lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.ExitCondition = Trade.TradeExitCondition.StopLoss Then
+                        Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, signalCandle.Open, _quantity, Math.Abs(lastExecutedTrade.PLAfterBrokerage), Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
+                        targetPoint = targetPrice - signalCandle.Open
+                        targetRemark = "SL Makeup Trade"
+                    End If
+                ElseIf _userInputs.TypeOfSLMakeup = StoplossMakeupType.AllSLMakeup Then
+                    If _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) < 0 Then
+                        Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, signalCandle.Open, _quantity, (_userInputs.MinStoploss + _userInputs.MaxStoploss) / 2, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
+                        targetPoint = targetPrice - signalCandle.Open
+                        targetRemark = "SL Makeup Trade"
+                    End If
                 End If
 
                 If signalCandleSatisfied.Item3 = Trade.TradeExecutionDirection.Buy Then
-                    Dim slPrice As Decimal = Decimal.MinValue
-                    If signalCandle.CandleColor = Color.Red Then
-                        slPrice = signalCandle.Open
-                    Else
-                        slPrice = signalCandle.Close
-                    End If
-                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.High, RoundOfType.Floor)
-                    parameter = New PlaceOrderParameters With {
+                        Dim slPrice As Decimal = Decimal.MinValue
+                        If signalCandle.CandleColor = Color.Red Then
+                            slPrice = signalCandle.Open
+                        Else
+                            slPrice = signalCandle.Close
+                        End If
+                        Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.High, RoundOfType.Floor)
+                        parameter = New PlaceOrderParameters With {
                         .EntryPrice = signalCandle.High + buffer,
                         .EntryDirection = Trade.TradeExecutionDirection.Buy,
                         .Quantity = _quantity,
@@ -106,15 +116,15 @@ Public Class LowStoplossWickStrategyRule
                         .Supporting3 = targetPoint,
                         .Supporting4 = (.EntryPrice - .Stoploss)
                     }
-                ElseIf signalCandleSatisfied.Item3 = Trade.TradeExecutionDirection.Sell Then
-                    Dim slPrice As Decimal = Decimal.MinValue
-                    If signalCandle.CandleColor = Color.Green Then
-                        slPrice = signalCandle.Open
-                    Else
-                        slPrice = signalCandle.Close
-                    End If
-                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Low, RoundOfType.Floor)
-                    parameter = New PlaceOrderParameters With {
+                    ElseIf signalCandleSatisfied.Item3 = Trade.TradeExecutionDirection.Sell Then
+                        Dim slPrice As Decimal = Decimal.MinValue
+                        If signalCandle.CandleColor = Color.Green Then
+                            slPrice = signalCandle.Open
+                        Else
+                            slPrice = signalCandle.Close
+                        End If
+                        Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Low, RoundOfType.Floor)
+                        parameter = New PlaceOrderParameters With {
                         .EntryPrice = signalCandle.Low - buffer,
                         .EntryDirection = Trade.TradeExecutionDirection.Sell,
                         .Quantity = _quantity,
@@ -128,9 +138,9 @@ Public Class LowStoplossWickStrategyRule
                         .Supporting3 = targetPoint,
                         .Supporting4 = (.Stoploss - .EntryPrice)
                     }
+                    End If
                 End If
             End If
-        End If
         If parameter IsNot Nothing Then
             ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
 
