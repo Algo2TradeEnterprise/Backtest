@@ -94,6 +94,13 @@ Namespace StrategyHelper
             Database
             None
         End Enum
+
+        Enum MTMTrailingType
+            FixedMTMTrailing = 1
+            LogMTMTrailing
+            RealtimeTrailing
+            None
+        End Enum
 #End Region
 
 #Region "Variables"
@@ -137,10 +144,9 @@ Namespace StrategyHelper
         Public NumberOfTradesPerDay As Integer = Integer.MaxValue
         Public TickBasedStrategy As Boolean = False
         Public TrailingStoploss As Boolean = False
-        Public TrailingMTM As Boolean = False
+        Public TypeOfMTMTrailing As MTMTrailingType = MTMTrailingType.None
         Public MTMSlab As Decimal = Decimal.MinValue
         Public MovementSlab As Decimal = Decimal.MinValue
-        Public RealtimeTrailingMTM As Boolean = False
         Public RealtimeTrailingPercentage As Decimal = Decimal.MinValue
 #End Region
 
@@ -1195,6 +1201,16 @@ Namespace StrategyHelper
             If pl >= mtmSlab Then
                 Dim multiplier As Decimal = pl / mtmSlab
                 ret = Math.Floor(multiplier) * mvmntSlab
+            End If
+            Return ret
+        End Function
+
+        Public Function CalculateLogTrailingMTM(ByVal mtmSlab As Decimal, ByVal pl As Decimal) As Decimal
+            Dim ret As Decimal = Decimal.MinValue
+            If pl >= mtmSlab Then
+                Dim plmultiplier As Decimal = Math.Floor(pl / mtmSlab)
+                Dim multiplier As Decimal = Math.Log(mtmSlab * plmultiplier, mtmSlab)
+                ret = Math.Round((mtmSlab * (plmultiplier - 1)) * multiplier, 4)
             End If
             Return ret
         End Function
