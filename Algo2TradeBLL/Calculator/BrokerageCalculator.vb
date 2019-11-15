@@ -247,14 +247,14 @@ Namespace Calculator
             Dim n = Math.Round((0.000011 * t), (2))
             Dim a = Math.Round((0.000009 * t), (2))
             Dim r = 0
-            Dim s = Math.Round((0.18 * (i + n)), (2))
+            Dim s = Math.Round((0.18 * (i + a + r)), (2))
 
             Output.Turnover = t
             Output.Brokerage = i
             Output.Exchange = a
             Output.Clearing = r
             Output.GST = s
-            Output.TotalTax = Output.Brokerage + n + Output.GST + Output.SEBI
+            Output.TotalTax = Output.Brokerage + a + r + Output.GST + Output.SEBI
 
             Return Nothing
         End Function
