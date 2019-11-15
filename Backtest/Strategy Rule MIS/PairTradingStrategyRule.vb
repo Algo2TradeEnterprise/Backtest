@@ -132,13 +132,18 @@ Public Class PairTradingStrategyRule
             If anotherPairTrade IsNot Nothing AndAlso anotherPairTrade.ExitCondition = Trade.TradeExitCondition.StopLoss Then
                 Dim triggerPrice As Decimal = currentTrade.EntryPrice
                 If _userInputs.INRBasedTarget Then
-                    triggerPrice = currentTrade.EntryPrice + Me._parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, currentTrade.LotSize, Me._parentStrategy.StockType)
-                    If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
-                        ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, String.Format("Breakeven Movement at {0}", currentTick.PayloadDate.ToString("HH:mm:ss")))
+                    Dim brkevnPoint As Decimal = Me._parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, currentTrade.LotSize, Me._parentStrategy.StockType)
+                    If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                        triggerPrice = currentTrade.EntryPrice + brkevnPoint
+                    ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                        triggerPrice = currentTrade.EntryPrice - brkevnPoint
                     End If
                 End If
+                If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
+                    ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, String.Format("Breakeven Movement at {0}", currentTick.PayloadDate.ToString("HH:mm:ss")))
+                End If
             End If
-        End If
+            End If
         Return ret
     End Function
 
