@@ -219,7 +219,7 @@ Public Class CoinFlipAtResistanceStrategyRule
     Private Function GetTradeDirectionForEntry() As Trade.TradeExecutionDirection
         Dim ret As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
         Dim r As Random = New Random
-        Dim direction As Integer = r.Next(0, 1)
+        Dim direction As Integer = r.Next(0, 2)
         If direction = 0 Then
             ret = Trade.TradeExecutionDirection.Sell
         ElseIf direction = 1 Then

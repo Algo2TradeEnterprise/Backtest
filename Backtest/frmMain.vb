@@ -686,7 +686,7 @@ Public Class frmMain
                                 End Select
 
 
-                                .NumberOfTradeableStockPerDay = 1
+                                .NumberOfTradeableStockPerDay = 10
 
                                 .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
