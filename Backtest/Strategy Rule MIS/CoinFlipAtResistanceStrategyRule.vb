@@ -3,7 +3,7 @@ Imports System.Threading
 Imports Algo2TradeBLL
 Imports Utilities.Numbers.NumberManipulation
 
-Public Class PairTradingStrategyRule
+Public Class CoinFlipAtResistanceStrategyRule
     Inherits StrategyRule
 
 #Region "Entity"
@@ -17,6 +17,8 @@ Public Class PairTradingStrategyRule
     End Class
 #End Region
 
+    Private _PivotsPayload As Dictionary(Of Date, PivotPoints)
+    Private _VWAPPayload As Dictionary(Of Date, Decimal)
     Private _ATRPayload As Dictionary(Of Date, Decimal)
     Private _EODPayload As Dictionary(Of Date, Payload)
 
@@ -37,6 +39,8 @@ Public Class PairTradingStrategyRule
 
     Public Overrides Sub CompletePreProcessing()
         MyBase.CompletePreProcessing()
+        Indicator.Pivots.CalculatePivots(_signalPayload, _PivotsPayload)
+        Indicator.VWAP.CalculateVWAP(_signalPayload, _VWAPPayload)
         Indicator.ATR.CalculateATR(14, _signalPayload, _ATRPayload)
         _EODPayload = Me._parentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.EOD_Futures, _tradingSymbol, _tradingDate.AddDays(-7), _tradingDate)
     End Sub
@@ -60,61 +64,98 @@ Public Class PairTradingStrategyRule
             currentMinuteCandlePayload.PayloadDate >= tradeStartTime AndAlso Me.EligibleToTakeTrade Then
 
             Dim signalCandle As Payload = Nothing
-            Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandlePayload, _parentStrategy.TradeType)
-            If lastExecutedTrade Is Nothing Then
-                signalCandle = currentMinuteCandlePayload
-            Else
+            Dim signalReceived As Tuple(Of Boolean, String) = IsEligibleToTakeTrade(currentTick)
+            If signalReceived IsNot Nothing AndAlso signalReceived.Item1 Then
                 If Not IsLastTradeExitedAtCurrentCandle(currentMinuteCandlePayload) Then
                     signalCandle = currentMinuteCandlePayload
                 End If
             End If
 
             If signalCandle IsNot Nothing Then
-                Dim currentDayPayload As Payload = _EODPayload(_tradingDate.Date)
-                If IsCrossoverDone(currentTick, currentDayPayload.PreviousCandlePayload.High) OrElse
-                    IsCrossoverDone(currentTick, currentDayPayload.PreviousCandlePayload.Low) Then
-                    If _quantity = Integer.MinValue Then
-                        _quantity = Me._parentStrategy.CalculateQuantityFromInvestment(Me.LotSize, _userInputs.MinumumInvesment, currentTick.Open, Me._parentStrategy.StockType, True)
-                    End If
+                Dim direction As Trade.TradeExecutionDirection = GetTradeDirectionForEntry()
+                If _quantity = Integer.MinValue Then
+                    _quantity = Me._parentStrategy.CalculateQuantityFromInvestment(Me.LotSize, _userInputs.MinumumInvesment, currentTick.Open, Me._parentStrategy.StockType, True)
+                End If
+                Dim slPoint As Decimal = ConvertFloorCeling(GetHighestATR(signalCandle), _parentStrategy.TickSize, RoundOfType.Celing)
+                Dim targetPoint As Decimal = slPoint
+                If _userInputs.INRBasedTarget Then
+                    Dim slPL As Decimal = Me._parentStrategy.CalculatePL(_tradingSymbol, currentTick.Open, currentTick.Open - slPoint, _quantity, LotSize, Me._parentStrategy.StockType)
+                    Dim targetPrice As Decimal = Me._parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, currentTick.Open, _quantity, Math.Abs(slPL), Trade.TradeExecutionDirection.Buy, Me._parentStrategy.StockType)
+                    targetPoint = targetPrice - currentTick.Open
+                End If
+                Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentTick.Open, RoundOfType.Floor)
 
-                    Dim slPoint As Decimal = ConvertFloorCeling(GetHighestATR(signalCandle), _parentStrategy.TickSize, RoundOfType.Celing)
-                    Dim targetPoint As Decimal = slPoint * _userInputs.TargetMultiplier
+                If direction = Trade.TradeExecutionDirection.Buy Then
+                    Dim parameter1 As PlaceOrderParameters = New PlaceOrderParameters With {
+                                                            .EntryPrice = currentTick.Open,
+                                                            .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                                                            .Quantity = _quantity,
+                                                            .Stoploss = .EntryPrice - slPoint,
+                                                            .Target = .EntryPrice + targetPoint,
+                                                            .Buffer = buffer,
+                                                            .SignalCandle = signalCandle,
+                                                            .OrderType = Trade.TypeOfOrder.Market,
+                                                            .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                                                            .Supporting2 = slPoint,
+                                                            .Supporting3 = signalReceived.Item2
+                                                        }
+
+                    targetPoint = slPoint * _userInputs.TargetMultiplier
                     If _userInputs.INRBasedTarget Then
                         Dim slPL As Decimal = Me._parentStrategy.CalculatePL(_tradingSymbol, currentTick.Open, currentTick.Open - slPoint, _quantity, LotSize, Me._parentStrategy.StockType)
-                        Dim targetPrice As Decimal = Me._parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, currentTick.Open, _quantity / LotSize, Math.Abs(slPL) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, Me._parentStrategy.StockType)
+                        Dim targetPrice As Decimal = Me._parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, currentTick.Open, _quantity, Math.Abs(slPL) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, Me._parentStrategy.StockType)
                         targetPoint = targetPrice - currentTick.Open
                     End If
-                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentTick.Open, RoundOfType.Floor)
-                    Dim parameter1 As PlaceOrderParameters = New PlaceOrderParameters With {
-                                                        .EntryPrice = currentTick.Open,
-                                                        .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                                        .Quantity = _quantity,
-                                                        .Stoploss = .EntryPrice - slPoint,
-                                                        .Target = .EntryPrice + targetPoint,
-                                                        .Buffer = buffer,
-                                                        .SignalCandle = signalCandle,
-                                                        .OrderType = Trade.TypeOfOrder.Market,
-                                                        .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
-                                                        .Supporting2 = slPoint,
-                                                        .Supporting3 = currentDayPayload.PreviousCandlePayload.High,
-                                                        .Supporting4 = currentDayPayload.PreviousCandlePayload.Low
-                                                    }
 
                     Dim parameter2 As PlaceOrderParameters = New PlaceOrderParameters With {
-                                                        .EntryPrice = currentTick.Open,
-                                                        .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                                                        .Quantity = _quantity,
-                                                        .Stoploss = .EntryPrice + slPoint,
-                                                        .Target = .EntryPrice - targetPoint,
-                                                        .Buffer = buffer,
-                                                        .SignalCandle = signalCandle,
-                                                        .OrderType = Trade.TypeOfOrder.Market,
-                                                        .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
-                                                        .Supporting2 = slPoint,
-                                                        .Supporting3 = currentDayPayload.PreviousCandlePayload.High,
-                                                        .Supporting4 = currentDayPayload.PreviousCandlePayload.Low
-                                                    }
+                                                            .EntryPrice = currentTick.Open,
+                                                            .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                                                            .Quantity = _quantity,
+                                                            .Stoploss = .EntryPrice - slPoint,
+                                                            .Target = .EntryPrice + targetPoint,
+                                                            .Buffer = buffer,
+                                                            .SignalCandle = signalCandle,
+                                                            .OrderType = Trade.TypeOfOrder.Market,
+                                                            .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                                                            .Supporting2 = slPoint,
+                                                            .Supporting3 = signalReceived.Item2
+                                                        }
+                    parameters = New List(Of PlaceOrderParameters) From {parameter1, parameter2}
+                ElseIf direction = Trade.TradeExecutionDirection.Sell Then
+                    Dim parameter1 As PlaceOrderParameters = New PlaceOrderParameters With {
+                                                            .EntryPrice = currentTick.Open,
+                                                            .EntryDirection = Trade.TradeExecutionDirection.Sell,
+                                                            .Quantity = _quantity,
+                                                            .Stoploss = .EntryPrice + slPoint,
+                                                            .Target = .EntryPrice - targetPoint,
+                                                            .Buffer = buffer,
+                                                            .SignalCandle = signalCandle,
+                                                            .OrderType = Trade.TypeOfOrder.Market,
+                                                            .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                                                            .Supporting2 = slPoint,
+                                                            .Supporting3 = signalReceived.Item2
+                                                        }
 
+                    targetPoint = slPoint * _userInputs.TargetMultiplier
+                    If _userInputs.INRBasedTarget Then
+                        Dim slPL As Decimal = Me._parentStrategy.CalculatePL(_tradingSymbol, currentTick.Open, currentTick.Open - slPoint, _quantity, LotSize, Me._parentStrategy.StockType)
+                        Dim targetPrice As Decimal = Me._parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, currentTick.Open, _quantity, Math.Abs(slPL) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, Me._parentStrategy.StockType)
+                        targetPoint = targetPrice - currentTick.Open
+                    End If
+
+                    Dim parameter2 As PlaceOrderParameters = New PlaceOrderParameters With {
+                                                            .EntryPrice = currentTick.Open,
+                                                            .EntryDirection = Trade.TradeExecutionDirection.Sell,
+                                                            .Quantity = _quantity,
+                                                            .Stoploss = .EntryPrice + slPoint,
+                                                            .Target = .EntryPrice - targetPoint,
+                                                            .Buffer = buffer,
+                                                            .SignalCandle = signalCandle,
+                                                            .OrderType = Trade.TypeOfOrder.Market,
+                                                            .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                                                            .Supporting2 = slPoint,
+                                                            .Supporting3 = signalReceived.Item2
+                                                        }
                     parameters = New List(Of PlaceOrderParameters) From {parameter1, parameter2}
                 End If
             End If
@@ -143,7 +184,7 @@ Public Class PairTradingStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         If _userInputs.BreakevenMovement AndAlso currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
             Dim anotherPairTrade As Trade = GetAnotherTradeOfThePair(currentTrade)
-            If anotherPairTrade IsNot Nothing AndAlso anotherPairTrade.ExitCondition = Trade.TradeExitCondition.StopLoss Then
+            If anotherPairTrade IsNot Nothing AndAlso anotherPairTrade.ExitCondition = Trade.TradeExitCondition.Target Then
                 Dim triggerPrice As Decimal = currentTrade.EntryPrice
                 If _userInputs.INRBasedTarget Then
                     Dim brkevnPoint As Decimal = Me._parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, currentTrade.LotSize, Me._parentStrategy.StockType)
@@ -173,6 +214,34 @@ Public Class PairTradingStrategyRule
 
     Public Overrides Async Function UpdateRequiredCollectionsAsync(currentTick As Payload) As Task
         Await Task.Delay(0).ConfigureAwait(False)
+    End Function
+
+    Private Function GetTradeDirectionForEntry() As Trade.TradeExecutionDirection
+        Dim ret As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
+        Dim r As Random = New Random
+        Dim direction As Integer = r.Next(0, 1)
+        If direction = 0 Then
+            ret = Trade.TradeExecutionDirection.Sell
+        ElseIf direction = 1 Then
+            ret = Trade.TradeExecutionDirection.Buy
+        End If
+        Return ret
+    End Function
+
+    Private Function IsEligibleToTakeTrade(ByVal currentTick As Payload) As Tuple(Of Boolean, String)
+        Dim ret As Tuple(Of Boolean, String) = Nothing
+        Dim currentDayPayload As Payload = _EODPayload(_tradingDate.Date)
+        Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
+        If IsCrossoverDone(currentTick, currentDayPayload.PreviousCandlePayload.High) Then
+            ret = New Tuple(Of Boolean, String)(True, "Previous Day High")
+        ElseIf IsCrossoverDone(currentTick, currentDayPayload.PreviousCandlePayload.Low) Then
+            ret = New Tuple(Of Boolean, String)(True, "Previous Day Low")
+        ElseIf IsCrossoverDone(currentTick, _VWAPPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate)) Then
+            ret = New Tuple(Of Boolean, String)(True, "VWAP")
+        ElseIf IsCrossoverDone(currentTick, _PivotsPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate).Pivot) Then
+            ret = New Tuple(Of Boolean, String)(True, "Pivot")
+        End If
+        Return ret
     End Function
 
     Private Function GetLastOrderExitTime(ByVal currentCandle As Payload) As Date

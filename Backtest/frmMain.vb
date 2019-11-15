@@ -554,7 +554,7 @@ Public Class frmMain
             Dim tgtList As List(Of Decimal) = New List(Of Decimal) From {15}
             For Each tgtMul As Decimal In tgtList
                 For brkevn As Integer = 1 To 1
-                    For INRBsd As Integer = 0 To 0
+                    For INRBsd As Integer = 1 To 1
                         Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                           exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                           exchangeEndTime:=TimeSpan.Parse("15:29:59"),
@@ -673,12 +673,20 @@ Public Class frmMain
                                         .RuleEntityData = New PairTradingStrategyRule.StrategyRuleEntities With
                                             {.TargetMultiplier = tgtMul,
                                              .BreakevenMovement = brkevn,
-                                             .INRBasedTarget = INRBsd
+                                             .INRBasedTarget = INRBsd,
+                                             .MinumumInvesment = 15000
+                                            }
+                                    Case 22
+                                        .RuleEntityData = New CoinFlipAtResistanceStrategyRule.StrategyRuleEntities With
+                                            {.TargetMultiplier = tgtMul,
+                                             .BreakevenMovement = brkevn,
+                                             .INRBasedTarget = INRBsd,
+                                             .MinumumInvesment = 15000
                                             }
                                 End Select
 
 
-                                .NumberOfTradeableStockPerDay = 10
+                                .NumberOfTradeableStockPerDay = 1
 
                                 .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
@@ -710,7 +718,7 @@ Public Class frmMain
                             '                                       ruleData.MinimumStockMaxExitPerTrade,
                             '                                       ruleData.TypeOfSLMakeup.ToString)
 
-                            Dim ruleData As PairTradingStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                            Dim ruleData As CoinFlipAtResistanceStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
                             Dim filename As String = String.Format("TF {0},StkMxPft {1},StkMxLs {2},OvrAlPft {3},OvrAlLs {4},TgtMul {5},Brkevn {6},INRBsd {7}",
                                                                    backtestStrategy.SignalTimeFrame,
                                                                    If(backtestStrategy.StockMaxProfitPerDay <> Decimal.MaxValue, backtestStrategy.StockMaxProfitPerDay, "∞"),
