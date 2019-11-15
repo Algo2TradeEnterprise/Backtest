@@ -278,7 +278,7 @@ Public Class frmMain
                     tick = 1
                 Case Trade.TypeOfStock.Currency
                     database = Common.DataBaseTable.Intraday_Currency
-                    margin = 70
+                    margin = 98
                     tick = 0.0025
                 Case Trade.TypeOfStock.Futures
                     database = Common.DataBaseTable.Intraday_Futures
@@ -551,9 +551,10 @@ Public Class frmMain
             'Next
 #End Region
 
-            For ovralLoss As Decimal = 1 To 1 Step 2000
-                For stkLoss As Decimal = Decimal.MinValue To Decimal.MinValue Step 1000
-                    For trlngMTMType As Integer = 4 To 4
+            Dim tgtList As List(Of Decimal) = New List(Of Decimal) From {2, 3, 15}
+            For Each tgtMul As Decimal In tgtList
+                For brkevn As Integer = 0 To 1
+                    For inrBsd As Integer = 0 To 1
                         For slMakeupType As Integer = 1 To 1
                             Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                               exchangeStartTime:=TimeSpan.Parse("09:00:00"),
@@ -672,9 +673,9 @@ Public Class frmMain
                                         Case 21
                                             .AllowBothDirectionEntryAtSameTime = True
                                             .RuleEntityData = New PairTradingStrategyRule.StrategyRuleEntities With
-                                                {.TargetMultiplier = 2,
-                                                 .BreakevenMovement = True,
-                                                 .INRBasedTarget = True
+                                                {.TargetMultiplier = tgtMul,
+                                                 .BreakevenMovement = brkevn,
+                                                 .INRBasedTarget = inrBsd
                                                 }
                                     End Select
 
@@ -688,13 +689,13 @@ Public Class frmMain
 
                                     .ExitOnStockFixedTargetStoploss = True
                                     .StockMaxProfitPerDay = 5000
-                                    .StockMaxLossPerDay = stkLoss
+                                    .StockMaxLossPerDay = Decimal.MinValue
 
                                     .ExitOnOverAllFixedTargetStoploss = False
                                     .OverAllProfitPerDay = Decimal.MaxValue
-                                    .OverAllLossPerDay = ovralLoss
+                                    .OverAllLossPerDay = Decimal.MinValue
 
-                                    .TypeOfMTMTrailing = trlngMTMType
+                                    .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
                                     .MTMSlab = Math.Abs(.OverAllLossPerDay)
                                     .MovementSlab = .MTMSlab / 2
                                     .RealtimeTrailingPercentage = 50
