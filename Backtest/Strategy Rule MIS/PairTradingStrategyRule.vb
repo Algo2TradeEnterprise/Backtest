@@ -11,12 +11,15 @@ Public Class PairTradingStrategyRule
         Inherits RuleEntities
 
         Public TargetMultiplier As Decimal
+        Public BreakevenMovement As Boolean
+        Public INRBasedTarget As Boolean
     End Class
 #End Region
 
     Private _ATRPayload As Dictionary(Of Date, Decimal)
 
     Private ReadOnly _userInputs As StrategyRuleEntities
+    Private ReadOnly _quantity As Integer
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -27,6 +30,7 @@ Public Class PairTradingStrategyRule
                    ByVal entities As RuleEntities)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _userInputs = entities
+        _quantity = Me.LotSize * 100
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -64,15 +68,17 @@ Public Class PairTradingStrategyRule
 
             If signalCandle IsNot Nothing Then
                 Dim slPoint As Decimal = ConvertFloorCeling(GetHighestATR(signalCandle), _parentStrategy.TickSize, RoundOfType.Celing)
-                Dim slPL As Decimal = Me._parentStrategy.CalculatePL(_tradingSymbol, currentTick.Open, currentTick.Open - slPoint, LotSize, LotSize, Me._parentStrategy.StockType)
-                Dim targetPrice As Decimal = Me._parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, currentTick.Open, LotSize / LotSize, Math.Abs(slPL) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, Me._parentStrategy.StockType)
-                Dim targetPoint As Decimal = targetPrice - currentTick.Open
-
+                Dim targetPoint As Decimal = slPoint * _userInputs.TargetMultiplier
+                If _userInputs.INRBasedTarget Then
+                    Dim slPL As Decimal = Me._parentStrategy.CalculatePL(_tradingSymbol, currentTick.Open, currentTick.Open - slPoint, _quantity, LotSize, Me._parentStrategy.StockType)
+                    Dim targetPrice As Decimal = Me._parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, currentTick.Open, _quantity / LotSize, Math.Abs(slPL) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, Me._parentStrategy.StockType)
+                    targetPoint = targetPrice - currentTick.Open
+                End If
                 Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentTick.Open, RoundOfType.Floor)
                 Dim parameter1 As PlaceOrderParameters = New PlaceOrderParameters With {
                                                         .EntryPrice = currentTick.Open,
                                                         .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                                        .Quantity = LotSize,
+                                                        .Quantity = _quantity,
                                                         .Stoploss = .EntryPrice - slPoint,
                                                         .Target = .EntryPrice + targetPoint,
                                                         .Buffer = buffer,
@@ -85,7 +91,7 @@ Public Class PairTradingStrategyRule
                 Dim parameter2 As PlaceOrderParameters = New PlaceOrderParameters With {
                                                         .EntryPrice = currentTick.Open,
                                                         .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                                                        .Quantity = LotSize,
+                                                        .Quantity = _quantity,
                                                         .Stoploss = .EntryPrice + slPoint,
                                                         .Target = .EntryPrice - targetPoint,
                                                         .Buffer = buffer,
@@ -114,16 +120,25 @@ Public Class PairTradingStrategyRule
     Public Overrides Async Function IsTriggerReceivedForExitOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, String))
         Dim ret As Tuple(Of Boolean, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
-        'Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
-        'If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-
-        'End If
         Return ret
     End Function
 
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
+        Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
+        If _userInputs.BreakevenMovement AndAlso currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            Dim anotherPairTrade As Trade = GetAnotherTradeOfThePair(currentTrade)
+            If anotherPairTrade IsNot Nothing AndAlso anotherPairTrade.ExitCondition = Trade.TradeExitCondition.StopLoss Then
+                Dim triggerPrice As Decimal = currentTrade.EntryPrice
+                If _userInputs.INRBasedTarget Then
+                    triggerPrice = currentTrade.EntryPrice + Me._parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, currentTrade.LotSize, Me._parentStrategy.StockType)
+                    If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
+                        ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, String.Format("Breakeven Movement at {0}", currentTick.PayloadDate.ToString("HH:mm:ss")))
+                    End If
+                End If
+            End If
+        End If
         Return ret
     End Function
 
@@ -143,7 +158,15 @@ Public Class PairTradingStrategyRule
 
     Private Function GetLastOrderExitTime(ByVal currentCandle As Payload) As Date
         Dim ret As Date = Date.MinValue
-        Dim lastExecutedOrder As Trade = Me._parentStrategy.GetLastExecutedTradeOfTheStock(currentCandle, Me._parentStrategy.TradeType)
+        Dim lastExecutedOrder As Trade = Nothing
+        Dim completeTrades As List(Of Trade) = Me._parentStrategy.GetSpecificTrades(currentCandle, Me._parentStrategy.TradeType, Trade.TradeExecutionStatus.Close)
+        Dim allTrades As List(Of Trade) = New List(Of Trade)
+        If completeTrades IsNot Nothing AndAlso completeTrades.Count > 0 Then allTrades.AddRange(completeTrades)
+        If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
+            lastExecutedOrder = allTrades.OrderBy(Function(x)
+                                                      Return x.ExitTime
+                                                  End Function).LastOrDefault
+        End If
         If lastExecutedOrder IsNot Nothing Then
             ret = lastExecutedOrder.ExitTime
         End If
@@ -187,6 +210,24 @@ Public Class PairTradingStrategyRule
                                           Return Decimal.MinValue
                                       End If
                                   End Function)
+        End If
+        Return ret
+    End Function
+
+    Private Function GetAnotherTradeOfThePair(ByVal currentTrade As Trade) As Trade
+        Dim ret As Trade = Nothing
+        If currentTrade IsNot Nothing AndAlso currentTrade.SignalCandle IsNot Nothing Then
+            Dim inProgressTrades As List(Of Trade) = Me._parentStrategy.GetSpecificTrades(currentTrade.SignalCandle, Me._parentStrategy.TradeType, Trade.TradeExecutionStatus.Inprogress)
+            Dim completeTrades As List(Of Trade) = Me._parentStrategy.GetSpecificTrades(currentTrade.SignalCandle, Me._parentStrategy.TradeType, Trade.TradeExecutionStatus.Close)
+            Dim allTrades As List(Of Trade) = New List(Of Trade)
+            If inProgressTrades IsNot Nothing AndAlso inProgressTrades.Count > 0 Then allTrades.AddRange(inProgressTrades)
+            If completeTrades IsNot Nothing AndAlso completeTrades.Count > 0 Then allTrades.AddRange(completeTrades)
+            If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
+                ret = allTrades.Find(Function(x)
+                                         Return x.SignalCandle.PayloadDate = currentTrade.SignalCandle.PayloadDate AndAlso
+                                         x.EntryDirection <> currentTrade.EntryDirection
+                                     End Function)
+            End If
         End If
         Return ret
     End Function

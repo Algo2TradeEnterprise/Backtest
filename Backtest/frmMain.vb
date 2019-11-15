@@ -579,6 +579,9 @@ Public Class frmMain
                                     '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "New ATR Based Stocks.csv")
                                     .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "USDINR.csv")
 
+                                    .AllowBothDirectionEntryAtSameTime = False
+                                    .TrailingStoploss = False
+                                    .TickBasedStrategy = True
                                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
                                     Select Case .RuleNumber
                                         Case 1
@@ -648,6 +651,7 @@ Public Class frmMain
                                               .StopAtFirstTarget = False,
                                               .AllowMomentumReversal = False}
                                         Case 19
+                                            .TickBasedStrategy = False
                                             .RuleEntityData = New LowStoplossWickStrategyRule.StrategyRuleEntities With
                                                 {.MinimumInvestmentPerStock = 15000,
                                                  .MinStoploss = 700,
@@ -666,8 +670,11 @@ Public Class frmMain
                                                  .TypeOfSLMakeup = slMakeupType
                                                 }
                                         Case 21
+                                            .AllowBothDirectionEntryAtSameTime = True
                                             .RuleEntityData = New PairTradingStrategyRule.StrategyRuleEntities With
-                                                {.TargetMultiplier = 2
+                                                {.TargetMultiplier = 2,
+                                                 .BreakevenMovement = True,
+                                                 .INRBasedTarget = True
                                                 }
                                     End Select
 
@@ -675,10 +682,6 @@ Public Class frmMain
                                     .NumberOfTradeableStockPerDay = 1
 
                                     .NumberOfTradesPerStockPerDay = Integer.MaxValue
-
-                                    .TrailingStoploss = False
-
-                                    .TickBasedStrategy = True
 
                                     .StockMaxProfitPercentagePerDay = Decimal.MaxValue
                                     .StockMaxLossPercentagePerDay = Decimal.MinValue
@@ -696,7 +699,30 @@ Public Class frmMain
                                     .MovementSlab = .MTMSlab / 2
                                     .RealtimeTrailingPercentage = 50
                                 End With
-                                Await backtestStrategy.TestStrategyAsync(startDate, endDate).ConfigureAwait(False)
+
+                                'Dim ruleData As LowStoplossCandleStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                                'Dim filename As String = String.Format("TF {0},StkMxPft {1},StkMxLs {2},OvrAlPft {3},OvrAlLs {4},TrlMTMTyp {5},ExtPTrd {6},SLMkupTyp {7}",
+                                '                                       backtestStrategy.SignalTimeFrame,
+                                '                                       If(backtestStrategy.StockMaxProfitPerDay <> Decimal.MaxValue, backtestStrategy.StockMaxProfitPerDay, "∞"),
+                                '                                       If(backtestStrategy.StockMaxLossPerDay <> Decimal.MinValue, backtestStrategy.StockMaxLossPerDay, "∞"),
+                                '                                       If(backtestStrategy.OverAllProfitPerDay <> Decimal.MaxValue, backtestStrategy.OverAllProfitPerDay, "∞"),
+                                '                                       If(backtestStrategy.OverAllLossPerDay <> Decimal.MinValue, backtestStrategy.OverAllLossPerDay, "∞"),
+                                '                                       backtestStrategy.TypeOfMTMTrailing.ToString,
+                                '                                       ruleData.MinimumStockMaxExitPerTrade,
+                                '                                       ruleData.TypeOfSLMakeup.ToString)
+
+                                Dim ruleData As PairTradingStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                                Dim filename As String = String.Format("TF {0},StkMxPft {1},StkMxLs {2},OvrAlPft {3},OvrAlLs {4},TgtMul {5},Brkevn {6},INRBsd {7}",
+                                                                       backtestStrategy.SignalTimeFrame,
+                                                                       If(backtestStrategy.StockMaxProfitPerDay <> Decimal.MaxValue, backtestStrategy.StockMaxProfitPerDay, "∞"),
+                                                                       If(backtestStrategy.StockMaxLossPerDay <> Decimal.MinValue, backtestStrategy.StockMaxLossPerDay, "∞"),
+                                                                       If(backtestStrategy.OverAllProfitPerDay <> Decimal.MaxValue, backtestStrategy.OverAllProfitPerDay, "∞"),
+                                                                       If(backtestStrategy.OverAllLossPerDay <> Decimal.MinValue, backtestStrategy.OverAllLossPerDay, "∞"),
+                                                                       ruleData.TargetMultiplier,
+                                                                       ruleData.BreakevenMovement,
+                                                                       ruleData.INRBasedTarget)
+
+                                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
                             End Using
                         Next
                     Next
@@ -783,7 +809,9 @@ Public Class frmMain
 
                     .TickBasedStrategy = True
                 End With
-                Await backtestStrategy.TestStrategyAsync(startDate, endDate).ConfigureAwait(False)
+                Dim filename As String = String.Format("CNC Output Capital {3} {0}_{1}_{2}", Now.Hour, Now.Minute, Now.Second,
+                                                   If(backtestStrategy.UsableCapital = Decimal.MaxValue / 2, "∞", backtestStrategy.UsableCapital))
+                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using
         Catch ex As Exception
             MsgBox(ex.ToString, MsgBoxStyle.Critical)
@@ -867,7 +895,9 @@ Public Class frmMain
 
                     .TickBasedStrategy = True
                 End With
-                Await backtestStrategy.TestStrategyAsync(startDate, endDate).ConfigureAwait(False)
+                Dim filename As String = String.Format("CNC Output Capital {3} {0}_{1}_{2}", Now.Hour, Now.Minute, Now.Second,
+                                                   If(backtestStrategy.UsableCapital = Decimal.MaxValue / 2, "∞", backtestStrategy.UsableCapital))
+                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using
         Catch ex As Exception
             MsgBox(ex.ToString, MsgBoxStyle.Critical)

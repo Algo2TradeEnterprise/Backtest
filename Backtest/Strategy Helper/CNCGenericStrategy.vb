@@ -30,7 +30,7 @@ Namespace StrategyHelper
             MyBase.New(canceller, exchangeStartTime, exchangeEndTime, tradeStartTime, lastTradeEntryTime, eodExitTime, tickSize, marginMultiplier, timeframe, heikenAshiCandle, stockType, Trade.TypeOfTrade.CNC, databaseTable, dataSource, initialCapital, usableCapital, minimumEarnedCapitalToWithdraw, amountToBeWithdrawn)
         End Sub
 
-        Public Overrides Async Function TestStrategyAsync(startDate As Date, endDate As Date) As Task
+        Public Overrides Async Function TestStrategyAsync(startDate As Date, endDate As Date, filename As String) As Task
             If Not Me.ExitOnOverAllFixedTargetStoploss Then
                 Me.OverAllProfitPerDay = Decimal.MaxValue
                 Me.OverAllLossPerDay = Decimal.MinValue
@@ -39,9 +39,7 @@ Namespace StrategyHelper
                 Me.StockMaxProfitPerDay = Decimal.MaxValue
                 Me.StockMaxLossPerDay = Decimal.MinValue
             End If
-            Dim filename As String = String.Format("CNC Output Capital {3} {0}_{1}_{2}", Now.Hour, Now.Minute, Now.Second,
-                                                   If(Me.UsableCapital = Decimal.MaxValue / 2, "∞", Me.UsableCapital))
-
+            If filename Is Nothing Then Throw New ApplicationException("Filename Invalid")
             Dim tradesFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Trades.a2t", filename))
             Dim capitalFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Capital.a2t", filename))
 

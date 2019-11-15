@@ -142,6 +142,7 @@ Namespace StrategyHelper
         Public StockMaxLossPerDay As Double = Decimal.MinValue
         Public NumberOfTradesPerStockPerDay As Integer = Integer.MaxValue
         Public NumberOfTradesPerDay As Integer = Integer.MaxValue
+        Public AllowBothDirectionEntryAtSameTime As Boolean = False
         Public TickBasedStrategy As Boolean = False
         Public TrailingStoploss As Boolean = False
         Public TypeOfMTMTrailing As MTMTrailingType = MTMTrailingType.None
@@ -731,7 +732,7 @@ Namespace StrategyHelper
             Dim previousRunningTrades As List(Of Trade) = GetSpecificTrades(currentPayload, currentTrade.SquareOffType, Trade.TradeExecutionStatus.Inprogress)
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                 If currentPayload.High >= currentTrade.EntryPrice Then
-                    If previousRunningTrades IsNot Nothing AndAlso previousRunningTrades.Count > 0 Then
+                    If Not AllowBothDirectionEntryAtSameTime AndAlso previousRunningTrades IsNot Nothing AndAlso previousRunningTrades.Count > 0 Then
                         For Each previousRunningTrade In previousRunningTrades
                             If previousRunningTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
                                 ExitTradeByForce(previousRunningTrade, currentPayload, "Opposite direction trade trigerred")
@@ -759,7 +760,7 @@ Namespace StrategyHelper
                 End If
             ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
                 If currentPayload.Low <= currentTrade.EntryPrice Then
-                    If previousRunningTrades IsNot Nothing AndAlso previousRunningTrades.Count > 0 Then
+                    If Not AllowBothDirectionEntryAtSameTime AndAlso previousRunningTrades IsNot Nothing AndAlso previousRunningTrades.Count > 0 Then
                         For Each previousRunningTrade In previousRunningTrades
                             If previousRunningTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                                 ExitTradeByForce(previousRunningTrade, currentPayload, "Opposite direction trade trigerred")
@@ -1218,7 +1219,7 @@ Namespace StrategyHelper
 #End Region
 
 #Region "Public MustOverride Function"
-        Public MustOverride Async Function TestStrategyAsync(startDate As Date, endDate As Date) As Task
+        Public MustOverride Async Function TestStrategyAsync(startDate As Date, endDate As Date, ByVal filename As String) As Task
 #End Region
 
 #Region "Private Functions"

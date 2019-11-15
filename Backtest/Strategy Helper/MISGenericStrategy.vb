@@ -30,7 +30,7 @@ Namespace StrategyHelper
             MyBase.New(canceller, exchangeStartTime, exchangeEndTime, tradeStartTime, lastTradeEntryTime, eodExitTime, tickSize, marginMultiplier, timeframe, heikenAshiCandle, stockType, Trade.TypeOfTrade.MIS, databaseTable, dataSource, initialCapital, usableCapital, minimumEarnedCapitalToWithdraw, amountToBeWithdrawn)
             Me.NumberOfTradesPerDay = Integer.MaxValue
         End Sub
-        Public Overrides Async Function TestStrategyAsync(startDate As Date, endDate As Date) As Task
+        Public Overrides Async Function TestStrategyAsync(startDate As Date, endDate As Date, filename As String) As Task
             If Not Me.ExitOnOverAllFixedTargetStoploss Then
                 Me.OverAllProfitPerDay = Decimal.MaxValue
                 Me.OverAllLossPerDay = Decimal.MinValue
@@ -40,18 +40,7 @@ Namespace StrategyHelper
                 Me.StockMaxLossPerDay = Decimal.MinValue
             End If
 
-            'Dim ruleData As LowStoplossCandleStrategyRule.StrategyRuleEntities = Me.RuleEntityData
-            'Dim filename As String = String.Format("TF {0},StkMxPft {1},StkMxLs {2},OvrAlPft {3},OvrAlLs {4},TrlMTMTyp {5},ExtPTrd {6},SLMkupTyp {7}",
-            '                                       Me.SignalTimeFrame,
-            '                                       If(Me.StockMaxProfitPerDay <> Decimal.MaxValue, Me.StockMaxProfitPerDay, "∞"),
-            '                                       If(Me.StockMaxLossPerDay <> Decimal.MinValue, Me.StockMaxLossPerDay, "∞"),
-            '                                       If(Me.OverAllProfitPerDay <> Decimal.MaxValue, Me.OverAllProfitPerDay, "∞"),
-            '                                       If(Me.OverAllLossPerDay <> Decimal.MinValue, Me.OverAllLossPerDay, "∞"),
-            '                                       Me.TypeOfMTMTrailing.ToString,
-            '                                       ruleData.MinimumStockMaxExitPerTrade,
-            '                                       ruleData.TypeOfSLMakeup.ToString)
-            Dim filename As String = "Pair Trading Test"
-
+            If filename Is Nothing Then Throw New ApplicationException("Invalid Filename")
             Dim tradesFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Trades.a2t", filename))
             Dim capitalFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Capital.a2t", filename))
 
