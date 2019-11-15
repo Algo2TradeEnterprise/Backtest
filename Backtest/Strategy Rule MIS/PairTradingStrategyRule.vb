@@ -20,7 +20,7 @@ Public Class PairTradingStrategyRule
     Private _EODPayload As Dictionary(Of Date, Payload)
 
     Private ReadOnly _userInputs As StrategyRuleEntities
-    Private ReadOnly _quantity As Integer
+    Private _quantity As Integer
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -31,7 +31,7 @@ Public Class PairTradingStrategyRule
                    ByVal entities As RuleEntities)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _userInputs = entities
-        _quantity = Me.LotSize * 100
+        _quantity = Integer.MinValue
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -72,6 +72,10 @@ Public Class PairTradingStrategyRule
                 Dim currentDayPayload As Payload = _EODPayload(_tradingDate.Date)
                 If IsCrossoverDone(currentTick, currentDayPayload.PreviousCandlePayload.High) OrElse
                     IsCrossoverDone(currentTick, currentDayPayload.PreviousCandlePayload.Low) Then
+                    If _quantity = Integer.MinValue Then
+                        _quantity = Me._parentStrategy.CalculateQuantityFromInvestment(Me.LotSize, 15000, currentTick.Open, Me._parentStrategy.StockType, True)
+                    End If
+
                     Dim slPoint As Decimal = ConvertFloorCeling(GetHighestATR(signalCandle), _parentStrategy.TickSize, RoundOfType.Celing)
                     Dim targetPoint As Decimal = slPoint * _userInputs.TargetMultiplier
                     If _userInputs.INRBasedTarget Then
