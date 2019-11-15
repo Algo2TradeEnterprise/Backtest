@@ -70,7 +70,8 @@ Public Class PairTradingStrategyRule
 
             If signalCandle IsNot Nothing Then
                 Dim currentDayPayload As Payload = _EODPayload(_tradingDate.Date)
-                If currentTick.Open >= currentDayPayload.PreviousCandlePayload.High OrElse currentTick.Open = currentDayPayload.PreviousCandlePayload.Low Then
+                If IsCrossoverDone(currentTick, currentDayPayload.PreviousCandlePayload.High) OrElse
+                    IsCrossoverDone(currentTick, currentDayPayload.PreviousCandlePayload.Low) Then
                     Dim slPoint As Decimal = ConvertFloorCeling(GetHighestATR(signalCandle), _parentStrategy.TickSize, RoundOfType.Celing)
                     Dim targetPoint As Decimal = slPoint * _userInputs.TargetMultiplier
                     If _userInputs.INRBasedTarget Then
