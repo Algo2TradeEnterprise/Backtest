@@ -263,7 +263,7 @@ Public Class frmMain
             Else
                 sourceData = Strategy.SourceOfData.Database
             End If
-            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Currency
+            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Futures
             Dim database As Common.DataBaseTable = Common.DataBaseTable.None
             Dim margin As Decimal = 0
             Dim tick As Decimal = 0
@@ -557,11 +557,11 @@ Public Class frmMain
                     For inrBsd As Integer = 0 To 1
                         For slMakeupType As Integer = 1 To 1
                             Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
-                                                                              exchangeStartTime:=TimeSpan.Parse("09:00:00"),
-                                                                              exchangeEndTime:=TimeSpan.Parse("16:59:59"),
-                                                                              tradeStartTime:=TimeSpan.Parse("9:01:00"),
-                                                                              lastTradeEntryTime:=TimeSpan.Parse("15:45:00"),
-                                                                              eodExitTime:=TimeSpan.Parse("16:30:00"),
+                                                                              exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                              exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                              tradeStartTime:=TimeSpan.Parse("9:15:00"),
+                                                                              lastTradeEntryTime:=TimeSpan.Parse("14:45:00"),
+                                                                              eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                                               tickSize:=tick,
                                                                               marginMultiplier:=margin,
                                                                               timeframe:=1,
@@ -577,8 +577,8 @@ Public Class frmMain
 
                                 With backtestStrategy
                                     '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Intraday Volume Spike for first 2 minute.csv")
-                                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "New ATR Based Stocks.csv")
-                                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "USDINR.csv")
+                                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "New ATR Based Stocks.csv")
+                                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "USDINR.csv")
 
                                     .AllowBothDirectionEntryAtSameTime = False
                                     .TrailingStoploss = False
@@ -652,7 +652,6 @@ Public Class frmMain
                                               .StopAtFirstTarget = False,
                                               .AllowMomentumReversal = False}
                                         Case 19
-                                            .TickBasedStrategy = False
                                             .RuleEntityData = New LowStoplossWickStrategyRule.StrategyRuleEntities With
                                                 {.MinimumInvestmentPerStock = 15000,
                                                  .MinStoploss = 700,
