@@ -238,8 +238,8 @@ Public Class CoinFlipAtResistanceStrategyRule
             ret = New Tuple(Of Boolean, String)(True, "Previous Day Low")
         ElseIf IsCrossoverDone(currentTick, _VWAPPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate)) Then
             ret = New Tuple(Of Boolean, String)(True, "VWAP")
-        ElseIf IsCrossoverDone(currentTick, _PivotsPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate).Pivot) Then
-            ret = New Tuple(Of Boolean, String)(True, "Pivot")
+            'ElseIf IsCrossoverDone(currentTick, _PivotsPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate).Pivot) Then
+            '    ret = New Tuple(Of Boolean, String)(True, "Pivot")
         End If
         Return ret
     End Function
