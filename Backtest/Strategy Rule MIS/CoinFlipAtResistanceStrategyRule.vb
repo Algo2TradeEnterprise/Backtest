@@ -313,7 +313,7 @@ Public Class CoinFlipAtResistanceStrategyRule
             If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
                 ret = allTrades.Find(Function(x)
                                          Return x.SignalCandle.PayloadDate = currentTrade.SignalCandle.PayloadDate AndAlso
-                                         x.EntryDirection <> currentTrade.EntryDirection
+                                         x.PotentialTarget <> currentTrade.PotentialTarget
                                      End Function)
             End If
         End If
