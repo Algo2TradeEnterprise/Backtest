@@ -70,7 +70,7 @@ Public Class PairTradingStrategyRule
 
             If signalCandle IsNot Nothing Then
                 Dim currentDayPayload As Payload = _EODPayload(_tradingDate.Date)
-                If currentTick.Open = currentDayPayload.PreviousCandlePayload.High OrElse currentTick.Open = currentDayPayload.PreviousCandlePayload.Low Then
+                If currentTick.Open >= currentDayPayload.PreviousCandlePayload.High OrElse currentTick.Open = currentDayPayload.PreviousCandlePayload.Low Then
                     Dim slPoint As Decimal = ConvertFloorCeling(GetHighestATR(signalCandle), _parentStrategy.TickSize, RoundOfType.Celing)
                     Dim targetPoint As Decimal = slPoint * _userInputs.TargetMultiplier
                     If _userInputs.INRBasedTarget Then
@@ -135,7 +135,6 @@ Public Class PairTradingStrategyRule
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
-        Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         If _userInputs.BreakevenMovement AndAlso currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
             Dim anotherPairTrade As Trade = GetAnotherTradeOfThePair(currentTrade)
             If anotherPairTrade IsNot Nothing AndAlso anotherPairTrade.ExitCondition = Trade.TradeExitCondition.StopLoss Then
@@ -152,7 +151,7 @@ Public Class PairTradingStrategyRule
                     ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, String.Format("Breakeven Movement at {0}", currentTick.PayloadDate.ToString("HH:mm:ss")))
                 End If
             End If
-            End If
+        End If
         Return ret
     End Function
 
@@ -241,6 +240,25 @@ Public Class PairTradingStrategyRule
                                          Return x.SignalCandle.PayloadDate = currentTrade.SignalCandle.PayloadDate AndAlso
                                          x.EntryDirection <> currentTrade.EntryDirection
                                      End Function)
+            End If
+        End If
+        Return ret
+    End Function
+
+    Private Function IsCrossoverDone(ByVal currentTick As Payload, ByVal price As Decimal) As Boolean
+        Dim ret As Boolean = False
+        If currentTick.PreviousCandlePayload IsNot Nothing Then
+            If currentTick.PreviousCandlePayload.Close < price AndAlso currentTick.Open >= price Then
+                ret = True
+            ElseIf currentTick.PreviousCandlePayload.Close > price AndAlso currentTick.Open <= price Then
+                ret = True
+            End If
+        Else
+            Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
+            If currentMinuteCandlePayload.PreviousCandlePayload.Close < price AndAlso currentTick.Open >= price Then
+                ret = True
+            ElseIf currentMinuteCandlePayload.PreviousCandlePayload.Close > price AndAlso currentTick.Open <= price Then
+                ret = True
             End If
         End If
         Return ret
