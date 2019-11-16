@@ -914,6 +914,7 @@ Public Class frmMain
                                                                        ruleData.MinimumStockMaxExitPerTrade,
                                                                        ruleData.TypeOfSLMakeup.ToString)
 
+
                                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
                             End Using
                         Next
