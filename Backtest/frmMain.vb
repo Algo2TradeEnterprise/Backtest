@@ -286,6 +286,192 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
+#Region "Dummy"
+            'Dim tgtList As List(Of Decimal) = New List(Of Decimal) From {15}
+            'For Each tgtMul As Decimal In tgtList
+            '    For brkevn As Integer = 1 To 1
+            '        For INRBsd As Integer = 1 To 1
+            '            Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+            '                                                              exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+            '                                                              exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+            '                                                              tradeStartTime:=TimeSpan.Parse("9:16:00"),
+            '                                                              lastTradeEntryTime:=TimeSpan.Parse("14:30:00"),
+            '                                                              eodExitTime:=TimeSpan.Parse("15:15:00"),
+            '                                                              tickSize:=tick,
+            '                                                              marginMultiplier:=margin,
+            '                                                              timeframe:=1,
+            '                                                              heikenAshiCandle:=False,
+            '                                                              stockType:=stockType,
+            '                                                              databaseTable:=database,
+            '                                                              dataSource:=sourceData,
+            '                                                              initialCapital:=300000,
+            '                                                              usableCapital:=300000,
+            '                                                              minimumEarnedCapitalToWithdraw:=400000,
+            '                                                              amountToBeWithdrawn:=100000)
+            '                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+
+            '                With backtestStrategy
+            '                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Intraday Volume Spike for first 2 minute.csv")
+            '                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "New ATR Based Stocks.csv")
+            '                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "USDINR.csv")
+
+            '                    .AllowBothDirectionEntryAtSameTime = False
+            '                    .TrailingStoploss = False
+            '                    .TickBasedStrategy = True
+            '                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+            '                    Select Case .RuleNumber
+            '                        Case 1
+            '                            .RuleEntityData = New HighVolumePinBarStrategyRule.StrategyRuleEntities With {.TargetMultiplier = 4}
+            '                        Case 2
+            '                            .RuleEntityData = New MomentumReversalv2StrategyRule.StrategyRuleEntities With {.TargetMultiplier = 4, .StoplossMultiplier = 1, .BreakevenMovement = True, .ReEntryAtPreviousSignal = True}
+            '                        Case 3
+            '                            .RuleEntityData = New HighVolumePinBarv2StrategyRule.StrategyRuleEntities With {.TargetMultiplier = 4, .StoplossMultiplier = 1, .ModifyStoploss = True, .ReEntryAtPreviousSignal = True}
+            '                        Case 4
+            '                            .RuleEntityData = New DonchianFractalStrategyRule.StrategyRuleEntities With {.StoplossPercentage = 1, .ModifyStoploss = True}
+            '                        Case 5
+            '                            .RuleEntityData = New SMIFractalStrategyRule.StrategyRuleEntities With {.ModifyStoploss = True}
+            '                        Case 7
+            '                            .RuleEntityData = New DayStartSMIStrategyRule.StrategyRuleEntities With {.TargetPercentage = 4, .StoplossPercentage = 1}
+            '                        Case 10
+            '                            .RuleEntityData = New VijayCNCStrategyRule.StrategyRuleEntities With {.RefreshQuantityAtDayStart = True}
+            '                        Case 11
+            '                            .RuleEntityData = New TIIOppositeBreakoutStrategyRule.StrategyRuleEntities With {.TargetMultiplier = 4, .ModifyStoploss = True}
+            '                        Case 12
+            '                            .RuleEntityData = New FixedLevelBasedStrategyRule.StrategyRuleEntities With
+            '                            {.TargetMultiplier = 4,
+            '                            .StoplossMultiplier = 1,
+            '                            .BreakevenMovement = False,
+            '                            .BreakevenMultiplier = 4,
+            '                            .LevelType = FixedLevelBasedStrategyRule.StrategyRuleEntities.TypeOfLevel.None,
+            '                            .StoplossMakeupTrade = False,
+            '                            .MaxLossPercentageOfCapital = Decimal.MinValue,
+            '                            .ModifyCandleTarget = True,
+            '                            .ModifyNumberOfTrade = False}
+            '                        Case 13
+            '                            .RuleEntityData = New LowStoplossStrategyRule.StrategyRuleEntities With
+            '                            {.StartingLevelMultiplier = 1,
+            '                            .ChangeLevelAfterStoploss = False,
+            '                            .AfterStoplossLevelMultiplier = 2,
+            '                            .MaxStoploss = 1000,
+            '                            .TargetMultiplier = 4,
+            '                            .BreakevenMovement = True,
+            '                            .ModifyNumberOfTrade = False,
+            '                            .MaxPLToModifyNumberOfTrade = 0,
+            '                            .MinimumCapital = 10000,
+            '                            .MaxTargetPerTrade = Decimal.MaxValue,
+            '                            .TypeOfSignal = LowStoplossStrategyRule.SignalType.DipInATR}
+            '                        Case 14
+            '                            .RuleEntityData = Nothing
+            '                        Case 15
+            '                            .RuleEntityData = New ReversalStrategyRule.StrategyRuleEntities With
+            '                             {.TargetMultiplier = 3,
+            '                              .NumberOfTradeOnNewSignal = 2,
+            '                              .BreakevenMovement = True}
+            '                        Case 16
+            '                            .RuleEntityData = New PinbarBreakoutStrategyRule.StrategyRuleEntities With
+            '                             {.MinimumInvestmentPerStock = 15000,
+            '                              .MaxLossPerTradeMultiplier = 0.5,
+            '                              .MinLossPercentagePerTrade = 0.1,
+            '                              .PinbarTailPercentage = 50,
+            '                              .TargetMultiplier = 1,
+            '                              .BreakevenMovement = True,
+            '                              .SignalAtDayHighLow = False,
+            '                              .StopAtFirstTarget = False}
+            '                        Case 17
+            '                            .RuleEntityData = New LowSLPinbarStrategyRule.StrategyRuleEntities With
+            '                             {.MinimumInvestmentPerStock = 15000,
+            '                              .MaxLossPerTrade = -1000,
+            '                              .PinbarTailPercentage = 65,
+            '                              .TargetMultiplier = 2,
+            '                              .BreakevenMovement = True,
+            '                              .StopAtFirstTarget = False,
+            '                              .AllowMomentumReversal = False}
+            '                        Case 19
+            '                            .RuleEntityData = New LowStoplossWickStrategyRule.StrategyRuleEntities With
+            '                                {.MinimumInvestmentPerStock = 15000,
+            '                                 .MinStoploss = 700,
+            '                                 .MaxStoploss = 1500,
+            '                                 .TargetMultiplier = 2,
+            '                                 .MinimumStockMaxExitPerTrade = True,
+            '                                 .TypeOfSLMakeup = LowStoplossWickStrategyRule.StoplossMakeupType.SingleLossMakeup
+            '                                }
+            '                        Case 20
+            '                            .RuleEntityData = New LowStoplossCandleStrategyRule.StrategyRuleEntities With
+            '                                {.MinimumInvestmentPerStock = 15000,
+            '                                 .MinStoploss = 700,
+            '                                 .MaxStoploss = 1500,
+            '                                 .TargetMultiplier = 2,
+            '                                 .MinimumStockMaxExitPerTrade = True,
+            '                                 .TypeOfSLMakeup = LowStoplossCandleStrategyRule.StoplossMakeupType.SingleLossMakeup
+            '                                }
+            '                        Case 21
+            '                            .AllowBothDirectionEntryAtSameTime = True
+            '                            .RuleEntityData = New PairTradingStrategyRule.StrategyRuleEntities With
+            '                                {.TargetMultiplier = tgtMul,
+            '                                 .BreakevenMovement = brkevn,
+            '                                 .INRBasedTarget = INRBsd,
+            '                                 .MinumumInvesment = 15000
+            '                                }
+            '                        Case 22
+            '                            .RuleEntityData = New CoinFlipAtResistanceStrategyRule.StrategyRuleEntities With
+            '                                {.TargetMultiplier = tgtMul,
+            '                                 .BreakevenMovement = brkevn,
+            '                                 .INRBasedTarget = INRBsd,
+            '                                 .MinumumInvesment = 15000
+            '                                }
+            '                    End Select
+
+
+            '                    .NumberOfTradeableStockPerDay = 10
+
+            '                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
+
+            '                    .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+            '                    .StockMaxLossPercentagePerDay = Decimal.MinValue
+
+            '                    .ExitOnStockFixedTargetStoploss = False
+            '                    .StockMaxProfitPerDay = Decimal.MaxValue
+            '                    .StockMaxLossPerDay = Decimal.MinValue
+
+            '                    .ExitOnOverAllFixedTargetStoploss = False
+            '                    .OverAllProfitPerDay = Decimal.MaxValue
+            '                    .OverAllLossPerDay = Decimal.MinValue
+
+            '                    .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+            '                    .MTMSlab = Math.Abs(.OverAllLossPerDay)
+            '                    .MovementSlab = .MTMSlab / 2
+            '                    .RealtimeTrailingPercentage = 50
+            '                End With
+
+            '                'Dim ruleData As LowStoplossCandleStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+            '                'Dim filename As String = String.Format("TF {0},StkMxPft {1},StkMxLs {2},OvrAlPft {3},OvrAlLs {4},TrlMTMTyp {5},ExtPTrd {6},SLMkupTyp {7}",
+            '                '                                       backtestStrategy.SignalTimeFrame,
+            '                '                                       If(backtestStrategy.StockMaxProfitPerDay <> Decimal.MaxValue, backtestStrategy.StockMaxProfitPerDay, "∞"),
+            '                '                                       If(backtestStrategy.StockMaxLossPerDay <> Decimal.MinValue, backtestStrategy.StockMaxLossPerDay, "∞"),
+            '                '                                       If(backtestStrategy.OverAllProfitPerDay <> Decimal.MaxValue, backtestStrategy.OverAllProfitPerDay, "∞"),
+            '                '                                       If(backtestStrategy.OverAllLossPerDay <> Decimal.MinValue, backtestStrategy.OverAllLossPerDay, "∞"),
+            '                '                                       backtestStrategy.TypeOfMTMTrailing.ToString,
+            '                '                                       ruleData.MinimumStockMaxExitPerTrade,
+            '                '                                       ruleData.TypeOfSLMakeup.ToString)
+
+            '                Dim ruleData As CoinFlipAtResistanceStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+            '                Dim filename As String = String.Format("TF {0},StkMxPft {1},StkMxLs {2},OvrAlPft {3},OvrAlLs {4},TgtMul {5},Brkevn {6},INRBsd {7}",
+            '                                                       backtestStrategy.SignalTimeFrame,
+            '                                                       If(backtestStrategy.StockMaxProfitPerDay <> Decimal.MaxValue, backtestStrategy.StockMaxProfitPerDay, "∞"),
+            '                                                       If(backtestStrategy.StockMaxLossPerDay <> Decimal.MinValue, backtestStrategy.StockMaxLossPerDay, "∞"),
+            '                                                       If(backtestStrategy.OverAllProfitPerDay <> Decimal.MaxValue, backtestStrategy.OverAllProfitPerDay, "∞"),
+            '                                                       If(backtestStrategy.OverAllLossPerDay <> Decimal.MinValue, backtestStrategy.OverAllLossPerDay, "∞"),
+            '                                                       ruleData.TargetMultiplier,
+            '                                                       ruleData.BreakevenMovement,
+            '                                                       ruleData.INRBasedTarget)
+
+            '                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+            '            End Using
+            '        Next
+            '    Next
+            'Next
+#End Region
+
 #Region "Low SL"
             'For signalType As Integer = 17 To 17 Step 1
             '    For strtLvlMul As Integer = 1 To 1 Step 1
@@ -551,189 +737,190 @@ Public Class frmMain
             'Next
 #End Region
 
-            Dim tgtList As List(Of Decimal) = New List(Of Decimal) From {15}
-            For Each tgtMul As Decimal In tgtList
-                For brkevn As Integer = 1 To 1
-                    For INRBsd As Integer = 1 To 1
-                        Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
-                                                                          exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                                          exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                                          tradeStartTime:=TimeSpan.Parse("9:16:00"),
-                                                                          lastTradeEntryTime:=TimeSpan.Parse("14:30:00"),
-                                                                          eodExitTime:=TimeSpan.Parse("15:15:00"),
-                                                                          tickSize:=tick,
-                                                                          marginMultiplier:=margin,
-                                                                          timeframe:=1,
-                                                                          heikenAshiCandle:=False,
-                                                                          stockType:=stockType,
-                                                                          databaseTable:=database,
-                                                                          dataSource:=sourceData,
-                                                                          initialCapital:=300000,
-                                                                          usableCapital:=300000,
-                                                                          minimumEarnedCapitalToWithdraw:=400000,
-                                                                          amountToBeWithdrawn:=100000)
-                            AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+#Region "Pair Trading & Coin Flip"
+            'Dim tgtList As List(Of Decimal) = New List(Of Decimal) From {15}
+            'For Each tgtMul As Decimal In tgtList
+            '    For brkevn As Integer = 1 To 1
+            '        For INRBsd As Integer = 1 To 1
+            '            Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+            '                                                              exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+            '                                                              exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+            '                                                              tradeStartTime:=TimeSpan.Parse("9:16:00"),
+            '                                                              lastTradeEntryTime:=TimeSpan.Parse("14:30:00"),
+            '                                                              eodExitTime:=TimeSpan.Parse("15:15:00"),
+            '                                                              tickSize:=tick,
+            '                                                              marginMultiplier:=margin,
+            '                                                              timeframe:=1,
+            '                                                              heikenAshiCandle:=False,
+            '                                                              stockType:=stockType,
+            '                                                              databaseTable:=database,
+            '                                                              dataSource:=sourceData,
+            '                                                              initialCapital:=300000,
+            '                                                              usableCapital:=300000,
+            '                                                              minimumEarnedCapitalToWithdraw:=400000,
+            '                                                              amountToBeWithdrawn:=100000)
+            '                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                            With backtestStrategy
-                                '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Intraday Volume Spike for first 2 minute.csv")
-                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "New ATR Based Stocks.csv")
-                                '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "USDINR.csv")
+            '                With backtestStrategy
+            '                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Intraday Volume Spike for first 2 minute.csv")
+            '                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "New ATR Based Stocks.csv")
+            '                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "USDINR.csv")
 
-                                .AllowBothDirectionEntryAtSameTime = False
-                                .TrailingStoploss = False
-                                .TickBasedStrategy = True
-                                .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
-                                Select Case .RuleNumber
-                                    Case 1
-                                        .RuleEntityData = New HighVolumePinBarStrategyRule.StrategyRuleEntities With {.TargetMultiplier = 4}
-                                    Case 2
-                                        .RuleEntityData = New MomentumReversalv2StrategyRule.StrategyRuleEntities With {.TargetMultiplier = 4, .StoplossMultiplier = 1, .BreakevenMovement = True, .ReEntryAtPreviousSignal = True}
-                                    Case 3
-                                        .RuleEntityData = New HighVolumePinBarv2StrategyRule.StrategyRuleEntities With {.TargetMultiplier = 4, .StoplossMultiplier = 1, .ModifyStoploss = True, .ReEntryAtPreviousSignal = True}
-                                    Case 4
-                                        .RuleEntityData = New DonchianFractalStrategyRule.StrategyRuleEntities With {.StoplossPercentage = 1, .ModifyStoploss = True}
-                                    Case 5
-                                        .RuleEntityData = New SMIFractalStrategyRule.StrategyRuleEntities With {.ModifyStoploss = True}
-                                    Case 7
-                                        .RuleEntityData = New DayStartSMIStrategyRule.StrategyRuleEntities With {.TargetPercentage = 4, .StoplossPercentage = 1}
-                                    Case 10
-                                        .RuleEntityData = New VijayCNCStrategyRule.StrategyRuleEntities With {.RefreshQuantityAtDayStart = True}
-                                    Case 11
-                                        .RuleEntityData = New TIIOppositeBreakoutStrategyRule.StrategyRuleEntities With {.TargetMultiplier = 4, .ModifyStoploss = True}
-                                    Case 12
-                                        .RuleEntityData = New FixedLevelBasedStrategyRule.StrategyRuleEntities With
-                                        {.TargetMultiplier = 4,
-                                        .StoplossMultiplier = 1,
-                                        .BreakevenMovement = False,
-                                        .BreakevenMultiplier = 4,
-                                        .LevelType = FixedLevelBasedStrategyRule.StrategyRuleEntities.TypeOfLevel.None,
-                                        .StoplossMakeupTrade = False,
-                                        .MaxLossPercentageOfCapital = Decimal.MinValue,
-                                        .ModifyCandleTarget = True,
-                                        .ModifyNumberOfTrade = False}
-                                    Case 13
-                                        .RuleEntityData = New LowStoplossStrategyRule.StrategyRuleEntities With
-                                        {.StartingLevelMultiplier = 1,
-                                        .ChangeLevelAfterStoploss = False,
-                                        .AfterStoplossLevelMultiplier = 2,
-                                        .MaxStoploss = 1000,
-                                        .TargetMultiplier = 4,
-                                        .BreakevenMovement = True,
-                                        .ModifyNumberOfTrade = False,
-                                        .MaxPLToModifyNumberOfTrade = 0,
-                                        .MinimumCapital = 10000,
-                                        .MaxTargetPerTrade = Decimal.MaxValue,
-                                        .TypeOfSignal = LowStoplossStrategyRule.SignalType.DipInATR}
-                                    Case 14
-                                        .RuleEntityData = Nothing
-                                    Case 15
-                                        .RuleEntityData = New ReversalStrategyRule.StrategyRuleEntities With
-                                         {.TargetMultiplier = 3,
-                                          .NumberOfTradeOnNewSignal = 2,
-                                          .BreakevenMovement = True}
-                                    Case 16
-                                        .RuleEntityData = New PinbarBreakoutStrategyRule.StrategyRuleEntities With
-                                         {.MinimumInvestmentPerStock = 15000,
-                                          .MaxLossPerTradeMultiplier = 0.5,
-                                          .MinLossPercentagePerTrade = 0.1,
-                                          .PinbarTailPercentage = 50,
-                                          .TargetMultiplier = 1,
-                                          .BreakevenMovement = True,
-                                          .SignalAtDayHighLow = False,
-                                          .StopAtFirstTarget = False}
-                                    Case 17
-                                        .RuleEntityData = New LowSLPinbarStrategyRule.StrategyRuleEntities With
-                                         {.MinimumInvestmentPerStock = 15000,
-                                          .MaxLossPerTrade = -1000,
-                                          .PinbarTailPercentage = 65,
-                                          .TargetMultiplier = 2,
-                                          .BreakevenMovement = True,
-                                          .StopAtFirstTarget = False,
-                                          .AllowMomentumReversal = False}
-                                    Case 19
-                                        .RuleEntityData = New LowStoplossWickStrategyRule.StrategyRuleEntities With
-                                            {.MinimumInvestmentPerStock = 15000,
-                                             .MinStoploss = 700,
-                                             .MaxStoploss = 1500,
-                                             .TargetMultiplier = 2,
-                                             .MinimumStockMaxExitPerTrade = True,
-                                             .TypeOfSLMakeup = LowStoplossWickStrategyRule.StoplossMakeupType.SingleLossMakeup
-                                            }
-                                    Case 20
-                                        .RuleEntityData = New LowStoplossCandleStrategyRule.StrategyRuleEntities With
-                                            {.MinimumInvestmentPerStock = 15000,
-                                             .MinStoploss = 700,
-                                             .MaxStoploss = 1500,
-                                             .TargetMultiplier = 2,
-                                             .MinimumStockMaxExitPerTrade = True,
-                                             .TypeOfSLMakeup = LowStoplossCandleStrategyRule.StoplossMakeupType.SingleLossMakeup
-                                            }
-                                    Case 21
-                                        .AllowBothDirectionEntryAtSameTime = True
-                                        .RuleEntityData = New PairTradingStrategyRule.StrategyRuleEntities With
-                                            {.TargetMultiplier = tgtMul,
-                                             .BreakevenMovement = brkevn,
-                                             .INRBasedTarget = INRBsd,
-                                             .MinumumInvesment = 15000
-                                            }
-                                    Case 22
-                                        .RuleEntityData = New CoinFlipAtResistanceStrategyRule.StrategyRuleEntities With
-                                            {.TargetMultiplier = tgtMul,
-                                             .BreakevenMovement = brkevn,
-                                             .INRBasedTarget = INRBsd,
-                                             .MinumumInvesment = 15000
-                                            }
-                                End Select
+            '                    .AllowBothDirectionEntryAtSameTime = False
+            '                    .TrailingStoploss = False
+            '                    .TickBasedStrategy = True
+            '                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+            '                    Select Case .RuleNumber
+            '                        Case 21
+            '                            .AllowBothDirectionEntryAtSameTime = True
+            '                            .RuleEntityData = New PairTradingStrategyRule.StrategyRuleEntities With
+            '                                {.TargetMultiplier = tgtMul,
+            '                                 .BreakevenMovement = brkevn,
+            '                                 .INRBasedTarget = INRBsd,
+            '                                 .MinumumInvesment = 15000
+            '                                }
+            '                        Case 22
+            '                            .RuleEntityData = New CoinFlipAtResistanceStrategyRule.StrategyRuleEntities With
+            '                                {.TargetMultiplier = tgtMul,
+            '                                 .BreakevenMovement = brkevn,
+            '                                 .INRBasedTarget = INRBsd,
+            '                                 .MinumumInvesment = 15000
+            '                                }
+            '                    End Select
 
 
-                                .NumberOfTradeableStockPerDay = 10
+            '                    .NumberOfTradeableStockPerDay = 10
 
-                                .NumberOfTradesPerStockPerDay = Integer.MaxValue
+            '                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
-                                .StockMaxProfitPercentagePerDay = Decimal.MaxValue
-                                .StockMaxLossPercentagePerDay = Decimal.MinValue
+            '                    .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+            '                    .StockMaxLossPercentagePerDay = Decimal.MinValue
 
-                                .ExitOnStockFixedTargetStoploss = False
-                                .StockMaxProfitPerDay = Decimal.MaxValue
-                                .StockMaxLossPerDay = Decimal.MinValue
+            '                    .ExitOnStockFixedTargetStoploss = False
+            '                    .StockMaxProfitPerDay = Decimal.MaxValue
+            '                    .StockMaxLossPerDay = Decimal.MinValue
 
-                                .ExitOnOverAllFixedTargetStoploss = False
-                                .OverAllProfitPerDay = Decimal.MaxValue
-                                .OverAllLossPerDay = Decimal.MinValue
+            '                    .ExitOnOverAllFixedTargetStoploss = False
+            '                    .OverAllProfitPerDay = Decimal.MaxValue
+            '                    .OverAllLossPerDay = Decimal.MinValue
 
-                                .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
-                                .MTMSlab = Math.Abs(.OverAllLossPerDay)
-                                .MovementSlab = .MTMSlab / 2
-                                .RealtimeTrailingPercentage = 50
-                            End With
+            '                    .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+            '                    .MTMSlab = Math.Abs(.OverAllLossPerDay)
+            '                    .MovementSlab = .MTMSlab / 2
+            '                    .RealtimeTrailingPercentage = 50
+            '                End With
 
-                            'Dim ruleData As LowStoplossCandleStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                            'Dim filename As String = String.Format("TF {0},StkMxPft {1},StkMxLs {2},OvrAlPft {3},OvrAlLs {4},TrlMTMTyp {5},ExtPTrd {6},SLMkupTyp {7}",
-                            '                                       backtestStrategy.SignalTimeFrame,
-                            '                                       If(backtestStrategy.StockMaxProfitPerDay <> Decimal.MaxValue, backtestStrategy.StockMaxProfitPerDay, "∞"),
-                            '                                       If(backtestStrategy.StockMaxLossPerDay <> Decimal.MinValue, backtestStrategy.StockMaxLossPerDay, "∞"),
-                            '                                       If(backtestStrategy.OverAllProfitPerDay <> Decimal.MaxValue, backtestStrategy.OverAllProfitPerDay, "∞"),
-                            '                                       If(backtestStrategy.OverAllLossPerDay <> Decimal.MinValue, backtestStrategy.OverAllLossPerDay, "∞"),
-                            '                                       backtestStrategy.TypeOfMTMTrailing.ToString,
-                            '                                       ruleData.MinimumStockMaxExitPerTrade,
-                            '                                       ruleData.TypeOfSLMakeup.ToString)
+            '                Dim ruleData As CoinFlipAtResistanceStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+            '                Dim filename As String = String.Format("TF {0},StkMxPft {1},StkMxLs {2},OvrAlPft {3},OvrAlLs {4},TgtMul {5},Brkevn {6},INRBsd {7}",
+            '                                                       backtestStrategy.SignalTimeFrame,
+            '                                                       If(backtestStrategy.StockMaxProfitPerDay <> Decimal.MaxValue, backtestStrategy.StockMaxProfitPerDay, "∞"),
+            '                                                       If(backtestStrategy.StockMaxLossPerDay <> Decimal.MinValue, backtestStrategy.StockMaxLossPerDay, "∞"),
+            '                                                       If(backtestStrategy.OverAllProfitPerDay <> Decimal.MaxValue, backtestStrategy.OverAllProfitPerDay, "∞"),
+            '                                                       If(backtestStrategy.OverAllLossPerDay <> Decimal.MinValue, backtestStrategy.OverAllLossPerDay, "∞"),
+            '                                                       ruleData.TargetMultiplier,
+            '                                                       ruleData.BreakevenMovement,
+            '                                                       ruleData.INRBasedTarget)
 
-                            Dim ruleData As CoinFlipAtResistanceStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                            Dim filename As String = String.Format("TF {0},StkMxPft {1},StkMxLs {2},OvrAlPft {3},OvrAlLs {4},TgtMul {5},Brkevn {6},INRBsd {7}",
-                                                                   backtestStrategy.SignalTimeFrame,
-                                                                   If(backtestStrategy.StockMaxProfitPerDay <> Decimal.MaxValue, backtestStrategy.StockMaxProfitPerDay, "∞"),
-                                                                   If(backtestStrategy.StockMaxLossPerDay <> Decimal.MinValue, backtestStrategy.StockMaxLossPerDay, "∞"),
-                                                                   If(backtestStrategy.OverAllProfitPerDay <> Decimal.MaxValue, backtestStrategy.OverAllProfitPerDay, "∞"),
-                                                                   If(backtestStrategy.OverAllLossPerDay <> Decimal.MinValue, backtestStrategy.OverAllLossPerDay, "∞"),
-                                                                   ruleData.TargetMultiplier,
-                                                                   ruleData.BreakevenMovement,
-                                                                   ruleData.INRBasedTarget)
+            '                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+            '            End Using
+            '        Next
+            '    Next
+            'Next
+#End Region
 
-                            Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-                        End Using
+#Region "Low Stoploss Wick & Candle"
+            For ovrAlLoss As Decimal = -10000 To -8000 Step 1000
+                For stkMaxLoss As Decimal = -4000 To -3000 Step 1000
+                    For trlngMTM As Integer = 2 To 4
+                        For slMkupType As Integer = 1 To 2
+                            Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+                                                                              exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                              exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                              tradeStartTime:=TimeSpan.Parse("9:17:00"),
+                                                                              lastTradeEntryTime:=TimeSpan.Parse("14:30:00"),
+                                                                              eodExitTime:=TimeSpan.Parse("15:15:00"),
+                                                                              tickSize:=tick,
+                                                                              marginMultiplier:=margin,
+                                                                              timeframe:=1,
+                                                                              heikenAshiCandle:=False,
+                                                                              stockType:=stockType,
+                                                                              databaseTable:=database,
+                                                                              dataSource:=sourceData,
+                                                                              initialCapital:=300000,
+                                                                              usableCapital:=300000,
+                                                                              minimumEarnedCapitalToWithdraw:=400000,
+                                                                              amountToBeWithdrawn:=100000)
+                                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+
+                                With backtestStrategy
+                                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Intraday Volume Spike for first 2 minute.csv")
+                                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "New ATR Based Stocks.csv")
+
+                                    .AllowBothDirectionEntryAtSameTime = False
+                                    .TrailingStoploss = False
+                                    .TickBasedStrategy = True
+                                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+                                    Select Case .RuleNumber
+                                        Case 19
+                                            .RuleEntityData = New LowStoplossWickStrategyRule.StrategyRuleEntities With
+                                                {.MinimumInvestmentPerStock = 15000,
+                                                 .MinStoploss = 700,
+                                                 .MaxStoploss = 1500,
+                                                 .TargetMultiplier = 2,
+                                                 .MinimumStockMaxExitPerTrade = True,
+                                                 .TypeOfSLMakeup = slMkupType
+                                                }
+                                        Case 20
+                                            .RuleEntityData = New LowStoplossCandleStrategyRule.StrategyRuleEntities With
+                                                {.MinimumInvestmentPerStock = 15000,
+                                                 .MinStoploss = 700,
+                                                 .MaxStoploss = 1500,
+                                                 .TargetMultiplier = 2,
+                                                 .MinimumStockMaxExitPerTrade = True,
+                                                 .TypeOfSLMakeup = slMkupType
+                                                }
+                                    End Select
+
+                                    .NumberOfTradeableStockPerDay = 10
+
+                                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
+
+                                    .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                                    .StockMaxLossPercentagePerDay = Decimal.MinValue
+
+                                    .ExitOnStockFixedTargetStoploss = True
+                                    .StockMaxProfitPerDay = 4000
+                                    .StockMaxLossPerDay = stkMaxLoss
+
+                                    .ExitOnOverAllFixedTargetStoploss = True
+                                    .OverAllProfitPerDay = Decimal.MaxValue
+                                    .OverAllLossPerDay = Decimal.MinValue
+
+                                    .TypeOfMTMTrailing = trlngMTM
+                                    .MTMSlab = Math.Abs(.OverAllLossPerDay)
+                                    .MovementSlab = .MTMSlab / 2
+                                    .RealtimeTrailingPercentage = 50
+                                End With
+
+                                Dim ruleData As LowStoplossWickStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                                Dim filename As String = String.Format("TF {0},StkMxPft {1},StkMxLs {2},OvrAlPft {3},OvrAlLs {4},TrlMTMTyp {5},ExtPTrd {6},SLMkupTyp {7}",
+                                                                       backtestStrategy.SignalTimeFrame,
+                                                                       If(backtestStrategy.StockMaxProfitPerDay <> Decimal.MaxValue, backtestStrategy.StockMaxProfitPerDay, "∞"),
+                                                                       If(backtestStrategy.StockMaxLossPerDay <> Decimal.MinValue, backtestStrategy.StockMaxLossPerDay, "∞"),
+                                                                       If(backtestStrategy.OverAllProfitPerDay <> Decimal.MaxValue, backtestStrategy.OverAllProfitPerDay, "∞"),
+                                                                       If(backtestStrategy.OverAllLossPerDay <> Decimal.MinValue, backtestStrategy.OverAllLossPerDay, "∞"),
+                                                                       backtestStrategy.TypeOfMTMTrailing.ToString,
+                                                                       ruleData.MinimumStockMaxExitPerTrade,
+                                                                       ruleData.TypeOfSLMakeup.ToString)
+
+                                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                            End Using
+                        Next
                     Next
                 Next
             Next
+#End Region
+
         Catch ex As Exception
             MsgBox(ex.StackTrace, MsgBoxStyle.Critical)
         Finally

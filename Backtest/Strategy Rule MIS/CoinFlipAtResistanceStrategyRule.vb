@@ -17,7 +17,6 @@ Public Class CoinFlipAtResistanceStrategyRule
     End Class
 #End Region
 
-    Private _PivotsPayload As Dictionary(Of Date, PivotPoints)
     Private _VWAPPayload As Dictionary(Of Date, Decimal)
     Private _ATRPayload As Dictionary(Of Date, Decimal)
     Private _EODPayload As Dictionary(Of Date, Payload)
@@ -39,7 +38,6 @@ Public Class CoinFlipAtResistanceStrategyRule
 
     Public Overrides Sub CompletePreProcessing()
         MyBase.CompletePreProcessing()
-        Indicator.Pivots.CalculatePivots(_signalPayload, _PivotsPayload)
         Indicator.VWAP.CalculateVWAP(_signalPayload, _VWAPPayload)
         Indicator.ATR.CalculateATR(14, _signalPayload, _ATRPayload)
         _EODPayload = Me._parentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.EOD_Futures, _tradingSymbol, _tradingDate.AddDays(-7), _tradingDate)
@@ -238,8 +236,6 @@ Public Class CoinFlipAtResistanceStrategyRule
             ret = New Tuple(Of Boolean, String)(True, "Previous Day Low")
         ElseIf IsCrossoverDone(currentTick, _VWAPPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate)) Then
             ret = New Tuple(Of Boolean, String)(True, "VWAP")
-            'ElseIf IsCrossoverDone(currentTick, _PivotsPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate).Pivot) Then
-            '    ret = New Tuple(Of Boolean, String)(True, "Pivot")
         End If
         Return ret
     End Function
