@@ -829,8 +829,8 @@ Public Class frmMain
 #End Region
 
 #Region "Low Stoploss Wick & Candle"
-            For ovrAlLoss As Decimal = -10000 To -8000 Step 1000
-                For stkMaxLoss As Decimal = -4000 To -3000 Step 1000
+            For ovrAlLoss As Decimal = -10000 To -10000 Step 1000
+                For stkMaxLoss As Decimal = -3000 To -3000 Step 1000
                     For trlngMTM As Integer = 2 To 4
                         For slMkupType As Integer = 1 To 2
                             Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
@@ -853,8 +853,8 @@ Public Class frmMain
                                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                                 With backtestStrategy
-                                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Intraday Volume Spike for first 2 minute.csv")
-                                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "New ATR Based Stocks.csv")
+                                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Intraday Volume Spike for first 2 minute.csv")
+                                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "New ATR Based Stocks.csv")
 
                                     .AllowBothDirectionEntryAtSameTime = False
                                     .TrailingStoploss = False
