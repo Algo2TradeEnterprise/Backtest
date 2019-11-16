@@ -894,7 +894,7 @@ Public Class frmMain
 
                                     .ExitOnOverAllFixedTargetStoploss = True
                                     .OverAllProfitPerDay = Decimal.MaxValue
-                                    .OverAllLossPerDay = Decimal.MinValue
+                                    .OverAllLossPerDay = ovrAlLoss
 
                                     .TypeOfMTMTrailing = trlngMTM
                                     .MTMSlab = Math.Abs(.OverAllLossPerDay)
