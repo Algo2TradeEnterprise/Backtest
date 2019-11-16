@@ -862,6 +862,7 @@ Public Class frmMain
                                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
                                     Select Case .RuleNumber
                                         Case 19
+                                            .TickBasedStrategy = False
                                             .RuleEntityData = New LowStoplossWickStrategyRule.StrategyRuleEntities With
                                                 {.MinimumInvestmentPerStock = 15000,
                                                  .MinStoploss = 700,
