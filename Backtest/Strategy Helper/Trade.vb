@@ -177,23 +177,43 @@ Namespace StrategyHelper
 
         Public ReadOnly Property PLAfterBrokerage As Double
             Get
-                If EntryDirection = TradeExecutionDirection.Buy Then
-                    Return _OriginatingStrategy.CalculatePL(CoreTradingSymbol, EntryPrice, CurrentLTP, Quantity, LotSize, StockType)
-                ElseIf EntryDirection = TradeExecutionDirection.Sell Then
-                    Return _OriginatingStrategy.CalculatePL(CoreTradingSymbol, CurrentLTP, EntryPrice, Quantity, LotSize, StockType)
+                If Me.TradeCurrentStatus = TradeExecutionStatus.Close Then
+                    If EntryDirection = TradeExecutionDirection.Buy Then
+                        Return _OriginatingStrategy.CalculatePL(CoreTradingSymbol, EntryPrice, ExitPrice, Quantity, LotSize, StockType)
+                    ElseIf EntryDirection = TradeExecutionDirection.Sell Then
+                        Return _OriginatingStrategy.CalculatePL(CoreTradingSymbol, ExitPrice, EntryPrice, Quantity, LotSize, StockType)
+                    Else
+                        Return Double.MinValue
+                    End If
                 Else
-                    Return Double.MinValue
+                    If EntryDirection = TradeExecutionDirection.Buy Then
+                        Return _OriginatingStrategy.CalculatePL(CoreTradingSymbol, EntryPrice, CurrentLTP, Quantity, LotSize, StockType)
+                    ElseIf EntryDirection = TradeExecutionDirection.Sell Then
+                        Return _OriginatingStrategy.CalculatePL(CoreTradingSymbol, CurrentLTP, EntryPrice, Quantity, LotSize, StockType)
+                    Else
+                        Return Double.MinValue
+                    End If
                 End If
             End Get
         End Property
         Public ReadOnly Property PLBeforeBrokerage As Double
             Get
-                If Me.EntryDirection = TradeExecutionDirection.Buy Then
-                    Return ((Me.CurrentLTP - Me.EntryPrice) * Me.Quantity)
-                ElseIf Me.EntryDirection = TradeExecutionDirection.Sell Then
-                    Return ((Me.EntryPrice - Me.CurrentLTP) * Me.Quantity)
+                If Me.TradeCurrentStatus = TradeExecutionStatus.Close Then
+                    If Me.EntryDirection = TradeExecutionDirection.Buy Then
+                        Return ((Me.ExitPrice - Me.EntryPrice) * Me.Quantity)
+                    ElseIf Me.EntryDirection = TradeExecutionDirection.Sell Then
+                        Return ((Me.EntryPrice - Me.ExitPrice) * Me.Quantity)
+                    Else
+                        Return Double.MinValue
+                    End If
                 Else
-                    Return Double.MinValue
+                    If Me.EntryDirection = TradeExecutionDirection.Buy Then
+                        Return ((Me.CurrentLTP - Me.EntryPrice) * Me.Quantity)
+                    ElseIf Me.EntryDirection = TradeExecutionDirection.Sell Then
+                        Return ((Me.EntryPrice - Me.CurrentLTP) * Me.Quantity)
+                    Else
+                        Return Double.MinValue
+                    End If
                 End If
             End Get
         End Property
@@ -266,12 +286,22 @@ Namespace StrategyHelper
         End Property
         Public ReadOnly Property PLPoint As Double
             Get
-                If Me.EntryDirection = TradeExecutionDirection.Buy Then
-                    Return (Me.CurrentLTP - Me.EntryPrice)
-                ElseIf Me.EntryDirection = TradeExecutionDirection.Sell Then
-                    Return (Me.EntryPrice - Me.CurrentLTP)
+                If Me.TradeCurrentStatus = TradeExecutionStatus.Close Then
+                    If Me.EntryDirection = TradeExecutionDirection.Buy Then
+                        Return (Me.ExitPrice - Me.EntryPrice)
+                    ElseIf Me.EntryDirection = TradeExecutionDirection.Sell Then
+                        Return (Me.EntryPrice - Me.ExitPrice)
+                    Else
+                        Return Double.MinValue
+                    End If
                 Else
-                    Return Double.MinValue
+                    If Me.EntryDirection = TradeExecutionDirection.Buy Then
+                        Return (Me.CurrentLTP - Me.EntryPrice)
+                    ElseIf Me.EntryDirection = TradeExecutionDirection.Sell Then
+                        Return (Me.EntryPrice - Me.CurrentLTP)
+                    Else
+                        Return Double.MinValue
+                    End If
                 End If
             End Get
         End Property
