@@ -50,7 +50,7 @@ Public Class HKPositionalStrategyRule
                     If highestEntryPrice > signalReceivedForEntry.Item2 Then
                         quantity = 2
                     End If
-                    highestEntryPrice = Math.Max(highestEntryPrice, parameter.EntryPrice)
+                    highestEntryPrice = Math.Max(highestEntryPrice, signalReceivedForEntry.Item2)
 
                     parameter = New PlaceOrderParameters With {
                         .EntryPrice = signalReceivedForEntry.Item2,
