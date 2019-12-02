@@ -400,6 +400,7 @@ Public Class Common
         Dim connectionString As String = Nothing
         _cts.Token.ThrowIfCancellationRequested()
         Dim currentTradingSymbol As String = GetCurrentTradingSymbol(tableName, endDate, rawInstrumentName)
+        If tableName = DataBaseTable.EOD_POSITIONAL Then currentTradingSymbol = rawInstrumentName
         _cts.Token.ThrowIfCancellationRequested()
         Select Case tableName
             Case DataBaseTable.Intraday_Cash
