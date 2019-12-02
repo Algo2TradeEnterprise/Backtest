@@ -7,7 +7,6 @@ Public Class HKPositionalStrategyRule
     Inherits StrategyRule
 
     Private _hkPayload As Dictionary(Of Date, Payload)
-    Private _smaPayload As Dictionary(Of Date, Decimal)
 
     Private ReadOnly _stockSMAPercentage As Decimal
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
@@ -26,7 +25,6 @@ Public Class HKPositionalStrategyRule
         MyBase.CompletePreProcessing()
 
         Indicator.HeikenAshi.ConvertToHeikenAshi(_signalPayload, _hkPayload)
-        Indicator.SMA.CalculateSMA(200, Payload.PayloadFields.Close, _hkPayload, _smaPayload)
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -49,8 +47,8 @@ Public Class HKPositionalStrategyRule
                         .EntryPrice = signalReceivedForEntry.Item2,
                         .EntryDirection = Trade.TradeExecutionDirection.Buy,
                         .Quantity = 1,
-                        .Stoploss = .EntryPrice - ConvertFloorCeling(signalCandle.CandleRange, Me._parentStrategy.TickSize, RoundOfType.Celing),
-                        .Target = .EntryPrice + ConvertFloorCeling(signalCandle.CandleRange, Me._parentStrategy.TickSize, RoundOfType.Celing) * 2,
+                        .Stoploss = .EntryPrice - 1000000,
+                        .Target = .EntryPrice + 1000000,
                         .Buffer = 0,
                         .SignalCandle = signalCandle,
                         .OrderType = Trade.TypeOfOrder.SL
@@ -71,12 +69,6 @@ Public Class HKPositionalStrategyRule
     Public Overrides Async Function IsTriggerReceivedForExitCNCEODOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
-        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-            Dim signalReceivedForExit As Tuple(Of Boolean, Decimal, String) = GetSignalForExit(currentTick, currentTrade)
-            If signalReceivedForExit IsNot Nothing AndAlso signalReceivedForExit.Item1 Then
-                ret = New Tuple(Of Boolean, Decimal, String)(True, signalReceivedForExit.Item2, signalReceivedForExit.Item3)
-            End If
-        End If
         Return ret
     End Function
 
@@ -113,12 +105,8 @@ Public Class HKPositionalStrategyRule
                                                                 End Function)
             If runningPayload.Key < currentDayPayload.PayloadDate Then
                 If runningPayload.Value.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
-                    Dim sma As Decimal = _smaPayload(runningPayload.Key)
-                    Dim entryPoint As Decimal = ConvertFloorCeling(runningPayload.Value.High, Me._parentStrategy.TickSize, RoundOfType.Floor)
-                    If entryPoint >= sma Then
-                        ret = runningPayload.Value
-                        Exit For
-                    End If
+                    ret = runningPayload.Value
+                    Exit For
                 End If
             End If
         Next
@@ -144,21 +132,4 @@ Public Class HKPositionalStrategyRule
     End Function
 #End Region
 
-#Region "Exit Rule"
-    Private Function GetSignalForExit(ByVal currentTick As Payload, ByVal currentTrade As Trade) As Tuple(Of Boolean, Decimal, String)
-        Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
-        If _hkPayload IsNot Nothing AndAlso _hkPayload.Count > 0 AndAlso _hkPayload.ContainsKey(currentTick.PayloadDate.Date) Then
-            Dim currentDayPayload As Payload = _hkPayload(currentTick.PayloadDate.Date)
-            Dim sma As Decimal = _smaPayload(currentDayPayload.PayloadDate)
-            If currentDayPayload.Close < sma Then
-                ret = New Tuple(Of Boolean, Decimal, String)(True, currentDayPayload.Close, "Exit Below SMA")
-            ElseIf currentDayPayload.High >= currentTrade.PotentialTarget Then
-                ret = New Tuple(Of Boolean, Decimal, String)(True, currentTrade.PotentialTarget, "Target Reached")
-            ElseIf currentDayPayload.Low <= currentTrade.PotentialStopLoss Then
-                ret = New Tuple(Of Boolean, Decimal, String)(True, currentTrade.PotentialStopLoss, "Stoploss Reached")
-            End If
-        End If
-        Return ret
-    End Function
-#End Region
 End Class
