@@ -6,7 +6,6 @@ Imports Utilities.Numbers.NumberManipulation
 Public Class HKPositionalStrategyRule
     Inherits StrategyRule
 
-    Private _highestEntryPrice As Decimal = Decimal.MinValue
     Private _hkPayload As Dictionary(Of Date, Payload)
 
     Private ReadOnly _stockSMAPercentage As Decimal
@@ -44,10 +43,15 @@ Public Class HKPositionalStrategyRule
                 signalCandle = signalReceivedForEntry.Item3
 
                 If signalCandle IsNot Nothing Then
+                    Dim highestEntryPrice As Decimal = Decimal.MinValue
+                    Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, _parentStrategy.TradeType)
+                    If lastExecutedTrade IsNot Nothing Then highestEntryPrice = lastExecutedTrade.Supporting1
                     Dim quantity As Integer = 1
-                    If _highestEntryPrice > signalReceivedForEntry.Item2 Then
+                    If highestEntryPrice > signalReceivedForEntry.Item2 Then
                         quantity = 2
                     End If
+                    highestEntryPrice = Math.Max(highestEntryPrice, parameter.EntryPrice)
+
                     parameter = New PlaceOrderParameters With {
                         .EntryPrice = signalReceivedForEntry.Item2,
                         .EntryDirection = Trade.TradeExecutionDirection.Buy,
@@ -56,10 +60,10 @@ Public Class HKPositionalStrategyRule
                         .Target = .EntryPrice + 1000000,
                         .Buffer = 0,
                         .SignalCandle = signalCandle,
-                        .OrderType = Trade.TypeOfOrder.Market
+                        .OrderType = Trade.TypeOfOrder.Market,
+                        .Supporting1 = highestEntryPrice
                     }
 
-                    _highestEntryPrice = Math.Max(_highestEntryPrice, parameter.EntryPrice)
                 End If
             End If
         End If
