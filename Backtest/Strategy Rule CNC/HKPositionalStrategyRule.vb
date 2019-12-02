@@ -45,7 +45,7 @@ Public Class HKPositionalStrategyRule
 
                 If signalCandle IsNot Nothing Then
                     Dim quantity As Integer = 1
-                    If _highestEntryPrice > parameter.EntryPrice Then
+                    If _highestEntryPrice > signalReceivedForEntry.Item2 Then
                         quantity = 2
                     End If
                     parameter = New PlaceOrderParameters With {
