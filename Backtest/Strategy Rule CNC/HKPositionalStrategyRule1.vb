@@ -151,7 +151,9 @@ Public Class HKPositionalStrategyRule1
             Dim currentDayPayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
             If currentDayHKPayload.PreviousCandlePayload IsNot Nothing Then
                 If currentDayHKPayload.PreviousCandlePayload.CandleWicks.Top > currentDayHKPayload.PreviousCandlePayload.CandleWicks.Bottom Then
-
+                    If IsEligibleToTakeTrade(currentDayHKPayload.PreviousCandlePayload) Then
+                        ret = New Tuple(Of Boolean, Decimal, Payload)(True, currentDayPayload.Open, currentDayPayload.PreviousCandlePayload)
+                    End If
                 End If
             End If
         End If
