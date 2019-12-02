@@ -1083,10 +1083,11 @@ Public Class frmMain
                         Case 23
                             .RuleEntityData = New HKPositionalStrategyRule.StrategyRuleEntities With
                                 {.QuantityType = InvestmentCNCStrategyRule.TypeOfQuantity.Linear,
-                                 .QuntityForLinear = 2}
+                                 .QuntityForLinear = 2,
+                                 .Compounding = True}
                     End Select
 
-                    .NumberOfTradeableStockPerDay = 10
+                    .NumberOfTradeableStockPerDay = 1
 
                     .NumberOfTradesPerDay = Integer.MaxValue
                     .NumberOfTradesPerStockPerDay = Integer.MaxValue

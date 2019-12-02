@@ -60,7 +60,7 @@ Namespace StrategyHelper
                 TradesTaken = New Dictionary(Of Date, Dictionary(Of String, List(Of Trade)))
                 Me.AvailableCapital = Me.UsableCapital
                 While tradeCheckingDate <= endDate.Date
-                    Console.WriteLine(String.Format("Capital available:{0},{1},", tradeCheckingDate.ToShortDateString, Me.AvailableCapital))
+                    'Console.WriteLine(String.Format("Capital available:{0},{1},", tradeCheckingDate.ToShortDateString, Me.AvailableCapital))
                     _canceller.Token.ThrowIfCancellationRequested()
                     Dim stockList As Dictionary(Of String, StockDetails) = GetStockData(tradeCheckingDate)
                     _canceller.Token.ThrowIfCancellationRequested()

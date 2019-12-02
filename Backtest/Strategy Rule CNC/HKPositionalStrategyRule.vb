@@ -17,6 +17,7 @@ Public Class HKPositionalStrategyRule
 
         Public QuantityType As TypeOfQuantity
         Public QuntityForLinear As Integer
+        Public Compounding As Boolean
     End Class
 #End Region
 
@@ -103,6 +104,30 @@ Public Class HKPositionalStrategyRule
     Public Overrides Async Function IsTriggerReceivedForExitCNCEODOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
+        If _userInputs.Compounding AndAlso currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            Dim signalReceivedForEntry As Tuple(Of Boolean, Decimal, Payload) = GetSignalForEntry(currentTick)
+            If signalReceivedForEntry IsNot Nothing AndAlso signalReceivedForEntry.Item1 Then
+                If signalReceivedForEntry.Item3 IsNot Nothing Then
+                    Dim highestEntryPrice As Decimal = Decimal.MinValue
+                    Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, _parentStrategy.TradeType)
+                    If lastExecutedTrade IsNot Nothing Then highestEntryPrice = lastExecutedTrade.Supporting1
+                    Dim quantity As Integer = 1
+                    If highestEntryPrice > signalReceivedForEntry.Item2 Then
+                        Select Case _userInputs.QuantityType
+                            Case TypeOfQuantity.AP
+                                quantity = lastExecutedTrade.Quantity + 1
+                            Case TypeOfQuantity.GP
+                                quantity = lastExecutedTrade.Quantity * 2
+                            Case TypeOfQuantity.Linear
+                                quantity = _userInputs.QuntityForLinear
+                        End Select
+                    End If
+                    If quantity = 1 Then
+                        ret = New Tuple(Of Boolean, Decimal, String)(True, signalReceivedForEntry.Item2, "Compounding Exit")
+                    End If
+                End If
+            End If
+        End If
         Return ret
     End Function
 

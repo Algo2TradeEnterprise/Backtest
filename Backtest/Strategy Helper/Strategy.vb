@@ -538,7 +538,7 @@ Namespace StrategyHelper
                 ret = True
             Else
                 If Me.AvailableCapital < capitalToBeAdded Then
-                    Console.WriteLine(String.Format("Trade Neglected:{0},{1},{2}", tradeDate.ToShortDateString, tradingSymbol, usableTrade.EntryTime.ToString("HH:mm:ss")))
+                    Console.WriteLine(String.Format("Trade Neglected:{0},{1},{2}", tradeDate.ToShortDateString, tradingSymbol, usableTrade.EntryTime.ToString))
                 End If
             End If
             Return ret
