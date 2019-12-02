@@ -1227,9 +1227,16 @@ Namespace StrategyHelper
             Dim capitalRequired As Capital = New Capital
             Dim capitalToBeAdded As Decimal = 0
 
-            If CapitalMovement IsNot Nothing AndAlso CapitalMovement.Count > 0 AndAlso CapitalMovement.ContainsKey(currentDate.Date) Then
-                Dim capitalList As List(Of Capital) = CapitalMovement(currentDate.Date)
-                capitalToBeAdded = capitalList.LastOrDefault.RunningCapital
+            If CapitalMovement IsNot Nothing AndAlso CapitalMovement.Count > 0 Then
+                If Me.TradeType = Trade.TypeOfTrade.MIS Then
+                    If CapitalMovement.ContainsKey(currentDate.Date) Then
+                        Dim capitalList As List(Of Capital) = CapitalMovement(currentDate.Date)
+                        capitalToBeAdded = capitalList.LastOrDefault.RunningCapital
+                    End If
+                ElseIf Me.TradeType = Trade.TypeOfTrade.CNC Then
+                    Dim capitalList As List(Of Capital) = CapitalMovement.LastOrDefault.Value
+                    capitalToBeAdded = capitalList.LastOrDefault.RunningCapital
+                End If
             Else
                 If CapitalMovement Is Nothing Then CapitalMovement = New Dictionary(Of Date, List(Of Capital))
                 CapitalMovement.Add(currentDate.Date, New List(Of Capital))
