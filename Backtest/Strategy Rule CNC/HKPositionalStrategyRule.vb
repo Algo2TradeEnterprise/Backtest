@@ -6,8 +6,23 @@ Imports Utilities.Numbers.NumberManipulation
 Public Class HKPositionalStrategyRule
     Inherits StrategyRule
 
+#Region "Entity"
+    Enum TypeOfQuantity
+        Linear = 1
+        GP
+        AP
+    End Enum
+    Public Class StrategyRuleEntities
+        Inherits RuleEntities
+
+        Public QuantityType As TypeOfQuantity
+        Public QuntityForLinear As Integer
+    End Class
+#End Region
+
     Private _hkPayload As Dictionary(Of Date, Payload)
 
+    Private ReadOnly _userInputs As StrategyRuleEntities
     Private ReadOnly _stockSMAPercentage As Decimal
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -19,6 +34,7 @@ Public Class HKPositionalStrategyRule
                    ByVal stockSMAPer As Decimal)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _stockSMAPercentage = stockSMAPer
+        _userInputs = entities
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -48,7 +64,14 @@ Public Class HKPositionalStrategyRule
                     If lastExecutedTrade IsNot Nothing Then highestEntryPrice = lastExecutedTrade.Supporting1
                     Dim quantity As Integer = 1
                     If highestEntryPrice > signalReceivedForEntry.Item2 Then
-                        quantity = 2
+                        Select Case _userInputs.QuantityType
+                            Case TypeOfQuantity.AP
+                                quantity = lastExecutedTrade.Quantity + 1
+                            Case TypeOfQuantity.GP
+                                quantity = lastExecutedTrade.Quantity * 2
+                            Case TypeOfQuantity.Linear
+                                quantity = _userInputs.QuntityForLinear
+                        End Select
                     End If
                     highestEntryPrice = Math.Max(highestEntryPrice, signalReceivedForEntry.Item2)
 

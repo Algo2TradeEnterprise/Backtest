@@ -1080,6 +1080,10 @@ Public Class frmMain
                         Case 18
                             .RuleEntityData = New InvestmentCNCStrategyRule.StrategyRuleEntities With
                                 {.QuantityType = InvestmentCNCStrategyRule.TypeOfQuantity.AP}
+                        Case 23
+                            .RuleEntityData = New HKPositionalStrategyRule.StrategyRuleEntities With
+                                {.QuantityType = InvestmentCNCStrategyRule.TypeOfQuantity.Linear,
+                                 .QuntityForLinear = 2}
                     End Select
 
                     .NumberOfTradeableStockPerDay = 1
