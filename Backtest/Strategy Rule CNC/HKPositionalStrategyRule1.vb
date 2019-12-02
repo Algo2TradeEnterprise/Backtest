@@ -151,7 +151,7 @@ Public Class HKPositionalStrategyRule1
             Dim currentDayPayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
             If currentDayHKPayload.PreviousCandlePayload IsNot Nothing Then
                 If currentDayHKPayload.PreviousCandlePayload.CandleWicks.Top > currentDayHKPayload.PreviousCandlePayload.CandleWicks.Bottom Then
-                    If IsEligibleToTakeTrade(currentDayHKPayload.PreviousCandlePayload) Then
+                    If IsEligibleToTakeTrade(currentTick, currentDayHKPayload.PreviousCandlePayload) Then
                         ret = New Tuple(Of Boolean, Decimal, Payload)(True, currentDayPayload.Open, currentDayPayload.PreviousCandlePayload)
                     End If
                 End If
@@ -160,12 +160,14 @@ Public Class HKPositionalStrategyRule1
         Return ret
     End Function
 
-    Private Function IsEligibleToTakeTrade(ByVal signalCandle As Payload) As Boolean
+    Private Function IsEligibleToTakeTrade(ByVal currentTick As Payload, ByVal signalCandle As Payload) As Boolean
         Dim ret As Boolean = False
+        Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, _parentStrategy.TradeType)
         For Each runningPayload In _hkPayload.OrderByDescending(Function(x)
                                                                     Return x.Key
                                                                 End Function)
-            If runningPayload.Key < signalCandle.PayloadDate Then
+            If runningPayload.Key < signalCandle.PayloadDate AndAlso (lastExecutedTrade Is Nothing OrElse
+                runningPayload.Key >= lastExecutedTrade.EntryTime.Date) Then
                 If runningPayload.Value.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
                     ret = True
                     Exit For
