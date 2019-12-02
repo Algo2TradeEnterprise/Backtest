@@ -1239,8 +1239,8 @@ Namespace StrategyHelper
                 End If
             Else
                 If CapitalMovement Is Nothing Then CapitalMovement = New Dictionary(Of Date, List(Of Capital))
-                CapitalMovement.Add(currentDate.Date, New List(Of Capital))
             End If
+            If Not CapitalMovement.ContainsKey(currentDate.Date) Then CapitalMovement.Add(currentDate.Date, New List(Of Capital))
 
             Me.AvailableCapital = Me.AvailableCapital - capitalToBeInserted + capitalToBeReleased
             With capitalRequired
