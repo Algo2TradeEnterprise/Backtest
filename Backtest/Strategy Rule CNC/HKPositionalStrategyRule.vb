@@ -98,8 +98,9 @@ Public Class HKPositionalStrategyRule
         If _hkPayload IsNot Nothing AndAlso _hkPayload.Count > 0 AndAlso _hkPayload.ContainsKey(currentTick.PayloadDate.Date) Then
             Dim currentDayPayload As Payload = _hkPayload(currentTick.PayloadDate.Date)
             Dim lastEntrySignal As Payload = GetLastEntrySignal(currentDayPayload)
-            If IsEntrySignalStillValid(lastEntrySignal, currentDayPayload) Then
-                ret = New Tuple(Of Boolean, Decimal, Payload)(True, ConvertFloorCeling(lastEntrySignal.High, Me._parentStrategy.TickSize, RoundOfType.Floor), lastEntrySignal)
+            Dim entryPrice As Decimal = ConvertFloorCeling(lastEntrySignal.High, Me._parentStrategy.TickSize, RoundOfType.Floor)
+            If IsEntrySignalStillValid(lastEntrySignal, currentDayPayload) AndAlso currentDayPayload.High >= entryPrice Then
+                ret = New Tuple(Of Boolean, Decimal, Payload)(True, entryPrice, lastEntrySignal)
             End If
         End If
         Return ret
