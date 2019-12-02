@@ -56,7 +56,7 @@ Public Class HKPositionalStrategyRule
                         .Target = .EntryPrice + 1000000,
                         .Buffer = 0,
                         .SignalCandle = signalCandle,
-                        .OrderType = Trade.TypeOfOrder.SL
+                        .OrderType = Trade.TypeOfOrder.Market
                     }
 
                     _highestEntryPrice = Math.Max(_highestEntryPrice, parameter.EntryPrice)
