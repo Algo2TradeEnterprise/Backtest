@@ -1086,7 +1086,7 @@ Public Class frmMain
                                  .QuntityForLinear = 2,
                                  .Compounding = True}
                         Case 24
-                            .RuleEntityData = New HKPositionalStrategyRule.StrategyRuleEntities With
+                            .RuleEntityData = New HKPositionalStrategyRule1.StrategyRuleEntities With
                                 {.QuantityType = InvestmentCNCStrategyRule.TypeOfQuantity.Linear,
                                  .QuntityForLinear = 2,
                                  .Compounding = False}
