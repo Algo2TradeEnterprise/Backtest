@@ -154,6 +154,8 @@ Namespace StrategyHelper
                                             Throw New ApplicationException("Not a CNC strategy")
                                         Case 22
                                             Throw New ApplicationException("Not a CNC strategy")
+                                        Case 23
+                                            stockRule = New HKPositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -447,7 +449,7 @@ Namespace StrategyHelper
                                 If counter = Me.NumberOfTradeableStockPerDay Then Exit For
                                 'End If
                             Next
-                        Case 18
+                        Case 18, 23
                             For i = 1 To dt.Rows.Count - 1
                                 Dim rowDate As Date = dt.Rows(i)(0)
                                 'If rowDate.Date = tradingDate.Date Then

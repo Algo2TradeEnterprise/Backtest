@@ -1070,7 +1070,7 @@ Public Class frmMain
 
                 With backtestStrategy
                     '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Investment Stock List 06_08_18 to 06_08_18.csv")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Investment Stock List.csv")
 
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
@@ -1082,7 +1082,7 @@ Public Class frmMain
                                 {.QuantityType = InvestmentCNCStrategyRule.TypeOfQuantity.AP}
                     End Select
 
-                    .NumberOfTradeableStockPerDay = 200
+                    .NumberOfTradeableStockPerDay = 1
 
                     .NumberOfTradesPerDay = Integer.MaxValue
                     .NumberOfTradesPerStockPerDay = Integer.MaxValue

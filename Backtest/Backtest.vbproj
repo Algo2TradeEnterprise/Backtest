@@ -113,6 +113,7 @@
     <Compile Include="Strategy Helper\StrategyOutput.vb" />
     <Compile Include="Strategy Helper\StrategyRule.vb" />
     <Compile Include="Strategy Helper\Trade.vb" />
+    <Compile Include="Strategy Rule CNC\HKPositionalStrategyRule.vb" />
     <Compile Include="Strategy Rule CNC\InvestmentCNCStrategyRule.vb" />
     <Compile Include="Strategy Rule CNC\VijayCNCStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\CoinFlipAtResistanceStrategyRule.vb" />
