@@ -150,9 +150,12 @@ Public Class HKPositionalStrategyRule
         If _hkPayload IsNot Nothing AndAlso _hkPayload.Count > 0 AndAlso _hkPayload.ContainsKey(currentTick.PayloadDate.Date) Then
             Dim currentDayPayload As Payload = _hkPayload(currentTick.PayloadDate.Date)
             Dim sma As Decimal = _smaPayload(currentDayPayload.PayloadDate)
-
             If currentDayPayload.Close < sma Then
                 ret = New Tuple(Of Boolean, Decimal, String)(True, currentDayPayload.Close, "Exit Below SMA")
+            ElseIf currentDayPayload.High >= currentTrade.PotentialTarget Then
+                ret = New Tuple(Of Boolean, Decimal, String)(True, currentTrade.PotentialTarget, "Target Reached")
+            ElseIf currentDayPayload.Low <= currentTrade.PotentialStopLoss Then
+                ret = New Tuple(Of Boolean, Decimal, String)(True, currentTrade.PotentialStopLoss, "Stoploss Reached")
             End If
         End If
         Return ret
