@@ -1085,6 +1085,11 @@ Public Class frmMain
                                 {.QuantityType = InvestmentCNCStrategyRule.TypeOfQuantity.Linear,
                                  .QuntityForLinear = 2,
                                  .Compounding = True}
+                        Case 24
+                            .RuleEntityData = New HKPositionalStrategyRule.StrategyRuleEntities With
+                                {.QuantityType = InvestmentCNCStrategyRule.TypeOfQuantity.Linear,
+                                 .QuntityForLinear = 2,
+                                 .Compounding = False}
                     End Select
 
                     .NumberOfTradeableStockPerDay = 1
