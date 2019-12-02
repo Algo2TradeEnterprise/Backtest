@@ -1062,9 +1062,9 @@ Public Class frmMain
                                                                 stockType:=stockType,
                                                                 databaseTable:=database,
                                                                 dataSource:=sourceData,
-                                                                initialCapital:=150000,
-                                                                usableCapital:=100000,
-                                                                minimumEarnedCapitalToWithdraw:=200000,
+                                                                initialCapital:=Decimal.MaxValue / 2,
+                                                                usableCapital:=Decimal.MaxValue / 2,
+                                                                minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
                                                                 amountToBeWithdrawn:=50000)
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
@@ -1082,7 +1082,7 @@ Public Class frmMain
                                 {.QuantityType = InvestmentCNCStrategyRule.TypeOfQuantity.AP}
                         Case 23
                             .RuleEntityData = New HKPositionalStrategyRule.StrategyRuleEntities With
-                                {.QuantityType = InvestmentCNCStrategyRule.TypeOfQuantity.Linear,
+                                {.QuantityType = InvestmentCNCStrategyRule.TypeOfQuantity.GP,
                                  .QuntityForLinear = 2}
                     End Select
 
