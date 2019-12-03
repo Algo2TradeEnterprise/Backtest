@@ -1089,7 +1089,7 @@ Public Class frmMain
                             .RuleEntityData = New HKPositionalStrategyRule1.StrategyRuleEntities With
                                 {.QuantityType = InvestmentCNCStrategyRule.TypeOfQuantity.Linear,
                                  .QuntityForLinear = 2,
-                                 .Compounding = False}
+                                 .TypeOfExit = HKPositionalStrategyRule1.ExitType.CompoundingToMonthlyATR}
                     End Select
 
                     .NumberOfTradeableStockPerDay = 1
