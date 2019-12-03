@@ -158,6 +158,8 @@ Namespace StrategyHelper
                                             stockRule = New HKPositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                         Case 24
                                             stockRule = New HKPositionalStrategyRule1(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
+                                        Case 25
+                                            stockRule = New SMIHKPositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -452,7 +454,7 @@ Namespace StrategyHelper
                                 If counter = Me.NumberOfTradeableStockPerDay Then Exit For
                                 'End If
                             Next
-                        Case 18, 23, 24
+                        Case Else
                             For i = 1 To dt.Rows.Count - 1
                                 Dim rowDate As Date = dt.Rows(i)(0)
                                 'If rowDate.Date = tradingDate.Date Then
