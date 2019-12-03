@@ -408,13 +408,14 @@ Namespace StrategyHelper
                 End While   'Date Loop
 
                 'Serialization
-                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
-                    OnHeartbeat("Serializing Trades collection")
-                    SerializeFromCollectionUsingFileStream(Of Dictionary(Of Date, Dictionary(Of String, List(Of Trade))))(tradesFileName, TradesTaken, False)
-                End If
-                If CapitalMovement IsNot Nothing Then Utilities.Strings.SerializeFromCollection(Of Dictionary(Of Date, List(Of Capital)))(capitalFileName, CapitalMovement)
+                'If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
+                '    OnHeartbeat("Serializing Trades collection")
+                '    SerializeFromCollectionUsingFileStream(Of Dictionary(Of Date, Dictionary(Of String, List(Of Trade))))(tradesFileName, TradesTaken, False)
+                'End If
+                'If CapitalMovement IsNot Nothing Then Utilities.Strings.SerializeFromCollection(Of Dictionary(Of Date, List(Of Capital)))(capitalFileName, CapitalMovement)
 
-                PrintArrayToExcel(filename, tradesFileName, capitalFileName)
+                'PrintArrayToExcel(filename, tradesFileName, capitalFileName)
+                PrintArrayToExcel(filename, Nothing, Nothing)
             End If
         End Function
 
