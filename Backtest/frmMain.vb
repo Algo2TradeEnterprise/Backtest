@@ -1103,11 +1103,11 @@ Public Class frmMain
 
                                     filename = String.Format("CNC Wick Capital {0},QuantityType {1},TargetMul {2}",
                                                            If(backtestStrategy.UsableCapital = Decimal.MaxValue / 2, "∞", backtestStrategy.UsableCapital),
-                                                           CType(.RuleEntityData, HKPositionalStrategyRule.StrategyRuleEntities).QuantityType,
-                                                           CType(.RuleEntityData, HKPositionalStrategyRule.StrategyRuleEntities).TargetMultiplier)
+                                                           CType(.RuleEntityData, HKPositionalStrategyRule1.StrategyRuleEntities).QuantityType,
+                                                           CType(.RuleEntityData, HKPositionalStrategyRule1.StrategyRuleEntities).TargetMultiplier)
                             End Select
 
-                            .NumberOfTradeableStockPerDay = 1
+                            .NumberOfTradeableStockPerDay = 10
 
                             .NumberOfTradesPerDay = Integer.MaxValue
                             .NumberOfTradesPerStockPerDay = Integer.MaxValue
