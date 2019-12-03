@@ -1160,7 +1160,7 @@ Public Class frmMain
 
                     .TickBasedStrategy = True
                 End With
-                Dim filename As String = String.Format("CNC Wick Capital {0},QuantityType {1}",
+                Dim filename As String = String.Format("CNC SMI Capital {0},QuantityType {1}",
                                                         If(backtestStrategy.UsableCapital = Decimal.MaxValue / 2, "∞", backtestStrategy.UsableCapital),
                                                         CType(backtestStrategy.RuleEntityData, SMIHKPositionalStrategyRule.StrategyRuleEntities).QuantityType)
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
