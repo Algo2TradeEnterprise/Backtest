@@ -1153,7 +1153,7 @@ Public Class frmMain
                         {.QuantityType = SMIHKPositionalStrategyRule.TypeOfQuantity.Linear,
                          .QuntityForLinear = 2}
 
-                    .NumberOfTradeableStockPerDay = 10
+                    .NumberOfTradeableStockPerDay = 1
 
                     .NumberOfTradesPerDay = Integer.MaxValue
                     .NumberOfTradesPerStockPerDay = Integer.MaxValue
