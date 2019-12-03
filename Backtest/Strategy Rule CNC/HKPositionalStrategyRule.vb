@@ -51,7 +51,7 @@ Public Class HKPositionalStrategyRule
         Dim monthlyPayload As Dictionary(Of Date, Payload) = Common.ConvertDayPayloadsToMonth(_signalPayload)
         Dim hkMonthlyPayload As Dictionary(Of Date, Payload) = Nothing
         Indicator.HeikenAshi.ConvertToHeikenAshi(monthlyPayload, hkMonthlyPayload)
-        Indicator.ATR.CalculateATR(14, hkMonthlyPayload, _atrPayload, True)
+        Indicator.ATR.CalculateATR(14, hkMonthlyPayload, _atrPayload)
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
