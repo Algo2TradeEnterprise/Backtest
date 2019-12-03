@@ -114,7 +114,7 @@ Public Class HKPositionalStrategyRule1
                     Dim averageTradePrice As Decimal = totalCapitalUsedWithoutMargin / totalQuantity
                     If openActiveTrades IsNot Nothing AndAlso openActiveTrades.Count > 0 Then
                         For Each runningTrade In openActiveTrades
-                            runningTrade.UpdateTrade(Supporting2:=averageTradePrice)
+                            runningTrade.UpdateTrade(Supporting2:=ConvertFloorCeling(averageTradePrice, Me._parentStrategy.TickSize, RoundOfType.Floor))
                         Next
                     End If
                     parameter.Supporting2 = ConvertFloorCeling(averageTradePrice, Me._parentStrategy.TickSize, RoundOfType.Floor)
