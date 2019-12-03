@@ -9,8 +9,8 @@ Public Class HKPositionalStrategyRule
 #Region "Entity"
     Enum TypeOfQuantity
         Linear = 1
-        GP
         AP
+        GP
     End Enum
     Enum ExitType
         None = 1
@@ -23,6 +23,7 @@ Public Class HKPositionalStrategyRule
         Public QuantityType As TypeOfQuantity
         Public QuntityForLinear As Integer
         Public TypeOfExit As ExitType
+        Public TargetMultiplier As Decimal
     End Class
 #End Region
 
@@ -161,7 +162,7 @@ Public Class HKPositionalStrategyRule
             ElseIf _userInputs.TypeOfExit = ExitType.CompoundingToMonthlyATR Then
                 Dim currentDayPayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
                 Dim previousMonth As Date = New Date(currentDayPayload.PayloadDate.Year, currentDayPayload.PayloadDate.Month, 1).AddMonths(-1)
-                Dim atr As Decimal = ConvertFloorCeling(_atrPayload(previousMonth), Me._parentStrategy.TickSize, RoundOfType.Floor)
+                Dim atr As Decimal = ConvertFloorCeling(_atrPayload(previousMonth) * _userInputs.TargetMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
                 Dim averagePrice As Decimal = currentTrade.Supporting2
                 If currentDayPayload.High >= averagePrice + atr Then
                     ret = New Tuple(Of Boolean, Decimal, String)(True, averagePrice + atr, "Compunding Exit on Monthly ATR")

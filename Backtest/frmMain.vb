@@ -1049,7 +1049,10 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            Using backtestStrategy As New CNCEODGenericStrategy(canceller:=_canceller,
+            For qntyTyp As Integer = 1 To 2
+                For tgtMul As Decimal = 1 To 3
+                    Dim filename As String = Nothing
+                    Using backtestStrategy As New CNCEODGenericStrategy(canceller:=_canceller,
                                                                 exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                 exchangeEndTime:=TimeSpan.Parse("15:29:59"),
                                                                 tradeStartTime:=TimeSpan.Parse("09:15:00"),
@@ -1066,43 +1069,57 @@ Public Class frmMain
                                                                 usableCapital:=Decimal.MaxValue / 2,
                                                                 minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
                                                                 amountToBeWithdrawn:=50000)
-                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+                        AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                With backtestStrategy
-                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Investment Stock List.csv")
+                        With backtestStrategy
+                            '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Investment Stock List.csv")
 
-                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+                            .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                    Select Case .RuleNumber
-                        Case 10
-                            .RuleEntityData = New VijayCNCStrategyRule.StrategyRuleEntities With {.RefreshQuantityAtDayStart = False}
-                        Case 18
-                            .RuleEntityData = New InvestmentCNCStrategyRule.StrategyRuleEntities With
-                                {.QuantityType = InvestmentCNCStrategyRule.TypeOfQuantity.AP}
-                        Case 23
-                            .RuleEntityData = New HKPositionalStrategyRule.StrategyRuleEntities With
-                                {.QuantityType = InvestmentCNCStrategyRule.TypeOfQuantity.Linear,
-                                 .QuntityForLinear = 2,
-                                 .TypeOfExit = HKPositionalStrategyRule.ExitType.CompoundingToMonthlyATR}
-                        Case 24
-                            .RuleEntityData = New HKPositionalStrategyRule1.StrategyRuleEntities With
-                                {.QuantityType = InvestmentCNCStrategyRule.TypeOfQuantity.Linear,
-                                 .QuntityForLinear = 2,
-                                 .TypeOfExit = HKPositionalStrategyRule1.ExitType.CompoundingToMonthlyATR}
-                    End Select
+                            Select Case .RuleNumber
+                                Case 10
+                                    .RuleEntityData = New VijayCNCStrategyRule.StrategyRuleEntities With {.RefreshQuantityAtDayStart = False}
+                                Case 18
+                                    .RuleEntityData = New InvestmentCNCStrategyRule.StrategyRuleEntities With
+                                        {.QuantityType = InvestmentCNCStrategyRule.TypeOfQuantity.AP}
+                                Case 23
+                                    .RuleEntityData = New HKPositionalStrategyRule.StrategyRuleEntities With
+                                        {.QuantityType = qntyTyp,
+                                         .QuntityForLinear = 2,
+                                         .TargetMultiplier = tgtMul,
+                                         .TypeOfExit = HKPositionalStrategyRule.ExitType.CompoundingToMonthlyATR}
 
-                    .NumberOfTradeableStockPerDay = 1
+                                    filename = String.Format("CNC Candle Capital {0},QuantityType {1},TargetMul {2}",
+                                                           If(backtestStrategy.UsableCapital = Decimal.MaxValue / 2, "∞", backtestStrategy.UsableCapital),
+                                                           CType(.RuleEntityData, HKPositionalStrategyRule.StrategyRuleEntities).QuantityType,
+                                                           CType(.RuleEntityData, HKPositionalStrategyRule.StrategyRuleEntities).TargetMultiplier)
+                                Case 24
+                                    .RuleEntityData = New HKPositionalStrategyRule1.StrategyRuleEntities With
+                                        {.QuantityType = qntyTyp,
+                                         .QuntityForLinear = 2,
+                                         .TargetMultiplier = tgtMul,
+                                         .TypeOfExit = HKPositionalStrategyRule1.ExitType.CompoundingToMonthlyATR}
 
-                    .NumberOfTradesPerDay = Integer.MaxValue
-                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
+                                    filename = String.Format("CNC Wick Capital {0},QuantityType {1},TargetMul {2}",
+                                                           If(backtestStrategy.UsableCapital = Decimal.MaxValue / 2, "∞", backtestStrategy.UsableCapital),
+                                                           CType(.RuleEntityData, HKPositionalStrategyRule.StrategyRuleEntities).QuantityType,
+                                                           CType(.RuleEntityData, HKPositionalStrategyRule.StrategyRuleEntities).TargetMultiplier)
+                            End Select
 
-                    .TickBasedStrategy = True
-                End With
-                Dim filename As String = String.Format("CNC Output Capital {3} {0}_{1}_{2}", Now.Hour, Now.Minute, Now.Second,
-                                                   If(backtestStrategy.UsableCapital = Decimal.MaxValue / 2, "∞", backtestStrategy.UsableCapital))
-                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-            End Using
+                            .NumberOfTradeableStockPerDay = 1
+
+                            .NumberOfTradesPerDay = Integer.MaxValue
+                            .NumberOfTradesPerStockPerDay = Integer.MaxValue
+
+                            .TickBasedStrategy = True
+                        End With
+                        'Dim filename As String = String.Format("CNC Output Capital {3} {0}_{1}_{2}", Now.Hour, Now.Minute, Now.Second,
+                        '                                   If(backtestStrategy.UsableCapital = Decimal.MaxValue / 2, "∞", backtestStrategy.UsableCapital))
+                        Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                    End Using
+                Next
+            Next
         Catch ex As Exception
             MsgBox(ex.ToString, MsgBoxStyle.Critical)
         Finally
