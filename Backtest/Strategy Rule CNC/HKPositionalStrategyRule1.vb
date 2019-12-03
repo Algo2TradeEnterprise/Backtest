@@ -98,22 +98,22 @@ Public Class HKPositionalStrategyRule1
                         .Supporting1 = highestEntryPrice
                     }
 
+                    Dim totalCapitalUsedWithoutMargin As Decimal = 0
+                    Dim totalQuantity As Decimal = 0
                     Dim openActiveTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentMinuteCandlePayload, _parentStrategy.TradeType, Trade.TradeExecutionDirection.Buy)
                     If openActiveTrades IsNot Nothing AndAlso openActiveTrades.Count > 0 Then
-                        Dim totalCapitalUsedWithoutMargin As Decimal = 0
-                        Dim totalQuantity As Decimal = 0
                         For Each runningTrade In openActiveTrades
                             If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
                                 totalCapitalUsedWithoutMargin += runningTrade.EntryPrice * runningTrade.Quantity
                                 totalQuantity += runningTrade.Quantity
                             End If
                         Next
-                        totalCapitalUsedWithoutMargin += parameter.EntryPrice * parameter.Quantity
-                        totalQuantity += parameter.Quantity
-                        Dim averageTradePrice As Decimal = totalCapitalUsedWithoutMargin / totalQuantity
-
-                        parameter.Supporting2 = ConvertFloorCeling(averageTradePrice, Me._parentStrategy.TickSize, RoundOfType.Floor)
                     End If
+                    totalCapitalUsedWithoutMargin += parameter.EntryPrice * parameter.Quantity
+                    totalQuantity += parameter.Quantity
+                    Dim averageTradePrice As Decimal = totalCapitalUsedWithoutMargin / totalQuantity
+
+                    parameter.Supporting2 = ConvertFloorCeling(averageTradePrice, Me._parentStrategy.TickSize, RoundOfType.Floor)
                 End If
             End If
         End If
