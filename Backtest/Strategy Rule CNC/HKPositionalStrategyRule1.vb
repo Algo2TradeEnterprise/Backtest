@@ -22,7 +22,6 @@ Public Class HKPositionalStrategyRule1
 #End Region
 
     Private _hkPayload As Dictionary(Of Date, Payload)
-    Private _hkMonthlyPayload As Dictionary(Of Date, Payload)
     Private _atrPayload As Dictionary(Of Date, Decimal)
 
     Private ReadOnly _userInputs As StrategyRuleEntities
@@ -44,8 +43,10 @@ Public Class HKPositionalStrategyRule1
         MyBase.CompletePreProcessing()
 
         Indicator.HeikenAshi.ConvertToHeikenAshi(_signalPayload, _hkPayload)
-        _hkMonthlyPayload = Common.ConvertDayPayloadsToMonth(_hkPayload)
-        Indicator.ATR.CalculateATR(14, _hkMonthlyPayload, _atrPayload, True)
+        Dim monthlyPayload As Dictionary(Of Date, Payload) = Common.ConvertDayPayloadsToMonth(_signalPayload)
+        Dim hkMonthlyPayload As Dictionary(Of Date, Payload) = Nothing
+        Indicator.HeikenAshi.ConvertToHeikenAshi(monthlyPayload, hkMonthlyPayload)
+        Indicator.ATR.CalculateATR(14, hkMonthlyPayload, _atrPayload, True)
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
