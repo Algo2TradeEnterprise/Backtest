@@ -12,16 +12,22 @@ Public Class HKPositionalStrategyRule
         GP
         AP
     End Enum
+    Enum ExitType
+        None = 1
+        CompoundingToNextEntry
+        CompoundingToMonthlyATR
+    End Enum
     Public Class StrategyRuleEntities
         Inherits RuleEntities
 
         Public QuantityType As TypeOfQuantity
         Public QuntityForLinear As Integer
-        Public Compounding As Boolean
+        Public TypeOfExit As ExitType
     End Class
 #End Region
 
     Private _hkPayload As Dictionary(Of Date, Payload)
+    Private _atrPayload As Dictionary(Of Date, Decimal)
 
     Private ReadOnly _userInputs As StrategyRuleEntities
     Private ReadOnly _stockSMAPercentage As Decimal
@@ -42,6 +48,10 @@ Public Class HKPositionalStrategyRule
         MyBase.CompletePreProcessing()
 
         Indicator.HeikenAshi.ConvertToHeikenAshi(_signalPayload, _hkPayload)
+        Dim monthlyPayload As Dictionary(Of Date, Payload) = Common.ConvertDayPayloadsToMonth(_signalPayload)
+        Dim hkMonthlyPayload As Dictionary(Of Date, Payload) = Nothing
+        Indicator.HeikenAshi.ConvertToHeikenAshi(monthlyPayload, hkMonthlyPayload)
+        Indicator.ATR.CalculateATR(14, hkMonthlyPayload, _atrPayload, True)
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -88,6 +98,26 @@ Public Class HKPositionalStrategyRule
                         .Supporting1 = highestEntryPrice
                     }
 
+                    Dim totalCapitalUsedWithoutMargin As Decimal = 0
+                    Dim totalQuantity As Decimal = 0
+                    Dim openActiveTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentMinuteCandlePayload, _parentStrategy.TradeType, Trade.TradeExecutionDirection.Buy)
+                    If openActiveTrades IsNot Nothing AndAlso openActiveTrades.Count > 0 Then
+                        For Each runningTrade In openActiveTrades
+                            If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                                totalCapitalUsedWithoutMargin += runningTrade.EntryPrice * runningTrade.Quantity
+                                totalQuantity += runningTrade.Quantity
+                            End If
+                        Next
+                    End If
+                    totalCapitalUsedWithoutMargin += parameter.EntryPrice * parameter.Quantity
+                    totalQuantity += parameter.Quantity
+                    Dim averageTradePrice As Decimal = totalCapitalUsedWithoutMargin / totalQuantity
+                    If openActiveTrades IsNot Nothing AndAlso openActiveTrades.Count > 0 Then
+                        For Each runningTrade In openActiveTrades
+                            runningTrade.UpdateTrade(Supporting2:=ConvertFloorCeling(averageTradePrice, Me._parentStrategy.TickSize, RoundOfType.Floor))
+                        Next
+                    End If
+                    parameter.Supporting2 = ConvertFloorCeling(averageTradePrice, Me._parentStrategy.TickSize, RoundOfType.Floor)
                 End If
             End If
         End If
@@ -104,27 +134,37 @@ Public Class HKPositionalStrategyRule
     Public Overrides Async Function IsTriggerReceivedForExitCNCEODOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
-        If _userInputs.Compounding AndAlso currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-            Dim signalReceivedForEntry As Tuple(Of Boolean, Decimal, Payload) = GetSignalForEntry(currentTick)
-            If signalReceivedForEntry IsNot Nothing AndAlso signalReceivedForEntry.Item1 Then
-                If signalReceivedForEntry.Item3 IsNot Nothing Then
-                    Dim highestEntryPrice As Decimal = Decimal.MinValue
-                    Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, _parentStrategy.TradeType)
-                    If lastExecutedTrade IsNot Nothing Then highestEntryPrice = lastExecutedTrade.Supporting1
-                    Dim quantity As Integer = 1
-                    If highestEntryPrice > signalReceivedForEntry.Item2 Then
-                        Select Case _userInputs.QuantityType
-                            Case TypeOfQuantity.AP
-                                quantity = lastExecutedTrade.Quantity + 1
-                            Case TypeOfQuantity.GP
-                                quantity = lastExecutedTrade.Quantity * 2
-                            Case TypeOfQuantity.Linear
-                                quantity = _userInputs.QuntityForLinear
-                        End Select
+        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            If _userInputs.TypeOfExit = ExitType.CompoundingToNextEntry Then
+                Dim signalReceivedForEntry As Tuple(Of Boolean, Decimal, Payload) = GetSignalForEntry(currentTick)
+                If signalReceivedForEntry IsNot Nothing AndAlso signalReceivedForEntry.Item1 Then
+                    If signalReceivedForEntry.Item3 IsNot Nothing Then
+                        Dim highestEntryPrice As Decimal = Decimal.MinValue
+                        Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, _parentStrategy.TradeType)
+                        If lastExecutedTrade IsNot Nothing Then highestEntryPrice = lastExecutedTrade.Supporting1
+                        Dim quantity As Integer = 1
+                        If highestEntryPrice > signalReceivedForEntry.Item2 Then
+                            Select Case _userInputs.QuantityType
+                                Case TypeOfQuantity.AP
+                                    quantity = lastExecutedTrade.Quantity + 1
+                                Case TypeOfQuantity.GP
+                                    quantity = lastExecutedTrade.Quantity * 2
+                                Case TypeOfQuantity.Linear
+                                    quantity = _userInputs.QuntityForLinear
+                            End Select
+                        End If
+                        If quantity = 1 Then
+                            ret = New Tuple(Of Boolean, Decimal, String)(True, signalReceivedForEntry.Item2, "Compounding Exit on Next Entry")
+                        End If
                     End If
-                    If quantity = 1 Then
-                        ret = New Tuple(Of Boolean, Decimal, String)(True, signalReceivedForEntry.Item2, "Compounding Exit")
-                    End If
+                End If
+            ElseIf _userInputs.TypeOfExit = ExitType.CompoundingToMonthlyATR Then
+                Dim currentDayPayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
+                Dim previousMonth As Date = New Date(currentDayPayload.PayloadDate.Year, currentDayPayload.PayloadDate.Month, 1).AddMonths(-1)
+                Dim atr As Decimal = ConvertFloorCeling(_atrPayload(previousMonth), Me._parentStrategy.TickSize, RoundOfType.Floor)
+                Dim averagePrice As Decimal = currentTrade.Supporting2
+                If currentDayPayload.High >= averagePrice + atr Then
+                    ret = New Tuple(Of Boolean, Decimal, String)(True, averagePrice + atr, "Compunding Exit on Monthly ATR")
                 End If
             End If
         End If

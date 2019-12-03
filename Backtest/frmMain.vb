@@ -1084,7 +1084,7 @@ Public Class frmMain
                             .RuleEntityData = New HKPositionalStrategyRule.StrategyRuleEntities With
                                 {.QuantityType = InvestmentCNCStrategyRule.TypeOfQuantity.Linear,
                                  .QuntityForLinear = 2,
-                                 .Compounding = False}
+                                 .TypeOfExit = HKPositionalStrategyRule.ExitType.CompoundingToMonthlyATR}
                         Case 24
                             .RuleEntityData = New HKPositionalStrategyRule1.StrategyRuleEntities With
                                 {.QuantityType = InvestmentCNCStrategyRule.TypeOfQuantity.Linear,
