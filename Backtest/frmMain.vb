@@ -995,11 +995,11 @@ Public Class frmMain
                         Case 18
                             .RuleEntityData = New InvestmentCNCStrategyRule.StrategyRuleEntities With {.QuantityType = InvestmentCNCStrategyRule.TypeOfQuantity.Linear}
                         Case 26
-                            .RuleEntityData = New HKPositionalStrategyRule1.StrategyRuleEntities With
-                                        {.QuantityType = HKPositionalStrategyRule1.TypeOfQuantity.Linear,
+                            .RuleEntityData = New HKPositionalHourlyStrategyRule1.StrategyRuleEntities With
+                                        {.QuantityType = HKPositionalHourlyStrategyRule1.TypeOfQuantity.Linear,
                                          .QuntityForLinear = 2,
                                          .TargetMultiplier = 0.5,
-                                         .TypeOfExit = HKPositionalStrategyRule1.ExitType.CompoundingToMonthlyATR}
+                                         .TypeOfExit = HKPositionalHourlyStrategyRule1.ExitType.CompoundingToMonthlyATR}
                     End Select
 
                     .NumberOfTradeableStockPerDay = 1
