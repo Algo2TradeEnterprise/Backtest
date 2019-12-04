@@ -74,7 +74,8 @@ Public Class ATRPositionalStrategyRule
                     Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, _parentStrategy.TradeType)
                     If lastExecutedTrade IsNot Nothing Then highestEntryPrice = lastExecutedTrade.Supporting1
                     Dim quantity As Integer = 1
-                    If highestEntryPrice > signalReceivedForEntry.Item2 Then
+                    If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress AndAlso
+                        highestEntryPrice > signalReceivedForEntry.Item2 Then
                         Select Case _userInputs.QuantityType
                             Case TypeOfQuantity.AP
                                 quantity = lastExecutedTrade.Quantity + 1
