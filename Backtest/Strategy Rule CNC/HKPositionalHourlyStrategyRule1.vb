@@ -157,8 +157,7 @@ Public Class HKPositionalHourlyStrategyRule1
                     End If
                 End If
             ElseIf _userInputs.TypeOfExit = ExitType.CompoundingToMonthlyATR Then
-                Dim currentDayPayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
-                Dim previousMonth As Date = New Date(currentDayPayload.PayloadDate.Year, currentDayPayload.PayloadDate.Month, 1).AddMonths(-1)
+                Dim previousMonth As Date = New Date(currentTick.PayloadDate.Year, currentTick.PayloadDate.Month, 1).AddMonths(-1)
                 Dim atr As Decimal = ConvertFloorCeling(_atrPayload(previousMonth) * _userInputs.TargetMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
                 Dim averagePrice As Decimal = currentTrade.Supporting2
                 If currentTick.High >= averagePrice + atr Then
@@ -188,12 +187,12 @@ Public Class HKPositionalHourlyStrategyRule1
 #Region "Entry Rule"
     Private Function GetSignalForEntry(ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Payload)
         Dim ret As Tuple(Of Boolean, Decimal, Payload) = Nothing
-        If _hkPayload IsNot Nothing AndAlso _hkPayload.Count > 0 AndAlso _hkPayload.ContainsKey(currentTick.PayloadDate.Date) Then
+        If _hkPayload IsNot Nothing AndAlso _hkPayload.Count > 0 Then
             Dim currentMinuteHKCandlePayload As Payload = _hkPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
             If currentMinuteHKCandlePayload.PreviousCandlePayload IsNot Nothing Then
                 If currentMinuteHKCandlePayload.PreviousCandlePayload.CandleWicks.Top > currentMinuteHKCandlePayload.PreviousCandlePayload.CandleWicks.Bottom Then
                     If IsEligibleToTakeTrade(currentTick, currentMinuteHKCandlePayload.PreviousCandlePayload) Then
-                        ret = New Tuple(Of Boolean, Decimal, Payload)(True, currentMinuteHKCandlePayload.Open, currentMinuteHKCandlePayload.PreviousCandlePayload)
+                        ret = New Tuple(Of Boolean, Decimal, Payload)(True, currentTick.Open, currentMinuteHKCandlePayload.PreviousCandlePayload)
                     End If
                 End If
             End If

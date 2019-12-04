@@ -977,9 +977,9 @@ Public Class frmMain
                                                             stockType:=stockType,
                                                             databaseTable:=database,
                                                             dataSource:=sourceData,
-                                                            initialCapital:=20000,
-                                                            usableCapital:=15000,
-                                                            minimumEarnedCapitalToWithdraw:=25000,
+                                                            initialCapital:=Decimal.MaxValue / 2,
+                                                            usableCapital:=Decimal.MaxValue / 2,
+                                                            minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
                                                             amountToBeWithdrawn:=5000)
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
