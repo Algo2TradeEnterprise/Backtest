@@ -1174,8 +1174,9 @@ Public Class frmMain
 #End Region
 
 #Region "ATR Positional Strategy Rule"
-            For qntyTyp As Integer = 1 To 1
-                For tgtMul As Decimal = 1 To 1
+            Dim tgtMulList As List(Of Decimal) = New List(Of Decimal) From {0.5, 1, 2, 3}
+            For qntyTyp As Integer = 1 To 2
+                For Each tgtMul In tgtMulList
                     Dim filename As String = Nothing
                     Using backtestStrategy As New CNCEODGenericStrategy(canceller:=_canceller,
                                                                 exchangeStartTime:=TimeSpan.Parse("09:15:00"),
@@ -1215,7 +1216,7 @@ Public Class frmMain
                                                            CType(.RuleEntityData, ATRPositionalStrategyRule.StrategyRuleEntities).TargetMultiplier,
                                                            CType(.RuleEntityData, ATRPositionalStrategyRule.StrategyRuleEntities).EntryATRMultiplier)
 
-                            .NumberOfTradeableStockPerDay = 1
+                            .NumberOfTradeableStockPerDay = 10
 
                             .NumberOfTradesPerDay = Integer.MaxValue
                             .NumberOfTradesPerStockPerDay = Integer.MaxValue
