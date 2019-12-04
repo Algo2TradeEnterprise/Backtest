@@ -162,6 +162,8 @@ Namespace StrategyHelper
                                             stockRule = New SMIHKPositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                         Case 26
                                             Throw New ApplicationException("Not a CNC strategy")
+                                        Case 27
+                                            stockRule = New ATRPositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
