@@ -249,7 +249,7 @@ Public Class frmMain
         If rdbMIS.Checked Then
             Await Task.Run(AddressOf ViewDataMISAsync).ConfigureAwait(False)
         ElseIf rdbCNC.Checked Then
-            Await Task.Run(AddressOf ViewDataCNCEODAsync).ConfigureAwait(False)
+            Await Task.Run(AddressOf ViewDataCNCAsync).ConfigureAwait(False)
         End If
     End Sub
 
@@ -972,7 +972,7 @@ Public Class frmMain
                                                             eodExitTime:=TimeSpan.Parse("15:29:59"),
                                                             tickSize:=tick,
                                                             marginMultiplier:=margin,
-                                                            timeframe:=1,
+                                                            timeframe:=180,
                                                             heikenAshiCandle:=False,
                                                             stockType:=stockType,
                                                             databaseTable:=database,
@@ -994,6 +994,12 @@ Public Class frmMain
                             .RuleEntityData = New VijayCNCStrategyRule.StrategyRuleEntities With {.RefreshQuantityAtDayStart = False}
                         Case 18
                             .RuleEntityData = New InvestmentCNCStrategyRule.StrategyRuleEntities With {.QuantityType = InvestmentCNCStrategyRule.TypeOfQuantity.Linear}
+                        Case 26
+                            .RuleEntityData = New HKPositionalStrategyRule1.StrategyRuleEntities With
+                                        {.QuantityType = HKPositionalStrategyRule1.TypeOfQuantity.Linear,
+                                         .QuntityForLinear = 2,
+                                         .TargetMultiplier = 0.5,
+                                         .TypeOfExit = HKPositionalStrategyRule1.ExitType.CompoundingToMonthlyATR}
                     End Select
 
                     .NumberOfTradeableStockPerDay = 1
