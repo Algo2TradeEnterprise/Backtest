@@ -1175,58 +1175,62 @@ Public Class frmMain
 
 #Region "ATR Positional Strategy Rule"
             Dim tgtMulList As List(Of Decimal) = New List(Of Decimal) From {0.5, 1, 2, 3}
+            Dim atrMulList As List(Of Decimal) = New List(Of Decimal) From {0.5, 1.5}
             For qntyTyp As Integer = 1 To 2
-                For Each tgtMul In tgtMulList
-                    Dim filename As String = Nothing
-                    Using backtestStrategy As New CNCEODGenericStrategy(canceller:=_canceller,
-                                                                exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                                exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                                tradeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                                lastTradeEntryTime:=TimeSpan.Parse("15:29:59"),
-                                                                eodExitTime:=TimeSpan.Parse("15:29:59"),
-                                                                tickSize:=tick,
-                                                                marginMultiplier:=margin,
-                                                                timeframe:=1,
-                                                                heikenAshiCandle:=False,
-                                                                stockType:=stockType,
-                                                                databaseTable:=database,
-                                                                dataSource:=sourceData,
-                                                                initialCapital:=Decimal.MaxValue / 2,
-                                                                usableCapital:=Decimal.MaxValue / 2,
-                                                                minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
-                                                                amountToBeWithdrawn:=50000)
-                        AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+                For Each atrMul In atrMulList
+                    For Each tgtMul In tgtMulList
+                        If tgtMul < atrMul Then Continue For
+                        Dim filename As String = Nothing
+                        Using backtestStrategy As New CNCEODGenericStrategy(canceller:=_canceller,
+                                                                    exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                    exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                    tradeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                    lastTradeEntryTime:=TimeSpan.Parse("15:29:59"),
+                                                                    eodExitTime:=TimeSpan.Parse("15:29:59"),
+                                                                    tickSize:=tick,
+                                                                    marginMultiplier:=margin,
+                                                                    timeframe:=1,
+                                                                    heikenAshiCandle:=False,
+                                                                    stockType:=stockType,
+                                                                    databaseTable:=database,
+                                                                    dataSource:=sourceData,
+                                                                    initialCapital:=Decimal.MaxValue / 2,
+                                                                    usableCapital:=Decimal.MaxValue / 2,
+                                                                    minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
+                                                                    amountToBeWithdrawn:=50000)
+                            AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                        With backtestStrategy
-                            '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Investment Stock List.csv")
+                            With backtestStrategy
+                                '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
+                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Investment Stock List.csv")
 
-                            .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+                                .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                            .RuleEntityData = New ATRPositionalStrategyRule.StrategyRuleEntities With
-                                {.QuantityType = qntyTyp,
-                                 .QuntityForLinear = 2,
-                                 .TargetMultiplier = tgtMul,
-                                 .EntryATRMultiplier = 1,
-                                 .TypeOfExit = ATRPositionalStrategyRule.ExitType.CompoundingToMonthlyATR}
+                                .RuleEntityData = New ATRPositionalStrategyRule.StrategyRuleEntities With
+                                    {.QuantityType = qntyTyp,
+                                     .QuntityForLinear = 2,
+                                     .TargetMultiplier = tgtMul,
+                                     .EntryATRMultiplier = atrMul,
+                                     .TypeOfExit = ATRPositionalStrategyRule.ExitType.CompoundingToMonthlyATR}
 
-                            filename = String.Format("CNC ATR Capital {0},QuantityType {1},TargetMul {2},Entry ATR Mul {3}",
-                                                           If(backtestStrategy.UsableCapital = Decimal.MaxValue / 2, "∞", backtestStrategy.UsableCapital),
-                                                           CType(.RuleEntityData, ATRPositionalStrategyRule.StrategyRuleEntities).QuantityType,
-                                                           CType(.RuleEntityData, ATRPositionalStrategyRule.StrategyRuleEntities).TargetMultiplier,
-                                                           CType(.RuleEntityData, ATRPositionalStrategyRule.StrategyRuleEntities).EntryATRMultiplier)
+                                filename = String.Format("CNC ATR Capital {0},QuantityType {1},TargetMul {2},Entry ATR Mul {3}",
+                                                               If(backtestStrategy.UsableCapital = Decimal.MaxValue / 2, "∞", backtestStrategy.UsableCapital),
+                                                               CType(.RuleEntityData, ATRPositionalStrategyRule.StrategyRuleEntities).QuantityType,
+                                                               CType(.RuleEntityData, ATRPositionalStrategyRule.StrategyRuleEntities).TargetMultiplier,
+                                                               CType(.RuleEntityData, ATRPositionalStrategyRule.StrategyRuleEntities).EntryATRMultiplier)
 
-                            .NumberOfTradeableStockPerDay = 10
+                                .NumberOfTradeableStockPerDay = 10
 
-                            .NumberOfTradesPerDay = Integer.MaxValue
-                            .NumberOfTradesPerStockPerDay = Integer.MaxValue
+                                .NumberOfTradesPerDay = Integer.MaxValue
+                                .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
-                            .TickBasedStrategy = True
-                        End With
-                        'Dim filename As String = String.Format("CNC Output Capital {3} {0}_{1}_{2}", Now.Hour, Now.Minute, Now.Second,
-                        '                                   If(backtestStrategy.UsableCapital = Decimal.MaxValue / 2, "∞", backtestStrategy.UsableCapital))
-                        Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-                    End Using
+                                .TickBasedStrategy = True
+                            End With
+                            'Dim filename As String = String.Format("CNC Output Capital {3} {0}_{1}_{2}", Now.Hour, Now.Minute, Now.Second,
+                            '                                   If(backtestStrategy.UsableCapital = Decimal.MaxValue / 2, "∞", backtestStrategy.UsableCapital))
+                            Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                        End Using
+                    Next
                 Next
             Next
 #End Region
