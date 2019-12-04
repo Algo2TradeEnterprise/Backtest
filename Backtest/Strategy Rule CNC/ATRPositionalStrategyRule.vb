@@ -200,6 +200,8 @@ Public Class ATRPositionalStrategyRule
                         If currentDayPayload.Low <= entryPrice Then
                             ret = New Tuple(Of Boolean, Decimal, Payload)(True, entryPrice, currentDayPayload)
                         End If
+                    ElseIf lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
+                        ret = New Tuple(Of Boolean, Decimal, Payload)(True, lastExecutedTrade.ExitPrice, currentDayPayload)
                     End If
                 End If
             End If
