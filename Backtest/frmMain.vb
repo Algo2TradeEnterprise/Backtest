@@ -1292,7 +1292,10 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            Using backtestStrategy As New CNCCandleGenericStrategy(canceller:=_canceller,
+            Dim tgtMulList As List(Of Decimal) = New List(Of Decimal) From {0.5, 1, 2, 3}
+            For qntyTyp As Integer = 1 To 2
+                For Each tgtMul In tgtMulList
+                    Using backtestStrategy As New CNCCandleGenericStrategy(canceller:=_canceller,
                                                                     exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                     exchangeEndTime:=TimeSpan.Parse("15:29:59"),
                                                                     tradeStartTime:=TimeSpan.Parse("09:15:00"),
@@ -1309,35 +1312,38 @@ Public Class frmMain
                                                                     usableCapital:=Decimal.MaxValue / 2,
                                                                     minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
                                                                     amountToBeWithdrawn:=5000)
-                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+                        AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                With backtestStrategy
-                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Investment Stock List.csv")
+                        With backtestStrategy
+                            '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Investment Stock List.csv")
 
-                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+                            .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                    Select Case .RuleNumber
-                        Case 26
-                            .RuleEntityData = New HKPositionalHourlyStrategyRule1.StrategyRuleEntities With
-                                        {.QuantityType = HKPositionalHourlyStrategyRule1.TypeOfQuantity.Linear,
-                                         .QuntityForLinear = 2,
-                                         .TargetMultiplier = 0.5,
-                                         .TypeOfExit = HKPositionalHourlyStrategyRule1.ExitType.CompoundingToMonthlyATR}
-                    End Select
+                            Select Case .RuleNumber
+                                Case 26
+                                    .RuleEntityData = New HKPositionalHourlyStrategyRule1.StrategyRuleEntities With
+                                                {.QuantityType = qntyTyp,
+                                                 .QuntityForLinear = 2,
+                                                 .TargetMultiplier = tgtMul,
+                                                 .TypeOfExit = HKPositionalHourlyStrategyRule1.ExitType.CompoundingToMonthlyATR}
+                            End Select
 
-                    .NumberOfTradeableStockPerDay = 1
+                            .NumberOfTradeableStockPerDay = 1
 
-                    .NumberOfTradesPerDay = Integer.MaxValue
-                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
+                            .NumberOfTradesPerDay = Integer.MaxValue
+                            .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
-                    .TickBasedStrategy = True
-                End With
-                Dim filename As String = String.Format("CNC Output Capital {3} {0}_{1}_{2}", Now.Hour, Now.Minute, Now.Second,
-                                                   If(backtestStrategy.UsableCapital = Decimal.MaxValue / 2, "∞", backtestStrategy.UsableCapital))
-                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-            End Using
-
+                            .TickBasedStrategy = True
+                        End With
+                        Dim filename As String = String.Format("CNC Hourly Capital {0},QuantityType {1},TargetMul {2}",
+                                                                If(backtestStrategy.UsableCapital = Decimal.MaxValue / 2, "∞", backtestStrategy.UsableCapital),
+                                                                CType(backtestStrategy.RuleEntityData, HKPositionalHourlyStrategyRule1.StrategyRuleEntities).QuantityType,
+                                                                CType(backtestStrategy.RuleEntityData, HKPositionalHourlyStrategyRule1.StrategyRuleEntities).TargetMultiplier)
+                        Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                    End Using
+                Next
+            Next
         Catch ex As Exception
             MsgBox(ex.ToString, MsgBoxStyle.Critical)
         Finally
