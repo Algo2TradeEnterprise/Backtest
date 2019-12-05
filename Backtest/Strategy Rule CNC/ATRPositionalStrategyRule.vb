@@ -31,7 +31,7 @@ Public Class ATRPositionalStrategyRule
     Private _atrPayload As Dictionary(Of Date, Decimal)
 
     Private ReadOnly _userInputs As StrategyRuleEntities
-    Private ReadOnly _stockSMAPercentage As Decimal
+    Private ReadOnly _stockPrice As Decimal
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
                    ByVal parentStrategy As Strategy,
@@ -39,9 +39,9 @@ Public Class ATRPositionalStrategyRule
                    ByVal tradingSymbol As String,
                    ByVal canceller As CancellationTokenSource,
                    ByVal entities As RuleEntities,
-                   ByVal stockSMAPer As Decimal)
+                   ByVal stockPrice As Decimal)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
-        _stockSMAPercentage = stockSMAPer
+        _stockPrice = stockPrice
         _userInputs = entities
     End Sub
 
@@ -193,17 +193,21 @@ Public Class ATRPositionalStrategyRule
             If currentDayPayload.PreviousCandlePayload IsNot Nothing Then
                 Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, _parentStrategy.TradeType)
                 If lastExecutedTrade Is Nothing Then
-                    ret = New Tuple(Of Boolean, Decimal, Payload)(True, currentDayPayload.Open, currentDayPayload)
+                    Dim previousMonth As Date = New Date(currentDayPayload.PayloadDate.Year, currentDayPayload.PayloadDate.Month, 1).AddMonths(-1)
+                    Dim atr As Decimal = ConvertFloorCeling(_atrPayload(previousMonth) * _userInputs.EntryATRMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
+                    Dim entryPrice As Decimal = _stockPrice - atr
+                    If currentDayPayload.Low <= entryPrice Then
+                        ret = New Tuple(Of Boolean, Decimal, Payload)(True, entryPrice, currentDayPayload)
+                    End If
                 Else
-                    If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-                        Dim previousMonth As Date = New Date(currentDayPayload.PayloadDate.Year, currentDayPayload.PayloadDate.Month, 1).AddMonths(-1)
-                        Dim atr As Decimal = ConvertFloorCeling(_atrPayload(previousMonth) * _userInputs.EntryATRMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
-                        Dim entryPrice As Decimal = lastExecutedTrade.EntryPrice - atr
-                        If currentDayPayload.Low <= entryPrice Then
-                            ret = New Tuple(Of Boolean, Decimal, Payload)(True, entryPrice, currentDayPayload)
-                        End If
-                    ElseIf lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
-                        ret = New Tuple(Of Boolean, Decimal, Payload)(True, lastExecutedTrade.ExitPrice, currentDayPayload)
+                    Dim previousMonth As Date = New Date(currentDayPayload.PayloadDate.Year, currentDayPayload.PayloadDate.Month, 1).AddMonths(-1)
+                    Dim atr As Decimal = ConvertFloorCeling(_atrPayload(previousMonth) * _userInputs.EntryATRMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
+                    Dim entryPrice As Decimal = lastExecutedTrade.EntryPrice - atr
+                    If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
+                        entryPrice = lastExecutedTrade.ExitPrice - atr
+                    End If
+                    If currentDayPayload.Low <= entryPrice Then
+                        ret = New Tuple(Of Boolean, Decimal, Payload)(True, entryPrice, currentDayPayload)
                     End If
                 End If
             End If

@@ -1175,29 +1175,29 @@ Public Class frmMain
 
 #Region "ATR Positional Strategy Rule"
             Dim tgtMulList As List(Of Decimal) = New List(Of Decimal) From {0.5, 1, 2, 3}
-            Dim atrMulList As List(Of Decimal) = New List(Of Decimal) From {0.5, 1.5}
+            Dim atrMulList As List(Of Decimal) = New List(Of Decimal) From {0.3, 0.5, 0.7, 0.9}
             For qntyTyp As Integer = 1 To 2
                 For Each atrMul In atrMulList
                     For Each tgtMul In tgtMulList
                         If tgtMul < atrMul Then Continue For
                         Dim filename As String = Nothing
                         Using backtestStrategy As New CNCEODGenericStrategy(canceller:=_canceller,
-                                                                    exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                                    exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                                    tradeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                                    lastTradeEntryTime:=TimeSpan.Parse("15:29:59"),
-                                                                    eodExitTime:=TimeSpan.Parse("15:29:59"),
-                                                                    tickSize:=tick,
-                                                                    marginMultiplier:=margin,
-                                                                    timeframe:=1,
-                                                                    heikenAshiCandle:=False,
-                                                                    stockType:=stockType,
-                                                                    databaseTable:=database,
-                                                                    dataSource:=sourceData,
-                                                                    initialCapital:=Decimal.MaxValue / 2,
-                                                                    usableCapital:=Decimal.MaxValue / 2,
-                                                                    minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
-                                                                    amountToBeWithdrawn:=50000)
+                                                                            exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                            exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                            tradeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                            lastTradeEntryTime:=TimeSpan.Parse("15:29:59"),
+                                                                            eodExitTime:=TimeSpan.Parse("15:29:59"),
+                                                                            tickSize:=tick,
+                                                                            marginMultiplier:=margin,
+                                                                            timeframe:=1,
+                                                                            heikenAshiCandle:=False,
+                                                                            stockType:=stockType,
+                                                                            databaseTable:=database,
+                                                                            dataSource:=sourceData,
+                                                                            initialCapital:=Decimal.MaxValue / 2,
+                                                                            usableCapital:=Decimal.MaxValue / 2,
+                                                                            minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
+                                                                            amountToBeWithdrawn:=50000)
                             AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                             With backtestStrategy
