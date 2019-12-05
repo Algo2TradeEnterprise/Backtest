@@ -36,8 +36,10 @@ Partial Class frmMain
         Me.dtpckrEndDate = New System.Windows.Forms.DateTimePicker()
         Me.btnStop = New System.Windows.Forms.Button()
         Me.grpbxStrategyType = New System.Windows.Forms.GroupBox()
-        Me.rdbCNC = New System.Windows.Forms.RadioButton()
+        Me.rdbCNCTick = New System.Windows.Forms.RadioButton()
         Me.rdbMIS = New System.Windows.Forms.RadioButton()
+        Me.rdbCNCEOD = New System.Windows.Forms.RadioButton()
+        Me.rdbCNCCandle = New System.Windows.Forms.RadioButton()
         Me.grpbxDataSource.SuspendLayout()
         Me.grpbxStrategyType.SuspendLayout()
         Me.SuspendLayout()
@@ -170,40 +172,63 @@ Partial Class frmMain
         '
         'grpbxStrategyType
         '
-        Me.grpbxStrategyType.Controls.Add(Me.rdbCNC)
+        Me.grpbxStrategyType.Controls.Add(Me.rdbCNCEOD)
+        Me.grpbxStrategyType.Controls.Add(Me.rdbCNCCandle)
+        Me.grpbxStrategyType.Controls.Add(Me.rdbCNCTick)
         Me.grpbxStrategyType.Controls.Add(Me.rdbMIS)
         Me.grpbxStrategyType.Location = New System.Drawing.Point(476, 66)
         Me.grpbxStrategyType.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
         Me.grpbxStrategyType.Name = "grpbxStrategyType"
         Me.grpbxStrategyType.Padding = New System.Windows.Forms.Padding(3, 2, 3, 2)
-        Me.grpbxStrategyType.Size = New System.Drawing.Size(187, 57)
+        Me.grpbxStrategyType.Size = New System.Drawing.Size(187, 72)
         Me.grpbxStrategyType.TabIndex = 29
         Me.grpbxStrategyType.TabStop = False
         Me.grpbxStrategyType.Text = "Strategy Type"
         '
-        'rdbCNC
+        'rdbCNCTick
         '
-        Me.rdbCNC.AutoSize = True
-        Me.rdbCNC.Location = New System.Drawing.Point(115, 25)
-        Me.rdbCNC.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
-        Me.rdbCNC.Name = "rdbCNC"
-        Me.rdbCNC.Size = New System.Drawing.Size(57, 21)
-        Me.rdbCNC.TabIndex = 1
-        Me.rdbCNC.Text = "CNC"
-        Me.rdbCNC.UseVisualStyleBackColor = True
+        Me.rdbCNCTick.AutoSize = True
+        Me.rdbCNCTick.Location = New System.Drawing.Point(96, 22)
+        Me.rdbCNCTick.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
+        Me.rdbCNCTick.Name = "rdbCNCTick"
+        Me.rdbCNCTick.Size = New System.Drawing.Size(87, 21)
+        Me.rdbCNCTick.TabIndex = 1
+        Me.rdbCNCTick.Text = "CNC Tick"
+        Me.rdbCNCTick.UseVisualStyleBackColor = True
         '
         'rdbMIS
         '
         Me.rdbMIS.AutoSize = True
         Me.rdbMIS.Checked = True
-        Me.rdbMIS.Location = New System.Drawing.Point(7, 23)
+        Me.rdbMIS.Location = New System.Drawing.Point(7, 20)
         Me.rdbMIS.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
         Me.rdbMIS.Name = "rdbMIS"
         Me.rdbMIS.Size = New System.Drawing.Size(52, 21)
         Me.rdbMIS.TabIndex = 0
-        Me.rdbMIS.TabStop = True
         Me.rdbMIS.Text = "MIS"
         Me.rdbMIS.UseVisualStyleBackColor = True
+        '
+        'rdbCNCEOD
+        '
+        Me.rdbCNCEOD.AutoSize = True
+        Me.rdbCNCEOD.Location = New System.Drawing.Point(97, 46)
+        Me.rdbCNCEOD.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
+        Me.rdbCNCEOD.Name = "rdbCNCEOD"
+        Me.rdbCNCEOD.Size = New System.Drawing.Size(91, 21)
+        Me.rdbCNCEOD.TabIndex = 3
+        Me.rdbCNCEOD.Text = "CNC EOD"
+        Me.rdbCNCEOD.UseVisualStyleBackColor = True
+        '
+        'rdbCNCCandle
+        '
+        Me.rdbCNCCandle.AutoSize = True
+        Me.rdbCNCCandle.Location = New System.Drawing.Point(7, 46)
+        Me.rdbCNCCandle.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
+        Me.rdbCNCCandle.Name = "rdbCNCCandle"
+        Me.rdbCNCCandle.Size = New System.Drawing.Size(89, 21)
+        Me.rdbCNCCandle.TabIndex = 2
+        Me.rdbCNCCandle.Text = "CNC Cndl"
+        Me.rdbCNCCandle.UseVisualStyleBackColor = True
         '
         'frmMain
         '
@@ -248,6 +273,8 @@ Partial Class frmMain
     Friend WithEvents dtpckrEndDate As DateTimePicker
     Friend WithEvents btnStop As Button
     Friend WithEvents grpbxStrategyType As GroupBox
-    Friend WithEvents rdbCNC As RadioButton
+    Friend WithEvents rdbCNCTick As RadioButton
     Friend WithEvents rdbMIS As RadioButton
+    Friend WithEvents rdbCNCEOD As RadioButton
+    Friend WithEvents rdbCNCCandle As RadioButton
 End Class

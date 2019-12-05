@@ -129,8 +129,12 @@ Public Class HKPositionalHourlyStrategyRule1
         Return ret
     End Function
 
-    Public Overrides Async Function IsTriggerReceivedForExitOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, String))
-        Dim ret As Tuple(Of Boolean, String) = Nothing
+    Public Overrides Function IsTriggerReceivedForExitOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, String))
+        Throw New NotImplementedException
+    End Function
+
+    Public Overrides Async Function IsTriggerReceivedForExitCNCEODOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
+        Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
             If _userInputs.TypeOfExit = ExitType.CompoundingToNextEntry Then
@@ -152,24 +156,21 @@ Public Class HKPositionalHourlyStrategyRule1
                             End Select
                         End If
                         If quantity = 1 Then
-                            ret = New Tuple(Of Boolean, String)(True, "Compounding Exit on Next Entry")
+                            ret = New Tuple(Of Boolean, Decimal, String)(True, signalReceivedForEntry.Item2, "Compounding Exit on Next Entry")
                         End If
                     End If
                 End If
             ElseIf _userInputs.TypeOfExit = ExitType.CompoundingToMonthlyATR Then
-                Dim previousMonth As Date = New Date(currentTick.PayloadDate.Year, currentTick.PayloadDate.Month, 1).AddMonths(-1)
+                Dim currentMinutePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
+                Dim previousMonth As Date = New Date(currentMinutePayload.PayloadDate.Year, currentMinutePayload.PayloadDate.Month, 1).AddMonths(-1)
                 Dim atr As Decimal = ConvertFloorCeling(_atrPayload(previousMonth) * _userInputs.TargetMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
                 Dim averagePrice As Decimal = currentTrade.Supporting2
-                If currentTick.High >= averagePrice + atr Then
-                    ret = New Tuple(Of Boolean, String)(True, "Compunding Exit on Monthly ATR")
+                If currentMinutePayload.High >= averagePrice + atr Then
+                    ret = New Tuple(Of Boolean, Decimal, String)(True, averagePrice + atr, "Compunding Exit on Monthly ATR")
                 End If
             End If
         End If
         Return ret
-    End Function
-
-    Public Overrides Function IsTriggerReceivedForExitCNCEODOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
-        Throw New NotImplementedException()
     End Function
 
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))

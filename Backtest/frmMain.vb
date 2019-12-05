@@ -223,7 +223,9 @@ Public Class frmMain
         rdbDatabase.Checked = My.Settings.Database
         rdbLive.Checked = My.Settings.Live
         rdbMIS.Checked = My.Settings.MIS
-        rdbCNC.Checked = My.Settings.CNC
+        rdbCNCTick.Checked = My.Settings.CNCTick
+        rdbCNCCandle.Checked = My.Settings.CNCCandle
+        rdbCNCEOD.Checked = My.Settings.CNCEOD
         If My.Settings.StartDate <> Date.MinValue Then
             dtpckrStartDate.Value = My.Settings.StartDate
         End If
@@ -241,18 +243,25 @@ Public Class frmMain
         My.Settings.Database = rdbDatabase.Checked
         My.Settings.Live = rdbLive.Checked
         My.Settings.MIS = rdbMIS.Checked
-        My.Settings.CNC = rdbCNC.Checked
+        My.Settings.CNCTick = rdbCNCTick.Checked
+        My.Settings.CNCEOD = rdbCNCEOD.Checked
+        My.Settings.CNCCandle = rdbCNCCandle.Checked
         My.Settings.StartDate = dtpckrStartDate.Value
         My.Settings.EndDate = dtpckrEndDate.Value
         My.Settings.Save()
 
         If rdbMIS.Checked Then
             Await Task.Run(AddressOf ViewDataMISAsync).ConfigureAwait(False)
-        ElseIf rdbCNC.Checked Then
+        ElseIf rdbCNCTick.Checked Then
+            Await Task.Run(AddressOf ViewDataCNCAsync).ConfigureAwait(False)
+        ElseIf rdbCNCEOD.Checked Then
             Await Task.Run(AddressOf ViewDataCNCEODAsync).ConfigureAwait(False)
+        ElseIf rdbCNCCandle.Checked Then
+            Await Task.Run(AddressOf ViewDataCNCCandleAsync).ConfigureAwait(False)
         End If
     End Sub
 
+#Region "MIS"
     Private Async Function ViewDataMISAsync() As Task
         Try
             Dim startDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrStartDate)
@@ -930,7 +939,9 @@ Public Class frmMain
             SetObjectEnableDisable_ThreadSafe(btnStop, False)
         End Try
     End Function
+#End Region
 
+#Region "CNC Tick"
     Private Async Function ViewDataCNCAsync() As Task
         Try
             Dim startDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrStartDate)
@@ -1021,7 +1032,9 @@ Public Class frmMain
             SetObjectEnableDisable_ThreadSafe(btnStop, False)
         End Try
     End Function
+#End Region
 
+#Region "CNC EOD"
     Private Async Function ViewDataCNCEODAsync() As Task
         Try
             Dim startDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrStartDate)
@@ -1243,6 +1256,97 @@ Public Class frmMain
             SetObjectEnableDisable_ThreadSafe(btnStop, False)
         End Try
     End Function
+#End Region
+
+#Region "CNC Candle"
+    Private Async Function ViewDataCNCCandleAsync() As Task
+        Try
+            Dim startDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrStartDate)
+            Dim endDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrEndDate)
+            Dim sourceData As Strategy.SourceOfData = Strategy.SourceOfData.None
+            If GetRadioButtonChecked_ThreadSafe(rdbLive) Then
+                sourceData = Strategy.SourceOfData.Live
+            Else
+                sourceData = Strategy.SourceOfData.Database
+            End If
+            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
+            Dim database As Common.DataBaseTable = Common.DataBaseTable.None
+            Dim margin As Decimal = 0
+            Dim tick As Decimal = 0
+            Select Case stockType
+                Case Trade.TypeOfStock.Cash
+                    database = Common.DataBaseTable.Intraday_Cash
+                    margin = 1
+                    tick = 0.05
+                Case Trade.TypeOfStock.Commodity
+                    database = Common.DataBaseTable.Intraday_Commodity
+                    margin = 1
+                    tick = 1
+                Case Trade.TypeOfStock.Currency
+                    database = Common.DataBaseTable.Intraday_Currency
+                    margin = 1
+                    tick = 0.0025
+                Case Trade.TypeOfStock.Futures
+                    database = Common.DataBaseTable.Intraday_Futures
+                    margin = 1
+                    tick = 0.05
+            End Select
+
+            Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
+                                                            exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                            exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                            tradeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                            lastTradeEntryTime:=TimeSpan.Parse("15:29:59"),
+                                                            eodExitTime:=TimeSpan.Parse("15:29:59"),
+                                                            tickSize:=tick,
+                                                            marginMultiplier:=margin,
+                                                            timeframe:=180,
+                                                            heikenAshiCandle:=False,
+                                                            stockType:=stockType,
+                                                            databaseTable:=database,
+                                                            dataSource:=sourceData,
+                                                            initialCapital:=Decimal.MaxValue / 2,
+                                                            usableCapital:=Decimal.MaxValue / 2,
+                                                            minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
+                                                            amountToBeWithdrawn:=5000)
+                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+
+                With backtestStrategy
+                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Investment Stock List.csv")
+
+                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+
+                    Select Case .RuleNumber
+                        Case 26
+                            .RuleEntityData = New HKPositionalHourlyStrategyRule1.StrategyRuleEntities With
+                                        {.QuantityType = HKPositionalHourlyStrategyRule1.TypeOfQuantity.Linear,
+                                         .QuntityForLinear = 2,
+                                         .TargetMultiplier = 0.5,
+                                         .TypeOfExit = HKPositionalHourlyStrategyRule1.ExitType.CompoundingToMonthlyATR}
+                    End Select
+
+                    .NumberOfTradeableStockPerDay = 1
+
+                    .NumberOfTradesPerDay = Integer.MaxValue
+                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
+
+                    .TickBasedStrategy = True
+                End With
+                Dim filename As String = String.Format("CNC Output Capital {3} {0}_{1}_{2}", Now.Hour, Now.Minute, Now.Second,
+                                                   If(backtestStrategy.UsableCapital = Decimal.MaxValue / 2, "∞", backtestStrategy.UsableCapital))
+                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+            End Using
+
+        Catch ex As Exception
+            MsgBox(ex.ToString, MsgBoxStyle.Critical)
+        Finally
+            OnHeartbeat("Process Complete")
+            SetObjectEnableDisable_ThreadSafe(btnStart, True)
+            SetObjectEnableDisable_ThreadSafe(btnStop, False)
+        End Try
+    End Function
+#End Region
 
     Private Sub btnStop_Click(sender As Object, e As EventArgs) Handles btnStop.Click
         _canceller.Cancel()

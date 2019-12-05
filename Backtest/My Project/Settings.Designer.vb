@@ -127,12 +127,36 @@ Namespace My
         <Global.System.Configuration.UserScopedSettingAttribute(),  _
          Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
          Global.System.Configuration.DefaultSettingValueAttribute("False")>  _
-        Public Property CNC() As Boolean
+        Public Property CNCTick() As Boolean
             Get
-                Return CType(Me("CNC"),Boolean)
+                Return CType(Me("CNCTick"),Boolean)
             End Get
             Set
-                Me("CNC") = value
+                Me("CNCTick") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("False")>  _
+        Public Property CNCEOD() As Boolean
+            Get
+                Return CType(Me("CNCEOD"),Boolean)
+            End Get
+            Set
+                Me("CNCEOD") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("False")>  _
+        Public Property CNCCandle() As Boolean
+            Get
+                Return CType(Me("CNCCandle"),Boolean)
+            End Get
+            Set
+                Me("CNCCandle") = value
             End Set
         End Property
     End Class
