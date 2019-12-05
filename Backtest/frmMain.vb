@@ -1176,8 +1176,8 @@ Public Class frmMain
 #Region "ATR Positional Strategy Rule"
             Dim tgtMulList As List(Of Decimal) = New List(Of Decimal) From {0.5, 1, 2, 3}
             Dim atrMulList As List(Of Decimal) = New List(Of Decimal) From {0.3, 0.5, 0.7, 0.9}
-            For qntyTyp As Integer = 1 To 2
-                For Each atrMul In atrMulList
+            For Each atrMul In atrMulList
+                For qntyTyp As Integer = 1 To 2
                     For Each tgtMul In tgtMulList
                         If tgtMul < atrMul Then Continue For
                         Dim filename As String = Nothing
