@@ -1329,7 +1329,7 @@ Public Class frmMain
                                                  .TypeOfExit = HKPositionalHourlyStrategyRule1.ExitType.CompoundingToMonthlyATR}
                             End Select
 
-                            .NumberOfTradeableStockPerDay = 1
+                            .NumberOfTradeableStockPerDay = 10
 
                             .NumberOfTradesPerDay = Integer.MaxValue
                             .NumberOfTradesPerStockPerDay = Integer.MaxValue
