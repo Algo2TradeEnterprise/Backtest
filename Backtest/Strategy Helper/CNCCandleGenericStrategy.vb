@@ -96,7 +96,6 @@ Namespace StrategyHelper
                                     If runningPayload.Date = tradeCheckingDate.Date Then
                                         If currentDayPayload Is Nothing Then currentDayPayload = New Dictionary(Of Date, Payload)
                                         currentDayPayload.Add(runningPayload, XDayPayload(runningPayload))
-                                        Exit For
                                     End If
                                 Next
                                 'Add all these payloads into the stock collections
