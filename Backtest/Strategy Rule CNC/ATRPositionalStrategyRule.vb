@@ -179,7 +179,7 @@ Public Class ATRPositionalStrategyRule
                 If lastExecutedTrade Is Nothing Then
                     Dim previousMonth As Date = New Date(currentDayPayload.PayloadDate.Year, currentDayPayload.PayloadDate.Month, 1).AddMonths(-1)
                     Dim atr As Decimal = ConvertFloorCeling(_atrPayload(previousMonth), Me._parentStrategy.TickSize, RoundOfType.Floor)
-                    Dim entryPrice As Decimal = _highestPrice - ConvertFloorCeling(atr * _userInputs.EntryATRMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
+                    Dim entryPrice As Decimal = ConvertFloorCeling(_highestPrice - atr * _userInputs.EntryATRMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
                     If currentDayPayload.Low <= entryPrice Then
                         ret = New Tuple(Of Boolean, Decimal, Payload, Decimal, Integer)(True, entryPrice, currentDayPayload, atr, quantity)
                     End If
@@ -190,7 +190,12 @@ Public Class ATRPositionalStrategyRule
                         If openActiveTrades IsNot Nothing AndAlso openActiveTrades.Count > 0 Then
                             Dim lastHighestPrice As Decimal = lastExecutedTrade.Supporting1
                             If _highestPrice = lastHighestPrice Then
-                                multiplier = openActiveTrades.Count + 1
+                                Dim tradeForSameLevel As List(Of Trade) = openActiveTrades.FindAll(Function(x)
+                                                                                                       Return CDec(x.Supporting1) = _highestPrice
+                                                                                                   End Function)
+                                If tradeForSameLevel IsNot Nothing AndAlso tradeForSameLevel.Count > 0 Then
+                                    multiplier = tradeForSameLevel.Count + 1
+                                End If
                             End If
                         End If
                     End If
@@ -199,7 +204,7 @@ Public Class ATRPositionalStrategyRule
                         Dim previousMonth As Date = New Date(currentDayPayload.PayloadDate.Year, currentDayPayload.PayloadDate.Month, 1).AddMonths(-1)
                         atr = ConvertFloorCeling(_atrPayload(previousMonth), Me._parentStrategy.TickSize, RoundOfType.Floor)
                     End If
-                    Dim entryPrice As Decimal = _highestPrice - ConvertFloorCeling(atr * _userInputs.EntryATRMultiplier * multiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
+                    Dim entryPrice As Decimal = ConvertFloorCeling(_highestPrice - atr * _userInputs.EntryATRMultiplier * multiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
                     If currentDayPayload.Low <= entryPrice Then
                         If multiplier > 1 Then
                             Select Case _userInputs.QuantityType
