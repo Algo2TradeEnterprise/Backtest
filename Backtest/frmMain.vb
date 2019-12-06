@@ -1193,7 +1193,7 @@ Public Class frmMain
             Dim atrMulList As List(Of Decimal) = New List(Of Decimal) From {0.3}
             For Each atrMul In atrMulList
                 'For qntyTyp As Integer = 1 To 2
-                For qntyTyp As Integer = 1 To 1
+                For qntyTyp As Integer = 3 To 3
                     For Each tgtMul In tgtMulList
                         If tgtMul < atrMul Then Continue For
                         Dim filename As String = Nothing
@@ -1224,9 +1224,9 @@ Public Class frmMain
 
                                 .RuleEntityData = New ATRPositionalStrategyRule.StrategyRuleEntities With
                                     {.QuantityType = qntyTyp,
-                                     .QuntityForLinear = 0,
                                      .TargetMultiplier = tgtMul,
-                                     .EntryATRMultiplier = atrMul}
+                                     .EntryATRMultiplier = atrMul,
+                                     .TypeOfAveraging = ATRPositionalStrategyRule.AveragingType.Averaging}
 
                                 filename = String.Format("CNC ATR Capital {0},QuantityType {1},TargetMul {2},Entry ATR Mul {3}",
                                                                If(backtestStrategy.UsableCapital = Decimal.MaxValue / 2, "∞", backtestStrategy.UsableCapital),

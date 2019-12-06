@@ -12,17 +12,15 @@ Public Class ATRPositionalStrategyRule
         AP
         GP
     End Enum
-    Enum ExitType
-        None = 1
-        CompoundingToNextEntry
-        CompoundingToMonthlyATR
+    Enum AveragingType
+        Averaging = 1
+        Pyramiding
     End Enum
     Public Class StrategyRuleEntities
         Inherits RuleEntities
 
         Public QuantityType As TypeOfQuantity
-        Public QuntityForLinear As Integer
-        'Public TypeOfExit As ExitType
+        Public TypeOfAveraging As AveragingType
         Public TargetMultiplier As Decimal
         Public EntryATRMultiplier As Decimal
     End Class
@@ -66,7 +64,7 @@ Public Class ATRPositionalStrategyRule
             Not _parentStrategy.IsTradeOpen(currentTick, _parentStrategy.TradeType) Then
             Dim signalCandle As Payload = Nothing
 
-            Dim signalReceivedForEntry As Tuple(Of Boolean, Decimal, Payload, Decimal, Integer) = GetSignalForEntry(currentTick)
+            Dim signalReceivedForEntry As Tuple(Of Boolean, Decimal, Payload, Decimal, Integer, Integer) = GetSignalForEntry(currentTick)
             If signalReceivedForEntry IsNot Nothing AndAlso signalReceivedForEntry.Item1 Then
                 signalCandle = signalReceivedForEntry.Item3
 
@@ -82,7 +80,8 @@ Public Class ATRPositionalStrategyRule
                                 .OrderType = Trade.TypeOfOrder.Market,
                                 .Supporting1 = _highestPrice,
                                 .Supporting3 = signalReceivedForEntry.Item4,
-                                .Supporting4 = _investment
+                                .Supporting4 = _investment,
+                                .Supporting5 = signalReceivedForEntry.Item6
                             }
 
                     Dim totalCapitalUsedWithoutMargin As Decimal = 0
@@ -173,8 +172,8 @@ Public Class ATRPositionalStrategyRule
     End Function
 
 #Region "Entry Rule"
-    Private Function GetSignalForEntry(ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Payload, Decimal, Integer)
-        Dim ret As Tuple(Of Boolean, Decimal, Payload, Decimal, Integer) = Nothing
+    Private Function GetSignalForEntry(ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Payload, Decimal, Integer, Integer)
+        Dim ret As Tuple(Of Boolean, Decimal, Payload, Decimal, Integer, Integer) = Nothing
         If _signalPayload IsNot Nothing AndAlso _signalPayload.Count > 0 AndAlso _signalPayload.ContainsKey(currentTick.PayloadDate.Date) Then
             Dim currentDayPayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
             If currentDayPayload.PreviousCandlePayload IsNot Nothing Then
@@ -185,44 +184,75 @@ Public Class ATRPositionalStrategyRule
                     Dim atr As Decimal = ConvertFloorCeling(_atrPayload(previousMonth), Me._parentStrategy.TickSize, RoundOfType.Floor)
                     Dim entryPrice As Decimal = ConvertFloorCeling(_highestPrice - atr * _userInputs.EntryATRMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
                     If currentDayPayload.Low <= entryPrice Then
-                        ret = New Tuple(Of Boolean, Decimal, Payload, Decimal, Integer)(True, entryPrice, currentDayPayload, atr, quantity)
+                        ret = New Tuple(Of Boolean, Decimal, Payload, Decimal, Integer, Integer)(True, entryPrice, currentDayPayload, atr, quantity, quantity)
                     End If
                 Else
-                    Dim multiplier As Integer = 1
-                    If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-                        Dim openActiveTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentDayPayload, _parentStrategy.TradeType, Trade.TradeExecutionDirection.Buy)
-                        If openActiveTrades IsNot Nothing AndAlso openActiveTrades.Count > 0 Then
-                            Dim lastHighestPrice As Decimal = lastExecutedTrade.Supporting1
-                            If _highestPrice = lastHighestPrice Then
-                                Dim tradeForSameLevel As List(Of Trade) = openActiveTrades.FindAll(Function(x)
-                                                                                                       Return CDec(x.Supporting1) = _highestPrice
-                                                                                                   End Function)
-                                If tradeForSameLevel IsNot Nothing AndAlso tradeForSameLevel.Count > 0 Then
-                                    multiplier = tradeForSameLevel.Count + 1
+                    If _userInputs.TypeOfAveraging = AveragingType.Pyramiding Then
+                        Dim multiplier As Integer = 1
+                        If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                            Dim openActiveTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentDayPayload, _parentStrategy.TradeType, Trade.TradeExecutionDirection.Buy)
+                            If openActiveTrades IsNot Nothing AndAlso openActiveTrades.Count > 0 Then
+                                Dim lastHighestPrice As Decimal = lastExecutedTrade.Supporting1
+                                If _highestPrice = lastHighestPrice Then
+                                    Dim tradeForSameLevel As List(Of Trade) = openActiveTrades.FindAll(Function(x)
+                                                                                                           Return CDec(x.Supporting1) = _highestPrice
+                                                                                                       End Function)
+                                    If tradeForSameLevel IsNot Nothing AndAlso tradeForSameLevel.Count > 0 Then
+                                        multiplier = tradeForSameLevel.Count + 1
+                                    End If
                                 End If
                             End If
                         End If
-                    End If
-                    Dim atr As Decimal = lastExecutedTrade.Supporting3
-                    If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
-                        Dim previousMonth As Date = New Date(currentDayPayload.PayloadDate.Year, currentDayPayload.PayloadDate.Month, 1).AddMonths(-1)
-                        atr = ConvertFloorCeling(_atrPayload(previousMonth), Me._parentStrategy.TickSize, RoundOfType.Floor)
-                    End If
-                    Dim entryPrice As Decimal = ConvertFloorCeling(_highestPrice - atr * _userInputs.EntryATRMultiplier * multiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
-                    If currentDayPayload.Low <= entryPrice Then
-                        If multiplier > 1 Then
-                            Select Case _userInputs.QuantityType
-                                Case TypeOfQuantity.AP
-                                    quantity = lastExecutedTrade.Quantity + 1
-                                Case TypeOfQuantity.GP
-                                    quantity = lastExecutedTrade.Quantity * 2
-                                Case TypeOfQuantity.Linear
-                                    quantity = lastExecutedTrade.Quantity + _userInputs.QuntityForLinear
-                            End Select
-                        ElseIf multiplier = 1 AndAlso lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-                            quantity = lastExecutedTrade.Quantity
+                        Dim atr As Decimal = lastExecutedTrade.Supporting3
+                        If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
+                            Dim previousMonth As Date = New Date(currentDayPayload.PayloadDate.Year, currentDayPayload.PayloadDate.Month, 1).AddMonths(-1)
+                            atr = ConvertFloorCeling(_atrPayload(previousMonth), Me._parentStrategy.TickSize, RoundOfType.Floor)
                         End If
-                        ret = New Tuple(Of Boolean, Decimal, Payload, Decimal, Integer)(True, entryPrice, currentDayPayload, atr, quantity)
+                        Dim entryPrice As Decimal = ConvertFloorCeling(_highestPrice - atr * _userInputs.EntryATRMultiplier * multiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
+                        If currentDayPayload.Low <= entryPrice Then
+                            If multiplier > 1 Then
+                                Select Case _userInputs.QuantityType
+                                    Case TypeOfQuantity.AP
+                                        quantity = lastExecutedTrade.Quantity + 1
+                                    Case TypeOfQuantity.GP
+                                        quantity = lastExecutedTrade.Quantity * 2
+                                    Case TypeOfQuantity.Linear
+                                        quantity = lastExecutedTrade.Quantity
+                                End Select
+                            ElseIf multiplier = 1 AndAlso lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                                quantity = lastExecutedTrade.Quantity
+                            End If
+                            Dim startingQuantity As Integer = lastExecutedTrade.Supporting5
+                            If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
+                                startingQuantity = quantity
+                            End If
+                            ret = New Tuple(Of Boolean, Decimal, Payload, Decimal, Integer, Integer)(True, entryPrice, currentDayPayload, atr, quantity, startingQuantity)
+                        End If
+                    ElseIf _userInputs.TypeOfAveraging = AveragingType.Averaging Then
+                        Dim atr As Decimal = lastExecutedTrade.Supporting3
+                        Dim entryPrice As Decimal = ConvertFloorCeling(lastExecutedTrade.EntryPrice - atr * _userInputs.EntryATRMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
+                        If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
+                            Dim previousMonth As Date = New Date(currentDayPayload.PayloadDate.Year, currentDayPayload.PayloadDate.Month, 1).AddMonths(-1)
+                            atr = ConvertFloorCeling(_atrPayload(previousMonth), Me._parentStrategy.TickSize, RoundOfType.Floor)
+                            entryPrice = ConvertFloorCeling(lastExecutedTrade.ExitPrice - atr * _userInputs.EntryATRMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
+                        End If
+                        If currentDayPayload.Low <= entryPrice Then
+                            If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                                Select Case _userInputs.QuantityType
+                                    Case TypeOfQuantity.AP
+                                        quantity = lastExecutedTrade.Quantity + 1
+                                    Case TypeOfQuantity.GP
+                                        quantity = lastExecutedTrade.Quantity * 2
+                                    Case TypeOfQuantity.Linear
+                                        quantity = lastExecutedTrade.Quantity
+                                End Select
+                            End If
+                            Dim startingQuantity As Integer = lastExecutedTrade.Supporting5
+                            If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
+                                startingQuantity = quantity
+                            End If
+                            ret = New Tuple(Of Boolean, Decimal, Payload, Decimal, Integer, Integer)(True, entryPrice, currentDayPayload, atr, quantity, startingQuantity)
+                        End If
                     End If
                 End If
             End If

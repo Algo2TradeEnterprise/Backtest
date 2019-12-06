@@ -497,14 +497,26 @@ Namespace StrategyHelper
                                     End If
                                 Next
                                 Dim highestStockPrice As Decimal = Decimal.MinValue
+                                Dim higestStockName As String = Nothing
                                 For Each stock In ret.Keys
                                     Dim eodPayload As Dictionary(Of Date, Payload) = Cmn.GetRawPayload(Common.DataBaseTable.EOD_POSITIONAL, stock, tradingDate, tradingDate)
                                     If eodPayload IsNot Nothing AndAlso eodPayload.Count > 0 Then
-                                        highestStockPrice = Math.Max(highestStockPrice, eodPayload.Values.FirstOrDefault.Open)
+                                        If eodPayload.Values.FirstOrDefault.Open > highestStockPrice Then
+                                            highestStockPrice = eodPayload.Values.FirstOrDefault.Open
+                                            higestStockName = stock
+                                        End If
                                     End If
                                 Next
                                 If highestStockPrice >= _highestInvestment Then
-                                    _highestInvestment = highestStockPrice * 2
+                                    Dim eodPayload As Dictionary(Of Date, Payload) = Cmn.GetRawPayload(Common.DataBaseTable.EOD_POSITIONAL, higestStockName, tradingDate.AddYears(-10), tradingDate)
+                                    If eodPayload IsNot Nothing AndAlso eodPayload.Count > 0 Then
+                                        Dim monthlyPayload As Dictionary(Of Date, Payload) = Common.ConvertDayPayloadsToMonth(eodPayload)
+                                        Dim atrPayload As Dictionary(Of Date, Decimal) = Nothing
+                                        Indicator.ATR.CalculateATR(14, monthlyPayload, atrPayload)
+                                        Dim previousMonth As Date = New Date(tradingDate.Year, tradingDate.Month, 1).AddMonths(-1)
+                                        Dim atr As Decimal = atrPayload(previousMonth)
+                                        _highestInvestment = (highestStockPrice * 2) + (atr * 1.1)
+                                    End If
                                 End If
                                 For Each stock In ret.Keys
                                     ret(stock).Supporting2 = _highestInvestment
