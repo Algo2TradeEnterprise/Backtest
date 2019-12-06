@@ -49,9 +49,7 @@ Public Class ATRPositionalStrategyRule
         MyBase.CompletePreProcessing()
 
         Dim monthlyPayload As Dictionary(Of Date, Payload) = Common.ConvertDayPayloadsToMonth(_signalPayload)
-        Dim hkMonthlyPayload As Dictionary(Of Date, Payload) = Nothing
-        Indicator.HeikenAshi.ConvertToHeikenAshi(monthlyPayload, hkMonthlyPayload)
-        Indicator.ATR.CalculateATR(14, hkMonthlyPayload, _atrPayload)
+        Indicator.ATR.CalculateATR(14, monthlyPayload, _atrPayload)
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -65,7 +63,7 @@ Public Class ATRPositionalStrategyRule
             Not _parentStrategy.IsTradeOpen(currentTick, _parentStrategy.TradeType) Then
             Dim signalCandle As Payload = Nothing
 
-            Dim signalReceivedForEntry As Tuple(Of Boolean, Decimal, Payload) = GetSignalForEntry(currentTick)
+            Dim signalReceivedForEntry As Tuple(Of Boolean, Decimal, Payload, Decimal) = GetSignalForEntry(currentTick)
             If signalReceivedForEntry IsNot Nothing AndAlso signalReceivedForEntry.Item1 Then
                 signalCandle = signalReceivedForEntry.Item3
 
@@ -89,16 +87,17 @@ Public Class ATRPositionalStrategyRule
                     highestEntryPrice = Math.Max(highestEntryPrice, signalReceivedForEntry.Item2)
 
                     parameter = New PlaceOrderParameters With {
-                        .EntryPrice = signalReceivedForEntry.Item2,
-                        .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                        .Quantity = quantity,
-                        .Stoploss = .EntryPrice - 1000000,
-                        .Target = .EntryPrice + 1000000,
-                        .Buffer = 0,
-                        .SignalCandle = signalCandle,
-                        .OrderType = Trade.TypeOfOrder.Market,
-                        .Supporting1 = highestEntryPrice
-                    }
+                                .EntryPrice = signalReceivedForEntry.Item2,
+                                .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                                .Quantity = quantity,
+                                .Stoploss = .EntryPrice - 1000000,
+                                .Target = .EntryPrice + 1000000,
+                                .Buffer = 0,
+                                .SignalCandle = signalCandle,
+                                .OrderType = Trade.TypeOfOrder.Market,
+                                .Supporting1 = highestEntryPrice,
+                                .Supporting3 = signalReceivedForEntry.Item4
+                            }
 
                     Dim totalCapitalUsedWithoutMargin As Decimal = 0
                     Dim totalQuantity As Decimal = 0
@@ -138,7 +137,7 @@ Public Class ATRPositionalStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
             If _userInputs.TypeOfExit = ExitType.CompoundingToNextEntry Then
-                Dim signalReceivedForEntry As Tuple(Of Boolean, Decimal, Payload) = GetSignalForEntry(currentTick)
+                Dim signalReceivedForEntry As Tuple(Of Boolean, Decimal, Payload, Decimal) = GetSignalForEntry(currentTick)
                 If signalReceivedForEntry IsNot Nothing AndAlso signalReceivedForEntry.Item1 Then
                     If signalReceivedForEntry.Item3 IsNot Nothing Then
                         Dim highestEntryPrice As Decimal = Decimal.MinValue
@@ -162,10 +161,11 @@ Public Class ATRPositionalStrategyRule
                 End If
             ElseIf _userInputs.TypeOfExit = ExitType.CompoundingToMonthlyATR Then
                 Dim currentDayPayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
-                Dim previousMonth As Date = New Date(currentDayPayload.PayloadDate.Year, currentDayPayload.PayloadDate.Month, 1).AddMonths(-1)
-                Dim atr As Decimal = ConvertFloorCeling(_atrPayload(previousMonth) * _userInputs.TargetMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
+                'Dim previousMonth As Date = New Date(currentDayPayload.PayloadDate.Year, currentDayPayload.PayloadDate.Month, 1).AddMonths(-1)
+                'Dim atr As Decimal = ConvertFloorCeling(_atrPayload(previousMonth) * _userInputs.TargetMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
+                Dim atr As Decimal = currentTrade.Supporting3
                 Dim averagePrice As Decimal = currentTrade.Supporting2
-                If currentDayPayload.High >= averagePrice + atr Then
+                If currentDayPayload.High >= averagePrice + ConvertFloorCeling(atr * _userInputs.TargetMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor) Then
                     ret = New Tuple(Of Boolean, Decimal, String)(True, averagePrice + atr, "Compunding Exit on Monthly ATR")
                 End If
             End If
@@ -186,28 +186,29 @@ Public Class ATRPositionalStrategyRule
     End Function
 
 #Region "Entry Rule"
-    Private Function GetSignalForEntry(ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Payload)
-        Dim ret As Tuple(Of Boolean, Decimal, Payload) = Nothing
+    Private Function GetSignalForEntry(ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Payload, Decimal)
+        Dim ret As Tuple(Of Boolean, Decimal, Payload, Decimal) = Nothing
         If _signalPayload IsNot Nothing AndAlso _signalPayload.Count > 0 AndAlso _signalPayload.ContainsKey(currentTick.PayloadDate.Date) Then
             Dim currentDayPayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
             If currentDayPayload.PreviousCandlePayload IsNot Nothing Then
                 Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, _parentStrategy.TradeType)
                 If lastExecutedTrade Is Nothing Then
                     Dim previousMonth As Date = New Date(currentDayPayload.PayloadDate.Year, currentDayPayload.PayloadDate.Month, 1).AddMonths(-1)
-                    Dim atr As Decimal = ConvertFloorCeling(_atrPayload(previousMonth) * _userInputs.EntryATRMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
-                    Dim entryPrice As Decimal = _stockPrice - atr
+                    Dim atr As Decimal = ConvertFloorCeling(_atrPayload(previousMonth), Me._parentStrategy.TickSize, RoundOfType.Floor)
+                    Dim entryPrice As Decimal = _stockPrice - ConvertFloorCeling(atr * _userInputs.EntryATRMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
                     If currentDayPayload.Low <= entryPrice Then
-                        ret = New Tuple(Of Boolean, Decimal, Payload)(True, entryPrice, currentDayPayload)
+                        ret = New Tuple(Of Boolean, Decimal, Payload, Decimal)(True, entryPrice, currentDayPayload, atr)
                     End If
                 Else
-                    Dim previousMonth As Date = New Date(currentDayPayload.PayloadDate.Year, currentDayPayload.PayloadDate.Month, 1).AddMonths(-1)
-                    Dim atr As Decimal = ConvertFloorCeling(_atrPayload(previousMonth) * _userInputs.EntryATRMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
-                    Dim entryPrice As Decimal = lastExecutedTrade.EntryPrice - atr
+                    Dim atr As Decimal = lastExecutedTrade.Supporting3
+                    Dim entryPrice As Decimal = lastExecutedTrade.EntryPrice - ConvertFloorCeling(atr * _userInputs.EntryATRMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
                     If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
-                        entryPrice = lastExecutedTrade.ExitPrice - atr
+                        Dim previousMonth As Date = New Date(currentDayPayload.PayloadDate.Year, currentDayPayload.PayloadDate.Month, 1).AddMonths(-1)
+                        atr = ConvertFloorCeling(_atrPayload(previousMonth), Me._parentStrategy.TickSize, RoundOfType.Floor)
+                        entryPrice = lastExecutedTrade.ExitPrice - ConvertFloorCeling(atr * _userInputs.EntryATRMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
                     End If
                     If currentDayPayload.Low <= entryPrice Then
-                        ret = New Tuple(Of Boolean, Decimal, Payload)(True, entryPrice, currentDayPayload)
+                        ret = New Tuple(Of Boolean, Decimal, Payload, Decimal)(True, entryPrice, currentDayPayload, atr)
                     End If
                 End If
             End If
