@@ -166,7 +166,8 @@ Public Class ATRPositionalStrategyRule
                 Dim atr As Decimal = currentTrade.Supporting3
                 Dim averagePrice As Decimal = currentTrade.Supporting2
                 If currentDayPayload.High >= averagePrice + ConvertFloorCeling(atr * _userInputs.TargetMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor) Then
-                    ret = New Tuple(Of Boolean, Decimal, String)(True, averagePrice + atr, "Compunding Exit on Monthly ATR")
+                    Dim price As Decimal = averagePrice + ConvertFloorCeling(atr * _userInputs.TargetMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
+                    ret = New Tuple(Of Boolean, Decimal, String)(True, price, "Compunding Exit on Monthly ATR")
                 End If
             End If
         End If
