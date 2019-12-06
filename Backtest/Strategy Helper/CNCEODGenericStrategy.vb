@@ -62,7 +62,7 @@ Namespace StrategyHelper
                 While tradeCheckingDate <= endDate.Date
                     'Console.WriteLine(String.Format("Capital available:{0},{1},", tradeCheckingDate.ToShortDateString, Me.AvailableCapital))
                     _canceller.Token.ThrowIfCancellationRequested()
-                    Dim stockList As Dictionary(Of String, StockDetails) = GetStockData(tradeCheckingDate)
+                    Dim stockList As Dictionary(Of String, StockDetails) = GetStockData(tradeCheckingDate, startDate.Date)
                     _canceller.Token.ThrowIfCancellationRequested()
                     If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
                         Dim currentDayStocksPayload As Dictionary(Of String, Dictionary(Of Date, Payload)) = Nothing
@@ -426,7 +426,7 @@ Namespace StrategyHelper
         End Function
 
 #Region "Stock Selection"
-        Private Function GetStockData(tradingDate As Date) As Dictionary(Of String, StockDetails)
+        Private Function GetStockData(ByVal tradingDate As Date, ByVal tradeStartingDate As Date) As Dictionary(Of String, StockDetails)
             Dim ret As Dictionary(Of String, StockDetails) = Nothing
             If Me.StockFileName IsNot Nothing Then
                 Dim dt As DataTable = Nothing
@@ -458,6 +458,44 @@ Namespace StrategyHelper
                                 If counter = Me.NumberOfTradeableStockPerDay Then Exit For
                                 'End If
                             Next
+                        Case 27
+                            For i = 1 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i)(0)
+                                'If rowDate.Date = tradingDate.Date Then
+                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                Dim tradingSymbol As String = dt.Rows(i).Item(1)
+                                Dim instrumentName As String = Nothing
+                                If tradingSymbol.Contains("FUT") Then
+                                    instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                                Else
+                                    instrumentName = tradingSymbol
+                                End If
+                                Dim detailsOfStock As StockDetails = New StockDetails With
+                                    {.StockName = instrumentName,
+                                    .LotSize = 1,
+                                    .EligibleToTakeTrade = True,
+                                    .Supporting1 = dt.Rows(i).Item(2)}
+                                ret.Add(instrumentName, detailsOfStock)
+                                If i = Me.NumberOfTradeableStockPerDay Then Exit For
+                                'End If
+                            Next
+                            If ret IsNot Nothing AndAlso ret.Count > 0 Then
+                                For Each stock In ret.Keys
+                                    If tradeStartingDate.Date = tradingDate.Date Then
+                                        Dim eodPayload As Dictionary(Of Date, Payload) = Cmn.GetRawPayload(Common.DataBaseTable.EOD_POSITIONAL, stock, tradingDate, tradingDate)
+                                        If eodPayload IsNot Nothing AndAlso eodPayload.Count > 0 Then
+                                            ret(stock).Supporting1 = eodPayload.LastOrDefault.Value.Open
+                                        End If
+                                    Else
+                                        Dim eodPayload As Dictionary(Of Date, Payload) = Cmn.GetRawPayload(Common.DataBaseTable.EOD_POSITIONAL, stock, tradingDate, tradingDate.AddDays(-1))
+                                        If eodPayload IsNot Nothing AndAlso eodPayload.Count > 0 Then
+                                            ret(stock).Supporting1 = eodPayload.Values.Max(Function(x)
+                                                                                               Return x.High
+                                                                                           End Function)
+                                        End If
+                                    End If
+                                Next
+                            End If
                         Case Else
                             For i = 1 To dt.Rows.Count - 1
                                 Dim rowDate As Date = dt.Rows(i)(0)

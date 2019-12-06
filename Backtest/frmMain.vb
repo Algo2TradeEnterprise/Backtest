@@ -1224,10 +1224,9 @@ Public Class frmMain
 
                                 .RuleEntityData = New ATRPositionalStrategyRule.StrategyRuleEntities With
                                     {.QuantityType = qntyTyp,
-                                     .QuntityForLinear = 2,
+                                     .QuntityForLinear = 0,
                                      .TargetMultiplier = tgtMul,
-                                     .EntryATRMultiplier = atrMul,
-                                     .TypeOfExit = ATRPositionalStrategyRule.ExitType.CompoundingToMonthlyATR}
+                                     .EntryATRMultiplier = atrMul}
 
                                 filename = String.Format("CNC ATR Capital {0},QuantityType {1},TargetMul {2},Entry ATR Mul {3}",
                                                                If(backtestStrategy.UsableCapital = Decimal.MaxValue / 2, "∞", backtestStrategy.UsableCapital),
@@ -1235,7 +1234,7 @@ Public Class frmMain
                                                                CType(.RuleEntityData, ATRPositionalStrategyRule.StrategyRuleEntities).TargetMultiplier,
                                                                CType(.RuleEntityData, ATRPositionalStrategyRule.StrategyRuleEntities).EntryATRMultiplier)
 
-                                .NumberOfTradeableStockPerDay = 10
+                                .NumberOfTradeableStockPerDay = 1
 
                                 .NumberOfTradesPerDay = Integer.MaxValue
                                 .NumberOfTradesPerStockPerDay = Integer.MaxValue
