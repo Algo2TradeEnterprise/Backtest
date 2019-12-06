@@ -496,11 +496,15 @@ Namespace StrategyHelper
                                         End If
                                     End If
                                 Next
-                                Dim highestStock As Decimal = ret.Values.Max(Function(x)
-                                                                                 Return x.Supporting1
-                                                                             End Function)
-                                If highestStock >= _highestInvestment Then
-                                    _highestInvestment = highestStock * 2
+                                Dim highestStockPrice As Decimal = Decimal.MinValue
+                                For Each stock In ret.Keys
+                                    Dim eodPayload As Dictionary(Of Date, Payload) = Cmn.GetRawPayload(Common.DataBaseTable.EOD_POSITIONAL, stock, tradingDate, tradingDate)
+                                    If eodPayload IsNot Nothing AndAlso eodPayload.Count > 0 Then
+                                        highestStockPrice = Math.Max(highestStockPrice, eodPayload.Values.FirstOrDefault.Open)
+                                    End If
+                                Next
+                                If highestStockPrice >= _highestInvestment Then
+                                    _highestInvestment = highestStockPrice * 2
                                 End If
                                 For Each stock In ret.Keys
                                     ret(stock).Supporting2 = _highestInvestment

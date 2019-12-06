@@ -178,7 +178,7 @@ Public Class ATRPositionalStrategyRule
         If _signalPayload IsNot Nothing AndAlso _signalPayload.Count > 0 AndAlso _signalPayload.ContainsKey(currentTick.PayloadDate.Date) Then
             Dim currentDayPayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
             If currentDayPayload.PreviousCandlePayload IsNot Nothing Then
-                Dim quantity As Integer = Math.Floor(_investment / currentDayPayload.High)
+                Dim quantity As Integer = Math.Floor(_investment / currentDayPayload.Open)
                 Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, _parentStrategy.TradeType)
                 If lastExecutedTrade Is Nothing Then
                     Dim previousMonth As Date = New Date(currentDayPayload.PayloadDate.Year, currentDayPayload.PayloadDate.Month, 1).AddMonths(-1)
