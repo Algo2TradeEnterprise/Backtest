@@ -81,7 +81,8 @@ Public Class ATRPositionalStrategyRule
                                 .SignalCandle = signalCandle,
                                 .OrderType = Trade.TypeOfOrder.Market,
                                 .Supporting1 = _highestPrice,
-                                .Supporting3 = signalReceivedForEntry.Item4
+                                .Supporting3 = signalReceivedForEntry.Item4,
+                                .Supporting4 = _investment
                             }
 
                     Dim totalCapitalUsedWithoutMargin As Decimal = 0
