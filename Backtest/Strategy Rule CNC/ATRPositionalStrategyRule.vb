@@ -32,6 +32,7 @@ Public Class ATRPositionalStrategyRule
 
     Private ReadOnly _userInputs As StrategyRuleEntities
     Private ReadOnly _highestPrice As Decimal
+    Private ReadOnly _investment As Decimal
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
                    ByVal parentStrategy As Strategy,
@@ -39,10 +40,12 @@ Public Class ATRPositionalStrategyRule
                    ByVal tradingSymbol As String,
                    ByVal canceller As CancellationTokenSource,
                    ByVal entities As RuleEntities,
-                   ByVal highestPrice As Decimal)
+                   ByVal highestPrice As Decimal,
+                   ByVal investment As Decimal)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
-        _highestPrice = highestPrice
         _userInputs = entities
+        _highestPrice = highestPrice
+        _investment = investment
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -174,7 +177,7 @@ Public Class ATRPositionalStrategyRule
         If _signalPayload IsNot Nothing AndAlso _signalPayload.Count > 0 AndAlso _signalPayload.ContainsKey(currentTick.PayloadDate.Date) Then
             Dim currentDayPayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
             If currentDayPayload.PreviousCandlePayload IsNot Nothing Then
-                Dim quantity As Integer = 1
+                Dim quantity As Integer = Math.Floor(_investment / currentDayPayload.High)
                 Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, _parentStrategy.TradeType)
                 If lastExecutedTrade Is Nothing Then
                     Dim previousMonth As Date = New Date(currentDayPayload.PayloadDate.Year, currentDayPayload.PayloadDate.Month, 1).AddMonths(-1)
@@ -215,6 +218,8 @@ Public Class ATRPositionalStrategyRule
                                 Case TypeOfQuantity.Linear
                                     quantity = lastExecutedTrade.Quantity + _userInputs.QuntityForLinear
                             End Select
+                        ElseIf multiplier = 1 AndAlso lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                            quantity = lastExecutedTrade.Quantity
                         End If
                         ret = New Tuple(Of Boolean, Decimal, Payload, Decimal, Integer)(True, entryPrice, currentDayPayload, atr, quantity)
                     End If

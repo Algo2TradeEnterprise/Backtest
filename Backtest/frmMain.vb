@@ -1193,7 +1193,7 @@ Public Class frmMain
             Dim atrMulList As List(Of Decimal) = New List(Of Decimal) From {0.3}
             For Each atrMul In atrMulList
                 'For qntyTyp As Integer = 1 To 2
-                For qntyTyp As Integer = 2 To 2
+                For qntyTyp As Integer = 1 To 1
                     For Each tgtMul In tgtMulList
                         If tgtMul < atrMul Then Continue For
                         Dim filename As String = Nothing

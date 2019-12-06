@@ -163,7 +163,7 @@ Namespace StrategyHelper
                                         Case 26
                                             Throw New ApplicationException("Not a CNC strategy")
                                         Case 27
-                                            stockRule = New ATRPositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
+                                            stockRule = New ATRPositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -426,6 +426,7 @@ Namespace StrategyHelper
         End Function
 
 #Region "Stock Selection"
+        Private _highestInvestment As Decimal = Decimal.MinValue
         Private Function GetStockData(ByVal tradingDate As Date, ByVal tradeStartingDate As Date) As Dictionary(Of String, StockDetails)
             Dim ret As Dictionary(Of String, StockDetails) = Nothing
             If Me.StockFileName IsNot Nothing Then
@@ -494,6 +495,15 @@ Namespace StrategyHelper
                                                                                            End Function)
                                         End If
                                     End If
+                                Next
+                                Dim highestStock As Decimal = ret.Values.Max(Function(x)
+                                                                                 Return x.Supporting1
+                                                                             End Function)
+                                If highestStock >= _highestInvestment Then
+                                    _highestInvestment = highestStock * 2
+                                End If
+                                For Each stock In ret.Keys
+                                    ret(stock).Supporting2 = _highestInvestment
                                 Next
                             End If
                         Case Else

@@ -128,7 +128,7 @@ Namespace StrategyHelper
                                         Case 9
                                             Throw New ApplicationException("Not a CNC strategy")
                                         Case 10
-                                            stockRule = New VijayCNCStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                            Throw New ApplicationException("Not a CNC strategy")
                                         Case 11
                                             Throw New ApplicationException("Not a CNC strategy")
                                         Case 12
@@ -144,7 +144,7 @@ Namespace StrategyHelper
                                         Case 17
                                             Throw New ApplicationException("Not a CNC strategy")
                                         Case 18
-                                            stockRule = New InvestmentCNCStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
+                                            Throw New ApplicationException("Not a CNC strategy")
                                         Case 19
                                             Throw New ApplicationException("Not a CNC strategy")
                                         Case 20
@@ -154,15 +154,15 @@ Namespace StrategyHelper
                                         Case 22
                                             Throw New ApplicationException("Not a CNC strategy")
                                         Case 23
-                                            stockRule = New HKPositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
+                                            Throw New ApplicationException("Not a CNC strategy")
                                         Case 24
-                                            stockRule = New HKPositionalStrategyRule1(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
+                                            Throw New ApplicationException("Not a CNC strategy")
                                         Case 25
-                                            stockRule = New SMIHKPositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
+                                            Throw New ApplicationException("Not a CNC strategy")
                                         Case 26
                                             stockRule = New HKPositionalHourlyStrategyRule1(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                         Case 27
-                                            stockRule = New ATRPositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
+                                            Throw New ApplicationException("Not a CNC strategy")
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
