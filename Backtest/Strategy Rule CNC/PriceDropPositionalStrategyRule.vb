@@ -209,11 +209,11 @@ Public Class PriceDropPositionalStrategyRule
                     'ElseIf _userInputs.TypeOfAveraging = AveragingType.Averaging Then
                     Dim entryPrice As Decimal = ConvertFloorCeling(lastExecutedTrade.EntryPrice - lastExecutedTrade.EntryPrice * _userInputs.PriceDropPercentage / 100, Me._parentStrategy.TickSize, RoundOfType.Floor)
                     If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
-                        'If Not Me._parentStrategy.IsTradeActive(currentDayPayload, Me._parentStrategy.TradeType) Then
-                        entryPrice = ConvertFloorCeling(lastExecutedTrade.ExitPrice - lastExecutedTrade.ExitPrice * _userInputs.PriceDropPercentage / 100, Me._parentStrategy.TickSize, RoundOfType.Floor)
-                        'Else
-                        '    entryPrice = ConvertFloorCeling(lastExecutedTrade.ExitPrice - atr * _userInputs.EntryATRMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
-                        'End If
+                        If Not Me._parentStrategy.IsTradeActive(currentDayPayload, Me._parentStrategy.TradeType) Then
+                            entryPrice = ConvertFloorCeling(_highestPrice - _highestPrice * _userInputs.PriceDropPercentage / 100, Me._parentStrategy.TickSize, RoundOfType.Floor)
+                        Else
+                            entryPrice = ConvertFloorCeling(lastExecutedTrade.ExitPrice - lastExecutedTrade.ExitPrice * _userInputs.PriceDropPercentage / 100, Me._parentStrategy.TickSize, RoundOfType.Floor)
+                        End If
                     End If
                     If currentDayPayload.Low <= entryPrice Then
                         If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
