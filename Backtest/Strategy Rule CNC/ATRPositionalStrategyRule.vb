@@ -172,6 +172,7 @@ Public Class ATRPositionalStrategyRule
                     End If
                 Else
                     If _userInputs.TypeOfAveraging = AveragingType.Pyramiding Then
+                        Throw New NotImplementedException("Partial exit reentry not implemented")
                         Dim multiplier As Integer = 1
                         If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
                             Dim openActiveTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentDayPayload, _parentStrategy.TradeType, Trade.TradeExecutionDirection.Buy)
@@ -216,9 +217,13 @@ Public Class ATRPositionalStrategyRule
                         Dim atr As Decimal = lastExecutedTrade.Supporting3
                         Dim entryPrice As Decimal = ConvertFloorCeling(lastExecutedTrade.EntryPrice - atr * _userInputs.EntryATRMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
                         If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
-                            Dim previousMonth As Date = New Date(currentDayPayload.PayloadDate.Year, currentDayPayload.PayloadDate.Month, 1).AddMonths(-1)
-                            atr = ConvertFloorCeling(_atrPayload(previousMonth), Me._parentStrategy.TickSize, RoundOfType.Floor)
-                            entryPrice = ConvertFloorCeling(lastExecutedTrade.ExitPrice - atr * _userInputs.EntryATRMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
+                            If Not Me._parentStrategy.IsTradeActive(currentDayPayload, Me._parentStrategy.TradeType) Then
+                                Dim previousMonth As Date = New Date(currentDayPayload.PayloadDate.Year, currentDayPayload.PayloadDate.Month, 1).AddMonths(-1)
+                                atr = ConvertFloorCeling(_atrPayload(previousMonth), Me._parentStrategy.TickSize, RoundOfType.Floor)
+                                entryPrice = ConvertFloorCeling(lastExecutedTrade.ExitPrice - atr * _userInputs.EntryATRMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
+                            Else
+                                entryPrice = ConvertFloorCeling(lastExecutedTrade.ExitPrice - atr * _userInputs.EntryATRMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
+                            End If
                         End If
                         If currentDayPayload.Low <= entryPrice Then
                             If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
@@ -233,7 +238,11 @@ Public Class ATRPositionalStrategyRule
                             End If
                             Dim startingQuantity As Integer = lastExecutedTrade.Supporting5
                             If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
-                                startingQuantity = quantity
+                                If Not Me._parentStrategy.IsTradeActive(currentDayPayload, Me._parentStrategy.TradeType) Then
+                                    startingQuantity = quantity
+                                Else
+                                    quantity = lastExecutedTrade.Quantity
+                                End If
                             End If
                             ret = New Tuple(Of Boolean, Decimal, Payload, Decimal, Integer, Integer)(True, entryPrice, currentDayPayload, atr, quantity, startingQuantity)
                         End If
