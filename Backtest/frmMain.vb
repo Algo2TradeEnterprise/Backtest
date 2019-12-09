@@ -1226,13 +1226,14 @@ Public Class frmMain
                                     {.QuantityType = qntyTyp,
                                      .TargetMultiplier = tgtMul,
                                      .EntryATRMultiplier = atrMul,
+                                     .PartialExit = True,
                                      .TypeOfAveraging = ATRPositionalStrategyRule.AveragingType.Averaging}
 
                                 filename = String.Format("CNC ATR Capital {0},QuantityType {1},TargetMul {2},Entry ATR Mul {3}",
-                                                               If(backtestStrategy.UsableCapital = Decimal.MaxValue / 2, "∞", backtestStrategy.UsableCapital),
-                                                               CType(.RuleEntityData, ATRPositionalStrategyRule.StrategyRuleEntities).QuantityType,
-                                                               CType(.RuleEntityData, ATRPositionalStrategyRule.StrategyRuleEntities).TargetMultiplier,
-                                                               CType(.RuleEntityData, ATRPositionalStrategyRule.StrategyRuleEntities).EntryATRMultiplier)
+                                                        If(backtestStrategy.UsableCapital = Decimal.MaxValue / 2, "∞", backtestStrategy.UsableCapital),
+                                                        CType(.RuleEntityData, ATRPositionalStrategyRule.StrategyRuleEntities).QuantityType,
+                                                        CType(.RuleEntityData, ATRPositionalStrategyRule.StrategyRuleEntities).TargetMultiplier,
+                                                        CType(.RuleEntityData, ATRPositionalStrategyRule.StrategyRuleEntities).EntryATRMultiplier)
 
                                 .NumberOfTradeableStockPerDay = 1
 

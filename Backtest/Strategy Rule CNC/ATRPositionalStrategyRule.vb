@@ -23,6 +23,7 @@ Public Class ATRPositionalStrategyRule
         Public TypeOfAveraging As AveragingType
         Public TargetMultiplier As Decimal
         Public EntryATRMultiplier As Decimal
+        Public PartialExit As Boolean
     End Class
 #End Region
 
@@ -121,40 +122,23 @@ Public Class ATRPositionalStrategyRule
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-            'If _userInputs.TypeOfExit = ExitType.CompoundingToNextEntry Then
-            '    Dim signalReceivedForEntry As Tuple(Of Boolean, Decimal, Payload, Decimal) = GetSignalForEntry(currentTick)
-            '    If signalReceivedForEntry IsNot Nothing AndAlso signalReceivedForEntry.Item1 Then
-            '        If signalReceivedForEntry.Item3 IsNot Nothing Then
-            '            Dim highestEntryPrice As Decimal = Decimal.MinValue
-            '            Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, _parentStrategy.TradeType)
-            '            If lastExecutedTrade IsNot Nothing Then highestEntryPrice = lastExecutedTrade.Supporting1
-            '            Dim quantity As Integer = 1
-            '            If highestEntryPrice > signalReceivedForEntry.Item2 Then
-            '                Select Case _userInputs.QuantityType
-            '                    Case TypeOfQuantity.AP
-            '                        quantity = lastExecutedTrade.Quantity + 1
-            '                    Case TypeOfQuantity.GP
-            '                        quantity = lastExecutedTrade.Quantity * 2
-            '                    Case TypeOfQuantity.Linear
-            '                        quantity = _userInputs.QuntityForLinear
-            '                End Select
-            '            End If
-            '            If quantity = 1 Then
-            '                ret = New Tuple(Of Boolean, Decimal, String)(True, signalReceivedForEntry.Item2, "Compounding Exit on Next Entry")
-            '            End If
-            '        End If
-            '    End If
-            'ElseIf _userInputs.TypeOfExit = ExitType.CompoundingToMonthlyATR Then
-            Dim currentDayPayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
-            'Dim previousMonth As Date = New Date(currentDayPayload.PayloadDate.Year, currentDayPayload.PayloadDate.Month, 1).AddMonths(-1)
-            'Dim atr As Decimal = ConvertFloorCeling(_atrPayload(previousMonth) * _userInputs.TargetMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
-            Dim atr As Decimal = currentTrade.Supporting3
-            Dim averagePrice As Decimal = currentTrade.Supporting2
-            If currentDayPayload.High >= averagePrice + ConvertFloorCeling(atr * _userInputs.TargetMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor) Then
-                Dim price As Decimal = averagePrice + ConvertFloorCeling(atr * _userInputs.TargetMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
-                ret = New Tuple(Of Boolean, Decimal, String)(True, price, "Target")
+            If Not _userInputs.PartialExit Then
+                Dim currentDayPayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
+                Dim atr As Decimal = currentTrade.Supporting3
+                Dim averagePrice As Decimal = currentTrade.Supporting2
+                If currentDayPayload.High >= averagePrice + ConvertFloorCeling(atr * _userInputs.TargetMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor) Then
+                    Dim price As Decimal = averagePrice + ConvertFloorCeling(atr * _userInputs.TargetMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
+                    ret = New Tuple(Of Boolean, Decimal, String)(True, price, "Target")
+                End If
+            Else
+                Dim currentDayPayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
+                Dim atr As Decimal = currentTrade.Supporting3
+                Dim entryPrice As Decimal = currentTrade.EntryPrice
+                If currentDayPayload.High >= entryPrice + ConvertFloorCeling(atr * _userInputs.TargetMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor) Then
+                    Dim price As Decimal = entryPrice + ConvertFloorCeling(atr * _userInputs.TargetMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
+                    ret = New Tuple(Of Boolean, Decimal, String)(True, price, "Target")
+                End If
             End If
-            'End If
         End If
         Return ret
     End Function
