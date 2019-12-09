@@ -164,6 +164,8 @@ Namespace StrategyHelper
                                             Throw New ApplicationException("Not a CNC strategy")
                                         Case 27
                                             stockRule = New ATRPositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2)
+                                        Case 28
+                                            stockRule = New PriceDropPositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -459,7 +461,7 @@ Namespace StrategyHelper
                                 If counter = Me.NumberOfTradeableStockPerDay Then Exit For
                                 'End If
                             Next
-                        Case 27
+                        Case 27, 28
                             For i = 1 To dt.Rows.Count - 1
                                 Dim rowDate As Date = dt.Rows(i)(0)
                                 'If rowDate.Date = tradingDate.Date Then

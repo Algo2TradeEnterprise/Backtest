@@ -36,10 +36,10 @@ Partial Class frmMain
         Me.dtpckrEndDate = New System.Windows.Forms.DateTimePicker()
         Me.btnStop = New System.Windows.Forms.Button()
         Me.grpbxStrategyType = New System.Windows.Forms.GroupBox()
-        Me.rdbCNCTick = New System.Windows.Forms.RadioButton()
-        Me.rdbMIS = New System.Windows.Forms.RadioButton()
         Me.rdbCNCEOD = New System.Windows.Forms.RadioButton()
         Me.rdbCNCCandle = New System.Windows.Forms.RadioButton()
+        Me.rdbCNCTick = New System.Windows.Forms.RadioButton()
+        Me.rdbMIS = New System.Windows.Forms.RadioButton()
         Me.grpbxDataSource.SuspendLayout()
         Me.grpbxStrategyType.SuspendLayout()
         Me.SuspendLayout()
@@ -104,7 +104,7 @@ Partial Class frmMain
         '
         Me.cmbRule.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.cmbRule.FormattingEnabled = True
-        Me.cmbRule.Items.AddRange(New Object() {"Smallest Candle Breakout", "High Volume Pin Bar", "Momentum Reversal v2", "High Volume Pin Bar v2", "Donchian Fractal Breakout", "SMI Fractal Breakout", "Day Long SMI (BANKNIFTY)", "Day Start SMI", "Gap Fractal Breakout", "Forward Momentum", "Vijay CNC", "TII Opposite Breakout", "Fixed Level Based", "Low Stoploss", "Multi Target", "Reversal", "Pinbar Breakout", "Low SL Pinbar", "Investment CNC", "Low Stoploss Wick", "Low Stoploss Candle", "Pair Trading", "Coin Flip At Resistance", "HeikenAshi CNC", "HeikenAshi CNC-1", "SMI HeikenAshi CNC", "HeikenAshi Hourly CNC-1", "ATR CNC"})
+        Me.cmbRule.Items.AddRange(New Object() {"Smallest Candle Breakout", "High Volume Pin Bar", "Momentum Reversal v2", "High Volume Pin Bar v2", "Donchian Fractal Breakout", "SMI Fractal Breakout", "Day Long SMI (BANKNIFTY)", "Day Start SMI", "Gap Fractal Breakout", "Forward Momentum", "Vijay CNC", "TII Opposite Breakout", "Fixed Level Based", "Low Stoploss", "Multi Target", "Reversal", "Pinbar Breakout", "Low SL Pinbar", "Investment CNC", "Low Stoploss Wick", "Low Stoploss Candle", "Pair Trading", "Coin Flip At Resistance", "HeikenAshi CNC", "HeikenAshi CNC-1", "SMI HeikenAshi CNC", "HeikenAshi Hourly CNC-1", "ATR CNC", "Price Drop CNC"})
         Me.cmbRule.Location = New System.Drawing.Point(123, 30)
         Me.cmbRule.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
         Me.cmbRule.Name = "cmbRule"
@@ -185,29 +185,6 @@ Partial Class frmMain
         Me.grpbxStrategyType.TabStop = False
         Me.grpbxStrategyType.Text = "Strategy Type"
         '
-        'rdbCNCTick
-        '
-        Me.rdbCNCTick.AutoSize = True
-        Me.rdbCNCTick.Location = New System.Drawing.Point(96, 22)
-        Me.rdbCNCTick.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
-        Me.rdbCNCTick.Name = "rdbCNCTick"
-        Me.rdbCNCTick.Size = New System.Drawing.Size(87, 21)
-        Me.rdbCNCTick.TabIndex = 1
-        Me.rdbCNCTick.Text = "CNC Tick"
-        Me.rdbCNCTick.UseVisualStyleBackColor = True
-        '
-        'rdbMIS
-        '
-        Me.rdbMIS.AutoSize = True
-        Me.rdbMIS.Checked = True
-        Me.rdbMIS.Location = New System.Drawing.Point(7, 20)
-        Me.rdbMIS.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
-        Me.rdbMIS.Name = "rdbMIS"
-        Me.rdbMIS.Size = New System.Drawing.Size(52, 21)
-        Me.rdbMIS.TabIndex = 0
-        Me.rdbMIS.Text = "MIS"
-        Me.rdbMIS.UseVisualStyleBackColor = True
-        '
         'rdbCNCEOD
         '
         Me.rdbCNCEOD.AutoSize = True
@@ -229,6 +206,30 @@ Partial Class frmMain
         Me.rdbCNCCandle.TabIndex = 2
         Me.rdbCNCCandle.Text = "CNC Cndl"
         Me.rdbCNCCandle.UseVisualStyleBackColor = True
+        '
+        'rdbCNCTick
+        '
+        Me.rdbCNCTick.AutoSize = True
+        Me.rdbCNCTick.Location = New System.Drawing.Point(96, 22)
+        Me.rdbCNCTick.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
+        Me.rdbCNCTick.Name = "rdbCNCTick"
+        Me.rdbCNCTick.Size = New System.Drawing.Size(87, 21)
+        Me.rdbCNCTick.TabIndex = 1
+        Me.rdbCNCTick.Text = "CNC Tick"
+        Me.rdbCNCTick.UseVisualStyleBackColor = True
+        '
+        'rdbMIS
+        '
+        Me.rdbMIS.AutoSize = True
+        Me.rdbMIS.Checked = True
+        Me.rdbMIS.Location = New System.Drawing.Point(7, 20)
+        Me.rdbMIS.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
+        Me.rdbMIS.Name = "rdbMIS"
+        Me.rdbMIS.Size = New System.Drawing.Size(52, 21)
+        Me.rdbMIS.TabIndex = 0
+        Me.rdbMIS.TabStop = True
+        Me.rdbMIS.Text = "MIS"
+        Me.rdbMIS.UseVisualStyleBackColor = True
         '
         'frmMain
         '
