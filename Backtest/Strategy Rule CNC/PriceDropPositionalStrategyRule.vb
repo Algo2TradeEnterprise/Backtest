@@ -215,12 +215,12 @@ Public Class PriceDropPositionalStrategyRule
                     '    End If
                     'ElseIf _userInputs.TypeOfAveraging = AveragingType.Averaging Then
                     Dim atr As Decimal = lastExecutedTrade.Supporting3
-                    Dim entryPrice As Decimal = ConvertFloorCeling(lastExecutedTrade.EntryPrice - lastExecutedTrade.EntryPrice * _userInputs.PriceDropPercentage, Me._parentStrategy.TickSize, RoundOfType.Floor)
+                    Dim entryPrice As Decimal = ConvertFloorCeling(lastExecutedTrade.EntryPrice - lastExecutedTrade.EntryPrice * _userInputs.PriceDropPercentage / 100, Me._parentStrategy.TickSize, RoundOfType.Floor)
                     If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
                         'If Not Me._parentStrategy.IsTradeActive(currentDayPayload, Me._parentStrategy.TradeType) Then
                         Dim previousMonth As Date = New Date(currentDayPayload.PayloadDate.Year, currentDayPayload.PayloadDate.Month, 1).AddMonths(-1)
                         atr = ConvertFloorCeling(_atrPayload(previousMonth), Me._parentStrategy.TickSize, RoundOfType.Floor)
-                        entryPrice = ConvertFloorCeling(lastExecutedTrade.ExitPrice - lastExecutedTrade.ExitPrice * _userInputs.PriceDropPercentage, Me._parentStrategy.TickSize, RoundOfType.Floor)
+                        entryPrice = ConvertFloorCeling(lastExecutedTrade.ExitPrice - lastExecutedTrade.ExitPrice * _userInputs.PriceDropPercentage / 100, Me._parentStrategy.TickSize, RoundOfType.Floor)
                         'Else
                         '    entryPrice = ConvertFloorCeling(lastExecutedTrade.ExitPrice - atr * _userInputs.EntryATRMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
                         'End If
