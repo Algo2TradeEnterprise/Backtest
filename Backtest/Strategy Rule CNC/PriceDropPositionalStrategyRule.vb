@@ -27,8 +27,6 @@ Public Class PriceDropPositionalStrategyRule
     End Class
 #End Region
 
-    Private _atrPayload As Dictionary(Of Date, Decimal)
-
     Private ReadOnly _userInputs As StrategyRuleEntities
     Private ReadOnly _highestPrice As Decimal
     Private ReadOnly _investment As Decimal
@@ -49,9 +47,6 @@ Public Class PriceDropPositionalStrategyRule
 
     Public Overrides Sub CompletePreProcessing()
         MyBase.CompletePreProcessing()
-
-        Dim monthlyPayload As Dictionary(Of Date, Payload) = Common.ConvertDayPayloadsToMonth(_signalPayload)
-        Indicator.ATR.CalculateATR(14, monthlyPayload, _atrPayload)
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -124,19 +119,19 @@ Public Class PriceDropPositionalStrategyRule
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
             If Not _userInputs.PartialExit Then
                 Dim currentDayPayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
-                Dim atr As Decimal = currentTrade.Supporting3
+                'Dim atr As Decimal = currentTrade.Supporting3
                 Dim averagePrice As Decimal = currentTrade.Supporting2
-                If currentDayPayload.High >= averagePrice + ConvertFloorCeling(atr * _userInputs.TargetMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor) Then
-                    Dim price As Decimal = averagePrice + ConvertFloorCeling(atr * _userInputs.TargetMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
-                    ret = New Tuple(Of Boolean, Decimal, String)(True, price, "Target")
+                Dim potentialExitPrice As Decimal = ConvertFloorCeling(averagePrice + averagePrice * _userInputs.PriceDropPercentage * _userInputs.TargetMultiplier / 100, Me._parentStrategy.TickSize, RoundOfType.Floor)
+                If currentDayPayload.High >= potentialExitPrice Then
+                    ret = New Tuple(Of Boolean, Decimal, String)(True, potentialExitPrice, "Target")
                 End If
             Else
                 Dim currentDayPayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
                 Dim atr As Decimal = currentTrade.Supporting3
                 Dim entryPrice As Decimal = currentTrade.EntryPrice
-                If currentDayPayload.High >= entryPrice + ConvertFloorCeling(atr * _userInputs.TargetMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor) Then
-                    Dim price As Decimal = entryPrice + ConvertFloorCeling(atr * _userInputs.TargetMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
-                    ret = New Tuple(Of Boolean, Decimal, String)(True, price, "Target")
+                Dim potentialExitPrice As Decimal = ConvertFloorCeling(entryPrice + entryPrice * _userInputs.PriceDropPercentage * _userInputs.TargetMultiplier / 100, Me._parentStrategy.TickSize, RoundOfType.Floor)
+                If currentDayPayload.High >= potentialExitPrice Then
+                    ret = New Tuple(Of Boolean, Decimal, String)(True, potentialExitPrice, "Target")
                 End If
             End If
         End If
@@ -164,11 +159,9 @@ Public Class PriceDropPositionalStrategyRule
                 Dim quantity As Integer = Math.Floor(_investment / currentDayPayload.Open)
                 Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, _parentStrategy.TradeType)
                 If lastExecutedTrade Is Nothing Then
-                    Dim previousMonth As Date = New Date(currentDayPayload.PayloadDate.Year, currentDayPayload.PayloadDate.Month, 1).AddMonths(-1)
-                    Dim atr As Decimal = ConvertFloorCeling(_atrPayload(previousMonth), Me._parentStrategy.TickSize, RoundOfType.Floor)
                     Dim entryPrice As Decimal = ConvertFloorCeling(_highestPrice - _highestPrice * _userInputs.PriceDropPercentage / 100, Me._parentStrategy.TickSize, RoundOfType.Floor)
                     If currentDayPayload.Low <= entryPrice Then
-                        ret = New Tuple(Of Boolean, Decimal, Payload, Decimal, Integer, Integer)(True, entryPrice, currentDayPayload, atr, quantity, quantity)
+                        ret = New Tuple(Of Boolean, Decimal, Payload, Decimal, Integer, Integer)(True, entryPrice, currentDayPayload, 0, quantity, quantity)
                     End If
                 Else
                     'If _userInputs.TypeOfAveraging = AveragingType.Pyramiding Then
@@ -214,12 +207,9 @@ Public Class PriceDropPositionalStrategyRule
                     '        ret = New Tuple(Of Boolean, Decimal, Payload, Decimal, Integer, Integer)(True, entryPrice, currentDayPayload, atr, quantity, startingQuantity)
                     '    End If
                     'ElseIf _userInputs.TypeOfAveraging = AveragingType.Averaging Then
-                    Dim atr As Decimal = lastExecutedTrade.Supporting3
                     Dim entryPrice As Decimal = ConvertFloorCeling(lastExecutedTrade.EntryPrice - lastExecutedTrade.EntryPrice * _userInputs.PriceDropPercentage / 100, Me._parentStrategy.TickSize, RoundOfType.Floor)
                     If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
                         'If Not Me._parentStrategy.IsTradeActive(currentDayPayload, Me._parentStrategy.TradeType) Then
-                        Dim previousMonth As Date = New Date(currentDayPayload.PayloadDate.Year, currentDayPayload.PayloadDate.Month, 1).AddMonths(-1)
-                        atr = ConvertFloorCeling(_atrPayload(previousMonth), Me._parentStrategy.TickSize, RoundOfType.Floor)
                         entryPrice = ConvertFloorCeling(lastExecutedTrade.ExitPrice - lastExecutedTrade.ExitPrice * _userInputs.PriceDropPercentage / 100, Me._parentStrategy.TickSize, RoundOfType.Floor)
                         'Else
                         '    entryPrice = ConvertFloorCeling(lastExecutedTrade.ExitPrice - atr * _userInputs.EntryATRMultiplier, Me._parentStrategy.TickSize, RoundOfType.Floor)
@@ -244,7 +234,7 @@ Public Class PriceDropPositionalStrategyRule
                             '    quantity = lastExecutedTrade.Quantity
                             'End If
                         End If
-                        ret = New Tuple(Of Boolean, Decimal, Payload, Decimal, Integer, Integer)(True, entryPrice, currentDayPayload, atr, quantity, startingQuantity)
+                        ret = New Tuple(Of Boolean, Decimal, Payload, Decimal, Integer, Integer)(True, entryPrice, currentDayPayload, 0, quantity, startingQuantity)
                     End If
                     'End If
                 End If
