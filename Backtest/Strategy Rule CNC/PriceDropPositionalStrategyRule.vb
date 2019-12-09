@@ -157,7 +157,7 @@ Public Class PriceDropPositionalStrategyRule
             Dim currentDayPayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
             If currentDayPayload.PreviousCandlePayload IsNot Nothing Then
                 Dim quantity As Integer = Math.Floor(_investment / currentDayPayload.Open)
-                Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, _parentStrategy.TradeType)
+                Dim lastExecutedTrade As Trade = GetLastOrder(currentTick)
                 If lastExecutedTrade Is Nothing Then
                     Dim entryPrice As Decimal = ConvertFloorCeling(_highestPrice - _highestPrice * _userInputs.PriceDropPercentage / 100, Me._parentStrategy.TickSize, RoundOfType.Floor)
                     If currentDayPayload.Low <= entryPrice Then
@@ -244,4 +244,16 @@ Public Class PriceDropPositionalStrategyRule
     End Function
 #End Region
 
+    Private Function GetLastOrder(ByVal currentPayload As Payload) As Trade
+        Dim ret As Trade = Nothing
+        If currentPayload IsNot Nothing Then
+            Dim lastEntryOrder As Trade = Me._parentStrategy.GetLastEntryTradeOfTheStock(currentPayload, Me._parentStrategy.TradeType)
+            Dim lastClosedOrder As Trade = Me._parentStrategy.GetLastExitTradeOfTheStock(currentPayload, Me._parentStrategy.TradeType)
+            If lastEntryOrder IsNot Nothing Then ret = lastEntryOrder
+            If lastClosedOrder IsNot Nothing AndAlso lastClosedOrder.ExitTime >= lastEntryOrder.EntryTime Then
+                ret = lastClosedOrder
+            End If
+        End If
+        Return ret
+    End Function
 End Class

@@ -1257,7 +1257,7 @@ Public Class frmMain
             'Dim tgtMulList As List(Of Decimal) = New List(Of Decimal) From {0.5, 1, 2, 3}
             Dim tgtMulList As List(Of Decimal) = New List(Of Decimal) From {1}
             'Dim atrMulList As List(Of Decimal) = New List(Of Decimal) From {0.3, 0.5, 0.7, 0.9}
-            Dim prcDrpList As List(Of Decimal) = New List(Of Decimal) From {0.5}
+            Dim prcDrpList As List(Of Decimal) = New List(Of Decimal) From {5}
             For Each prcDrp In prcDrpList
                 'For qntyTyp As Integer = 1 To 2
                 For qntyTyp As Integer = 2 To 2

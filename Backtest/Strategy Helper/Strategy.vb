@@ -1145,6 +1145,38 @@ Namespace StrategyHelper
             Return ret
         End Function
 
+        Public Function GetLastEntryTradeOfTheStock(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TypeOfTrade) As Trade
+            Dim ret As Trade = Nothing
+            'If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentMinutePayload.PayloadDate.Date) AndAlso TradesTaken(currentMinutePayload.PayloadDate.Date).ContainsKey(currentMinutePayload.TradingSymbol) Then
+            If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
+                Dim completeTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Close)
+                Dim inprogressTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Inprogress)
+                Dim allTrades As List(Of Trade) = New List(Of Trade)
+                If completeTrades IsNot Nothing AndAlso completeTrades.Count > 0 Then allTrades.AddRange(completeTrades)
+                If inprogressTrades IsNot Nothing AndAlso inprogressTrades.Count > 0 Then allTrades.AddRange(inprogressTrades)
+                If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
+                    ret = allTrades.OrderBy(Function(x)
+                                                Return x.EntryTime
+                                            End Function).LastOrDefault
+                End If
+            End If
+            Return ret
+        End Function
+
+        Public Function GetLastExitTradeOfTheStock(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TypeOfTrade) As Trade
+            Dim ret As Trade = Nothing
+            'If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentMinutePayload.PayloadDate.Date) AndAlso TradesTaken(currentMinutePayload.PayloadDate.Date).ContainsKey(currentMinutePayload.TradingSymbol) Then
+            If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
+                Dim completeTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Close)
+                If completeTrades IsNot Nothing AndAlso completeTrades.Count > 0 Then
+                    ret = completeTrades.OrderBy(Function(x)
+                                                     Return x.ExitTime
+                                                 End Function).LastOrDefault
+                End If
+            End If
+            Return ret
+        End Function
+
         Public Function IsAnyCandleClosesAboveOrBelow(ByVal currentMinute As Date, ByVal lastExitTime As Date, ByVal totalXMinutePayload As Dictionary(Of Date, Payload), ByVal potentialEntryTrade As Trade) As Boolean
             Dim ret As Boolean = False
             If totalXMinutePayload IsNot Nothing AndAlso totalXMinutePayload.Count > 0 Then
