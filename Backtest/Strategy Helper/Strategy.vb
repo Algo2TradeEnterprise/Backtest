@@ -1588,15 +1588,15 @@ Namespace StrategyHelper
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                 mainRawData(rowCtr, colCtr) = "Entry Buffer"
                                 colCtr += 1
-                                If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "SL Buffer"
-                                colCtr += 1
+                                'If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                'mainRawData(rowCtr, colCtr) = "SL Buffer"
+                                'colCtr += 1
                                 'If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                 'mainRawData(rowCtr, colCtr) = "SquareOffValue"
                                 'colCtr += 1
-                                If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Exit Before PL"
-                                colCtr += 1
+                                'If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                'mainRawData(rowCtr, colCtr) = "Exit Before PL"
+                                'colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                 mainRawData(rowCtr, colCtr) = "Overall Draw Up PL for the day"
                                 colCtr += 1
@@ -1741,15 +1741,15 @@ Namespace StrategyHelper
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                                     mainRawData(rowCtr, colCtr) = tradeTaken.EntryBuffer
                                                     colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.StoplossBuffer
-                                                    colCtr += 1
+                                                    'If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                                    'mainRawData(rowCtr, colCtr) = tradeTaken.StoplossBuffer
+                                                    'colCtr += 1
                                                     'If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                                     'mainRawData(rowCtr, colCtr) = tradeTaken.SquareOffValue
                                                     'colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = If(Math.Round(tradeTaken.PLPoint, 4) = Math.Round(tradeTaken.WarningPLPoint, 4), "FALSE", "TRUE")
-                                                    colCtr += 1
+                                                    'If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                                    'mainRawData(rowCtr, colCtr) = If(Math.Round(tradeTaken.PLPoint, 4) = Math.Round(tradeTaken.WarningPLPoint, 4), "FALSE", "TRUE")
+                                                    'colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                                     mainRawData(rowCtr, colCtr) = tradeTaken.OverAllMaxDrawUpPL
                                                     colCtr += 1

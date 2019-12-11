@@ -327,10 +327,10 @@ Public Class frmMain
                                  .MaxAllowedLossPercentagePerStock = 3,
                                  .MaxStoplossPercentagePerTrade = 0.3,
                                  .MaxTargetPercentagePerTrade = 0.3,
-                                 .PartialExit = False
+                                 .PartialExit = True
                                 }
 
-                    .NumberOfTradeableStockPerDay = 1
+                    .NumberOfTradeableStockPerDay = Integer.MaxValue
 
                     .NumberOfTradesPerStockPerDay = Integer.MaxValue
 

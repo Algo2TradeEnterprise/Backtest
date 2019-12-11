@@ -224,11 +224,11 @@ Public Class SachinPatelStrategyRule
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
             Dim exitCandleTime As Date = Me._parentStrategy.GetCurrentXMinuteCandleTime(currentTrade.ExitTime, _signalPayload)
             currentTrade.UpdateTrade(Supporting1:=_adxPayload(currentTrade.SignalCandle.PayloadDate),
-                                    Supporting2:=_diPlusPayload(currentTrade.SignalCandle.PayloadDate),
-                                    Supporting3:=_diMinusPayload(currentTrade.SignalCandle.PayloadDate),
-                                    Supporting4:=_adxPayload(exitCandleTime),
-                                    Supporting5:=_diPlusPayload(exitCandleTime),
-                                    Supporting6:=_diMinusPayload(exitCandleTime))
+                                     Supporting2:=_diPlusPayload(currentTrade.SignalCandle.PayloadDate),
+                                     Supporting3:=_diMinusPayload(currentTrade.SignalCandle.PayloadDate),
+                                     Supporting4:=_adxPayload(exitCandleTime.AddMinutes(Me._parentStrategy.SignalTimeFrame * -1)),
+                                     Supporting5:=_diPlusPayload(exitCandleTime.AddMinutes(Me._parentStrategy.SignalTimeFrame * -1)),
+                                     Supporting6:=_diMinusPayload(exitCandleTime.AddMinutes(Me._parentStrategy.SignalTimeFrame * -1)))
         End If
     End Function
 
