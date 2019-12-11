@@ -373,7 +373,7 @@ Public Class Payload
                 _Ticks.Add(New Payload(CandleDataSource.Calculated) With {.TradingSymbol = Me.TradingSymbol, .Open = runningTick, .Low = runningTick, .High = runningTick, .Close = runningTick, .PayloadDate = runningPayLoadDate, .PreviousCandlePayload = previousTickPayload})
                 previousTickPayload = _Ticks.LastOrDefault
 
-                runningPayLoadDate = New Date(Me.PayloadDate.Year, Me.PayloadDate.Month, Me.PayloadDate.Day, Me.PayloadDate.Hour, Me.PayloadDate.Minute, 15)
+                runningPayLoadDate = New Date(Me.PayloadDate.Year, Me.PayloadDate.Month, Me.PayloadDate.Day, Me.PayloadDate.Hour, Me.PayloadDate.Minute, 20)
                 If Me.CandleColor = Color.Green Then
                     runningTick = Me.Low
                 Else
@@ -382,7 +382,7 @@ Public Class Payload
                 _Ticks.Add(New Payload(CandleDataSource.Calculated) With {.TradingSymbol = Me.TradingSymbol, .Open = runningTick, .Low = runningTick, .High = runningTick, .Close = runningTick, .PayloadDate = runningPayLoadDate, .PreviousCandlePayload = previousTickPayload})
                 previousTickPayload = _Ticks.LastOrDefault
 
-                runningPayLoadDate = New Date(Me.PayloadDate.Year, Me.PayloadDate.Month, Me.PayloadDate.Day, Me.PayloadDate.Hour, Me.PayloadDate.Minute, 30)
+                runningPayLoadDate = New Date(Me.PayloadDate.Year, Me.PayloadDate.Month, Me.PayloadDate.Day, Me.PayloadDate.Hour, Me.PayloadDate.Minute, 40)
                 If Me.CandleColor = Color.Green Then
                     runningTick = Me.High
                 Else
