@@ -67,9 +67,9 @@ Public Class SachinPatelStrategyRule
             Dim signalCandle As Payload = Nothing
             Dim signalCandleSatisfied As Tuple(Of Boolean, Trade.TradeExecutionDirection) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
             If signalCandleSatisfied IsNot Nothing AndAlso signalCandleSatisfied.Item1 Then
-                Dim lastCancelTrade As Trade = GetLastCancelTrade(currentMinuteCandlePayload)
-                If lastCancelTrade Is Nothing OrElse
-                    lastCancelTrade.SignalCandle.PayloadDate <> currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate Then
+                Dim lastTrade As Trade = GetLastCancelTrade(currentMinuteCandlePayload)
+                If lastTrade Is Nothing OrElse
+                    lastTrade.SignalCandle.PayloadDate <> currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate Then
                     signalCandle = currentMinuteCandlePayload.PreviousCandlePayload
                 End If
             End If
@@ -290,7 +290,11 @@ Public Class SachinPatelStrategyRule
 
     Private Function GetLastCancelTrade(ByVal currentPayload As Payload) As Trade
         Dim ret As Trade = Nothing
-        Dim potentialTrades As List(Of Trade) = Me._parentStrategy.GetSpecificTrades(currentPayload, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Cancel)
+        Dim potentialCancelTrades As List(Of Trade) = Me._parentStrategy.GetSpecificTrades(currentPayload, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Cancel)
+        Dim potentialCloseTrades As List(Of Trade) = Me._parentStrategy.GetSpecificTrades(currentPayload, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Close)
+        Dim potentialTrades As List(Of Trade) = New List(Of Trade)
+        If potentialCancelTrades IsNot Nothing AndAlso potentialCancelTrades.Count > 0 Then potentialTrades.AddRange(potentialCancelTrades)
+        If potentialCloseTrades IsNot Nothing AndAlso potentialCloseTrades.Count > 0 Then potentialTrades.AddRange(potentialCloseTrades)
         If potentialTrades IsNot Nothing AndAlso potentialTrades.Count > 0 Then
             ret = potentialTrades.OrderBy(Function(x)
                                               Return x.EntryTime
