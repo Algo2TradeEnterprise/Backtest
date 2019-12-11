@@ -1623,6 +1623,9 @@ Namespace StrategyHelper
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                 mainRawData(rowCtr, colCtr) = "Supporting5"
+                                colCtr += 1
+                                If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                mainRawData(rowCtr, colCtr) = "Supporting6"
 
                                 rowCtr += 1
                             End If
@@ -1773,6 +1776,9 @@ Namespace StrategyHelper
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                                     mainRawData(rowCtr, colCtr) = tradeTaken.Supporting5
+                                                    colCtr += 1
+                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                                    mainRawData(rowCtr, colCtr) = tradeTaken.Supporting6
 
                                                     rowCtr += 1
                                                 Next
