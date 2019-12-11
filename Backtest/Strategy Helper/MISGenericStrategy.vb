@@ -526,7 +526,7 @@ Namespace StrategyHelper
                                     Dim potentialTrades As List(Of Trade) = GetSpecificTrades(dummyPayload, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Close)
                                     If potentialTrades IsNot Nothing AndAlso potentialTrades.Count > 0 Then
                                         For Each runningTrade In potentialTrades
-
+                                            Await CType(stocksRuleData(runningStock), SachinPatelStrategyRule).UpdateRequiedSupporting(runningTrade).ConfigureAwait(False)
                                         Next
                                     End If
                                 Next
