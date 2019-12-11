@@ -14,6 +14,7 @@ Public Class SachinPatelStrategyRule
         Public MaxAllowedLossPercentagePerStock As Decimal
         Public MaxStoplossPercentagePerTrade As Decimal
         Public MaxTargetPercentagePerTrade As Decimal
+        Public PartialExit As Boolean
     End Class
 #End Region
 
@@ -50,7 +51,8 @@ Public Class SachinPatelStrategyRule
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         Dim tradeStartTime As Date = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, _parentStrategy.TradeStartTime.Hours, _parentStrategy.TradeStartTime.Minutes, _parentStrategy.TradeStartTime.Seconds)
 
-        Dim parameter As PlaceOrderParameters = Nothing
+        Dim parameter1 As PlaceOrderParameters = Nothing
+        Dim parameter2 As PlaceOrderParameters = Nothing
         If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
             Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS) AndAlso Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS) AndAlso
             _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol) < Me._parentStrategy.NumberOfTradesPerStockPerDay AndAlso
@@ -75,37 +77,75 @@ Public Class SachinPatelStrategyRule
                     Dim quantity As Decimal = CalculateQuantity(entryPrice)
                     Dim slPoint As Decimal = ConvertFloorCeling(entryPrice * _userInputs.MaxStoplossPercentagePerTrade / 100, Me._parentStrategy.TickSize, RoundOfType.Floor)
                     Dim targetPoint As Decimal = ConvertFloorCeling(entryPrice * _userInputs.MaxTargetPercentagePerTrade / 100, Me._parentStrategy.TickSize, RoundOfType.Floor)
-                    parameter = New PlaceOrderParameters With {
-                        .EntryPrice = entryPrice,
-                        .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                        .Quantity = quantity,
-                        .Stoploss = .EntryPrice - slPoint,
-                        .Target = .EntryPrice + targetPoint,
-                        .Buffer = buffer,
-                        .SignalCandle = signalCandle,
-                        .OrderType = Trade.TypeOfOrder.SL
+
+                    If _userInputs.PartialExit Then quantity = Math.Floor(CalculateQuantity(entryPrice) / 2)
+
+                    parameter1 = New PlaceOrderParameters With {
+                                .EntryPrice = entryPrice,
+                                .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                                .Quantity = quantity,
+                                .Stoploss = .EntryPrice - slPoint,
+                                .Target = .EntryPrice + targetPoint,
+                                .Buffer = buffer,
+                                .SignalCandle = signalCandle,
+                                .OrderType = Trade.TypeOfOrder.SL
                     }
+
+                    If _userInputs.PartialExit Then
+                        quantity = Math.Ceiling(CalculateQuantity(entryPrice) / 2)
+                        parameter2 = New PlaceOrderParameters With {
+                                    .EntryPrice = entryPrice,
+                                    .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                                    .Quantity = quantity,
+                                    .Stoploss = .EntryPrice - slPoint,
+                                    .Target = .EntryPrice + 1000000,
+                                    .Buffer = buffer,
+                                    .SignalCandle = signalCandle,
+                                    .OrderType = Trade.TypeOfOrder.SL
+                    }
+                    End If
                 ElseIf signalCandleSatisfied.Item2 = Trade.TradeExecutionDirection.Sell Then
                     Dim buffer As Decimal = CalculateBuffer(signalCandle.Low)
                     Dim entryPrice As Decimal = signalCandle.Low - buffer
                     Dim quantity As Decimal = CalculateQuantity(entryPrice)
                     Dim slPoint As Decimal = ConvertFloorCeling(entryPrice * _userInputs.MaxStoplossPercentagePerTrade / 100, Me._parentStrategy.TickSize, RoundOfType.Floor)
                     Dim targetPoint As Decimal = ConvertFloorCeling(entryPrice * _userInputs.MaxTargetPercentagePerTrade / 100, Me._parentStrategy.TickSize, RoundOfType.Floor)
-                    parameter = New PlaceOrderParameters With {
-                        .EntryPrice = entryPrice,
-                        .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                        .Quantity = quantity,
-                        .Stoploss = .EntryPrice + slPoint,
-                        .Target = .EntryPrice - targetPoint,
-                        .Buffer = buffer,
-                        .SignalCandle = signalCandle,
-                        .OrderType = Trade.TypeOfOrder.SL
+
+                    If _userInputs.PartialExit Then quantity = Math.Floor(CalculateQuantity(entryPrice) / 2)
+
+                    parameter1 = New PlaceOrderParameters With {
+                                .EntryPrice = entryPrice,
+                                .EntryDirection = Trade.TradeExecutionDirection.Sell,
+                                .Quantity = quantity,
+                                .Stoploss = .EntryPrice + slPoint,
+                                .Target = .EntryPrice - targetPoint,
+                                .Buffer = buffer,
+                                .SignalCandle = signalCandle,
+                                .OrderType = Trade.TypeOfOrder.SL
                     }
+
+                    If _userInputs.PartialExit Then
+                        quantity = Math.Ceiling(CalculateQuantity(entryPrice) / 2)
+                        parameter2 = New PlaceOrderParameters With {
+                                    .EntryPrice = entryPrice,
+                                    .EntryDirection = Trade.TradeExecutionDirection.Sell,
+                                    .Quantity = quantity,
+                                    .Stoploss = .EntryPrice + slPoint,
+                                    .Target = .EntryPrice - 1000000,
+                                    .Buffer = buffer,
+                                    .SignalCandle = signalCandle,
+                                    .OrderType = Trade.TypeOfOrder.SL
+                    }
+                    End If
                 End If
             End If
         End If
-        If parameter IsNot Nothing Then
-            ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
+        If parameter1 IsNot Nothing Then
+            If _userInputs.PartialExit Then
+                ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter1, parameter2})
+            Else
+                ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter1})
+            End If
         End If
         Return ret
     End Function
@@ -131,16 +171,24 @@ Public Class SachinPatelStrategyRule
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
-        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-            Dim slPoint As Decimal = CDec(currentTrade.Supporting4)
+        If _userInputs.PartialExit AndAlso currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            Dim targetPoint As Decimal = ConvertFloorCeling(currentTrade.EntryPrice * _userInputs.MaxTargetPercentagePerTrade / 100, Me._parentStrategy.TickSize, RoundOfType.Floor)
             Dim triggerPrice As Decimal = Decimal.MinValue
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                triggerPrice = currentTrade.EntryPrice - slPoint
+                Dim potentialTarget As Decimal = currentTrade.EntryPrice + targetPoint
+                If currentTick.Open >= potentialTarget Then
+                    triggerPrice = currentTrade.EntryPrice
+                End If
             ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                triggerPrice = currentTrade.EntryPrice + slPoint
+                Dim potentialTarget As Decimal = currentTrade.EntryPrice - targetPoint
+                If currentTick.Open <= potentialTarget Then
+                    triggerPrice = currentTrade.EntryPrice
+                End If
             End If
-            If triggerPrice <> Decimal.MinValue AndAlso currentTrade.PotentialStopLoss <> triggerPrice Then
-                ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, slPoint)
+            If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
+                ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, String.Format("Breakeven Movement at {0} on {1}",
+                                                                                               currentTick.Open,
+                                                                                               currentTick.PayloadDate.ToString("HH:mm:ss")))
             End If
         End If
         Return ret
@@ -182,7 +230,17 @@ Public Class SachinPatelStrategyRule
             Dim adx As Decimal = _fractalLowPayload(candle.PayloadDate)
             Dim diPlus As Decimal = _diPlusPayload(candle.PayloadDate)
             Dim diMinus As Decimal = _diMinusPayload(candle.PayloadDate)
-
+            If candle.CandleRange <= atr Then
+                If candle.Close > fractalHigh Then
+                    If diPlus > diMinus Then
+                        ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, Trade.TradeExecutionDirection.Buy)
+                    End If
+                ElseIf candle.Close < fractalLow Then
+                    If diMinus > diPlus Then
+                        ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, Trade.TradeExecutionDirection.Sell)
+                    End If
+                End If
+            End If
         End If
         Return ret
     End Function
