@@ -159,6 +159,13 @@ Public Class SachinPatelStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
             Dim signalCandle As Payload = currentTrade.SignalCandle
+            Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
+            If signalCandle.PayloadDate <> currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate Then
+                Dim signalCandleSatisfied As Tuple(Of Boolean, Trade.TradeExecutionDirection) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
+                If signalCandleSatisfied IsNot Nothing AndAlso signalCandleSatisfied.Item1 Then
+                    ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                End If
+            End If
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                 If currentTick.Open < signalCandle.Low Then
                     ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
