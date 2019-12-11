@@ -309,8 +309,8 @@ Public Class frmMain
                                                               databaseTable:=database,
                                                               dataSource:=sourceData,
                                                               initialCapital:=Decimal.MaxValue / 2,
-                                                              usableCapital:=Decimal.MinValue / 2,
-                                                              minimumEarnedCapitalToWithdraw:=Decimal.MinValue / 2,
+                                                              usableCapital:=Decimal.MaxValue / 2,
+                                                              minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
                                                               amountToBeWithdrawn:=10000)
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
@@ -330,7 +330,7 @@ Public Class frmMain
                                  .PartialExit = False
                                 }
 
-                    .NumberOfTradeableStockPerDay = Integer.MaxValue
+                    .NumberOfTradeableStockPerDay = 1
 
                     .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
