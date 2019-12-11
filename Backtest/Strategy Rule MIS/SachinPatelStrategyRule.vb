@@ -70,7 +70,13 @@ Public Class SachinPatelStrategyRule
                 Dim lastTrade As Trade = GetLastCancelTrade(currentMinuteCandlePayload)
                 If lastTrade Is Nothing OrElse
                     lastTrade.SignalCandle.PayloadDate <> currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate Then
-                    signalCandle = currentMinuteCandlePayload.PreviousCandlePayload
+                    If lastTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Cancel Then
+                        signalCandle = currentMinuteCandlePayload.PreviousCandlePayload
+                    ElseIf lastTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
+                        If currentMinuteCandlePayload.PayloadDate > lastTrade.ExitTime Then
+                            signalCandle = currentMinuteCandlePayload.PreviousCandlePayload
+                        End If
+                    End If
                 End If
             End If
 

@@ -368,7 +368,7 @@ Public Class Payload
                 If _Ticks Is Nothing Then _Ticks = New List(Of Payload)
                 Dim previousTickPayload As Payload = Nothing
 
-                Dim runningPayLoadDate As Date = New Date(Me.PayloadDate.Year, Me.PayloadDate.Month, Me.PayloadDate.Day, Me.PayloadDate.Hour, Me.PayloadDate.Minute, 0)
+                Dim runningPayLoadDate As Date = New Date(Me.PayloadDate.Year, Me.PayloadDate.Month, Me.PayloadDate.Day, Me.PayloadDate.Hour, Me.PayloadDate.Minute, 1)
                 Dim runningTick As Decimal = Me.Open
                 _Ticks.Add(New Payload(CandleDataSource.Calculated) With {.TradingSymbol = Me.TradingSymbol, .Open = runningTick, .Low = runningTick, .High = runningTick, .Close = runningTick, .PayloadDate = runningPayLoadDate, .PreviousCandlePayload = previousTickPayload})
                 previousTickPayload = _Ticks.LastOrDefault
