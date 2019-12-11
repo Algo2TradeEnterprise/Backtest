@@ -351,7 +351,8 @@ Public Class frmMain
                     .RealtimeTrailingPercentage = 50
                 End With
 
-                Dim filename As String = String.Format("Backtest Output")
+                Dim ruleData As SachinPatelStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                Dim filename As String = String.Format("Backtest Output with Partial Exit {0}", ruleData.PartialExit)
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using

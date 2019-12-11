@@ -67,7 +67,11 @@ Public Class SachinPatelStrategyRule
             Dim signalCandle As Payload = Nothing
             Dim signalCandleSatisfied As Tuple(Of Boolean, Trade.TradeExecutionDirection) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
             If signalCandleSatisfied IsNot Nothing AndAlso signalCandleSatisfied.Item1 Then
-                signalCandle = currentMinuteCandlePayload.PreviousCandlePayload
+                Dim lastCancelTrade As Trade = GetLastCancelTrade(currentMinuteCandlePayload)
+                If lastCancelTrade Is Nothing OrElse
+                    lastCancelTrade.SignalCandle.PayloadDate <> currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate Then
+                    signalCandle = currentMinuteCandlePayload.PreviousCandlePayload
+                End If
             End If
 
             If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
@@ -272,4 +276,16 @@ Public Class SachinPatelStrategyRule
         End If
         Return ret
     End Function
+
+    Private Function GetLastCancelTrade(ByVal currentPayload As Payload) As Trade
+        Dim ret As Trade = Nothing
+        Dim potentialTrades As List(Of Trade) = Me._parentStrategy.GetSpecificTrades(currentPayload, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Cancel)
+        If potentialTrades IsNot Nothing AndAlso potentialTrades.Count > 0 Then
+            ret = potentialTrades.OrderBy(Function(x)
+                                              Return x.EntryTime
+                                          End Function).LastOrDefault
+        End If
+        Return ret
+    End Function
+
 End Class
