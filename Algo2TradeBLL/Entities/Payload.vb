@@ -364,54 +364,36 @@ Public Class Payload
     Private _Ticks As List(Of Payload)
     Public ReadOnly Property Ticks As List(Of Payload)
         Get
-            'Dim tickSize As Decimal = NumberManipulation.ConvertFloorCeling(Me.Close * 0.01 * 0.025, 0.05, RoundOfType.Floor)
-            Dim tickSize As Decimal = 0.05
-            'TO DO: Change the vaue of tickSize to take the actual tick as per Exchange
             If _Ticks Is Nothing OrElse _Ticks.Count = 0 Then
-                Dim multiplier As Short = 0
-                Dim startPrice As Decimal = Me.Open
-                Dim firstWick As Decimal = If(Me.CandleColor = Color.Red, Me.High, Me.Low)
-                Dim secondWick As Decimal = If(Me.CandleColor = Color.Red, Me.Low, Me.High)
-                Dim endPrice As Decimal = Me.Close
-                Dim totalTicksToBeCreated As Integer = If(Me.CandleColor = Color.Red, ((Me.High - Me.Open) + (Me.High - Me.Low) + (Me.Close - Me.Low)) / tickSize,
-                                                                                      ((Me.Open - Me.Low) + (Me.High - Me.Low) + (Me.High - Me.Close)) / tickSize)
-                totalTicksToBeCreated += 3
-                Dim ticksPerSecond As Double = totalTicksToBeCreated / 60
-
                 If _Ticks Is Nothing Then _Ticks = New List(Of Payload)
-                multiplier = If(Me.CandleColor = Color.Red, 1, -1)
-                Dim runningTickCtr As Integer = 0
-                Dim runningPayLoadDate As Date = Nothing
                 Dim previousTickPayload As Payload = Nothing
-                For runningTick As Decimal = startPrice To firstWick Step tickSize * multiplier
-                    runningTickCtr += 1
-                    'runningPayLoadDate = New Date(Me.PayloadDate.Year, Me.PayloadDate.Month, Me.PayloadDate.Day, Me.PayloadDate.Hour, Me.PayloadDate.Minute, Math.Round(runningTickCtr / ticksPerSecond, 0))
-                    runningPayLoadDate = New Date(Me.PayloadDate.Year, Me.PayloadDate.Month, Me.PayloadDate.Day, Me.PayloadDate.Hour, Me.PayloadDate.Minute, If(Math.Round(runningTickCtr / ticksPerSecond, 0) >= 60, 59, Math.Round(runningTickCtr / ticksPerSecond, 0)))
-                    _Ticks.Add(New Payload(CandleDataSource.Calculated) With {.TradingSymbol = Me.TradingSymbol, .Open = runningTick, .Low = runningTick, .High = runningTick, .Close = runningTick, .PayloadDate = runningPayLoadDate, .PreviousCandlePayload = previousTickPayload})
-                    previousTickPayload = _Ticks.LastOrDefault
-                Next
-                multiplier = If(Me.CandleColor = Color.Red, -1, 1)
-                For runningTick As Decimal = firstWick To secondWick Step tickSize * multiplier
-                    runningTickCtr += 1
-                    Try
-                        runningPayLoadDate = New Date(Me.PayloadDate.Year, Me.PayloadDate.Month, Me.PayloadDate.Day, Me.PayloadDate.Hour, Me.PayloadDate.Minute, If(Math.Round(runningTickCtr / ticksPerSecond, 0) >= 60, 59, Math.Round(runningTickCtr / ticksPerSecond, 0)))
-                    Catch ex As Exception
-                        Throw ex
-                    End Try
-                    _Ticks.Add(New Payload(CandleDataSource.Calculated) With {.TradingSymbol = Me.TradingSymbol, .Open = runningTick, .Low = runningTick, .High = runningTick, .Close = runningTick, .PayloadDate = runningPayLoadDate, .PreviousCandlePayload = previousTickPayload})
-                    previousTickPayload = _Ticks.LastOrDefault
-                Next
-                multiplier = If(Me.CandleColor = Color.Red, 1, -1)
-                For runningTick As Decimal = secondWick To endPrice Step tickSize * multiplier
-                    runningTickCtr += 1
-                    Try
-                        runningPayLoadDate = New Date(Me.PayloadDate.Year, Me.PayloadDate.Month, Me.PayloadDate.Day, Me.PayloadDate.Hour, Me.PayloadDate.Minute, If(Math.Round(runningTickCtr / ticksPerSecond, 0) >= 60, 59, Math.Round(runningTickCtr / ticksPerSecond, 0)))
-                    Catch ex As Exception
-                        Throw ex
-                    End Try
-                    _Ticks.Add(New Payload(CandleDataSource.Calculated) With {.TradingSymbol = Me.TradingSymbol, .Open = runningTick, .Low = runningTick, .High = runningTick, .Close = runningTick, .PayloadDate = runningPayLoadDate, .PreviousCandlePayload = previousTickPayload})
-                    previousTickPayload = _Ticks.LastOrDefault
-                Next
+
+                Dim runningPayLoadDate As Date = New Date(Me.PayloadDate.Year, Me.PayloadDate.Month, Me.PayloadDate.Day, Me.PayloadDate.Hour, Me.PayloadDate.Minute, 0)
+                Dim runningTick As Decimal = Me.Open
+                _Ticks.Add(New Payload(CandleDataSource.Calculated) With {.TradingSymbol = Me.TradingSymbol, .Open = runningTick, .Low = runningTick, .High = runningTick, .Close = runningTick, .PayloadDate = runningPayLoadDate, .PreviousCandlePayload = previousTickPayload})
+                previousTickPayload = _Ticks.LastOrDefault
+
+                runningPayLoadDate = New Date(Me.PayloadDate.Year, Me.PayloadDate.Month, Me.PayloadDate.Day, Me.PayloadDate.Hour, Me.PayloadDate.Minute, 15)
+                If Me.CandleColor = Color.Green Then
+                    runningTick = Me.Low
+                Else
+                    runningTick = Me.High
+                End If
+                _Ticks.Add(New Payload(CandleDataSource.Calculated) With {.TradingSymbol = Me.TradingSymbol, .Open = runningTick, .Low = runningTick, .High = runningTick, .Close = runningTick, .PayloadDate = runningPayLoadDate, .PreviousCandlePayload = previousTickPayload})
+                previousTickPayload = _Ticks.LastOrDefault
+
+                runningPayLoadDate = New Date(Me.PayloadDate.Year, Me.PayloadDate.Month, Me.PayloadDate.Day, Me.PayloadDate.Hour, Me.PayloadDate.Minute, 30)
+                If Me.CandleColor = Color.Green Then
+                    runningTick = Me.High
+                Else
+                    runningTick = Me.Low
+                End If
+                _Ticks.Add(New Payload(CandleDataSource.Calculated) With {.TradingSymbol = Me.TradingSymbol, .Open = runningTick, .Low = runningTick, .High = runningTick, .Close = runningTick, .PayloadDate = runningPayLoadDate, .PreviousCandlePayload = previousTickPayload})
+                previousTickPayload = _Ticks.LastOrDefault
+
+                runningPayLoadDate = New Date(Me.PayloadDate.Year, Me.PayloadDate.Month, Me.PayloadDate.Day, Me.PayloadDate.Hour, Me.PayloadDate.Minute, 59)
+                runningTick = Me.Close
+                _Ticks.Add(New Payload(CandleDataSource.Calculated) With {.TradingSymbol = Me.TradingSymbol, .Open = runningTick, .Low = runningTick, .High = runningTick, .Close = runningTick, .PayloadDate = runningPayLoadDate, .PreviousCandlePayload = previousTickPayload})
             End If
             Return _Ticks
         End Get

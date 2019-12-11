@@ -750,10 +750,12 @@ Namespace StrategyHelper
                             End If
                             StockNumberOfTradeBuffer(currentPayload.PayloadDate.Date)(currentPayload.TradingSymbol) = 1
                         Else
-                            currentTrade.UpdateTrade(EntryPrice:=currentPayload.Open, EntryTime:=currentPayload.PayloadDate, TradeCurrentStatus:=Trade.TradeExecutionStatus.Inprogress)
+                            'currentTrade.UpdateTrade(EntryPrice:=currentPayload.Open, EntryTime:=currentPayload.PayloadDate, TradeCurrentStatus:=Trade.TradeExecutionStatus.Inprogress)
+                            currentTrade.UpdateTrade(EntryTime:=currentPayload.PayloadDate, TradeCurrentStatus:=Trade.TradeExecutionStatus.Inprogress)
                         End If
                     Else
-                        currentTrade.UpdateTrade(EntryPrice:=currentPayload.Open, EntryTime:=currentPayload.PayloadDate, TradeCurrentStatus:=Trade.TradeExecutionStatus.Inprogress)
+                        'currentTrade.UpdateTrade(EntryPrice:=currentPayload.Open, EntryTime:=currentPayload.PayloadDate, TradeCurrentStatus:=Trade.TradeExecutionStatus.Inprogress)
+                        currentTrade.UpdateTrade(EntryTime:=currentPayload.PayloadDate, TradeCurrentStatus:=Trade.TradeExecutionStatus.Inprogress)
                     End If
                     currentTrade.UpdateTrade(PotentialTarget:=currentTrade.EntryPrice + targetPoint)
                     ret = True
@@ -778,10 +780,12 @@ Namespace StrategyHelper
                             End If
                             StockNumberOfTradeBuffer(currentPayload.PayloadDate.Date)(currentPayload.TradingSymbol) = 1
                         Else
-                            currentTrade.UpdateTrade(EntryPrice:=currentPayload.Open, EntryTime:=currentPayload.PayloadDate, TradeCurrentStatus:=Trade.TradeExecutionStatus.Inprogress)
+                            'currentTrade.UpdateTrade(EntryPrice:=currentPayload.Open, EntryTime:=currentPayload.PayloadDate, TradeCurrentStatus:=Trade.TradeExecutionStatus.Inprogress)
+                            currentTrade.UpdateTrade(EntryTime:=currentPayload.PayloadDate, TradeCurrentStatus:=Trade.TradeExecutionStatus.Inprogress)
                         End If
                     Else
-                        currentTrade.UpdateTrade(EntryPrice:=currentPayload.Open, EntryTime:=currentPayload.PayloadDate, TradeCurrentStatus:=Trade.TradeExecutionStatus.Inprogress)
+                        'currentTrade.UpdateTrade(EntryPrice:=currentPayload.Open, EntryTime:=currentPayload.PayloadDate, TradeCurrentStatus:=Trade.TradeExecutionStatus.Inprogress)
+                        currentTrade.UpdateTrade(EntryTime:=currentPayload.PayloadDate, TradeCurrentStatus:=Trade.TradeExecutionStatus.Inprogress)
                     End If
                     currentTrade.UpdateTrade(PotentialTarget:=currentTrade.EntryPrice - targetPoint)
                     ret = True
@@ -811,15 +815,27 @@ Namespace StrategyHelper
             If currentTrade Is Nothing OrElse currentTrade.TradeCurrentStatus <> Trade.TradeExecutionStatus.Inprogress Then Throw New ApplicationException("Supplied trade is not active, cannot exit")
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                 If currentPayload.Low <= currentTrade.PotentialStopLoss Then
+                    'currentTrade.UpdateTrade(ExitTime:=currentPayload.PayloadDate,
+                    '                         ExitPrice:=currentPayload.Open,                'Assuming this is tick and OHLC=tickprice
+                    '                         ExitCondition:=Trade.TradeExitCondition.StopLoss,
+                    '                         ExitRemark:="SL hit under normal condition",
+                    '                         TradeCurrentStatus:=Trade.TradeExecutionStatus.Close)
+
                     currentTrade.UpdateTrade(ExitTime:=currentPayload.PayloadDate,
-                                             ExitPrice:=currentPayload.Open,                'Assuming this is tick and OHLC=tickprice
+                                             ExitPrice:=currentTrade.PotentialStopLoss,                'Assuming this is tick and OHLC=tickprice
                                              ExitCondition:=Trade.TradeExitCondition.StopLoss,
                                              ExitRemark:="SL hit under normal condition",
                                              TradeCurrentStatus:=Trade.TradeExecutionStatus.Close)
                     ret = True
                 ElseIf currentPayload.High >= currentTrade.PotentialTarget Then
+                    'currentTrade.UpdateTrade(ExitTime:=currentPayload.PayloadDate,
+                    '                         ExitPrice:=currentPayload.Open,                'Assuming this is tick and OHLC=tickprice
+                    '                         ExitCondition:=Trade.TradeExitCondition.Target,
+                    '                         ExitRemark:="Target hit under normal condition",
+                    '                         TradeCurrentStatus:=Trade.TradeExecutionStatus.Close)
+
                     currentTrade.UpdateTrade(ExitTime:=currentPayload.PayloadDate,
-                                             ExitPrice:=currentPayload.Open,                'Assuming this is tick and OHLC=tickprice
+                                             ExitPrice:=currentTrade.PotentialTarget,                'Assuming this is tick and OHLC=tickprice
                                              ExitCondition:=Trade.TradeExitCondition.Target,
                                              ExitRemark:="Target hit under normal condition",
                                              TradeCurrentStatus:=Trade.TradeExecutionStatus.Close)
@@ -827,15 +843,27 @@ Namespace StrategyHelper
                 End If
             ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
                 If currentPayload.High >= currentTrade.PotentialStopLoss Then
+                    'currentTrade.UpdateTrade(ExitTime:=currentPayload.PayloadDate,
+                    '                         ExitPrice:=currentPayload.Open,            'Assuming this is tick and OHLC=tickprice
+                    '                         ExitCondition:=Trade.TradeExitCondition.StopLoss,
+                    '                         ExitRemark:="SL hit under normal condition",
+                    '                         TradeCurrentStatus:=Trade.TradeExecutionStatus.Close)
+
                     currentTrade.UpdateTrade(ExitTime:=currentPayload.PayloadDate,
-                                             ExitPrice:=currentPayload.Open,            'Assuming this is tick and OHLC=tickprice
+                                             ExitPrice:=currentTrade.PotentialStopLoss,            'Assuming this is tick and OHLC=tickprice
                                              ExitCondition:=Trade.TradeExitCondition.StopLoss,
                                              ExitRemark:="SL hit under normal condition",
                                              TradeCurrentStatus:=Trade.TradeExecutionStatus.Close)
                     ret = True
                 ElseIf currentPayload.Low <= currentTrade.PotentialTarget Then
+                    'currentTrade.UpdateTrade(ExitTime:=currentPayload.PayloadDate,
+                    '                         ExitPrice:=currentPayload.Open,            'Assuming this is tick and OHLC=tickprice
+                    '                         ExitCondition:=Trade.TradeExitCondition.Target,
+                    '                         ExitRemark:="Target hit under normal condition",
+                    '                         TradeCurrentStatus:=Trade.TradeExecutionStatus.Close)
+
                     currentTrade.UpdateTrade(ExitTime:=currentPayload.PayloadDate,
-                                             ExitPrice:=currentPayload.Open,            'Assuming this is tick and OHLC=tickprice
+                                             ExitPrice:=currentTrade.PotentialTarget,            'Assuming this is tick and OHLC=tickprice
                                              ExitCondition:=Trade.TradeExitCondition.Target,
                                              ExitRemark:="Target hit under normal condition",
                                              TradeCurrentStatus:=Trade.TradeExecutionStatus.Close)

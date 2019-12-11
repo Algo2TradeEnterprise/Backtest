@@ -84,7 +84,8 @@ Public Class SachinPatelStrategyRule
 
                     If _userInputs.PartialExit Then quantity = Math.Floor(CalculateQuantity(entryPrice) / 2)
 
-                    parameter1 = New PlaceOrderParameters With {
+                    If currentMinuteCandlePayload.Open < entryPrice Then
+                        parameter1 = New PlaceOrderParameters With {
                                 .EntryPrice = entryPrice,
                                 .EntryDirection = Trade.TradeExecutionDirection.Buy,
                                 .Quantity = quantity,
@@ -93,11 +94,11 @@ Public Class SachinPatelStrategyRule
                                 .Buffer = buffer,
                                 .SignalCandle = signalCandle,
                                 .OrderType = Trade.TypeOfOrder.SL
-                    }
+                            }
 
-                    If _userInputs.PartialExit Then
-                        quantity = Math.Ceiling(CalculateQuantity(entryPrice) / 2)
-                        parameter2 = New PlaceOrderParameters With {
+                        If _userInputs.PartialExit Then
+                            quantity = Math.Ceiling(CalculateQuantity(entryPrice) / 2)
+                            parameter2 = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
                                     .EntryDirection = Trade.TradeExecutionDirection.Buy,
                                     .Quantity = quantity,
@@ -106,7 +107,8 @@ Public Class SachinPatelStrategyRule
                                     .Buffer = buffer,
                                     .SignalCandle = signalCandle,
                                     .OrderType = Trade.TypeOfOrder.SL
-                    }
+                                }
+                        End If
                     End If
                 ElseIf signalCandleSatisfied.Item2 = Trade.TradeExecutionDirection.Sell Then
                     Dim buffer As Decimal = CalculateBuffer(signalCandle.Low)
@@ -117,7 +119,8 @@ Public Class SachinPatelStrategyRule
 
                     If _userInputs.PartialExit Then quantity = Math.Floor(CalculateQuantity(entryPrice) / 2)
 
-                    parameter1 = New PlaceOrderParameters With {
+                    If currentMinuteCandlePayload.Open > entryPrice Then
+                        parameter1 = New PlaceOrderParameters With {
                                 .EntryPrice = entryPrice,
                                 .EntryDirection = Trade.TradeExecutionDirection.Sell,
                                 .Quantity = quantity,
@@ -126,11 +129,11 @@ Public Class SachinPatelStrategyRule
                                 .Buffer = buffer,
                                 .SignalCandle = signalCandle,
                                 .OrderType = Trade.TypeOfOrder.SL
-                    }
+                            }
 
-                    If _userInputs.PartialExit Then
-                        quantity = Math.Ceiling(CalculateQuantity(entryPrice) / 2)
-                        parameter2 = New PlaceOrderParameters With {
+                        If _userInputs.PartialExit Then
+                            quantity = Math.Ceiling(CalculateQuantity(entryPrice) / 2)
+                            parameter2 = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
                                     .EntryDirection = Trade.TradeExecutionDirection.Sell,
                                     .Quantity = quantity,
@@ -139,7 +142,8 @@ Public Class SachinPatelStrategyRule
                                     .Buffer = buffer,
                                     .SignalCandle = signalCandle,
                                     .OrderType = Trade.TypeOfOrder.SL
-                    }
+                                }
+                        End If
                     End If
                 End If
             End If
