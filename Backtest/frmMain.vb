@@ -325,8 +325,8 @@ Public Class frmMain
                     .RuleEntityData = New SachinPatelStrategyRule.StrategyRuleEntities With
                                 {.InvestmentPerStock = 10000,
                                  .MaxAllowedLossPercentagePerStock = 3,
-                                 .MaxStoplossPercentagePerTrade = 0.3,
-                                 .MaxTargetPercentagePerTrade = 0.3,
+                                 .MaxStoplossPercentagePerTrade = 0.25,
+                                 .MaxTargetPercentagePerTrade = 0.25,
                                  .PartialExit = True
                                 }
 
