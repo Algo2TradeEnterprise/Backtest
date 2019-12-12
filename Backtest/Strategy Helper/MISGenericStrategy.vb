@@ -475,6 +475,16 @@ Namespace StrategyHelper
                                                         Next
                                                     End If
 
+                                                    'Exit Trade
+                                                    _canceller.Token.ThrowIfCancellationRequested()
+                                                    Dim potentialTargetExitTrades As List(Of Trade) = GetSpecificTrades(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Inprogress)
+                                                    If potentialTargetExitTrades IsNot Nothing AndAlso potentialTargetExitTrades.Count > 0 Then
+                                                        For Each runningPotentialExitTrade In potentialTargetExitTrades
+                                                            _canceller.Token.ThrowIfCancellationRequested()
+                                                            ExitTradeIfPossible(runningPotentialExitTrade, runningTick)
+                                                        Next
+                                                    End If
+
                                                     'Modify Stoploss Trade
                                                     _canceller.Token.ThrowIfCancellationRequested()
                                                     Dim potentialModifySLTrades As List(Of Trade) = GetSpecificTrades(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Inprogress)
