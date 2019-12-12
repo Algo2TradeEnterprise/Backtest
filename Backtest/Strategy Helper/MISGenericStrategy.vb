@@ -65,7 +65,13 @@ Namespace StrategyHelper
                     Me.OverAllLossPerDay = portfolioLossPerDay
                     TradesTaken = New Dictionary(Of Date, Dictionary(Of String, List(Of Trade)))
                     Dim stockList As Dictionary(Of String, StockDetails) = Await GetStockData(tradeCheckingDate).ConfigureAwait(False)
-
+                    If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
+                        Console.WriteLine(String.Format("Trading Date: {0}", tradeCheckingDate.ToString("yyyy-MM-dd")))
+                        For Each stock In stockList
+                            Console.WriteLine(stock)
+                        Next
+                    End If
+                    Continue While
                     _canceller.Token.ThrowIfCancellationRequested()
                     If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
                         Dim currentDayOneMinuteStocksPayload As Dictionary(Of String, Dictionary(Of Date, Payload)) = Nothing
@@ -776,6 +782,56 @@ Namespace StrategyHelper
                                     End If
                                 End If
                             Next
+                        Case 29
+                            Dim counter As Integer = 0
+                            For i = 1 To dt.Rows.Count - 1
+                                'Dim rowDate As Date = dt.Rows(i)(0)
+                                'If rowDate.Date = tradingDate.Date Then
+                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                Dim instrumentName As String = dt.Rows(i).Item(1)
+                                If instrumentName.Contains("FUT") Then instrumentName = instrumentName.Remove(instrumentName.Count - 8)
+                                Dim eodPayload As Dictionary(Of Date, Payload) = Cmn.GetRawPayload(Common.DataBaseTable.EOD_Futures, instrumentName, tradingDate.AddDays(-10), tradingDate.AddDays(-1))
+                                If eodPayload IsNot Nothing AndAlso eodPayload.Count > 0 Then
+                                    Dim lastTradingDate As Date = eodPayload.LastOrDefault.Value.PayloadDate.Date
+                                    Dim close As Decimal = eodPayload.LastOrDefault.Value.Close
+                                    Dim tradingSymbol As String = eodPayload.LastOrDefault.Value.TradingSymbol
+                                    Dim potentialPESymbols As String = tradingSymbol.Replace("FUT", "%PE")
+                                    Dim potentialPESymbolList As Dictionary(Of String, Decimal) = Await GetOptionData(potentialPESymbols, lastTradingDate).ConfigureAwait(False)
+                                    If potentialPESymbolList IsNot Nothing AndAlso potentialPESymbolList.Count > 0 Then
+                                        For Each symbol In potentialPESymbolList.Keys
+                                            Dim strikePrice As String = symbol.Remove(0, tradingSymbol.Count - 3)
+                                            strikePrice = strikePrice.Trim.Remove(strikePrice.Count - 2).Trim
+                                            If IsNumeric(strikePrice) AndAlso CDec(strikePrice) <= close Then
+                                                Dim detailsOfStock As StockDetails = New StockDetails With
+                                                                                    {.StockName = symbol,
+                                                                                    .LotSize = dt.Rows(i).Item(2),
+                                                                                    .EligibleToTakeTrade = True}
+                                                ret.Add(instrumentName, detailsOfStock)
+                                                Exit For
+                                            End If
+                                        Next
+                                    End If
+                                    Dim potentialCESymbols As String = tradingSymbol.Replace("FUT", "%CE")
+                                    Dim potentialCESymbolList As Dictionary(Of String, Decimal) = Await GetOptionData(potentialCESymbols, lastTradingDate).ConfigureAwait(False)
+                                    If potentialCESymbolList IsNot Nothing AndAlso potentialCESymbolList.Count > 0 Then
+                                        For Each symbol In potentialCESymbolList.Keys
+                                            Dim strikePrice As String = symbol.Remove(0, tradingSymbol.Count - 3)
+                                            strikePrice = strikePrice.Trim.Remove(strikePrice.Count - 2).Trim
+                                            If IsNumeric(strikePrice) AndAlso CDec(strikePrice) <= close Then
+                                                Dim detailsOfStock As StockDetails = New StockDetails With
+                                                                                    {.StockName = symbol,
+                                                                                    .LotSize = dt.Rows(i).Item(2),
+                                                                                    .EligibleToTakeTrade = True}
+                                                ret.Add(instrumentName, detailsOfStock)
+                                                Exit For
+                                            End If
+                                        Next
+                                    End If
+                                End If
+                                counter += 1
+                                If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                                'End If
+                            Next
                         Case Else
                             Dim counter As Integer = 0
                             For i = 1 To dt.Rows.Count - 1
@@ -802,6 +858,31 @@ Namespace StrategyHelper
                             Next
                     End Select
                 End If
+            End If
+            Return ret
+        End Function
+
+        Private Async Function GetOptionData(ByVal tradingSymbol As String, ByVal checkingDate As Date) As Task(Of Dictionary(Of String, Decimal))
+            Dim ret As Dictionary(Of String, Decimal) = Nothing
+            Dim dt As DataTable = Nothing
+            Using sqlHlpr As New Utilities.DAL.MySQLDBHelper("local_host", "local_stock", "3306", "rio", "speech123", _canceller)
+                AddHandler sqlHlpr.Heartbeat, AddressOf OnHeartbeat
+                AddHandler sqlHlpr.DocumentDownloadComplete, AddressOf OnDocumentDownloadComplete
+                AddHandler sqlHlpr.DocumentRetryStatus, AddressOf OnDocumentRetryStatus
+                AddHandler sqlHlpr.WaitingFor, AddressOf OnWaitingFor
+
+                Dim selectString As String = "SELECT * FROM `eod_prices_opt_futures` WHERE TradingSymbol LIKE '{0}' AND SnapshotDate = '{1}' ORDER BY `Volume` DESC;"
+                Dim queryString As String = String.Format(selectString, tradingSymbol, checkingDate.ToString("yyyy-MM-dd"))
+
+                dt = Await sqlHlpr.RunSelectAsync(queryString).ConfigureAwait(False)
+            End Using
+            If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
+                For i As Integer = 0 To dt.Rows.Count - 1
+                    Dim name As String = dt.Rows(i).Item(0)
+                    Dim volume As String = dt.Rows(i).Item(5)
+                    If ret Is Nothing Then ret = New Dictionary(Of String, Decimal)
+                    ret.Add(name, volume)
+                Next
             End If
             Return ret
         End Function

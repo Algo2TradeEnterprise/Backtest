@@ -952,7 +952,7 @@ Public Class frmMain
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "New ATR Based Stocks.csv")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "NIFTY.csv")
 
                     .AllowBothDirectionEntryAtSameTime = False
                     .TrailingStoploss = False
@@ -991,16 +991,17 @@ Public Class frmMain
                     .RealtimeTrailingPercentage = 50
                 End With
 
-                Dim ruleData As LowStoplossWickStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                Dim filename As String = String.Format("TF {0},StkMxPft {1},StkMxLs {2},OvrAlPft {3},OvrAlLs {4},TrlMTMTyp {5},ExtPTrd {6},SLMkupTyp {7}",
-                                                       backtestStrategy.SignalTimeFrame,
-                                                       If(backtestStrategy.StockMaxProfitPerDay <> Decimal.MaxValue, backtestStrategy.StockMaxProfitPerDay, "∞"),
-                                                       If(backtestStrategy.StockMaxLossPerDay <> Decimal.MinValue, backtestStrategy.StockMaxLossPerDay, "∞"),
-                                                       If(backtestStrategy.OverAllProfitPerDay <> Decimal.MaxValue, backtestStrategy.OverAllProfitPerDay, "∞"),
-                                                       If(backtestStrategy.OverAllLossPerDay <> Decimal.MinValue, backtestStrategy.OverAllLossPerDay, "∞"),
-                                                       backtestStrategy.TypeOfMTMTrailing.ToString,
-                                                       ruleData.MinimumStockMaxExitPerTrade,
-                                                       ruleData.TypeOfSLMakeup.ToString)
+                'Dim ruleData As LowStoplossWickStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                'Dim filename As String = String.Format("TF {0},StkMxPft {1},StkMxLs {2},OvrAlPft {3},OvrAlLs {4},TrlMTMTyp {5},ExtPTrd {6},SLMkupTyp {7}",
+                '                                       backtestStrategy.SignalTimeFrame,
+                '                                       If(backtestStrategy.StockMaxProfitPerDay <> Decimal.MaxValue, backtestStrategy.StockMaxProfitPerDay, "∞"),
+                '                                       If(backtestStrategy.StockMaxLossPerDay <> Decimal.MinValue, backtestStrategy.StockMaxLossPerDay, "∞"),
+                '                                       If(backtestStrategy.OverAllProfitPerDay <> Decimal.MaxValue, backtestStrategy.OverAllProfitPerDay, "∞"),
+                '                                       If(backtestStrategy.OverAllLossPerDay <> Decimal.MinValue, backtestStrategy.OverAllLossPerDay, "∞"),
+                '                                       backtestStrategy.TypeOfMTMTrailing.ToString,
+                '                                       ruleData.MinimumStockMaxExitPerTrade,
+                '                                       ruleData.TypeOfSLMakeup.ToString)
+                Dim filename As String = "Backtest"
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using
