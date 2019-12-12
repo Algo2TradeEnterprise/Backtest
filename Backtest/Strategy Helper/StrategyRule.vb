@@ -65,7 +65,9 @@ Namespace StrategyHelper
             If _parentStrategy IsNot Nothing AndAlso _inputPayload IsNot Nothing AndAlso _inputPayload.Count > 0 Then
                 Dim xMinutePayload As Dictionary(Of Date, Payload) = Nothing
                 If _parentStrategy.SignalTimeFrame > 1 Then
-                    xMinutePayload = Common.ConvertPayloadsToXMinutes(_inputPayload, _parentStrategy.SignalTimeFrame)
+                    Dim exchangeStartTime As Date = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day,
+                                                             _parentStrategy.ExchangeStartTime.Hours, _parentStrategy.ExchangeStartTime.Minutes, _parentStrategy.ExchangeStartTime.Seconds)
+                    xMinutePayload = Common.ConvertPayloadsToXMinutes(_inputPayload, _parentStrategy.SignalTimeFrame, exchangeStartTime)
                 Else
                     xMinutePayload = _inputPayload
                 End If
