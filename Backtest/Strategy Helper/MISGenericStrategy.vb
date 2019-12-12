@@ -817,7 +817,7 @@ Namespace StrategyHelper
                                         For Each symbol In potentialCESymbolList.Keys
                                             Dim strikePrice As String = symbol.Remove(0, tradingSymbol.Count - 3)
                                             strikePrice = strikePrice.Trim.Remove(strikePrice.Count - 2).Trim
-                                            If IsNumeric(strikePrice) AndAlso CDec(strikePrice) <= close Then
+                                            If IsNumeric(strikePrice) AndAlso CDec(strikePrice) >= close Then
                                                 Dim detailsOfStock As StockDetails = New StockDetails With
                                                                                     {.StockName = symbol,
                                                                                     .LotSize = dt.Rows(i).Item(2),
