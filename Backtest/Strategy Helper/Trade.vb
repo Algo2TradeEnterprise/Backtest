@@ -245,6 +245,11 @@ Namespace StrategyHelper
                             _MaximumDrawUpTime = CurrentLTPTime
                         End If
                     End If
+                ElseIf TradeCurrentStatus = TradeExecutionStatus.Close Then
+                    If ExitCondition = TradeExitCondition.Target Then
+                        _MaximumDrawUp = Me.ExitPrice
+                        _MaximumDrawUpTime = Me.ExitTime
+                    End If
                 End If
                 Return _MaximumDrawUp
             End Get
@@ -276,6 +281,13 @@ Namespace StrategyHelper
                         If CurrentLTP >= _MaximumDrawDown Then
                             _MaximumDrawDown = CurrentLTP
                             _MaximumDrawDownTime = CurrentLTPTime
+                        End If
+                    End If
+                ElseIf TradeCurrentStatus = TradeExecutionStatus.Close Then
+                    If ExitCondition = TradeExitCondition.StopLoss Then
+                        If ExitPrice <> EntryPrice Then
+                            _MaximumDrawDown = Me.ExitPrice
+                            _MaximumDrawDownTime = Me.ExitTime
                         End If
                     End If
                 End If
