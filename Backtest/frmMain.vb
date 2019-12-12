@@ -344,7 +344,7 @@ Public Class frmMain
                     .OverAllProfitPerDay = Decimal.MaxValue
                     .OverAllLossPerDay = Decimal.MinValue
 
-                    .TypeOfMTMTrailing = False
+                    .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
                     .MTMSlab = Math.Abs(.OverAllLossPerDay)
                     .MovementSlab = .MTMSlab / 2
                     .RealtimeTrailingPercentage = 50
