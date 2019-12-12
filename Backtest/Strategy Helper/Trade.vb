@@ -272,13 +272,13 @@ Namespace StrategyHelper
                     End If
                     If EntryDirection = TradeExecutionDirection.Buy Then
                         '_MaximumDrawDown = Math.Min(_MaximumDrawDown, CurrentLTP)
-                        If CurrentLTP <= _MaximumDrawDown Then
+                        If CurrentLTP <= _MaximumDrawDown AndAlso CurrentLTP >= PotentialStopLoss Then
                             _MaximumDrawDown = CurrentLTP
                             _MaximumDrawDownTime = CurrentLTPTime
                         End If
                     ElseIf EntryDirection = TradeExecutionDirection.Sell Then
                         '_MaximumDrawDown = Math.Max(_MaximumDrawDown, CurrentLTP)
-                        If CurrentLTP >= _MaximumDrawDown Then
+                        If CurrentLTP >= _MaximumDrawDown AndAlso CurrentLTP <= PotentialStopLoss Then
                             _MaximumDrawDown = CurrentLTP
                             _MaximumDrawDownTime = CurrentLTPTime
                         End If
