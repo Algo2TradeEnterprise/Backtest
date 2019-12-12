@@ -710,7 +710,7 @@ Public Class Common
                 cm = New MySqlCommand("SELECT `INSTRUMENT_TOKEN`,`TRADING_SYMBOL`,`EXPIRY` FROM `active_instruments_commodity` WHERE `TRADING_SYMBOL` LIKE @trd AND `AS_ON_DATE`=@sd", conn)
                 cm.Parameters.AddWithValue("@trd", String.Format("{0}%", rawInstrumentName))
             Case DataBaseTable.Intraday_Futures, DataBaseTable.EOD_Futures
-                cm = New MySqlCommand("SELECT `INSTRUMENT_TOKEN`,`TRADING_SYMBOL`,`EXPIRY` FROM `active_instruments_futures` WHERE `TRADING_SYMBOL` LIKE @trd AND `AS_ON_DATE`=@sd", conn)
+                cm = New MySqlCommand("SELECT `INSTRUMENT_TOKEN`,`TRADING_SYMBOL`,`EXPIRY` FROM `active_instruments_futures` WHERE `TRADING_SYMBOL` LIKE @trd AND `SEGMENT`='NFO-FUT' AND `AS_ON_DATE`=@sd", conn)
                 cm.Parameters.AddWithValue("@trd", String.Format("{0}%", rawInstrumentName))
         End Select
 
