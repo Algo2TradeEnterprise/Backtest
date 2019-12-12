@@ -230,14 +230,30 @@ Namespace StrategyHelper
                 If TradeCurrentStatus = TradeExecutionStatus.Inprogress Then
                     If _MaximumDrawUp = Double.MinValue Then
                         _MaximumDrawUp = Me.EntryPrice
+                        _MaximumDrawUpTime = Me.EntryTime
                     End If
                     If EntryDirection = TradeExecutionDirection.Buy Then
-                        _MaximumDrawUp = Math.Max(_MaximumDrawUp, CurrentLTP)
+                        '_MaximumDrawUp = Math.Max(_MaximumDrawUp, CurrentLTP)
+                        If CurrentLTP >= _MaximumDrawUp Then
+                            _MaximumDrawUp = CurrentLTP
+                            _MaximumDrawUpTime = CurrentLTPTime
+                        End If
                     ElseIf EntryDirection = TradeExecutionDirection.Sell Then
-                        _MaximumDrawUp = Math.Min(_MaximumDrawUp, CurrentLTP)
+                        '_MaximumDrawUp = Math.Min(_MaximumDrawUp, CurrentLTP)
+                        If CurrentLTP <= _MaximumDrawUp Then
+                            _MaximumDrawUp = CurrentLTP
+                            _MaximumDrawUpTime = CurrentLTPTime
+                        End If
                     End If
                 End If
                 Return _MaximumDrawUp
+            End Get
+        End Property
+
+        Private _MaximumDrawUpTime As Date = Date.MinValue
+        Public ReadOnly Property MaximumDrawUpTime As Date
+            Get
+                Return _MaximumDrawUpTime
             End Get
         End Property
 
@@ -247,16 +263,33 @@ Namespace StrategyHelper
                 If TradeCurrentStatus = TradeExecutionStatus.Inprogress Then
                     If _MaximumDrawDown = Double.MinValue Then
                         _MaximumDrawDown = Me.EntryPrice
+                        _MaximumDrawDownTime = Me.EntryTime
                     End If
                     If EntryDirection = TradeExecutionDirection.Buy Then
-                        _MaximumDrawDown = Math.Min(_MaximumDrawDown, CurrentLTP)
+                        '_MaximumDrawDown = Math.Min(_MaximumDrawDown, CurrentLTP)
+                        If CurrentLTP <= _MaximumDrawDown Then
+                            _MaximumDrawDown = CurrentLTP
+                            _MaximumDrawDownTime = CurrentLTPTime
+                        End If
                     ElseIf EntryDirection = TradeExecutionDirection.Sell Then
-                        _MaximumDrawDown = Math.Max(_MaximumDrawDown, CurrentLTP)
+                        '_MaximumDrawDown = Math.Max(_MaximumDrawDown, CurrentLTP)
+                        If CurrentLTP >= _MaximumDrawDown Then
+                            _MaximumDrawDown = CurrentLTP
+                            _MaximumDrawDownTime = CurrentLTPTime
+                        End If
                     End If
                 End If
                 Return _MaximumDrawDown
             End Get
         End Property
+
+        Private _MaximumDrawDownTime As Date = Date.MinValue
+        Public ReadOnly Property MaximumDrawDownTime As Date
+            Get
+                Return _MaximumDrawDownTime
+            End Get
+        End Property
+
         Public ReadOnly Property MaximumDrawUpPL As Double
             Get
                 If EntryDirection = TradeExecutionDirection.Buy Then
@@ -268,6 +301,7 @@ Namespace StrategyHelper
                 End If
             End Get
         End Property
+
         Public ReadOnly Property MaximumDrawDownPL As Double
             Get
                 If EntryDirection = TradeExecutionDirection.Buy Then
