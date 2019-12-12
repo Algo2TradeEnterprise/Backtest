@@ -67,11 +67,14 @@ Namespace StrategyHelper
                     Dim stockList As Dictionary(Of String, StockDetails) = Await GetStockData(tradeCheckingDate).ConfigureAwait(False)
                     If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
                         Console.WriteLine(String.Format("Trading Date: {0}", tradeCheckingDate.ToString("yyyy-MM-dd")))
-                        For Each stock In stockList
+                        For Each stock In stockList.Keys
                             Console.WriteLine(stock)
                         Next
                     End If
+                    tradeCheckingDate = tradeCheckingDate.AddDays(1)
                     Continue While
+
+
                     _canceller.Token.ThrowIfCancellationRequested()
                     If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
                         Dim currentDayOneMinuteStocksPayload As Dictionary(Of String, Dictionary(Of Date, Payload)) = Nothing
@@ -806,7 +809,7 @@ Namespace StrategyHelper
                                                                                     {.StockName = symbol,
                                                                                     .LotSize = dt.Rows(i).Item(2),
                                                                                     .EligibleToTakeTrade = True}
-                                                ret.Add(instrumentName, detailsOfStock)
+                                                ret.Add(symbol, detailsOfStock)
                                                 Exit For
                                             End If
                                         Next
@@ -822,7 +825,7 @@ Namespace StrategyHelper
                                                                                     {.StockName = symbol,
                                                                                     .LotSize = dt.Rows(i).Item(2),
                                                                                     .EligibleToTakeTrade = True}
-                                                ret.Add(instrumentName, detailsOfStock)
+                                                ret.Add(symbol, detailsOfStock)
                                                 Exit For
                                             End If
                                         Next
@@ -865,7 +868,7 @@ Namespace StrategyHelper
         Private Async Function GetOptionData(ByVal tradingSymbol As String, ByVal checkingDate As Date) As Task(Of Dictionary(Of String, Decimal))
             Dim ret As Dictionary(Of String, Decimal) = Nothing
             Dim dt As DataTable = Nothing
-            Using sqlHlpr As New Utilities.DAL.MySQLDBHelper("local_host", "local_stock", "3306", "rio", "speech123", _canceller)
+            Using sqlHlpr As New Utilities.DAL.MySQLDBHelper("localhost", "local_stock", "3306", "rio", "speech123", _canceller)
                 AddHandler sqlHlpr.Heartbeat, AddressOf OnHeartbeat
                 AddHandler sqlHlpr.DocumentDownloadComplete, AddressOf OnDocumentDownloadComplete
                 AddHandler sqlHlpr.DocumentRetryStatus, AddressOf OnDocumentRetryStatus
