@@ -87,8 +87,13 @@ Namespace StrategyHelper
                             End If
 
                             _canceller.Token.ThrowIfCancellationRequested()
+
                             'Now transfer only the current date payload into the workable payload (this will be used for the main loop and checking if the date is a valid date)
                             If XDayOneMinutePayload IsNot Nothing AndAlso XDayOneMinutePayload.Count > 0 Then
+                                If XDayOneMinutePayload.Count / Me.SignalTimeFrame <= 100 Then
+                                    Console.WriteLine(String.Format("Stock neglected:{0}", stock))
+                                    Continue For
+                                End If
                                 OnHeartbeat(String.Format("Processing for {0} on {1}. Stock Counter: [ {2}/{3} ]", stock, tradeCheckingDate.ToShortDateString, stockCount, stockList.Count))
                                 For Each runningPayload In XDayOneMinutePayload.Keys
                                     _canceller.Token.ThrowIfCancellationRequested()

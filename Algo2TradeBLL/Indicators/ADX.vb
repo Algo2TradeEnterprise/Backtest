@@ -70,13 +70,17 @@
                             TRForPeriod = previousNInputFieldPayload.Sum(Function(s)
                                                                              Return s.Value
                                                                          End Function)
+                            If TRForPeriod = 0 Then TRForPeriod = 0.0000000001
                         ElseIf counter > smoothingPeriod + 1 Then
                             TRForPeriod = previousTRForPeriod - (previousTRForPeriod / smoothingPeriod) + TR
+                            If TRForPeriod = 0 Then TRForPeriod = 0.0000000001
                         Else
                             TRForPeriod = 0
                         End If
                         previousTRForPeriod = TRForPeriod
                     End If
+
+
                     If tr14Payload Is Nothing Then tr14Payload = New Dictionary(Of Date, Decimal)
                     tr14Payload.Add(runningInputPayload.Key, TRForPeriod)
 
@@ -113,20 +117,28 @@
                     End If
                     If dm14MinusPayload Is Nothing Then dm14MinusPayload = New Dictionary(Of Date, Decimal)
                     dm14MinusPayload.Add(runningInputPayload.Key, DM_MinusForPeriod)
+                    Try
+                        If counter >= smoothingPeriod + 1 Then
+                            DIPlus = 100 * (DM_PlusForPeriod / TRForPeriod)
+                            DIMinus = 100 * (DM_MinusForPeriod / TRForPeriod)
+                            diffDI = Math.Abs(DIPlus - DIMinus)
+                            sumDI = DIPlus + DIMinus
+                            If sumDI * 1 <> 0 Then
+                                DX = 100 * (diffDI / sumDI)
+                            Else
+                                DX = 100
+                            End If
+                        Else
+                            DIPlus = 0
+                            DIMinus = 0
+                            diffDI = 0
+                            sumDI = 0
+                            DX = 0
+                        End If
+                    Catch ex As Exception
+                        Throw ex
+                    End Try
 
-                    If counter >= smoothingPeriod + 1 Then
-                        DIPlus = 100 * (DM_PlusForPeriod / TRForPeriod)
-                        DIMinus = 100 * (DM_MinusForPeriod / TRForPeriod)
-                        diffDI = Math.Abs(DIPlus - DIMinus)
-                        sumDI = DIPlus + DIMinus
-                        DX = 100 * (diffDI / sumDI)
-                    Else
-                        DIPlus = 0
-                        DIMinus = 0
-                        diffDI = 0
-                        sumDI = 0
-                        DX = 0
-                    End If
 
                     If outputDIPlusPayload Is Nothing Then outputDIPlusPayload = New Dictionary(Of Date, Decimal)
                     outputDIPlusPayload.Add(runningInputPayload.Key, DIPlus)
