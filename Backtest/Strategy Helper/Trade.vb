@@ -147,6 +147,7 @@ Namespace StrategyHelper
         Public ReadOnly Property Supporting4 As String
         Public ReadOnly Property Supporting5 As String
         Public ReadOnly Property Supporting6 As String
+        Public ReadOnly Property Supporting7 As String
 
         Private _CurrentLTP As Double
         Public Property CurrentLTP As Double
@@ -388,6 +389,14 @@ Namespace StrategyHelper
         '                                                                                                                                            Me.ExitRemark,
         '                                                                                                                                            Me.TradeCurrentStatus)
         'End Function
+        Private _refreshDone As Boolean = False
+        Public Sub RefreshMaxDrawdown()
+            If Not _refreshDone Then
+                _MaximumDrawDown = Double.MinValue
+                _MaximumDrawDownTime = Date.MinValue
+            End If
+        End Sub
+
         Public Sub UpdateTrade(Optional ByVal TradingSymbol As String = Nothing,
                                 Optional ByVal StockType As TypeOfStock = TypeOfStock.None,
                                 Optional ByVal EntryTime As Date = Nothing,
@@ -419,7 +428,8 @@ Namespace StrategyHelper
                                 Optional ByVal Supporting3 As String = Nothing,
                                 Optional ByVal Supporting4 As String = Nothing,
                                 Optional ByVal Supporting5 As String = Nothing,
-                                Optional ByVal Supporting6 As String = Nothing)
+                                Optional ByVal Supporting6 As String = Nothing,
+                                Optional ByVal Supporting7 As String = Nothing)
 
 
             If TradingSymbol IsNot Nothing Then _TradingSymbol = TradingSymbol
@@ -454,6 +464,8 @@ Namespace StrategyHelper
             If Supporting4 IsNot Nothing Then _Supporting4 = Supporting4
             If Supporting5 IsNot Nothing Then _Supporting5 = Supporting5
             If Supporting6 IsNot Nothing Then _Supporting6 = Supporting6
+            If Supporting7 IsNot Nothing Then _Supporting7 = Supporting7
+
 
             If Me._ExitTime <> Nothing OrElse Me._ExitTime <> Date.MinValue Then
                 Me._TradeUpdateTimeStamp = Me._ExitTime

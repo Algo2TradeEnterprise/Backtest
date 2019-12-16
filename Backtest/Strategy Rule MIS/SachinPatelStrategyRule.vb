@@ -103,7 +103,8 @@ Public Class SachinPatelStrategyRule
                                 .Target = .EntryPrice + targetPoint,
                                 .Buffer = buffer,
                                 .SignalCandle = signalCandle,
-                                .OrderType = Trade.TypeOfOrder.SL
+                                .OrderType = Trade.TypeOfOrder.SL,
+                                .Supporting1 = "Trade 1"
                             }
 
                         If _userInputs.PartialExit Then
@@ -112,11 +113,12 @@ Public Class SachinPatelStrategyRule
                                     .EntryPrice = entryPrice,
                                     .EntryDirection = Trade.TradeExecutionDirection.Buy,
                                     .Quantity = quantity,
-                                    .Stoploss = .EntryPrice - slPoint,
+                                    .Stoploss = .EntryPrice - 1000000,
                                     .Target = .EntryPrice + 1000000,
                                     .Buffer = buffer,
                                     .SignalCandle = signalCandle,
-                                    .OrderType = Trade.TypeOfOrder.SL
+                                    .OrderType = Trade.TypeOfOrder.SL,
+                                    .Supporting1 = "Trade 2"
                                 }
                         End If
                     End If
@@ -211,9 +213,10 @@ Public Class SachinPatelStrategyRule
                 End If
             End If
             If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
-                ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, String.Format("Breakeven Movement at {0} on {1}",
-                                                                                               currentTick.Open,
-                                                                                               currentTick.PayloadDate.ToString("HH:mm:ss")))
+                'ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, String.Format("Breakeven Movement at {0} on {1}",
+                '                                                                               currentTick.Open,
+                '                                                                               currentTick.PayloadDate.ToString("HH:mm:ss")))
+                currentTrade.RefreshMaxDrawdown()
             End If
         End If
         Return ret
@@ -238,12 +241,12 @@ Public Class SachinPatelStrategyRule
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
             Dim exitCandleTime As Date = Me._parentStrategy.GetCurrentXMinuteCandleTime(currentTrade.ExitTime, _signalPayload)
             Dim exitCandlePayload As Payload = _signalPayload(exitCandleTime)
-            currentTrade.UpdateTrade(Supporting1:=_adxPayload(currentTrade.SignalCandle.PayloadDate),
-                                     Supporting2:=_diPlusPayload(currentTrade.SignalCandle.PayloadDate),
-                                     Supporting3:=_diMinusPayload(currentTrade.SignalCandle.PayloadDate),
-                                     Supporting4:=_adxPayload(exitCandlePayload.PreviousCandlePayload.PayloadDate),
-                                     Supporting5:=_diPlusPayload(exitCandlePayload.PreviousCandlePayload.PayloadDate),
-                                     Supporting6:=_diMinusPayload(exitCandlePayload.PreviousCandlePayload.PayloadDate))
+            currentTrade.UpdateTrade(Supporting2:=_adxPayload(currentTrade.SignalCandle.PayloadDate),
+                                     Supporting3:=_diPlusPayload(currentTrade.SignalCandle.PayloadDate),
+                                     Supporting4:=_diMinusPayload(currentTrade.SignalCandle.PayloadDate),
+                                     Supporting5:=_adxPayload(exitCandlePayload.PreviousCandlePayload.PayloadDate),
+                                     Supporting6:=_diPlusPayload(exitCandlePayload.PreviousCandlePayload.PayloadDate),
+                                     Supporting7:=_diMinusPayload(exitCandlePayload.PreviousCandlePayload.PayloadDate))
         End If
     End Function
 
