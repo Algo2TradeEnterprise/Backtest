@@ -113,7 +113,7 @@ Public Class SachinPatelStrategyRule
                                     .EntryPrice = entryPrice,
                                     .EntryDirection = Trade.TradeExecutionDirection.Buy,
                                     .Quantity = quantity,
-                                    .Stoploss = .EntryPrice - 1000000,
+                                    .Stoploss = .EntryPrice - slPoint,
                                     .Target = .EntryPrice + 1000000,
                                     .Buffer = buffer,
                                     .SignalCandle = signalCandle,
@@ -140,7 +140,8 @@ Public Class SachinPatelStrategyRule
                                 .Target = .EntryPrice - targetPoint,
                                 .Buffer = buffer,
                                 .SignalCandle = signalCandle,
-                                .OrderType = Trade.TypeOfOrder.SL
+                                .OrderType = Trade.TypeOfOrder.SL,
+                                .Supporting1 = "Trade 1"
                             }
 
                         If _userInputs.PartialExit Then
@@ -153,7 +154,8 @@ Public Class SachinPatelStrategyRule
                                     .Target = .EntryPrice - 1000000,
                                     .Buffer = buffer,
                                     .SignalCandle = signalCandle,
-                                    .OrderType = Trade.TypeOfOrder.SL
+                                    .OrderType = Trade.TypeOfOrder.SL,
+                                    .Supporting1 = "Trade 2"
                                 }
                         End If
                     End If

@@ -394,6 +394,12 @@ Namespace StrategyHelper
             If Not _refreshDone Then
                 _MaximumDrawDown = Double.MinValue
                 _MaximumDrawDownTime = Date.MinValue
+
+                If EntryDirection = TradeExecutionDirection.Buy Then
+                    _PotentialStopLoss = Me.EntryPrice - 1000000
+                ElseIf EntryDirection = TradeExecutionDirection.Sell Then
+                    _PotentialStopLoss = Me.EntryPrice + 1000000
+                End If
             End If
         End Sub
 
