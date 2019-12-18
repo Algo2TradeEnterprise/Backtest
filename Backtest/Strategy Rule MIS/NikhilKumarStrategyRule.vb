@@ -5,6 +5,18 @@ Imports Algo2TradeBLL
 Public Class NikhilKumarStrategyRule
     Inherits StrategyRule
 
+#Region "Entity"
+    Public Class StrategyRuleEntities
+        Inherits RuleEntities
+
+        Public StoplossPoint As Decimal
+        Public FirstTargetPoint As Decimal
+    End Class
+#End Region
+
+    Private ReadOnly _userInputs As StrategyRuleEntities
+    Private ReadOnly _quantity As Integer
+
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
                    ByVal parentStrategy As Strategy,
@@ -13,6 +25,8 @@ Public Class NikhilKumarStrategyRule
                    ByVal canceller As CancellationTokenSource,
                    ByVal entities As RuleEntities)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
+        _userInputs = entities
+        _quantity = 1
     End Sub
 
     Public Overrides Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
