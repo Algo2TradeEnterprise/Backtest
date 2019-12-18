@@ -298,7 +298,7 @@ Public Class frmMain
             Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                               exchangeStartTime:=TimeSpan.Parse("09:00:00"),
                                                               exchangeEndTime:=TimeSpan.Parse("23:59:59"),
-                                                              tradeStartTime:=TimeSpan.Parse("9:15:00"),
+                                                              tradeStartTime:=TimeSpan.Parse("9:30:00"),
                                                               lastTradeEntryTime:=TimeSpan.Parse("22:30:59"),
                                                               eodExitTime:=TimeSpan.Parse("23:00:00"),
                                                               tickSize:=tick,

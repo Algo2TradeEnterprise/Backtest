@@ -39,7 +39,6 @@ Public Class NikhilKumarStrategyRule
         Dim parameter1 As PlaceOrderParameters = Nothing
         Dim parameter2 As PlaceOrderParameters = Nothing
         If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
-            Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS) AndAlso Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS) AndAlso
             _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol) < Me._parentStrategy.NumberOfTradesPerStockPerDay AndAlso
             _parentStrategy.TotalPLAfterBrokerage(currentTick.PayloadDate) < _parentStrategy.OverAllProfitPerDay AndAlso
             _parentStrategy.TotalPLAfterBrokerage(currentTick.PayloadDate) > _parentStrategy.OverAllLossPerDay AndAlso
@@ -70,10 +69,14 @@ Public Class NikhilKumarStrategyRule
             End If
 
             If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
-                If signalCandleSatisfied.Item2 = Trade.TradeExecutionDirection.Buy Then
+
+
+                If signalCandleSatisfied.Item2 = Trade.TradeExecutionDirection.Buy AndAlso
+                    Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) AndAlso
+                    Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) Then
                     Dim buffer As Decimal = 1
                     Dim entryPrice As Decimal = signalCandleSatisfied.Item3 + buffer
-                    Dim quantity As Decimal = _quantity
+                    Dim quantity As Decimal = _quantity * Me.LotSize
                     Dim slPoint As Decimal = _userInputs.StoplossPoint
                     Dim targetPoint As Decimal = _userInputs.FirstTargetPoint
 
@@ -102,10 +105,12 @@ Public Class NikhilKumarStrategyRule
                                 .Supporting1 = "Trade 2"
                             }
                     End If
-                ElseIf signalCandleSatisfied.Item2 = Trade.TradeExecutionDirection.Sell Then
+                ElseIf signalCandleSatisfied.Item2 = Trade.TradeExecutionDirection.Sell AndAlso
+                    Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) AndAlso
+                    Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) Then
                     Dim buffer As Decimal = 1
                     Dim entryPrice As Decimal = signalCandleSatisfied.Item3 - buffer
-                    Dim quantity As Decimal = _quantity
+                    Dim quantity As Decimal = _quantity * Me.LotSize
                     Dim slPoint As Decimal = _userInputs.StoplossPoint
                     Dim targetPoint As Decimal = _userInputs.FirstTargetPoint
 
