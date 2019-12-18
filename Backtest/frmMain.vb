@@ -322,7 +322,8 @@ Public Class frmMain
 
                     .RuleEntityData = New NikhilKumarStrategyRule.StrategyRuleEntities With
                                 {.StoplossPoint = 10,
-                                 .FirstTargetPoint = 5
+                                 .FirstTargetPoint = 5,
+                                 .TrailingPoint = 1
                                 }
 
                     .NumberOfTradeableStockPerDay = Integer.MaxValue
