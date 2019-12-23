@@ -321,7 +321,7 @@ Public Class frmMain
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
                     .RuleEntityData = New NikhilKumarStrategyRule.StrategyRuleEntities With
-                                {.StoplossPoint = 10,
+                                {.StoplossPoint = 5,
                                  .FirstTargetPoint = 5,
                                  .TrailingPoint = 1
                                 }
