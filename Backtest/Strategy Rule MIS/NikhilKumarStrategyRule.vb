@@ -27,7 +27,7 @@ Public Class NikhilKumarStrategyRule
                    ByVal entities As RuleEntities)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _userInputs = entities
-        _quantity = 1
+        _quantity = 5
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -93,17 +93,17 @@ Public Class NikhilKumarStrategyRule
                                 .Supporting1 = "Trade 1"
                             }
 
-                        parameter2 = New PlaceOrderParameters With {
-                                .EntryPrice = entryPrice,
-                                .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                .Quantity = quantity,
-                                .Stoploss = .EntryPrice - slPoint,
-                                .Target = .EntryPrice + 1000000,
-                                .Buffer = buffer,
-                                .SignalCandle = signalCandle,
-                                .OrderType = Trade.TypeOfOrder.SL,
-                                .Supporting1 = "Trade 2"
-                            }
+                        'parameter2 = New PlaceOrderParameters With {
+                        '        .EntryPrice = entryPrice,
+                        '        .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                        '        .Quantity = quantity,
+                        '        .Stoploss = .EntryPrice - slPoint,
+                        '        .Target = .EntryPrice + 1000000,
+                        '        .Buffer = buffer,
+                        '        .SignalCandle = signalCandle,
+                        '        .OrderType = Trade.TypeOfOrder.SL,
+                        '        .Supporting1 = "Trade 2"
+                        '    }
                     End If
                 ElseIf signalCandleSatisfied.Item2 = Trade.TradeExecutionDirection.Sell AndAlso
                     Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) AndAlso
@@ -127,17 +127,17 @@ Public Class NikhilKumarStrategyRule
                                 .Supporting1 = "Trade 1"
                             }
 
-                        parameter2 = New PlaceOrderParameters With {
-                                .EntryPrice = entryPrice,
-                                .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                                .Quantity = quantity,
-                                .Stoploss = .EntryPrice + slPoint,
-                                .Target = .EntryPrice - 1000000,
-                                .Buffer = buffer,
-                                .SignalCandle = signalCandle,
-                                .OrderType = Trade.TypeOfOrder.SL,
-                                .Supporting1 = "Trade 2"
-                            }
+                        'parameter2 = New PlaceOrderParameters With {
+                        '        .EntryPrice = entryPrice,
+                        '        .EntryDirection = Trade.TradeExecutionDirection.Sell,
+                        '        .Quantity = quantity,
+                        '        .Stoploss = .EntryPrice + slPoint,
+                        '        .Target = .EntryPrice - 1000000,
+                        '        .Buffer = buffer,
+                        '        .SignalCandle = signalCandle,
+                        '        .OrderType = Trade.TypeOfOrder.SL,
+                        '        .Supporting1 = "Trade 2"
+                        '    }
                     End If
                 End If
             End If
