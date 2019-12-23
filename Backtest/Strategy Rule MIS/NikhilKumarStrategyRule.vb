@@ -142,7 +142,7 @@ Public Class NikhilKumarStrategyRule
                 End If
             End If
         End If
-        If parameter1 IsNot Nothing AndAlso parameter2 IsNot Nothing Then
+        If parameter1 IsNot Nothing Then
             ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter1, parameter2})
         End If
         Return ret
