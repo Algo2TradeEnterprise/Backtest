@@ -551,46 +551,49 @@ Namespace StrategyHelper
                 If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
                     Select Case Me.RuleNumber
                         Case 29
-                            Dim counter As Integer = 0
-                            For i = 1 To dt.Rows.Count - 1
-                                'Dim rowDate As Date = dt.Rows(i)(0)
-                                'If rowDate.Date = tradingDate.Date Then
-                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                Dim instrumentName As String = dt.Rows(i).Item(1)
-                                If instrumentName.Contains("FUT") Then instrumentName = instrumentName.Remove(instrumentName.Count - 8)
-                                Dim eodPayload As Dictionary(Of Date, Payload) = Cmn.GetRawPayload(Common.DataBaseTable.EOD_Futures, instrumentName, tradingDate.AddDays(-10), tradingDate.AddDays(-1))
-                                If eodPayload IsNot Nothing AndAlso eodPayload.Count > 0 Then
-                                    Dim lastTradingDate As Date = eodPayload.LastOrDefault.Value.PayloadDate.Date
-                                    Dim close As Decimal = eodPayload.LastOrDefault.Value.Close
-                                    Dim tradingSymbol As String = eodPayload.LastOrDefault.Value.TradingSymbol
-                                    Dim remainder As Decimal = close Mod 50
-                                    Dim strikePrice As Decimal = Decimal.MinValue
-                                    If (close - remainder) Mod 100 = 0 Then
-                                        strikePrice = close - remainder
-                                    Else
-                                        strikePrice = close - remainder - 50
-                                    End If
-                                    If strikePrice <> Decimal.MinValue Then
-                                        Dim peStockName As String = tradingSymbol.Replace("FUT", String.Format("{0}PE", strikePrice.ToString("0.####")))
-                                        Dim ceStockName As String = tradingSymbol.Replace("FUT", String.Format("{0}CE", (strikePrice + 100).ToString("0.####")))
+                            Dim tradingDay As Boolean = Await Cmn.IsTradingDay(tradingDate).ConfigureAwait(False)
+                            If tradingDay Then
+                                Dim counter As Integer = 0
+                                For i = 1 To dt.Rows.Count - 1
+                                    'Dim rowDate As Date = dt.Rows(i)(0)
+                                    'If rowDate.Date = tradingDate.Date Then
+                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                    Dim instrumentName As String = dt.Rows(i).Item(1)
+                                    If instrumentName.Contains("FUT") Then instrumentName = instrumentName.Remove(instrumentName.Count - 8)
+                                    Dim eodPayload As Dictionary(Of Date, Payload) = Cmn.GetRawPayload(Common.DataBaseTable.EOD_Futures, instrumentName, tradingDate.AddDays(-10), tradingDate.AddDays(-1))
+                                    If eodPayload IsNot Nothing AndAlso eodPayload.Count > 0 Then
+                                        Dim lastTradingDate As Date = eodPayload.LastOrDefault.Value.PayloadDate.Date
+                                        Dim close As Decimal = eodPayload.LastOrDefault.Value.Close
+                                        Dim tradingSymbol As String = eodPayload.LastOrDefault.Value.TradingSymbol
+                                        Dim remainder As Decimal = close Mod 50
+                                        Dim strikePrice As Decimal = Decimal.MinValue
+                                        If (close - remainder) Mod 100 = 0 Then
+                                            strikePrice = close - remainder
+                                        Else
+                                            strikePrice = close - remainder - 50
+                                        End If
+                                        If strikePrice <> Decimal.MinValue Then
+                                            Dim peStockName As String = tradingSymbol.Replace("FUT", String.Format("{0}PE", strikePrice.ToString("0.####")))
+                                            Dim ceStockName As String = tradingSymbol.Replace("FUT", String.Format("{0}CE", (strikePrice + 100).ToString("0.####")))
 
-                                        Dim pedetailsOfStock As StockDetails = New StockDetails With
+                                            Dim pedetailsOfStock As StockDetails = New StockDetails With
                                                                             {.StockName = peStockName,
                                                                             .LotSize = dt.Rows(i).Item(2),
                                                                             .EligibleToTakeTrade = True}
-                                        ret.Add(peStockName, pedetailsOfStock)
+                                            ret.Add(peStockName, pedetailsOfStock)
 
-                                        Dim cedetailsOfStock As StockDetails = New StockDetails With
+                                            Dim cedetailsOfStock As StockDetails = New StockDetails With
                                                                             {.StockName = ceStockName,
                                                                             .LotSize = dt.Rows(i).Item(2),
                                                                             .EligibleToTakeTrade = True}
-                                        ret.Add(ceStockName, cedetailsOfStock)
+                                            ret.Add(ceStockName, cedetailsOfStock)
+                                        End If
                                     End If
-                                End If
-                                counter += 1
-                                If counter = Me.NumberOfTradeableStockPerDay Then Exit For
-                                'End If
-                            Next
+                                    counter += 1
+                                    If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                                    'End If
+                                Next
+                            End If
                         Case Else
                             Dim counter As Integer = 0
                             For i = 1 To dt.Rows.Count - 1
