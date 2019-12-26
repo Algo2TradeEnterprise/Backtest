@@ -291,7 +291,7 @@ Public Class frmMain
                     tick = 0.0025
                 Case Trade.TypeOfStock.Futures
                     database = Common.DataBaseTable.Intraday_Opt_Futures
-                    margin = 30
+                    margin = 1.4
                     tick = 0.05
             End Select
 
@@ -324,14 +324,10 @@ Public Class frmMain
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
                     Select Case .RuleNumber
                         Case 29
-                            '.RuleEntityData = New LowStoplossCandleStrategyRule.StrategyRuleEntities With
-                            '    {.MinimumInvestmentPerStock = 15000,
-                            '     .MinStoploss = 700,
-                            '     .MaxStoploss = 1500,
-                            '     .TargetMultiplier = 2,
-                            '     .MinimumStockMaxExitPerTrade = True,
-                            '     .TypeOfSLMakeup = slMkupType
-                            '    }
+                            .RuleEntityData = New OptionPairSupertrendStrategyRule.StrategyRuleEntities With
+                                {
+                                    .TargetMultiplier = 2
+                                }
                     End Select
 
                     .NumberOfTradeableStockPerDay = Integer.MaxValue
@@ -355,17 +351,14 @@ Public Class frmMain
                     .RealtimeTrailingPercentage = 50
                 End With
 
-                'Dim ruleData As LowStoplossWickStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                'Dim filename As String = String.Format("TF {0},StkMxPft {1},StkMxLs {2},OvrAlPft {3},OvrAlLs {4},TrlMTMTyp {5},ExtPTrd {6},SLMkupTyp {7}",
-                '                                       backtestStrategy.SignalTimeFrame,
-                '                                       If(backtestStrategy.StockMaxProfitPerDay <> Decimal.MaxValue, backtestStrategy.StockMaxProfitPerDay, "∞"),
-                '                                       If(backtestStrategy.StockMaxLossPerDay <> Decimal.MinValue, backtestStrategy.StockMaxLossPerDay, "∞"),
-                '                                       If(backtestStrategy.OverAllProfitPerDay <> Decimal.MaxValue, backtestStrategy.OverAllProfitPerDay, "∞"),
-                '                                       If(backtestStrategy.OverAllLossPerDay <> Decimal.MinValue, backtestStrategy.OverAllLossPerDay, "∞"),
-                '                                       backtestStrategy.TypeOfMTMTrailing.ToString,
-                '                                       ruleData.MinimumStockMaxExitPerTrade,
-                '                                       ruleData.TypeOfSLMakeup.ToString)
-                Dim filename As String = "Backtest"
+                Dim ruleData As OptionPairSupertrendStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                Dim filename As String = String.Format("TF {0},StkMxPft {1},StkMxLs {2},OvrAlPft {3},OvrAlLs {4},TgtMul {5}",
+                                                       backtestStrategy.SignalTimeFrame,
+                                                       If(backtestStrategy.StockMaxProfitPerDay <> Decimal.MaxValue, backtestStrategy.StockMaxProfitPerDay, "∞"),
+                                                       If(backtestStrategy.StockMaxLossPerDay <> Decimal.MinValue, backtestStrategy.StockMaxLossPerDay, "∞"),
+                                                       If(backtestStrategy.OverAllProfitPerDay <> Decimal.MaxValue, backtestStrategy.OverAllProfitPerDay, "∞"),
+                                                       If(backtestStrategy.OverAllLossPerDay <> Decimal.MinValue, backtestStrategy.OverAllLossPerDay, "∞"),
+                                                       ruleData.TargetMultiplier)
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using
