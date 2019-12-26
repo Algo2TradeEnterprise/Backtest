@@ -60,24 +60,12 @@ Namespace StrategyHelper
                 Dim tradeCheckingDate As Date = startDate.Date
                 Dim portfolioLossPerDay As Decimal = Me.OverAllLossPerDay
 
-
-                Dim tw As TextWriter = New StreamWriter("Option Stock.txt")
                 While tradeCheckingDate <= endDate.Date
                     _canceller.Token.ThrowIfCancellationRequested()
                     Me.AvailableCapital = Me.UsableCapital
                     Me.OverAllLossPerDay = portfolioLossPerDay
                     TradesTaken = New Dictionary(Of Date, Dictionary(Of String, List(Of Trade)))
                     Dim stockList As Dictionary(Of String, StockDetails) = Await GetStockData(tradeCheckingDate).ConfigureAwait(False)
-                    If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
-                        tw.WriteLine(String.Format("Trading Date: {0}", tradeCheckingDate.ToString("yyyy-MM-dd")))
-                        For Each stock In stockList.Keys
-                            tw.WriteLine(stock)
-                        Next
-                    End If
-                    tradeCheckingDate = tradeCheckingDate.AddDays(1)
-                    Continue While
-
-
                     _canceller.Token.ThrowIfCancellationRequested()
                     If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
                         Dim currentDayOneMinuteStocksPayload As Dictionary(Of String, Dictionary(Of Date, Payload)) = Nothing
@@ -544,7 +532,6 @@ Namespace StrategyHelper
                         SerializeFromCollectionUsingFileStream(Of Dictionary(Of Date, Dictionary(Of String, List(Of Trade))))(tradesFileName, TradesTaken)
                     End If
                 End While   'Date Loop
-                tw.Close()
 
                 If CapitalMovement IsNot Nothing Then Utilities.Strings.SerializeFromCollection(Of Dictionary(Of Date, List(Of Capital)))(capitalFileName, CapitalMovement)
 
