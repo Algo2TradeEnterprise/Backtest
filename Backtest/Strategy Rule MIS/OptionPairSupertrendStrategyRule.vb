@@ -63,9 +63,10 @@ Public Class OptionPairSupertrendStrategyRule
 
             If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
                 Dim buffer As Decimal = 1
+                If signalCandleSatisfied.Item4 = Trade.TypeOfOrder.Market Then buffer = 0
                 Dim entryPrice As Decimal = signalCandleSatisfied.Item2 + buffer
                 Dim quantity As Decimal = _quantity
-                Dim slPoint As Decimal = ConvertFloorCeling(entryPrice - signalCandle.Low, Me._parentStrategy.TickSize, RoundOfType.Floor)
+                Dim slPoint As Decimal = entryPrice - signalCandle.Low
                 Dim targetPoint As Decimal = slPoint
 
                 parameter1 = New PlaceOrderParameters With {
