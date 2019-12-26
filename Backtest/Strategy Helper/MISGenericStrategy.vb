@@ -615,8 +615,8 @@ Namespace StrategyHelper
                                         If signalPayload IsNot Nothing AndAlso signalPayload.Count > 0 Then
                                             Dim firstPayload As Payload = signalPayload.FirstOrDefault.Value
                                             Dim tradingSymbol As String = firstPayload.TradingSymbol
-                                            For Each runningPayload In signalPayload.Values
-                                                If runningPayload.PayloadDate > firstPayload.PayloadDate Then
+                                            For Each runningPayload In intradayPayload.Values
+                                                If runningPayload.PayloadDate >= firstPayload.PayloadDate.AddMinutes(Me.SignalTimeFrame) Then
                                                     If runningPayload.High >= firstPayload.High Then
                                                         Dim remainder As Decimal = firstPayload.High Mod 100
                                                         Dim strikePrice As Decimal = firstPayload.High - remainder

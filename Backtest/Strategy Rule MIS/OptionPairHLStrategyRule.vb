@@ -113,9 +113,8 @@ Public Class OptionPairHLStrategyRule
     Private Function GetSignalCandle(ByVal candle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Payload, Trade.TypeOfOrder)
         Dim ret As Tuple(Of Boolean, Decimal, Payload, Trade.TypeOfOrder) = Nothing
         If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then
-            Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
-            If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PayloadDate = _entryTime Then
-                ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TypeOfOrder)(True, currentMinuteCandlePayload.Open, currentMinuteCandlePayload, Trade.TypeOfOrder.Market)
+            If currentTick.PayloadDate >= _entryTime Then
+                ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TypeOfOrder)(True, currentTick.Open, candle, Trade.TypeOfOrder.Market)
             End If
         End If
         Return ret
