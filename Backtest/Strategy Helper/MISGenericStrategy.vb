@@ -93,8 +93,9 @@ Namespace StrategyHelper
                             Dim XDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             Dim currentDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             If Me.DataSource = SourceOfData.Database Then
-                                XDayOneMinutePayload = Cmn.GetRawPayload(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate)
+                                XDayOneMinutePayload = Cmn.GetRawPayloadForSpecificTradingSymbol(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate)
                             ElseIf Me.DataSource = SourceOfData.Live Then
+                                Throw New NotImplementedException
                                 XDayOneMinutePayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate).ConfigureAwait(False)
                             End If
 
@@ -575,10 +576,11 @@ Namespace StrategyHelper
                                     Dim lastTradingDate As Date = eodPayload.LastOrDefault.Value.PayloadDate.Date
                                     Dim close As Decimal = eodPayload.LastOrDefault.Value.Close
                                     Dim tradingSymbol As String = eodPayload.LastOrDefault.Value.TradingSymbol
-                                    Dim strikePrice As Decimal = 0
+                                    Dim remainder As Decimal = close Mod 50
+                                    Dim strikePrice As Decimal = close - remainder
                                     If strikePrice <> Decimal.MinValue Then
                                         Dim peStockName As String = tradingSymbol.Replace("FUT", String.Format("{0}PE", strikePrice.ToString("0.####")))
-                                        Dim ceStockName As String = tradingSymbol.Replace("FUT", String.Format("{0}CE", strikePrice.ToString("0.####")))
+                                        Dim ceStockName As String = tradingSymbol.Replace("FUT", String.Format("{0}CE", (strikePrice + 100).ToString("0.####")))
 
                                         Dim pedetailsOfStock As StockDetails = New StockDetails With
                                                                             {.StockName = peStockName,
