@@ -638,17 +638,19 @@ Namespace StrategyHelper
                                             Next
                                         End If
 
-                                        Dim pedetailsOfStock As StockDetails = New StockDetails With
+                                        If peStockName IsNot Nothing AndAlso ceStockName IsNot Nothing Then
+                                            Dim pedetailsOfStock As StockDetails = New StockDetails With
                                                                         {.StockName = peStockName,
                                                                         .LotSize = dt.Rows(i).Item(2),
                                                                         .EligibleToTakeTrade = True}
-                                        ret.Add(peStockName, pedetailsOfStock)
+                                            ret.Add(peStockName, pedetailsOfStock)
 
-                                        Dim cedetailsOfStock As StockDetails = New StockDetails With
+                                            Dim cedetailsOfStock As StockDetails = New StockDetails With
                                                                         {.StockName = ceStockName,
                                                                         .LotSize = dt.Rows(i).Item(2),
                                                                         .EligibleToTakeTrade = True}
-                                        ret.Add(ceStockName, cedetailsOfStock)
+                                            ret.Add(ceStockName, cedetailsOfStock)
+                                        End If
                                     End If
                                     counter += 1
                                     If counter = Me.NumberOfTradeableStockPerDay Then Exit For
