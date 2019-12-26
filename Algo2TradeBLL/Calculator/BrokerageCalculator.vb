@@ -159,6 +159,37 @@ Namespace Calculator
 
             Return Nothing
         End Function
+        Public Function FO_Options(ByVal Buy As Double, ByVal Sell As Double, ByVal Quantity As Integer, ByRef Output As BrokerageAttributes)
+
+            Dim bp As Decimal = Buy
+            Dim sp As Decimal = Sell
+            Dim qty As Decimal = Quantity
+            Output.Buy = Buy
+            Output.Sell = Sell
+            Output.Quantity = Quantity
+            Output.Multiplier = 1
+            Output.CTT = 0
+
+            'Dim t = 1.5
+            'Dim e = 1.5
+
+            Dim brkrg As Decimal = 40.0
+            Dim trnOvr As Decimal = Math.Round(((bp + sp) * qty), (2))
+            Dim stt = Convert.ToInt32(sp * qty * 0.0005)
+            Dim etc As Decimal = Math.Round((0.0005 * trnOvr), (2))
+            Dim clrng As Decimal = 0
+            Dim gst As Decimal = Math.Round((0.18 * (brkrg + etc)), (2))
+
+            Output.Turnover = trnOvr
+            Output.Brokerage = brkrg
+            Output.STT = stt
+            Output.Exchange = etc
+            Output.Clearing = clrng
+            Output.GST = gst
+            Output.TotalTax = Output.Brokerage + Output.STT + Output.Exchange + Output.Clearing + Output.GST + Output.SEBI
+
+            Return Nothing
+        End Function
         Public Function Commodity_MCX(ByVal item As String, ByVal Buy As Double, ByVal Sell As Double, ByVal Quantity As Integer, ByRef Output As BrokerageAttributes) As Task
 
             Dim m = Buy

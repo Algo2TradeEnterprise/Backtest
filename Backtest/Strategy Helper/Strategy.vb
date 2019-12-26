@@ -869,7 +869,7 @@ Namespace StrategyHelper
                 Case Trade.TypeOfStock.Commodity
                     calculator.Commodity_MCX(stockName, buyPrice, sellPrice, quantity / lotSize, potentialBrokerage)
                 Case Trade.TypeOfStock.Futures
-                    calculator.FO_Futures(buyPrice, sellPrice, quantity, potentialBrokerage)
+                    calculator.FO_Options(buyPrice, sellPrice, quantity, potentialBrokerage)
             End Select
 
             Return potentialBrokerage.NetProfitLoss
