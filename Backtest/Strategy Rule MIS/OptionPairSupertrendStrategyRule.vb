@@ -3,7 +3,7 @@ Imports System.Threading
 Imports Algo2TradeBLL
 Imports Utilities.Numbers.NumberManipulation
 
-Public Class OptionHedgingStrategyRule
+Public Class OptionPairSupertrendStrategyRule
     Inherits StrategyRule
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
