@@ -63,7 +63,7 @@ Public Class OptionPairHLStrategyRule
                 signalCandle = signalCandleSatisfied.Item3
             End If
 
-            If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
+            If signalCandle IsNot Nothing Then
                 Dim buffer As Decimal = 1
                 If signalCandleSatisfied.Item4 = Trade.TypeOfOrder.Market Then buffer = 0
                 Dim entryPrice As Decimal = signalCandleSatisfied.Item2 + buffer
