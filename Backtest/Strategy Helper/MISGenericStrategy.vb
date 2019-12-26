@@ -577,7 +577,12 @@ Namespace StrategyHelper
                                     Dim close As Decimal = eodPayload.LastOrDefault.Value.Close
                                     Dim tradingSymbol As String = eodPayload.LastOrDefault.Value.TradingSymbol
                                     Dim remainder As Decimal = close Mod 50
-                                    Dim strikePrice As Decimal = close - remainder
+                                    Dim strikePrice As Decimal = Decimal.MinValue
+                                    If (close - remainder) Mod 100 = 0 Then
+                                        strikePrice = close - remainder
+                                    Else
+                                        strikePrice = close - remainder - 50
+                                    End If
                                     If strikePrice <> Decimal.MinValue Then
                                         Dim peStockName As String = tradingSymbol.Replace("FUT", String.Format("{0}PE", strikePrice.ToString("0.####")))
                                         Dim ceStockName As String = tradingSymbol.Replace("FUT", String.Format("{0}CE", (strikePrice + 100).ToString("0.####")))
