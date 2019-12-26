@@ -296,15 +296,84 @@ Public Class frmMain
             End Select
 
 #Region "Option Hedging"
+            'Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+            '                                                exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+            '                                                exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+            '                                                tradeStartTime:=TimeSpan.Parse("9:17:00"),
+            '                                                lastTradeEntryTime:=TimeSpan.Parse("14:45:00"),
+            '                                                eodExitTime:=TimeSpan.Parse("15:15:00"),
+            '                                                tickSize:=tick,
+            '                                                marginMultiplier:=margin,
+            '                                                timeframe:=5,
+            '                                                heikenAshiCandle:=False,
+            '                                                stockType:=stockType,
+            '                                                databaseTable:=database,
+            '                                                dataSource:=sourceData,
+            '                                                initialCapital:=Decimal.MaxValue / 2,
+            '                                                usableCapital:=Decimal.MaxValue / 2,
+            '                                                minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+            '                                                amountToBeWithdrawn:=10000)
+            '    AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+
+            '    With backtestStrategy
+            '        .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "NIFTY.csv")
+
+            '        .AllowBothDirectionEntryAtSameTime = False
+            '        .TrailingStoploss = False
+            '        .TickBasedStrategy = True
+            '        .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+            '        Select Case .RuleNumber
+            '            Case 29
+            '                .RuleEntityData = New OptionPairSupertrendStrategyRule.StrategyRuleEntities With
+            '                    {
+            '                        .TargetMultiplier = 2
+            '                    }
+            '        End Select
+
+            '        .NumberOfTradeableStockPerDay = Integer.MaxValue
+
+            '        .NumberOfTradesPerStockPerDay = Integer.MaxValue
+
+            '        .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+            '        .StockMaxLossPercentagePerDay = Decimal.MinValue
+
+            '        .ExitOnStockFixedTargetStoploss = False
+            '        .StockMaxProfitPerDay = Decimal.MaxValue
+            '        .StockMaxLossPerDay = Decimal.MinValue
+
+            '        .ExitOnOverAllFixedTargetStoploss = False
+            '        .OverAllProfitPerDay = Decimal.MaxValue
+            '        .OverAllLossPerDay = Decimal.MinValue
+
+            '        .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+            '        .MTMSlab = Math.Abs(.OverAllLossPerDay)
+            '        .MovementSlab = .MTMSlab / 2
+            '        .RealtimeTrailingPercentage = 50
+            '    End With
+
+            '    Dim ruleData As OptionPairSupertrendStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+            '    Dim filename As String = String.Format("TF {0},StkMxPft {1},StkMxLs {2},OvrAlPft {3},OvrAlLs {4},TgtMul {5}",
+            '                                           backtestStrategy.SignalTimeFrame,
+            '                                           If(backtestStrategy.StockMaxProfitPerDay <> Decimal.MaxValue, backtestStrategy.StockMaxProfitPerDay, "∞"),
+            '                                           If(backtestStrategy.StockMaxLossPerDay <> Decimal.MinValue, backtestStrategy.StockMaxLossPerDay, "∞"),
+            '                                           If(backtestStrategy.OverAllProfitPerDay <> Decimal.MaxValue, backtestStrategy.OverAllProfitPerDay, "∞"),
+            '                                           If(backtestStrategy.OverAllLossPerDay <> Decimal.MinValue, backtestStrategy.OverAllLossPerDay, "∞"),
+            '                                           ruleData.TargetMultiplier)
+
+            '    Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+            'End Using
+#End Region
+
+#Region "Option Hedging"
             Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                             exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                             exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                            tradeStartTime:=TimeSpan.Parse("9:17:00"),
+                                                            tradeStartTime:=TimeSpan.Parse("9:30:00"),
                                                             lastTradeEntryTime:=TimeSpan.Parse("14:45:00"),
                                                             eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                             tickSize:=tick,
                                                             marginMultiplier:=margin,
-                                                            timeframe:=5,
+                                                            timeframe:=15,
                                                             heikenAshiCandle:=False,
                                                             stockType:=stockType,
                                                             databaseTable:=database,
@@ -316,15 +385,15 @@ Public Class frmMain
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "NIFTY.csv")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "BANKNIFTY.csv")
 
                     .AllowBothDirectionEntryAtSameTime = False
                     .TrailingStoploss = False
                     .TickBasedStrategy = True
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
                     Select Case .RuleNumber
-                        Case 29
-                            .RuleEntityData = New OptionPairSupertrendStrategyRule.StrategyRuleEntities With
+                        Case 30
+                            .RuleEntityData = New OptionPairHLStrategyRule.StrategyRuleEntities With
                                 {
                                     .TargetMultiplier = 2
                                 }
@@ -351,7 +420,7 @@ Public Class frmMain
                     .RealtimeTrailingPercentage = 50
                 End With
 
-                Dim ruleData As OptionPairSupertrendStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                Dim ruleData As OptionPairHLStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
                 Dim filename As String = String.Format("TF {0},StkMxPft {1},StkMxLs {2},OvrAlPft {3},OvrAlLs {4},TgtMul {5}",
                                                        backtestStrategy.SignalTimeFrame,
                                                        If(backtestStrategy.StockMaxProfitPerDay <> Decimal.MaxValue, backtestStrategy.StockMaxProfitPerDay, "∞"),
