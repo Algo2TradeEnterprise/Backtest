@@ -17,8 +17,6 @@ Public Class OptionPairHLStrategyRule
     Private ReadOnly _userInputs As StrategyRuleEntities
     Private ReadOnly _quantity As Integer
     Private ReadOnly _entryTime As Date
-    Private _supertrendPayload As Dictionary(Of Date, Decimal)
-    Private _supertrendColorPayload As Dictionary(Of Date, Color)
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -36,8 +34,6 @@ Public Class OptionPairHLStrategyRule
 
     Public Overrides Sub CompletePreProcessing()
         MyBase.CompletePreProcessing()
-
-        Indicator.Supertrend.CalculateSupertrend(8, 2, _signalPayload, _supertrendPayload, _supertrendColorPayload)
     End Sub
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
         Dim ret As Tuple(Of Boolean, List(Of PlaceOrderParameters)) = Nothing
