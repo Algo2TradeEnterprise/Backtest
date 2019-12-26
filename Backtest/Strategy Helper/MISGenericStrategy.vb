@@ -112,7 +112,7 @@ Namespace StrategyHelper
                                         Case 29
                                             stockRule = New OptionPairSupertrendStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 30
-                                            stockRule = New OptionPairHLStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                            stockRule = New OptionPairHLStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting7)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -624,6 +624,20 @@ Namespace StrategyHelper
                                                         remainder = firstPayload.Low Mod 100
                                                         strikePrice = firstPayload.Low - remainder
                                                         peStockName = tradingSymbol.Replace("FUT", String.Format("{0}PE", (strikePrice).ToString("0.####")))
+
+                                                        Dim pedetailsOfStock As StockDetails = New StockDetails With
+                                                                        {.StockName = peStockName,
+                                                                        .LotSize = dt.Rows(i).Item(2),
+                                                                        .EligibleToTakeTrade = True,
+                                                                        .Supporting7 = runningPayload.PayloadDate}
+                                                        ret.Add(peStockName, pedetailsOfStock)
+
+                                                        Dim cedetailsOfStock As StockDetails = New StockDetails With
+                                                                        {.StockName = ceStockName,
+                                                                        .LotSize = dt.Rows(i).Item(2),
+                                                                        .EligibleToTakeTrade = True,
+                                                                        .Supporting7 = runningPayload.PayloadDate}
+                                                        ret.Add(ceStockName, cedetailsOfStock)
                                                         Exit For
                                                     ElseIf runningPayload.Low <= firstPayload.Low Then
                                                         Dim remainder As Decimal = firstPayload.Low Mod 100
@@ -632,28 +646,28 @@ Namespace StrategyHelper
                                                         remainder = firstPayload.High Mod 100
                                                         strikePrice = firstPayload.High - remainder
                                                         ceStockName = tradingSymbol.Replace("FUT", String.Format("{0}CE", (strikePrice + 100).ToString("0.####")))
+
+                                                        Dim pedetailsOfStock As StockDetails = New StockDetails With
+                                                                        {.StockName = peStockName,
+                                                                        .LotSize = dt.Rows(i).Item(2),
+                                                                        .EligibleToTakeTrade = True,
+                                                                        .Supporting7 = runningPayload.PayloadDate}
+                                                        ret.Add(peStockName, pedetailsOfStock)
+
+                                                        Dim cedetailsOfStock As StockDetails = New StockDetails With
+                                                                        {.StockName = ceStockName,
+                                                                        .LotSize = dt.Rows(i).Item(2),
+                                                                        .EligibleToTakeTrade = True,
+                                                                        .Supporting7 = runningPayload.PayloadDate}
+                                                        ret.Add(ceStockName, cedetailsOfStock)
                                                         Exit For
                                                     End If
                                                 End If
                                             Next
                                         End If
-
-                                        If peStockName IsNot Nothing AndAlso ceStockName IsNot Nothing Then
-                                            Dim pedetailsOfStock As StockDetails = New StockDetails With
-                                                                        {.StockName = peStockName,
-                                                                        .LotSize = dt.Rows(i).Item(2),
-                                                                        .EligibleToTakeTrade = True}
-                                            ret.Add(peStockName, pedetailsOfStock)
-
-                                            Dim cedetailsOfStock As StockDetails = New StockDetails With
-                                                                        {.StockName = ceStockName,
-                                                                        .LotSize = dt.Rows(i).Item(2),
-                                                                        .EligibleToTakeTrade = True}
-                                            ret.Add(ceStockName, cedetailsOfStock)
-                                        End If
+                                        counter += 1
+                                        If counter = Me.NumberOfTradeableStockPerDay Then Exit For
                                     End If
-                                    counter += 1
-                                    If counter = Me.NumberOfTradeableStockPerDay Then Exit For
                                 Next
                             End If
                         Case Else
