@@ -831,8 +831,8 @@ Public Class frmMain
 #Region "Low Stoploss Wick & Candle"
             For ovrAlLoss As Decimal = -10000 To -10000 Step 1000
                 For stkMaxLoss As Decimal = -3000 To -3000 Step 1000
-                    For trlngMTM As Integer = 2 To 4
-                        For slMkupType As Integer = 1 To 2
+                    For trlngMTM As Integer = 2 To 2
+                        For slMkupType As Integer = 2 To 2
                             Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                               exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                               exchangeEndTime:=TimeSpan.Parse("15:29:59"),
