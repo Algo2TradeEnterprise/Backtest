@@ -185,7 +185,9 @@ Public Class TrendLinePositionalStrategyRule
                                     startingQuantity = quantity
                                 End If
                                 If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
-                                    ret = New Tuple(Of Boolean, Decimal, Payload, Decimal, Integer, Integer, TrendLineVeriables)(True, entryPrice, currentDayPayload, atr, quantity, startingQuantity, currentDayTrendLine)
+                                    If lastExecutedTrade.ExitTime.Date <> currentDayPayload.PayloadDate.Date Then
+                                        ret = New Tuple(Of Boolean, Decimal, Payload, Decimal, Integer, Integer, TrendLineVeriables)(True, entryPrice, currentDayPayload, atr, quantity, startingQuantity, currentDayTrendLine)
+                                    End If
                                 ElseIf lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
                                     If entryPrice < lastExecutedTrade.EntryPrice Then
                                         ret = New Tuple(Of Boolean, Decimal, Payload, Decimal, Integer, Integer, TrendLineVeriables)(True, entryPrice, currentDayPayload, atr, quantity, startingQuantity, currentDayTrendLine)
