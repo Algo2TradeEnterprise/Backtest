@@ -875,11 +875,11 @@ Public Class Common
             Case DataBaseTable.Intraday_Cash, DataBaseTable.EOD_Cash
                 cm = New MySqlCommand("SELECT `TRADING_SYMBOL` FROM `active_instruments_cash` WHERE `AS_ON_DATE`=@sd", conn)
             Case DataBaseTable.Intraday_Currency, DataBaseTable.EOD_Currency
-                cm = New MySqlCommand("SELECT `TRADING_SYMBOL` FROM `active_instruments_currency` WHERE `AS_ON_DATE`=@sd", conn)
+                cm = New MySqlCommand("SELECT `TRADING_SYMBOL` FROM `active_instruments_currency` WHERE `AS_ON_DATE`=@sd AND `SEGMENT`='CDS-FUT'", conn)
             Case DataBaseTable.Intraday_Commodity, DataBaseTable.EOD_Commodity
-                cm = New MySqlCommand("SELECT `TRADING_SYMBOL` FROM `active_instruments_commodity` WHERE `AS_ON_DATE`=@sd", conn)
+                cm = New MySqlCommand("SELECT `TRADING_SYMBOL` FROM `active_instruments_commodity` WHERE `AS_ON_DATE`=@sd AND `SEGMENT`='MCX'", conn)
             Case DataBaseTable.Intraday_Futures, DataBaseTable.EOD_Futures
-                cm = New MySqlCommand("SELECT `TRADING_SYMBOL` FROM `active_instruments_futures` WHERE `AS_ON_DATE`=@sd", conn)
+                cm = New MySqlCommand("SELECT `TRADING_SYMBOL` FROM `active_instruments_futures` WHERE `AS_ON_DATE`=@sd AND `SEGMENT`='NFO-FUT'", conn)
         End Select
 
         OnHeartbeat(String.Format("Getting all stock list from DataBase for {0}", tradingDate.ToShortDateString))
