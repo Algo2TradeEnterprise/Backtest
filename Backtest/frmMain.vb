@@ -1331,7 +1331,7 @@ Public Class frmMain
 
 
 #Region "Trend Line Positional Strategy Rule"
-            Dim tgtMulList As List(Of Decimal) = New List(Of Decimal) From {2}
+            Dim tgtMulList As List(Of Decimal) = New List(Of Decimal) From {200000000}
             For qntyTyp As Integer = 2 To 2
                 For Each tgtMul In tgtMulList
                     For prtlExt As Integer = 0 To 0
