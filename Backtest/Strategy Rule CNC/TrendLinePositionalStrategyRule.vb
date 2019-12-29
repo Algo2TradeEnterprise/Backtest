@@ -41,7 +41,7 @@ Public Class TrendLinePositionalStrategyRule
         MyBase.CompletePreProcessing()
 
         Indicator.ATR.CalculateATR(14, _signalPayload, _atrPayload)
-        Indicator.SwingHighLowTrendLine.CalculateSwingHighLowTrendLine(_signalPayload, _swingHighTrendLine, _swingLowTrendLine)
+        Indicator.SwingHighLowTrendLine.CalculateSwingHighLowTrendLine(_signalPayload, True, _swingHighTrendLine, _swingLowTrendLine)
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))

@@ -1,6 +1,6 @@
 ﻿Namespace Indicator
     Public Module SwingHighLowTrendLine
-        Public Sub CalculateSwingHighLowTrendLine(ByVal inputPayload As Dictionary(Of Date, Payload), ByRef outputHighPayload As Dictionary(Of Date, TrendLineVeriables), ByRef outputLowPayload As Dictionary(Of Date, TrendLineVeriables))
+        Public Sub CalculateSwingHighLowTrendLine(ByVal inputPayload As Dictionary(Of Date, Payload), ByVal backTobackSwings As Boolean, ByRef outputHighPayload As Dictionary(Of Date, TrendLineVeriables), ByRef outputLowPayload As Dictionary(Of Date, TrendLineVeriables))
             If inputPayload IsNot Nothing AndAlso inputPayload.Count > 0 Then
                 Dim swingHighPayload As Dictionary(Of Date, Decimal) = Nothing
                 Dim swingLowPayload As Dictionary(Of Date, Decimal) = Nothing
@@ -12,10 +12,17 @@
                     Dim lastHighUCandle As Payload = GetSwingFormingCandle(inputPayload, swingHighPayload, runningPayload.Key, 1)
                     If lastHighUCandle IsNot Nothing Then
                         Dim firstHighUCandle As Payload = lastHighUCandle
-                        While firstHighUCandle.High <= lastHighUCandle.High
+                        If backTobackSwings Then
                             firstHighUCandle = GetSwingFormingCandle(inputPayload, swingHighPayload, firstHighUCandle.PayloadDate, 1)
-                            If firstHighUCandle Is Nothing Then Exit While
-                        End While
+                            If firstHighUCandle IsNot Nothing AndAlso firstHighUCandle.High <= lastHighUCandle.High Then
+                                firstHighUCandle = Nothing
+                            End If
+                        Else
+                            While firstHighUCandle.High <= lastHighUCandle.High
+                                firstHighUCandle = GetSwingFormingCandle(inputPayload, swingHighPayload, firstHighUCandle.PayloadDate, 1)
+                                If firstHighUCandle Is Nothing Then Exit While
+                            End While
+                        End If
                         If firstHighUCandle IsNot Nothing Then
                             Dim x1 As Decimal = 0
                             Dim y1 As Decimal = firstHighUCandle.High
@@ -45,10 +52,17 @@
                     Dim lastLowUCandle As Payload = GetSwingFormingCandle(inputPayload, swingLowPayload, runningPayload.Key, -1)
                     If lastLowUCandle IsNot Nothing Then
                         Dim firstLowUCandle As Payload = lastLowUCandle
-                        While firstLowUCandle.Low >= lastLowUCandle.Low
+                        If backTobackSwings Then
                             firstLowUCandle = GetSwingFormingCandle(inputPayload, swingLowPayload, firstLowUCandle.PayloadDate, -1)
-                            If firstLowUCandle Is Nothing Then Exit While
-                        End While
+                            If firstLowUCandle IsNot Nothing AndAlso firstLowUCandle.Low >= lastLowUCandle.Low Then
+                                firstLowUCandle = Nothing
+                            End If
+                        Else
+                            While firstLowUCandle.Low >= lastLowUCandle.Low
+                                firstLowUCandle = GetSwingFormingCandle(inputPayload, swingLowPayload, firstLowUCandle.PayloadDate, -1)
+                                If firstLowUCandle Is Nothing Then Exit While
+                            End While
+                        End If
                         If firstLowUCandle IsNot Nothing Then
                             Dim x1 As Decimal = 0
                             Dim y1 As Decimal = firstLowUCandle.Low
