@@ -78,9 +78,9 @@ Namespace StrategyHelper
                             Dim XDayPayload As Dictionary(Of Date, Payload) = Nothing
                             Dim currentDayPayload As Dictionary(Of Date, Payload) = Nothing
                             If Me.DataSource = SourceOfData.Database Then
-                                XDayPayload = Cmn.GetRawPayload(Common.DataBaseTable.EOD_POSITIONAL, stock, tradeCheckingDate.AddYears(-10), tradeCheckingDate)
+                                XDayPayload = Cmn.GetRawPayload(Common.DataBaseTable.EOD_POSITIONAL, stock, tradeCheckingDate.AddMonths(-10), tradeCheckingDate)
                             ElseIf Me.DataSource = SourceOfData.Live Then
-                                XDayPayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, stock, tradeCheckingDate.AddYears(-10), tradeCheckingDate).ConfigureAwait(False)
+                                XDayPayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, stock, tradeCheckingDate.AddMonths(-10), tradeCheckingDate).ConfigureAwait(False)
                             End If
 
                             _canceller.Token.ThrowIfCancellationRequested()
@@ -166,6 +166,8 @@ Namespace StrategyHelper
                                             stockRule = New ATRPositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2)
                                         Case 28
                                             stockRule = New PriceDropPositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2)
+                                        Case 29
+                                            stockRule = New TrendLinePositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -461,7 +463,7 @@ Namespace StrategyHelper
                                 If counter = Me.NumberOfTradeableStockPerDay Then Exit For
                                 'End If
                             Next
-                        Case 27, 28
+                        Case 27, 28, 29
                             For i = 1 To dt.Rows.Count - 1
                                 Dim rowDate As Date = dt.Rows(i)(0)
                                 'If rowDate.Date = tradingDate.Date Then

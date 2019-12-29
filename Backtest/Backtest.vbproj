@@ -121,6 +121,7 @@
     <Compile Include="Strategy Rule CNC\InvestmentCNCStrategyRule.vb" />
     <Compile Include="Strategy Rule CNC\PriceDropPositionalStrategyRule.vb" />
     <Compile Include="Strategy Rule CNC\SMIHKPositionalStrategyRule.vb" />
+    <Compile Include="Strategy Rule CNC\TrendLinePositionalStrategyRule.vb" />
     <Compile Include="Strategy Rule CNC\VijayCNCStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\CoinFlipAtResistanceStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\FixedLevelBasedStrategyRule.vb" />
