@@ -67,14 +67,19 @@ Public Class PivotsPointsStrategyRule
 
             If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
                 Dim buffer As Decimal = Me._parentStrategy.CalculateBuffer(signalCandle.High, RoundOfType.Floor)
+                If _tradingSymbol.Contains("BANKNIFTY") Then buffer = 1
+
                 Dim numberOfTrade As Integer = _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol)
-                Dim quantity As Integer = Me._parentStrategy.CalculateQuantityFromSL(_tradingSymbol, signalCandle.High + buffer, signalCandle.Low - buffer, Math.Abs(_userInputs.MaxLossPerTrade) * -1, Me._parentStrategy.StockType)
-                If numberOfTrade = 1 Then
-                    quantity = Me._parentStrategy.CalculateQuantityFromSL(_tradingSymbol, signalCandle.High + buffer, signalCandle.High + signalCandle.CandleRange + 2 * buffer, Math.Abs(_userInputs.MaxLossPerTrade) * 2, Me._parentStrategy.StockType)
-                ElseIf numberOfTrade = 2 Then
-                    Dim usedQuantity As Integer = Me._parentStrategy.CalculateQuantityFromSL(_tradingSymbol, signalCandle.High + buffer, signalCandle.High + signalCandle.CandleRange + 2 * buffer, Math.Abs(_userInputs.MaxLossPerTrade) * 2, Me._parentStrategy.StockType)
-                    Dim pl As Decimal = Me._parentStrategy.CalculatePL(_tradingSymbol, signalCandle.High + buffer, signalCandle.Low - buffer, usedQuantity, Me.LotSize, Me._parentStrategy.StockType)
-                    quantity = Me._parentStrategy.CalculateQuantityFromSL(_tradingSymbol, signalCandle.High + buffer, signalCandle.High + signalCandle.CandleRange + 2 * buffer, Math.Abs(_userInputs.MaxLossPerTrade) + Math.Abs(pl), Me._parentStrategy.StockType)
+                Dim quantity As Integer = _quantity * (numberOfTrade + 1)
+                If Me._parentStrategy.StockType = Trade.TypeOfStock.Cash Then
+                    quantity = Me._parentStrategy.CalculateQuantityFromSL(_tradingSymbol, signalCandle.High + buffer, signalCandle.Low - buffer, Math.Abs(_userInputs.MaxLossPerTrade) * -1, Me._parentStrategy.StockType)
+                    If numberOfTrade = 1 Then
+                        quantity = Me._parentStrategy.CalculateQuantityFromSL(_tradingSymbol, signalCandle.High + buffer, signalCandle.High + signalCandle.CandleRange + 2 * buffer, Math.Abs(_userInputs.MaxLossPerTrade) * 2, Me._parentStrategy.StockType)
+                    ElseIf numberOfTrade = 2 Then
+                        Dim usedQuantity As Integer = Me._parentStrategy.CalculateQuantityFromSL(_tradingSymbol, signalCandle.High + buffer, signalCandle.High + signalCandle.CandleRange + 2 * buffer, Math.Abs(_userInputs.MaxLossPerTrade) * 2, Me._parentStrategy.StockType)
+                        Dim pl As Decimal = Me._parentStrategy.CalculatePL(_tradingSymbol, signalCandle.High + buffer, signalCandle.Low - buffer, usedQuantity, Me.LotSize, Me._parentStrategy.StockType)
+                        quantity = Me._parentStrategy.CalculateQuantityFromSL(_tradingSymbol, signalCandle.High + buffer, signalCandle.High + signalCandle.CandleRange + 2 * buffer, Math.Abs(_userInputs.MaxLossPerTrade) + Math.Abs(pl), Me._parentStrategy.StockType)
+                    End If
                 End If
 
                 If signalCandleSatisfied.Item3 = Trade.TradeExecutionDirection.Buy Then

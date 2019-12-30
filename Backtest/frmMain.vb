@@ -272,7 +272,7 @@ Public Class frmMain
             Else
                 sourceData = Strategy.SourceOfData.Database
             End If
-            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
+            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Futures
             Dim database As Common.DataBaseTable = Common.DataBaseTable.None
             Dim margin As Decimal = 0
             Dim tick As Decimal = 0
@@ -867,7 +867,8 @@ Public Class frmMain
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "IBULHSGFIN.csv")
+                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "New ATR Based Stocks.csv")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "BANKNIFTY.csv")
 
                     .AllowBothDirectionEntryAtSameTime = False
                     .TrailingStoploss = False
@@ -881,7 +882,7 @@ Public Class frmMain
                                 }
                     End Select
 
-                    .NumberOfTradeableStockPerDay = 10
+                    .NumberOfTradeableStockPerDay = 5
 
                     .NumberOfTradesPerStockPerDay = 3
 
