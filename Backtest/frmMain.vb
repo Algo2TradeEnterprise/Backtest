@@ -272,7 +272,7 @@ Public Class frmMain
             Else
                 sourceData = Strategy.SourceOfData.Database
             End If
-            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Futures
+            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
             Dim database As Common.DataBaseTable = Common.DataBaseTable.None
             Dim margin As Decimal = 0
             Dim tick As Decimal = 0
@@ -867,7 +867,7 @@ Public Class frmMain
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "BANKNIFTY.csv")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "IBULHSGFIN.csv")
 
                     .AllowBothDirectionEntryAtSameTime = False
                     .TrailingStoploss = False
@@ -876,7 +876,8 @@ Public Class frmMain
                     Select Case .RuleNumber
                         Case 30
                             .RuleEntityData = New PivotsPointsStrategyRule.StrategyRuleEntities With
-                                {.TargetMultiplier = 1
+                                {.TargetMultiplier = 1,
+                                 .MaxLossPerTrade = 500
                                 }
                     End Select
 

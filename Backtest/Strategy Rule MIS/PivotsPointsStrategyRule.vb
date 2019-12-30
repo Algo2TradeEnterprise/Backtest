@@ -11,6 +11,7 @@ Public Class PivotsPointsStrategyRule
         Inherits RuleEntities
 
         Public TargetMultiplier As Decimal
+        Public MaxLossPerTrade As Decimal
     End Class
 #End Region
 
@@ -65,13 +66,20 @@ Public Class PivotsPointsStrategyRule
             End If
 
             If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
+                Dim buffer As Decimal = Me._parentStrategy.CalculateBuffer(signalCandle.High, RoundOfType.Floor)
                 Dim numberOfTrade As Integer = _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol)
-                Dim quantity As Integer = _quantity * (numberOfTrade + 1)
+                Dim quantity As Integer = Me._parentStrategy.CalculateQuantityFromSL(_tradingSymbol, signalCandle.High + buffer, signalCandle.Low - buffer, Math.Abs(_userInputs.MaxLossPerTrade) * -1, Me._parentStrategy.StockType)
+                If numberOfTrade = 1 Then
+                    quantity = Me._parentStrategy.CalculateQuantityFromSL(_tradingSymbol, signalCandle.High + buffer, signalCandle.High + signalCandle.CandleRange + 2 * buffer, Math.Abs(_userInputs.MaxLossPerTrade) * 2, Me._parentStrategy.StockType)
+                ElseIf numberOfTrade = 2 Then
+                    Dim usedQuantity As Integer = Me._parentStrategy.CalculateQuantityFromSL(_tradingSymbol, signalCandle.High + buffer, signalCandle.High + signalCandle.CandleRange + 2 * buffer, Math.Abs(_userInputs.MaxLossPerTrade) * 2, Me._parentStrategy.StockType)
+                    Dim pl As Decimal = Me._parentStrategy.CalculatePL(_tradingSymbol, signalCandle.High + buffer, signalCandle.Low - buffer, usedQuantity, Me.LotSize, Me._parentStrategy.StockType)
+                    quantity = Me._parentStrategy.CalculateQuantityFromSL(_tradingSymbol, signalCandle.High + buffer, signalCandle.High + signalCandle.CandleRange + 2 * buffer, Math.Abs(_userInputs.MaxLossPerTrade) + Math.Abs(pl), Me._parentStrategy.StockType)
+                End If
+
                 If signalCandleSatisfied.Item3 = Trade.TradeExecutionDirection.Buy Then
                     If Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) AndAlso
                     Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) Then
-                        'Dim buffer As Decimal = Me._parentStrategy.CalculateBuffer(signalCandle.High, RoundOfType.Floor)
-                        Dim buffer As Decimal = 1
                         parameter = New PlaceOrderParameters With {
                             .EntryPrice = signalCandle.High + buffer,
                             .EntryDirection = Trade.TradeExecutionDirection.Buy,
@@ -88,8 +96,6 @@ Public Class PivotsPointsStrategyRule
                 If signalCandleSatisfied.Item3 = Trade.TradeExecutionDirection.Sell Then
                     If Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) AndAlso
                     Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) Then
-                        'Dim buffer As Decimal = Me._parentStrategy.CalculateBuffer(signalCandle.Low, RoundOfType.Floor)
-                        Dim buffer As Decimal = 1
                         parameter = New PlaceOrderParameters With {
                             .EntryPrice = signalCandle.Low - buffer,
                             .EntryDirection = Trade.TradeExecutionDirection.Sell,
