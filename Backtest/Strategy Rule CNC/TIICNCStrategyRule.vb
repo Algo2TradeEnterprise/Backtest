@@ -147,6 +147,7 @@ Public Class TIICNCStrategyRule
     Public Overrides Async Function IsTriggerReceivedForExitCNCEODOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
+        Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         'If Not _doneForCurrentDay Then
         '    Dim openActiveTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentTick, _parentStrategy.TradeType, Trade.TradeExecutionDirection.Buy)
         '    If openActiveTrades IsNot Nothing AndAlso openActiveTrades.Count > 0 Then
@@ -167,9 +168,9 @@ Public Class TIICNCStrategyRule
             Dim lowestATR As Decimal = ConvertFloorCeling(currentTrade.Supporting3, _parentStrategy.TickSize, RoundOfType.Floor)
             Dim averagePrice As Decimal = currentTrade.Supporting1
             Dim startingDay As Date = Convert.ToDateTime(currentTrade.Supporting4)
-            Dim dayDifference As Long = DateDiff(DateInterval.Day, startingDay.Date, currentTick.PayloadDate.Date) + 1
+            Dim dayDifference As Long = DateDiff(DateInterval.Day, startingDay.Date, currentMinuteCandlePayload.PayloadDate.Date) + 1
             Dim additionalProfit As Decimal = ConvertFloorCeling(Math.Log(dayDifference, 10), _parentStrategy.TickSize, RoundOfType.Floor)
-            If currentTick.High >= averagePrice + lowestATR + additionalProfit Then
+            If currentMinuteCandlePayload.High >= averagePrice + lowestATR + additionalProfit Then
                 ret = New Tuple(Of Boolean, Decimal, String)(True, averagePrice + lowestATR + additionalProfit, "Target")
             End If
         End If
