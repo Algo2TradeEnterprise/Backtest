@@ -152,7 +152,7 @@ Public Class TIICNCStrategyRule
             If openActiveTrades IsNot Nothing AndAlso openActiveTrades.Count > 0 Then
                 Dim additionalProfit As Decimal = 0
                 For Each runningTrade In openActiveTrades
-                    Dim dayDifference As Long = DateDiff(DateInterval.Day, runningTrade.EntryTime, currentTick.PayloadDate) - 1
+                    Dim dayDifference As Long = DateDiff(DateInterval.Day, runningTrade.EntryTime.Date, currentTick.PayloadDate.Date) - 1
                     If dayDifference > 0 Then
                         additionalProfit += ConvertFloorCeling(CDec(runningTrade.Supporting2) * dayDifference * _userInputs.AdditionalProfitPercentage / 100, _parentStrategy.TickSize, RoundOfType.Floor)
                     End If
