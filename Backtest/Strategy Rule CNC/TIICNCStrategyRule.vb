@@ -125,7 +125,7 @@ Public Class TIICNCStrategyRule
                             If openActiveTrades IsNot Nothing AndAlso openActiveTrades.Count > 0 Then
                                 For Each runningTrade In openActiveTrades
                                     runningTrade.UpdateTrade(Supporting1:=ConvertFloorCeling(averageTradePrice, Me._parentStrategy.TickSize, RoundOfType.Floor),
-                                                             Supporting2:=parameter.Supporting3)
+                                                             Supporting3:=parameter.Supporting3)
                                 Next
                             End If
                             parameter.Supporting1 = ConvertFloorCeling(averageTradePrice, Me._parentStrategy.TickSize, RoundOfType.Floor)
