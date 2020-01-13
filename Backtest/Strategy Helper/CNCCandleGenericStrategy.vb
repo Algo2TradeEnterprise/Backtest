@@ -75,42 +75,42 @@ Namespace StrategyHelper
                         For Each stock In stockList.Keys
                             _canceller.Token.ThrowIfCancellationRequested()
                             stockCount += 1
-                            Dim XDayPayload As Dictionary(Of Date, Payload) = Nothing
-                            Dim currentDayPayload As Dictionary(Of Date, Payload) = Nothing
+                            Dim XMinutePayload As Dictionary(Of Date, Payload) = Nothing
+                            Dim currentMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             If Me.DataSource = SourceOfData.Database Then
-                                XDayPayload = Cmn.GetRawPayload(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-20), tradeCheckingDate)
+                                XMinutePayload = Cmn.GetRawPayload(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-20), tradeCheckingDate)
                             ElseIf Me.DataSource = SourceOfData.Live Then
-                                XDayPayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-20), tradeCheckingDate).ConfigureAwait(False)
+                                XMinutePayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-20), tradeCheckingDate).ConfigureAwait(False)
                             End If
 
                             _canceller.Token.ThrowIfCancellationRequested()
                             'Now transfer only the current date payload into the workable payload (this will be used for the main loop and checking if the date is a valid date)
-                            If XDayPayload IsNot Nothing AndAlso XDayPayload.Count > 0 Then
+                            If XMinutePayload IsNot Nothing AndAlso XMinutePayload.Count > 0 Then
                                 OnHeartbeat(String.Format("Processing for {0} on {1}. Stock Counter: [ {2}/{3} ]", stock, tradeCheckingDate.ToShortDateString, stockCount, stockList.Count))
 
                                 If XDayStocksPayload Is Nothing Then XDayStocksPayload = New Dictionary(Of String, Dictionary(Of Date, Payload))
-                                XDayStocksPayload.Add(stock, XDayPayload)
+                                XDayStocksPayload.Add(stock, XMinutePayload)
 
-                                For Each runningPayload In XDayPayload.Keys
+                                For Each runningPayload In XMinutePayload.Keys
                                     _canceller.Token.ThrowIfCancellationRequested()
                                     If runningPayload.Date = tradeCheckingDate.Date Then
-                                        If currentDayPayload Is Nothing Then currentDayPayload = New Dictionary(Of Date, Payload)
-                                        currentDayPayload.Add(runningPayload, XDayPayload(runningPayload))
+                                        If currentMinutePayload Is Nothing Then currentMinutePayload = New Dictionary(Of Date, Payload)
+                                        currentMinutePayload.Add(runningPayload, XMinutePayload(runningPayload))
                                     End If
                                 Next
                                 'Add all these payloads into the stock collections
-                                If currentDayPayload IsNot Nothing AndAlso currentDayPayload.Count > 0 Then
+                                If currentMinutePayload IsNot Nothing AndAlso currentMinutePayload.Count > 0 Then
                                     If currentDayStocksPayload Is Nothing Then currentDayStocksPayload = New Dictionary(Of String, Dictionary(Of Date, Payload))
-                                    currentDayStocksPayload.Add(stock, currentDayPayload)
+                                    currentDayStocksPayload.Add(stock, currentMinutePayload)
                                     If stocksRuleData Is Nothing Then stocksRuleData = New Dictionary(Of String, StrategyRule)
                                     Dim stockRule As StrategyRule = Nothing
 
-                                    Dim tradingSymbol As String = currentDayPayload.LastOrDefault.Value.TradingSymbol
+                                    Dim tradingSymbol As String = currentMinutePayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
                                         Case 26
-                                            stockRule = New HKPositionalHourlyStrategyRule1(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
+                                            stockRule = New HKPositionalHourlyStrategyRule1(XMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                         Case 31
-                                            stockRule = New TIICNCStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                            stockRule = New TIICNCStrategyRule(XMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat

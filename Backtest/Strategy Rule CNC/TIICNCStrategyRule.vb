@@ -56,8 +56,12 @@ Public Class TIICNCStrategyRule
         If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
             Not _parentStrategy.IsTradeOpen(currentTick, _parentStrategy.TradeType) Then
             Dim signalCandle As Payload = Nothing
-
+            Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, _parentStrategy.TradeType)
             Dim signalReceivedForEntry As Tuple(Of Boolean, Decimal, Payload, Boolean) = GetSignalForEntry(currentMinuteCandlePayload.PreviousCandlePayload)
+            If lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close AndAlso
+                lastExecutedTrade.ExitTime >= currentMinuteCandlePayload.PayloadDate Then
+                signalReceivedForEntry = Nothing
+            End If
             If signalReceivedForEntry IsNot Nothing AndAlso signalReceivedForEntry.Item1 Then
                 signalCandle = signalReceivedForEntry.Item3
 
@@ -65,7 +69,6 @@ Public Class TIICNCStrategyRule
                     Dim lastEntryPrice As Decimal = Decimal.MinValue
                     Dim lastEntryATR As Decimal = Decimal.MinValue
                     Dim firstEntryATR As Decimal = Decimal.MinValue
-                    Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, _parentStrategy.TradeType)
                     If lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
                         lastEntryPrice = lastExecutedTrade.EntryPrice
                         lastEntryATR = lastExecutedTrade.Supporting2
@@ -141,13 +144,12 @@ Public Class TIICNCStrategyRule
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-            Dim currentMinutePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
-            Dim firstATR As Decimal = currentTrade.Supporting3
+            Dim firstATR As Decimal = ConvertFloorCeling(currentTrade.Supporting3, _parentStrategy.TickSize, RoundOfType.Floor)
             Dim averagePrice As Decimal = currentTrade.Supporting1
             Dim additionalProfit As Decimal = 0
-            Dim dayDifference As Long = DateDiff(DateInterval.Day, currentTrade.EntryTime, currentMinutePayload.PayloadDate) - 1
-            If dayDifference > 0 Then additionalProfit = CDec(currentTrade.Supporting2) * dayDifference * _userInputs.AdditionalProfitPercentage / 100
-            If currentMinutePayload.High >= averagePrice + firstATR + additionalProfit Then
+            Dim dayDifference As Long = DateDiff(DateInterval.Day, currentTrade.EntryTime, currentTick.PayloadDate) - 1
+            If dayDifference > 0 Then additionalProfit = ConvertFloorCeling(CDec(currentTrade.Supporting2) * dayDifference * _userInputs.AdditionalProfitPercentage / 100, _parentStrategy.TickSize, RoundOfType.Floor)
+            If currentTick.High >= averagePrice + firstATR + additionalProfit Then
                 ret = New Tuple(Of Boolean, Decimal, String)(True, averagePrice + firstATR + additionalProfit, "Target")
             End If
         End If
