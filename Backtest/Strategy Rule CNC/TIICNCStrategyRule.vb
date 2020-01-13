@@ -121,7 +121,7 @@ Public Class TIICNCStrategyRule
                             Dim averageTradePrice As Decimal = totalCapitalUsedWithoutMargin / totalQuantity
                             If openActiveTrades IsNot Nothing AndAlso openActiveTrades.Count > 0 Then
                                 For Each runningTrade In openActiveTrades
-                                    runningTrade.UpdateTrade(Supporting2:=ConvertFloorCeling(averageTradePrice, Me._parentStrategy.TickSize, RoundOfType.Floor))
+                                    runningTrade.UpdateTrade(Supporting1:=ConvertFloorCeling(averageTradePrice, Me._parentStrategy.TickSize, RoundOfType.Floor))
                                 Next
                             End If
                             parameter.Supporting1 = ConvertFloorCeling(averageTradePrice, Me._parentStrategy.TickSize, RoundOfType.Floor)
