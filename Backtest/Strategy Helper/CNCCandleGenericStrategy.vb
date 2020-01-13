@@ -107,62 +107,10 @@ Namespace StrategyHelper
 
                                     Dim tradingSymbol As String = currentDayPayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
-                                        Case 0
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 1
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 2
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 3
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 4
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 5
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 6
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 7
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 8
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 9
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 10
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 11
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 12
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 13
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 14
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 15
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 16
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 17
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 18
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 19
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 20
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 21
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 22
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 23
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 24
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 25
-                                            Throw New ApplicationException("Not a CNC strategy")
                                         Case 26
                                             stockRule = New HKPositionalHourlyStrategyRule1(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
-                                        Case 27
-                                            Throw New ApplicationException("Not a CNC strategy")
+                                        Case 31
+                                            stockRule = New TIICNCStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -294,24 +242,24 @@ Namespace StrategyHelper
                                                         Continue For
                                                     End If
                                                     Dim runningTrade As Trade = New Trade(originatingStrategy:=Me,
-                                                                                      tradingSymbol:=currentMinuteCandlePayload.TradingSymbol,
-                                                                                      stockType:=Me.StockType,
-                                                                                      orderType:=runningOrder.OrderType,
-                                                                                      tradingDate:=currentMinuteCandlePayload.PayloadDate,
-                                                                                      entryDirection:=runningOrder.EntryDirection,
-                                                                                      entryPrice:=runningOrder.EntryPrice,
-                                                                                      entryBuffer:=runningOrder.Buffer,
-                                                                                      squareOffType:=Trade.TypeOfTrade.CNC,
-                                                                                      entryCondition:=Trade.TradeEntryCondition.Original,
-                                                                                      entryRemark:="Original Entry",
-                                                                                      quantity:=runningOrder.Quantity,
-                                                                                      lotSize:=stockStrategyRule.LotSize,
-                                                                                      potentialTarget:=runningOrder.Target,
-                                                                                      targetRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Target),
-                                                                                      potentialStopLoss:=runningOrder.Stoploss,
-                                                                                      stoplossBuffer:=runningOrder.Buffer,
-                                                                                      slRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Stoploss),
-                                                                                      signalCandle:=runningOrder.SignalCandle)
+                                                                                          tradingSymbol:=currentMinuteCandlePayload.TradingSymbol,
+                                                                                          stockType:=Me.StockType,
+                                                                                          orderType:=runningOrder.OrderType,
+                                                                                          tradingDate:=currentMinuteCandlePayload.PayloadDate,
+                                                                                          entryDirection:=runningOrder.EntryDirection,
+                                                                                          entryPrice:=runningOrder.EntryPrice,
+                                                                                          entryBuffer:=runningOrder.Buffer,
+                                                                                          squareOffType:=Trade.TypeOfTrade.CNC,
+                                                                                          entryCondition:=Trade.TradeEntryCondition.Original,
+                                                                                          entryRemark:="Original Entry",
+                                                                                          quantity:=runningOrder.Quantity,
+                                                                                          lotSize:=stockStrategyRule.LotSize,
+                                                                                          potentialTarget:=runningOrder.Target,
+                                                                                          targetRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Target),
+                                                                                          potentialStopLoss:=runningOrder.Stoploss,
+                                                                                          stoplossBuffer:=runningOrder.Buffer,
+                                                                                          slRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Stoploss),
+                                                                                          signalCandle:=runningOrder.SignalCandle)
 
                                                     runningTrade.UpdateTrade(Tag:=tradeTag,
                                                                              SquareOffValue:=Math.Abs(runningOrder.EntryPrice - runningOrder.Target),
