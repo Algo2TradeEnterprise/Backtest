@@ -168,7 +168,7 @@ Public Class TIICNCStrategyRule
             Dim averagePrice As Decimal = currentTrade.Supporting1
             Dim startingDay As Date = Convert.ToDateTime(currentTrade.Supporting4)
             Dim dayDifference As Long = DateDiff(DateInterval.Day, startingDay.Date, currentTick.PayloadDate.Date) + 1
-            Dim additionalProfit As Decimal = ConvertFloorCeling(Math.Log(dayDifference), _parentStrategy.TickSize, RoundOfType.Floor)
+            Dim additionalProfit As Decimal = ConvertFloorCeling(Math.Log(dayDifference, 10), _parentStrategy.TickSize, RoundOfType.Floor)
             If currentTick.High >= averagePrice + lowestATR + additionalProfit Then
                 ret = New Tuple(Of Boolean, Decimal, String)(True, averagePrice + lowestATR + additionalProfit, "Target")
             End If
