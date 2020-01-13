@@ -145,7 +145,7 @@ Public Class TIICNCStrategyRule
             Dim firstATR As Decimal = currentTrade.Supporting3
             Dim averagePrice As Decimal = currentTrade.Supporting1
             Dim additionalProfit As Decimal = 0
-            Dim dayDifference As Integer = DateDiff(DateInterval.Day, currentTrade.EntryTime, currentMinutePayload) - 1
+            Dim dayDifference As Long = DateDiff(DateInterval.Day, currentTrade.EntryTime, currentMinutePayload) - 1
             If dayDifference > 0 Then additionalProfit = CDec(currentTrade.Supporting2) * dayDifference * _userInputs.AdditionalProfitPercentage / 100
             If currentMinutePayload.High >= averagePrice + firstATR + additionalProfit Then
                 ret = New Tuple(Of Boolean, Decimal, String)(True, averagePrice + firstATR + additionalProfit, "Target")
