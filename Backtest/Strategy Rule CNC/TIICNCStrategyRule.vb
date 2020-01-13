@@ -26,6 +26,8 @@ Public Class TIICNCStrategyRule
     Private _signalLinePayload As Dictionary(Of Date, Decimal)
     Private _atrPayload As Dictionary(Of Date, Decimal)
 
+    Private _doneForCurrentDay As Boolean = False
+
     Private ReadOnly _userInputs As StrategyRuleEntities
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
@@ -69,10 +71,12 @@ Public Class TIICNCStrategyRule
                     Dim lastEntryPrice As Decimal = Decimal.MinValue
                     Dim lastEntryATR As Decimal = Decimal.MinValue
                     Dim firstEntryATR As Decimal = Decimal.MinValue
+                    Dim additionalProfit As Decimal = 0
                     If lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
                         lastEntryPrice = lastExecutedTrade.EntryPrice
                         lastEntryATR = lastExecutedTrade.Supporting2
                         firstEntryATR = lastExecutedTrade.Supporting3
+                        additionalProfit = lastExecutedTrade.Supporting4
                     Else
                         firstEntryATR = _atrPayload(signalCandle.PayloadDate)
                     End If
@@ -143,12 +147,26 @@ Public Class TIICNCStrategyRule
     Public Overrides Async Function IsTriggerReceivedForExitCNCEODOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
+        If Not _doneForCurrentDay Then
+            Dim openActiveTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentTick, _parentStrategy.TradeType, Trade.TradeExecutionDirection.Buy)
+            If openActiveTrades IsNot Nothing AndAlso openActiveTrades.Count > 0 Then
+                Dim additionalProfit As Decimal = 0
+                For Each runningTrade In openActiveTrades
+                    Dim dayDifference As Long = DateDiff(DateInterval.Day, runningTrade.EntryTime, currentTick.PayloadDate) - 1
+                    If dayDifference > 0 Then
+                        additionalProfit += ConvertFloorCeling(CDec(runningTrade.Supporting2) * dayDifference * _userInputs.AdditionalProfitPercentage / 100, _parentStrategy.TickSize, RoundOfType.Floor)
+                    End If
+                Next
+                For Each runningTrade In openActiveTrades
+                    runningTrade.UpdateTrade(Supporting4:=ConvertFloorCeling(additionalProfit, Me._parentStrategy.TickSize, RoundOfType.Floor))
+                Next
+            End If
+            _doneForCurrentDay = True
+        End If
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
             Dim firstATR As Decimal = ConvertFloorCeling(currentTrade.Supporting3, _parentStrategy.TickSize, RoundOfType.Floor)
             Dim averagePrice As Decimal = currentTrade.Supporting1
-            Dim additionalProfit As Decimal = 0
-            Dim dayDifference As Long = DateDiff(DateInterval.Day, currentTrade.EntryTime, currentTick.PayloadDate) - 1
-            If dayDifference > 0 Then additionalProfit = ConvertFloorCeling(CDec(currentTrade.Supporting2) * dayDifference * _userInputs.AdditionalProfitPercentage / 100, _parentStrategy.TickSize, RoundOfType.Floor)
+            Dim additionalProfit As Decimal = currentTrade.Supporting4
             If currentTick.High >= averagePrice + firstATR + additionalProfit Then
                 ret = New Tuple(Of Boolean, Decimal, String)(True, averagePrice + firstATR + additionalProfit, "Target")
             End If
