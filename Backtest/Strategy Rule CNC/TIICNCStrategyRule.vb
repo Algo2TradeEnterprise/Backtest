@@ -71,6 +71,8 @@ Public Class TIICNCStrategyRule
                     Dim currentTradeTIIStartTime As Date = GetTIISignalStartTime(signalReceivedForEntry.Item3)
                     If lastTradeTIIStartTime = currentTradeTIIStartTime Then signalReceivedForEntry = Nothing
                 End If
+            End If
+            If lastExecutedTrade Is Nothing OrElse lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
                 If signalReceivedForEntry IsNot Nothing AndAlso signalReceivedForEntry.Item3 IsNot Nothing Then
                     If signalReceivedForEntry.Item3.Close < _smaPayload(signalReceivedForEntry.Item3.PayloadDate) Then
                         signalReceivedForEntry = Nothing
