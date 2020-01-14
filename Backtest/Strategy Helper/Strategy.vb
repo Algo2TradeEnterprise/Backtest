@@ -863,7 +863,11 @@ Namespace StrategyHelper
 
             Select Case typeOfStock
                 Case Trade.TypeOfStock.Cash
-                    calculator.Intraday_Equity(buyPrice, sellPrice, quantity, potentialBrokerage)
+                    If Me.TradeType = Trade.TypeOfTrade.MIS Then
+                        calculator.Intraday_Equity(buyPrice, sellPrice, quantity, potentialBrokerage)
+                    ElseIf Me.TradeType = Trade.TypeOfTrade.CNC Then
+                        calculator.Delivery_Equity(buyPrice, sellPrice, quantity, potentialBrokerage)
+                    End If
                 Case Trade.TypeOfStock.Currency
                     calculator.Currency_Futures(buyPrice, sellPrice, quantity / lotSize, potentialBrokerage)
                 Case Trade.TypeOfStock.Commodity
