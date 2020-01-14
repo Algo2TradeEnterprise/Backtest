@@ -182,8 +182,8 @@ Public Class TIICNCStrategyRule
             Dim additionalDayProfit As Decimal = ConvertFloorCeling(Math.Log(dayDifference, 10), _parentStrategy.TickSize, RoundOfType.Floor)
             Dim numberOfTrade As Integer = currentTrade.Supporting5
             Dim additionalTradeProfit As Decimal = ConvertFloorCeling(Math.Log(numberOfTrade, 10), _parentStrategy.TickSize, RoundOfType.Floor)
-            If currentMinuteCandlePayload.High >= averagePrice + lowestATR * (1 + additionalDayProfit + additionalTradeProfit) Then
-                ret = New Tuple(Of Boolean, Decimal, String)(True, averagePrice + lowestATR * (1 + additionalDayProfit + additionalTradeProfit), "Target")
+            If currentMinuteCandlePayload.High >= ConvertFloorCeling(averagePrice + lowestATR * (1 + additionalDayProfit + additionalTradeProfit), _parentStrategy.TickSize, RoundOfType.Floor) Then
+                ret = New Tuple(Of Boolean, Decimal, String)(True, ConvertFloorCeling(averagePrice + lowestATR * (1 + additionalDayProfit + additionalTradeProfit), _parentStrategy.TickSize, RoundOfType.Floor), "Target")
             End If
         End If
         Return ret
