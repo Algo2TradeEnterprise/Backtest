@@ -63,6 +63,14 @@ Public Class TIICNCStrategyRule
             Dim signalCandle As Payload = Nothing
             Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, _parentStrategy.TradeType)
             Dim signalReceivedForEntry As Tuple(Of Boolean, Decimal, Payload, Boolean) = GetSignalForEntry(currentMinuteCandlePayload.PreviousCandlePayload)
+            If lastExecutedTrade Is Nothing OrElse lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
+                If signalReceivedForEntry Is Nothing Then signalReceivedForEntry = New Tuple(Of Boolean, Decimal, Payload, Boolean)(True, currentMinuteCandlePayload.Open, currentMinuteCandlePayload, True)
+                If signalReceivedForEntry IsNot Nothing AndAlso signalReceivedForEntry.Item3 IsNot Nothing Then
+                    If signalReceivedForEntry.Item3.Close < _smaPayload(signalReceivedForEntry.Item3.PayloadDate) Then
+                        signalReceivedForEntry = Nothing
+                    End If
+                End If
+            End If
             If lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
                 If lastExecutedTrade.ExitTime >= currentMinuteCandlePayload.PayloadDate Then signalReceivedForEntry = Nothing
                 If Not _userInputs.SameTIISignalEntry AndAlso lastExecutedTrade.PLPoint > 0 AndAlso
@@ -72,13 +80,7 @@ Public Class TIICNCStrategyRule
                     If lastTradeTIIStartTime = currentTradeTIIStartTime Then signalReceivedForEntry = Nothing
                 End If
             End If
-            If lastExecutedTrade Is Nothing OrElse lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
-                If signalReceivedForEntry IsNot Nothing AndAlso signalReceivedForEntry.Item3 IsNot Nothing Then
-                    If signalReceivedForEntry.Item3.Close < _smaPayload(signalReceivedForEntry.Item3.PayloadDate) Then
-                        signalReceivedForEntry = Nothing
-                    End If
-                End If
-            End If
+
             If signalReceivedForEntry IsNot Nothing AndAlso signalReceivedForEntry.Item1 Then
                 signalCandle = signalReceivedForEntry.Item3
 
