@@ -1440,7 +1440,7 @@ Public Class frmMain
                                             {.QuantityType = qntyTyp,
                                              .QuntityForLinear = 1,
                                              .SameTIISignalEntry = True,
-                                             .CheckSMA = True,
+                                             .CheckSMA = False,
                                              .ImmediateEntry = False}
                         End Select
 
