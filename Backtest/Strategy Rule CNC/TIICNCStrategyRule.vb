@@ -26,6 +26,7 @@ Public Class TIICNCStrategyRule
     Private _tiiPayload As Dictionary(Of Date, Decimal)
     Private _signalLinePayload As Dictionary(Of Date, Decimal)
     Private _atrPayload As Dictionary(Of Date, Decimal)
+    Private _smaPayload As Dictionary(Of Date, Decimal)
 
     Private _doneForCurrentDay As Boolean = False
 
@@ -47,6 +48,7 @@ Public Class TIICNCStrategyRule
 
         Indicator.TrendIntensityIndex.CalculateTII(Payload.PayloadFields.Close, 20, 1, _signalPayload, _tiiPayload, _signalLinePayload)
         Indicator.ATR.CalculateATR(14, _signalPayload, _atrPayload)
+        Indicator.SMA.CalculateSMA(200, Payload.PayloadFields.Close, _signalPayload, _smaPayload)
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -68,6 +70,11 @@ Public Class TIICNCStrategyRule
                     Dim lastTradeTIIStartTime As Date = GetTIISignalStartTime(lastExecutedTrade.SignalCandle)
                     Dim currentTradeTIIStartTime As Date = GetTIISignalStartTime(signalReceivedForEntry.Item3)
                     If lastTradeTIIStartTime = currentTradeTIIStartTime Then signalReceivedForEntry = Nothing
+                End If
+                If signalReceivedForEntry IsNot Nothing AndAlso signalReceivedForEntry.Item3 IsNot Nothing Then
+                    If signalReceivedForEntry.Item3.Close < _smaPayload(signalReceivedForEntry.Item3.PayloadDate) Then
+                        signalReceivedForEntry = Nothing
+                    End If
                 End If
             End If
             If signalReceivedForEntry IsNot Nothing AndAlso signalReceivedForEntry.Item1 Then
