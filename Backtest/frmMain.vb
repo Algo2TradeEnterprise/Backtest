@@ -1440,7 +1440,7 @@ Public Class frmMain
                                             {.QuantityType = qntyTyp,
                                              .QuntityForLinear = 1,
                                              .AdditionalProfitPercentage = 25,
-                                             .SameTIISignalEntry = False}
+                                             .SameTIISignalEntry = True}
                         End Select
 
                         .NumberOfTradeableStockPerDay = 10
