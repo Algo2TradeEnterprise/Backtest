@@ -1439,8 +1439,9 @@ Public Class frmMain
                                 .RuleEntityData = New TIICNCStrategyRule.StrategyRuleEntities With
                                             {.QuantityType = qntyTyp,
                                              .QuntityForLinear = 1,
-                                             .AdditionalProfitPercentage = 25,
-                                             .SameTIISignalEntry = True}
+                                             .SameTIISignalEntry = True,
+                                             .CheckSMA = True,
+                                             .ImmediateEntry = False}
                         End Select
 
                         .NumberOfTradeableStockPerDay = 10
@@ -1450,9 +1451,12 @@ Public Class frmMain
 
                         .TickBasedStrategy = True
                     End With
-                    Dim filename As String = String.Format("CNC TII Capital {0},QuantityType {1}",
+                    Dim filename As String = String.Format("CNC TII Capital {0},QuantityType {1},SameTIISignalEntry {2},CheckSMA {3},ImmediateEntry {4}",
                                                             If(backtestStrategy.UsableCapital = Decimal.MaxValue / 2, "∞", backtestStrategy.UsableCapital),
-                                                            CType(backtestStrategy.RuleEntityData, TIICNCStrategyRule.StrategyRuleEntities).QuantityType)
+                                                            CType(backtestStrategy.RuleEntityData, TIICNCStrategyRule.StrategyRuleEntities).QuantityType,
+                                                            CType(backtestStrategy.RuleEntityData, TIICNCStrategyRule.StrategyRuleEntities).SameTIISignalEntry,
+                                                            CType(backtestStrategy.RuleEntityData, TIICNCStrategyRule.StrategyRuleEntities).CheckSMA,
+                                                            CType(backtestStrategy.RuleEntityData, TIICNCStrategyRule.StrategyRuleEntities).ImmediateEntry)
                     Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
                 End Using
             Next

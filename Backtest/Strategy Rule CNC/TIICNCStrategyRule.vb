@@ -18,8 +18,9 @@ Public Class TIICNCStrategyRule
 
         Public QuantityType As TypeOfQuantity
         Public QuntityForLinear As Integer
-        Public AdditionalProfitPercentage As Decimal
         Public SameTIISignalEntry As Boolean
+        Public CheckSMA As Boolean
+        Public ImmediateEntry As Boolean
     End Class
 #End Region
 
@@ -64,8 +65,10 @@ Public Class TIICNCStrategyRule
             Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, _parentStrategy.TradeType)
             Dim signalReceivedForEntry As Tuple(Of Boolean, Decimal, Payload, Boolean) = GetSignalForEntry(currentMinuteCandlePayload.PreviousCandlePayload)
             If lastExecutedTrade Is Nothing OrElse lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
-                If signalReceivedForEntry Is Nothing Then signalReceivedForEntry = New Tuple(Of Boolean, Decimal, Payload, Boolean)(True, currentMinuteCandlePayload.Open, currentMinuteCandlePayload, True)
-                If signalReceivedForEntry IsNot Nothing AndAlso signalReceivedForEntry.Item3 IsNot Nothing Then
+                If _userInputs.ImmediateEntry AndAlso signalReceivedForEntry Is Nothing Then
+                    signalReceivedForEntry = New Tuple(Of Boolean, Decimal, Payload, Boolean)(True, currentMinuteCandlePayload.Open, currentMinuteCandlePayload, True)
+                End If
+                If _userInputs.CheckSMA AndAlso signalReceivedForEntry IsNot Nothing AndAlso signalReceivedForEntry.Item3 IsNot Nothing Then
                     If signalReceivedForEntry.Item3.Close < _smaPayload(signalReceivedForEntry.Item3.PayloadDate) Then
                         signalReceivedForEntry = Nothing
                     End If
