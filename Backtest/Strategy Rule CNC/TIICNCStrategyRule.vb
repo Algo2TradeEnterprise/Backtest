@@ -72,11 +72,13 @@ Public Class TIICNCStrategyRule
                     Dim lastEntryATR As Decimal = Decimal.MinValue
                     Dim lowestATR As Decimal = _atrPayload(signalCandle.PayloadDate)
                     Dim firstEntryDate As String = currentTick.PayloadDate.ToString("dd-MM-yyyy")
+                    Dim numberOfTrade As Integer = 1
                     If lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
                         lastEntryPrice = lastExecutedTrade.EntryPrice
                         lastEntryATR = lastExecutedTrade.Supporting2
                         lowestATR = lastExecutedTrade.Supporting3
                         firstEntryDate = lastExecutedTrade.Supporting4
+                        numberOfTrade = CInt(lastExecutedTrade.Supporting5) + 1
                     End If
                     If lastEntryPrice = Decimal.MinValue OrElse signalReceivedForEntry.Item2 <= lastEntryPrice - lastEntryATR Then
                         Dim quantity As Integer = 1
@@ -105,7 +107,8 @@ Public Class TIICNCStrategyRule
                                         .OrderType = Trade.TypeOfOrder.Market,
                                         .Supporting2 = _atrPayload(signalCandle.PayloadDate),
                                         .Supporting3 = Math.Min(lowestATR, _atrPayload(signalCandle.PayloadDate)),
-                                        .Supporting4 = firstEntryDate
+                                        .Supporting4 = firstEntryDate,
+                                        .Supporting5 = numberOfTrade
                                     }
 
                             Dim totalCapitalUsedWithoutMargin As Decimal = 0
@@ -125,7 +128,8 @@ Public Class TIICNCStrategyRule
                             If openActiveTrades IsNot Nothing AndAlso openActiveTrades.Count > 0 Then
                                 For Each runningTrade In openActiveTrades
                                     runningTrade.UpdateTrade(Supporting1:=ConvertFloorCeling(averageTradePrice, Me._parentStrategy.TickSize, RoundOfType.Floor),
-                                                             Supporting3:=parameter.Supporting3)
+                                                             Supporting3:=parameter.Supporting3,
+                                                             Supporting5:=parameter.Supporting5)
                                 Next
                             End If
                             parameter.Supporting1 = ConvertFloorCeling(averageTradePrice, Me._parentStrategy.TickSize, RoundOfType.Floor)
@@ -169,9 +173,11 @@ Public Class TIICNCStrategyRule
             Dim averagePrice As Decimal = currentTrade.Supporting1
             Dim startingDay As Date = Convert.ToDateTime(currentTrade.Supporting4)
             Dim dayDifference As Long = DateDiff(DateInterval.Day, startingDay.Date, currentMinuteCandlePayload.PayloadDate.Date) + 1
-            Dim additionalProfit As Decimal = ConvertFloorCeling(Math.Log(dayDifference, 10), _parentStrategy.TickSize, RoundOfType.Floor)
-            If currentMinuteCandlePayload.High >= averagePrice + lowestATR + additionalProfit Then
-                ret = New Tuple(Of Boolean, Decimal, String)(True, averagePrice + lowestATR + additionalProfit, "Target")
+            Dim additionalDayProfit As Decimal = ConvertFloorCeling(Math.Log(dayDifference, 10), _parentStrategy.TickSize, RoundOfType.Floor)
+            Dim numberOfTrade As Integer = currentTrade.Supporting5
+            Dim additionalTradeProfit As Decimal = ConvertFloorCeling(Math.Log(numberOfTrade, 10), _parentStrategy.TickSize, RoundOfType.Floor)
+            If currentMinuteCandlePayload.High >= averagePrice + lowestATR * (1 + additionalDayProfit + additionalTradeProfit) Then
+                ret = New Tuple(Of Boolean, Decimal, String)(True, averagePrice + lowestATR * (1 + additionalDayProfit + additionalTradeProfit), "Target")
             End If
         End If
         Return ret
@@ -193,7 +199,7 @@ Public Class TIICNCStrategyRule
     Private Function GetSignalForEntry(ByVal candle As Payload) As Tuple(Of Boolean, Decimal, Payload, Boolean)
         Dim ret As Tuple(Of Boolean, Decimal, Payload, Boolean) = Nothing
         If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then
-            If candle.High > candle.PreviousCandlePayload.High Then
+            If candle.High < candle.PreviousCandlePayload.High Then
                 If _tiiPayload(candle.PayloadDate) < 20 AndAlso _tiiPayload(candle.PreviousCandlePayload.PayloadDate) < 20 Then
                     ret = New Tuple(Of Boolean, Decimal, Payload, Boolean)(True, candle.High, candle, False)
                 End If
