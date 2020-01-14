@@ -19,6 +19,7 @@ Public Class TIICNCStrategyRule
         Public QuantityType As TypeOfQuantity
         Public QuntityForLinear As Integer
         Public AdditionalProfitPercentage As Decimal
+        Public SameTIISignalEntry As Boolean
     End Class
 #End Region
 
@@ -60,9 +61,14 @@ Public Class TIICNCStrategyRule
             Dim signalCandle As Payload = Nothing
             Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, _parentStrategy.TradeType)
             Dim signalReceivedForEntry As Tuple(Of Boolean, Decimal, Payload, Boolean) = GetSignalForEntry(currentMinuteCandlePayload.PreviousCandlePayload)
-            If lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close AndAlso
-                lastExecutedTrade.ExitTime >= currentMinuteCandlePayload.PayloadDate Then
-                signalReceivedForEntry = Nothing
+            If lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
+                If lastExecutedTrade.ExitTime >= currentMinuteCandlePayload.PayloadDate Then signalReceivedForEntry = Nothing
+                If Not _userInputs.SameTIISignalEntry AndAlso lastExecutedTrade.PLPoint > 0 AndAlso
+                    signalReceivedForEntry IsNot Nothing AndAlso signalReceivedForEntry.Item3 IsNot Nothing Then
+                    Dim lastTradeTIIStartTime As Date = GetTIISignalStartTime(lastExecutedTrade.SignalCandle)
+                    Dim currentTradeTIIStartTime As Date = GetTIISignalStartTime(signalReceivedForEntry.Item3)
+                    If lastTradeTIIStartTime = currentTradeTIIStartTime Then signalReceivedForEntry = Nothing
+                End If
             End If
             If signalReceivedForEntry IsNot Nothing AndAlso signalReceivedForEntry.Item1 Then
                 signalCandle = signalReceivedForEntry.Item3
@@ -203,13 +209,30 @@ Public Class TIICNCStrategyRule
                 If _tiiPayload(candle.PayloadDate) < 20 AndAlso _tiiPayload(candle.PreviousCandlePayload.PayloadDate) < 20 Then
                     ret = New Tuple(Of Boolean, Decimal, Payload, Boolean)(True, candle.High, candle, False)
                 End If
-            ElseIf _tiiPayload(candle.PayloadDate) > 20 AndAlso _tiiPayload(candle.PayloadDate) < 80 AndAlso
-                _tiiPayload(candle.PreviousCandlePayload.PayloadDate) < 20 Then
-                ret = New Tuple(Of Boolean, Decimal, Payload, Boolean)(True, candle.Close, candle, True)
+                'ElseIf _tiiPayload(candle.PayloadDate) > 20 AndAlso _tiiPayload(candle.PayloadDate) < 80 AndAlso
+                '    _tiiPayload(candle.PreviousCandlePayload.PayloadDate) < 20 Then
+                '    ret = New Tuple(Of Boolean, Decimal, Payload, Boolean)(True, candle.Close, candle, True)
             End If
         End If
         Return ret
     End Function
 #End Region
 
+    Private Function GetTIISignalStartTime(ByVal signalCandle As Payload) As Date
+        Dim ret As Date = Date.MinValue
+        If _tiiPayload IsNot Nothing AndAlso _tiiPayload.ContainsKey(signalCandle.PayloadDate) Then
+            For Each runningPayload In _signalPayload.OrderByDescending(Function(x)
+                                                                            Return x.Key
+                                                                        End Function)
+                If runningPayload.Key <= signalCandle.PayloadDate Then
+                    If _tiiPayload(runningPayload.Value.PayloadDate) < 20 AndAlso
+                        _tiiPayload(runningPayload.Value.PreviousCandlePayload.PayloadDate) > 20 Then
+                        ret = runningPayload.Value.PayloadDate
+                        Exit For
+                    End If
+                End If
+            Next
+        End If
+        Return ret
+    End Function
 End Class

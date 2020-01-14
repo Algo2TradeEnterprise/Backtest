@@ -1439,7 +1439,8 @@ Public Class frmMain
                                 .RuleEntityData = New TIICNCStrategyRule.StrategyRuleEntities With
                                             {.QuantityType = qntyTyp,
                                              .QuntityForLinear = 1,
-                                             .AdditionalProfitPercentage = 25}
+                                             .AdditionalProfitPercentage = 25,
+                                             .SameTIISignalEntry = False}
                         End Select
 
                         .NumberOfTradeableStockPerDay = 10
