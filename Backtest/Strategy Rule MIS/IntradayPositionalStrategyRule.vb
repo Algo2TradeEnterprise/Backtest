@@ -62,7 +62,7 @@ Public Class IntradayPositionalStrategyRule
             currentMinuteCandlePayload.PayloadDate >= tradeStartTime AndAlso Me.EligibleToTakeTrade Then
 
             Dim signalCandle As Payload = Nothing
-            Dim signalCandleSatisfied As Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
+            Dim signalCandleSatisfied As Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection) = GetSignalCandle(currentMinuteCandlePayload, currentTick)
             Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandlePayload, _parentStrategy.TradeType)
             If signalCandleSatisfied IsNot Nothing AndAlso signalCandleSatisfied.Item1 Then
                 If lastExecutedTrade Is Nothing Then
@@ -135,36 +135,38 @@ Public Class IntradayPositionalStrategyRule
     Public Overrides Async Function IsTriggerReceivedForExitOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, String))
         Dim ret As Tuple(Of Boolean, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
-        Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
-        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
-            Dim signalCandleSatisfied As Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
-            If signalCandleSatisfied IsNot Nothing AndAlso signalCandleSatisfied.Item1 Then
-                If currentTrade.SignalCandle.PayloadDate <> currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate Then
-                    ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
-                End If
-            End If
-        End If
-        Return ret
+        'Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
+        'If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
+        '    Dim signalCandleSatisfied As Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
+        '    If signalCandleSatisfied IsNot Nothing AndAlso signalCandleSatisfied.Item1 Then
+        '        If currentTrade.SignalCandle.PayloadDate <> currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate Then
+        '            ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+        '        End If
+        '    End If
+        'End If
+        'Return ret
     End Function
 
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
-        If _userInputs.BreakevenMovement AndAlso currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-            Dim triggerPrice As Decimal = Decimal.MinValue
-            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                Dim excpectedTarget As Decimal = currentTrade.EntryPrice + (currentTrade.PotentialTarget - currentTrade.EntryPrice) * 1.1
-                If currentTick.Open >= excpectedTarget Then
-                    triggerPrice = currentTrade.EntryPrice + _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, LotSize, _parentStrategy.StockType)
+        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            If _userInputs.BreakevenMovement Then
+                Dim triggerPrice As Decimal = Decimal.MinValue
+                If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                    Dim excpectedTarget As Decimal = currentTrade.EntryPrice + (currentTrade.EntryPrice - currentTrade.PotentialStopLoss) * 1.1
+                    If currentTick.Open >= excpectedTarget Then
+                        triggerPrice = currentTrade.EntryPrice + _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, LotSize, _parentStrategy.StockType)
+                    End If
+                ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                    Dim excpectedTarget As Decimal = currentTrade.EntryPrice - (currentTrade.PotentialStopLoss - currentTrade.EntryPrice) * 1.1
+                    If currentTick.Open <= excpectedTarget Then
+                        triggerPrice = currentTrade.EntryPrice - _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, LotSize, _parentStrategy.StockType)
+                    End If
                 End If
-            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                Dim excpectedTarget As Decimal = currentTrade.EntryPrice - (currentTrade.EntryPrice - currentTrade.PotentialTarget) * 1.1
-                If currentTick.Open <= excpectedTarget Then
-                    triggerPrice = currentTrade.EntryPrice - _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, LotSize, _parentStrategy.StockType)
+                If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
+                    ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, String.Format("Move to breakeven: {0}. Time:{1}", triggerPrice, currentTick.PayloadDate))
                 End If
-            End If
-            If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
-                ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, String.Format("Move to breakeven: {0}. Time:{1}", triggerPrice, currentTick.PayloadDate))
             End If
         End If
         Return ret
@@ -184,20 +186,51 @@ Public Class IntradayPositionalStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
     End Function
 
-    Private Function GetSignalCandle(ByVal candle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)
+    Private Function GetSignalCandle(ByVal currentCandle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)
         Dim ret As Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection) = Nothing
-        If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing AndAlso
-            Not candle.DeadCandle AndAlso Not candle.PreviousCandlePayload.DeadCandle Then
+        If currentCandle.PreviousCandlePayload IsNot Nothing AndAlso Not currentCandle.PreviousCandlePayload.DeadCandle Then
             If _direction > 0 Then
-                If _fractalHighPayload(candle.PayloadDate) < _fractalHighPayload(candle.PreviousCandlePayload.PayloadDate) Then
-                    ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, _fractalHighPayload(candle.PayloadDate), _fractalLowPayload(candle.PayloadDate), Trade.TradeExecutionDirection.Buy)
+                Dim buffer As Decimal = _parentStrategy.CalculateBuffer(_fractalHighPayload(currentCandle.PreviousCandlePayload.PayloadDate), RoundOfType.Floor)
+                If currentCandle.High >= _fractalHighPayload(currentCandle.PreviousCandlePayload.PayloadDate) + buffer AndAlso IsFractalHighSatisfied(currentCandle) Then
+                    ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, _fractalHighPayload(currentCandle.PreviousCandlePayload.PayloadDate), _fractalLowPayload(currentCandle.PreviousCandlePayload.PayloadDate), Trade.TradeExecutionDirection.Buy)
                 End If
             ElseIf _direction < 0 Then
-                If _fractalLowPayload(candle.PayloadDate) > _fractalLowPayload(candle.PreviousCandlePayload.PayloadDate) Then
-                    ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, _fractalLowPayload(candle.PayloadDate), _fractalHighPayload(candle.PayloadDate), Trade.TradeExecutionDirection.Buy)
+                Dim buffer As Decimal = _parentStrategy.CalculateBuffer(_fractalLowPayload(currentCandle.PreviousCandlePayload.PayloadDate), RoundOfType.Floor)
+                If currentCandle.Low <= _fractalLowPayload(currentCandle.PreviousCandlePayload.PayloadDate) AndAlso IsFractalLowSatisfied(currentCandle) Then
+                    ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, _fractalLowPayload(currentCandle.PreviousCandlePayload.PayloadDate), _fractalHighPayload(currentCandle.PreviousCandlePayload.PayloadDate), Trade.TradeExecutionDirection.Buy)
                 End If
             End If
         End If
+        Return ret
+    End Function
+
+    Private Function IsFractalHighSatisfied(ByVal currentCandle As Payload) As Boolean
+        Dim ret As Boolean = False
+        For Each runningPayload In _signalPayload.OrderByDescending(Function(x)
+                                                                        Return x.Key
+                                                                    End Function)
+            If runningPayload.Key < currentCandle.PayloadDate Then
+                If _fractalHighPayload(runningPayload.Value.PayloadDate) < _fractalHighPayload(runningPayload.Value.PreviousCandlePayload.PayloadDate) Then
+                    ret = True
+                    Exit For
+                End If
+            End If
+        Next
+        Return ret
+    End Function
+
+    Private Function IsFractalLowSatisfied(ByVal currentCandle As Payload) As Boolean
+        Dim ret As Boolean = False
+        For Each runningPayload In _signalPayload.OrderByDescending(Function(x)
+                                                                        Return x.Key
+                                                                    End Function)
+            If runningPayload.Key < currentCandle.PayloadDate Then
+                If _fractalLowPayload(runningPayload.Value.PayloadDate) > _fractalLowPayload(runningPayload.Value.PreviousCandlePayload.PayloadDate) Then
+                    ret = True
+                    Exit For
+                End If
+            End If
+        Next
         Return ret
     End Function
 End Class
