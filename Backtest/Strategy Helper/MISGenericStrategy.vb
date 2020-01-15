@@ -157,7 +157,7 @@ Namespace StrategyHelper
                                         Case 30
                                             stockRule = New PivotsPointsStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 32
-                                            stockRule = New IntradayPositionalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
+                                            stockRule = New IntradayPositionalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -783,11 +783,11 @@ Namespace StrategyHelper
                             Dim tradingDay As Boolean = Await Cmn.IsTradingDay(tradingDate).ConfigureAwait(False)
                             If tradingDay Then
                                 Dim previousTradingDay As Date = Cmn.GetPreviousTradingDay(Common.DataBaseTable.EOD_Cash, tradingDate)
-                                Dim stockList As Dictionary(Of String, Decimal) = Nothing
+                                Dim stockList As Dictionary(Of String, Decimal()) = Nothing
                                 For i = 1 To dt.Rows.Count - 1
                                     Dim rowDate As Date = dt.Rows(i)(0)
                                     If rowDate.Date = previousTradingDay.Date Then
-                                        If stockList Is Nothing Then stockList = New Dictionary(Of String, Decimal)
+                                        If stockList Is Nothing Then stockList = New Dictionary(Of String, Decimal())
                                         Dim tradingSymbol As String = dt.Rows(i).Item(1)
                                         Dim instrumentName As String = Nothing
                                         If tradingSymbol.Contains("FUT") Then
@@ -795,21 +795,22 @@ Namespace StrategyHelper
                                         Else
                                             instrumentName = tradingSymbol
                                         End If
-                                        stockList.Add(instrumentName, dt.Rows(i).Item(11))
+                                        stockList.Add(instrumentName, {dt.Rows(i).Item(11), dt.Rows(i).Item(5)})
                                     End If
                                 Next
                                 If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
                                     Dim minumumGainLossPercentage As Decimal = 0.5
                                     Dim counter As Integer = 0
                                     For Each runningStock In stockList.OrderBy(Function(x)
-                                                                                   Return x.Value
+                                                                                   Return x.Value(0)
                                                                                End Function)
-                                        If runningStock.Value < minumumGainLossPercentage * -1 Then
+                                        If runningStock.Value(0) < minumumGainLossPercentage * -1 Then
                                             Dim detailsOfStock As StockDetails = New StockDetails With
                                                     {.StockName = runningStock.Key,
                                                     .LotSize = 1,
                                                     .EligibleToTakeTrade = True,
-                                                    .Supporting1 = -1}
+                                                    .Supporting1 = -1,
+                                                    .Supporting2 = runningStock.Value(1)}
                                             If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
                                             ret.Add(runningStock.Key, detailsOfStock)
                                             counter += 1
@@ -818,14 +819,15 @@ Namespace StrategyHelper
                                     Next
                                     counter = 0
                                     For Each runningStock In stockList.OrderByDescending(Function(x)
-                                                                                             Return x.Value
+                                                                                             Return x.Value(0)
                                                                                          End Function)
-                                        If runningStock.Value > minumumGainLossPercentage Then
+                                        If runningStock.Value(0) > minumumGainLossPercentage Then
                                             Dim detailsOfStock As StockDetails = New StockDetails With
                                                     {.StockName = runningStock.Key,
                                                     .LotSize = 1,
                                                     .EligibleToTakeTrade = True,
-                                                    .Supporting1 = 1}
+                                                    .Supporting1 = 1,
+                                                    .Supporting2 = runningStock.Value(1)}
                                             If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
                                             ret.Add(runningStock.Key, detailsOfStock)
                                             counter += 1

@@ -11,7 +11,6 @@ Public Class IntradayPositionalStrategyRule
     Public Class StrategyRuleEntities
         Inherits RuleEntities
 
-        Public MinStoplossPercentagePerTrade As Decimal
         Public MaxStoplossPerStock As Decimal
         Public TargetMultiplier As Decimal
         Public BreakevenMovement As Boolean
@@ -23,6 +22,7 @@ Public Class IntradayPositionalStrategyRule
 
     Private ReadOnly _userInputs As StrategyRuleEntities
     Private ReadOnly _direction As Integer
+    Private ReadOnly _dayATR As Decimal
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -31,10 +31,12 @@ Public Class IntradayPositionalStrategyRule
                    ByVal tradingSymbol As String,
                    ByVal canceller As CancellationTokenSource,
                    ByVal entities As RuleEntities,
-                   ByVal direction As Integer)
+                   ByVal direction As Integer,
+                   ByVal dayATR As Decimal)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _userInputs = entities
         _direction = direction
+        _dayATR = dayATR
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -78,51 +80,57 @@ Public Class IntradayPositionalStrategyRule
                     Dim entryPrice As Decimal = signalCandleSatisfied.Item2 + buffer
                     Dim slPrice As Decimal = signalCandleSatisfied.Item3 - buffer
                     Dim slPoint As Decimal = entryPrice - slPrice
-                    Dim slRemark As String = "Normal SL"
-                    If slPoint < entryPrice * _userInputs.MinStoplossPercentagePerTrade / 100 Then
-                        slPrice = entryPrice - ConvertFloorCeling(entryPrice * _userInputs.MinStoplossPercentagePerTrade / 100, _parentStrategy.TickSize, RoundOfType.Floor)
-                        slRemark = "Min SL"
-                    End If
-                    slPoint = entryPrice - slPrice
-                    Dim quantity As Decimal = _parentStrategy.CalculateQuantityFromSL(_tradingSymbol, entryPrice, slPrice, Math.Abs(_userInputs.MaxStoplossPerStock) * -1, Trade.TypeOfStock.Cash)
+                    If slPoint < _dayATR / 4 Then
+                        Dim slRemark As String = "Normal SL"
+                        If slPoint < _dayATR / 8 Then
+                            slPrice = entryPrice - ConvertFloorCeling(_dayATR / 8, _parentStrategy.TickSize, RoundOfType.Floor)
+                            slRemark = "1/8 Of Day ATR"
+                        End If
+                        slPoint = entryPrice - slPrice
+                        Dim quantity As Decimal = _parentStrategy.CalculateQuantityFromSL(_tradingSymbol, entryPrice, slPrice, Math.Abs(_userInputs.MaxStoplossPerStock) * -1, Trade.TypeOfStock.Cash)
 
-                    parameter = New PlaceOrderParameters With {
-                        .EntryPrice = entryPrice,
-                        .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                        .Quantity = quantity,
-                        .Stoploss = slPrice,
-                        .Target = .EntryPrice + ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor),
-                        .Buffer = buffer,
-                        .SignalCandle = signalCandle,
-                        .OrderType = Trade.TypeOfOrder.SL,
-                        .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
-                        .Supporting2 = slRemark
-                    }
+                        parameter = New PlaceOrderParameters With {
+                                    .EntryPrice = entryPrice,
+                                    .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                                    .Quantity = quantity,
+                                    .Stoploss = slPrice,
+                                    .Target = .EntryPrice + ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor),
+                                    .Buffer = buffer,
+                                    .SignalCandle = signalCandle,
+                                    .OrderType = Trade.TypeOfOrder.SL,
+                                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                                    .Supporting2 = slRemark,
+                                    .Supporting3 = slPrice
+                                }
+                    End If
                 ElseIf signalCandleSatisfied.Item4 = Trade.TradeExecutionDirection.Sell Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2, RoundOfType.Floor)
                     Dim entryPrice As Decimal = signalCandleSatisfied.Item2 - buffer
                     Dim slPrice As Decimal = signalCandleSatisfied.Item3 + buffer
                     Dim slPoint As Decimal = slPrice - entryPrice
-                    Dim slRemark As String = "Normal SL"
-                    If slPoint < entryPrice * _userInputs.MinStoplossPercentagePerTrade / 100 Then
-                        slPrice = entryPrice + ConvertFloorCeling(entryPrice * _userInputs.MinStoplossPercentagePerTrade / 100, _parentStrategy.TickSize, RoundOfType.Floor)
-                        slRemark = "Min SL"
-                    End If
-                    slPoint = slPrice - entryPrice
-                    Dim quantity As Decimal = _parentStrategy.CalculateQuantityFromSL(_tradingSymbol, slPrice, entryPrice, Math.Abs(_userInputs.MaxStoplossPerStock) * -1, Trade.TypeOfStock.Cash)
+                    If slPoint < _dayATR / 4 Then
+                        Dim slRemark As String = "Normal SL"
+                        If slPoint < _dayATR / 8 Then
+                            slPrice = entryPrice + ConvertFloorCeling(_dayATR / 8, _parentStrategy.TickSize, RoundOfType.Floor)
+                            slRemark = "1/8 of Day ATR"
+                        End If
+                        slPoint = slPrice - entryPrice
+                        Dim quantity As Decimal = _parentStrategy.CalculateQuantityFromSL(_tradingSymbol, slPrice, entryPrice, Math.Abs(_userInputs.MaxStoplossPerStock) * -1, Trade.TypeOfStock.Cash)
 
-                    parameter = New PlaceOrderParameters With {
-                        .EntryPrice = entryPrice,
-                        .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                        .Quantity = quantity,
-                        .Stoploss = slPrice,
-                        .Target = .EntryPrice - ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor),
-                        .Buffer = buffer,
-                        .SignalCandle = signalCandle,
-                        .OrderType = Trade.TypeOfOrder.SL,
-                        .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
-                        .Supporting2 = slRemark
-                    }
+                        parameter = New PlaceOrderParameters With {
+                                    .EntryPrice = entryPrice,
+                                    .EntryDirection = Trade.TradeExecutionDirection.Sell,
+                                    .Quantity = quantity,
+                                    .Stoploss = slPrice,
+                                    .Target = .EntryPrice - ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor),
+                                    .Buffer = buffer,
+                                    .SignalCandle = signalCandle,
+                                    .OrderType = Trade.TypeOfOrder.SL,
+                                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                                    .Supporting2 = slRemark,
+                                    .Supporting3 = slPrice
+                                }
+                    End If
                 End If
             End If
         End If

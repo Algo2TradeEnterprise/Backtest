@@ -942,7 +942,6 @@ Public Class frmMain
                     .RuleEntityData = New IntradayPositionalStrategyRule.StrategyRuleEntities With
                         {.BreakevenMovement = True,
                          .MaxStoplossPerStock = 250,
-                         .MinStoplossPercentagePerTrade = 0.2,
                          .TargetMultiplier = 2
                         }
 
