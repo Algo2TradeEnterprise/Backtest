@@ -109,7 +109,7 @@ Public Class IntradayPositionalStrategyRule
                         slRemark = "Min SL"
                     End If
                     slPoint = slPrice - entryPrice
-                    Dim quantity As Decimal = _parentStrategy.CalculateQuantityFromSL(_tradingSymbol, entryPrice, slPrice, Math.Abs(_userInputs.MaxStoplossPerStock) * -1, Trade.TypeOfStock.Cash)
+                    Dim quantity As Decimal = _parentStrategy.CalculateQuantityFromSL(_tradingSymbol, slPrice, entryPrice, Math.Abs(_userInputs.MaxStoplossPerStock) * -1, Trade.TypeOfStock.Cash)
 
                     parameter = New PlaceOrderParameters With {
                         .EntryPrice = entryPrice,
