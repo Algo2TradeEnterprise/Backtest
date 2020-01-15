@@ -879,7 +879,7 @@ Namespace StrategyHelper
             Return potentialBrokerage.NetProfitLoss
         End Function
 
-        Public Function CalculateQuantityFromSL(ByVal stockName As String, ByVal buyPrice As Decimal, ByVal sellPrice As Decimal, ByVal NetProfitLossOfTrade As Decimal, ByVal typeOfStock As Trade.TypeOfStock) As Integer
+        Public Function CalculateQuantityFromTargetSL(ByVal stockName As String, ByVal buyPrice As Decimal, ByVal sellPrice As Decimal, ByVal NetProfitLossOfTrade As Decimal, ByVal typeOfStock As Trade.TypeOfStock) As Integer
             Dim potentialBrokerage As Calculator.BrokerageAttributes = Nothing
             Dim calculator As New Calculator.BrokerageCalculator(_canceller)
 
