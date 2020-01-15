@@ -156,6 +156,8 @@ Namespace StrategyHelper
                                             stockRule = New CoinFlipAtResistanceStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 30
                                             stockRule = New PivotsPointsStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case 32
+                                            stockRule = New IntradayPositionalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -777,6 +779,61 @@ Namespace StrategyHelper
                                     End If
                                 End If
                             Next
+                        Case 32
+                            Dim tradingDay As Boolean = Await Cmn.IsTradingDay(tradingDate).ConfigureAwait(False)
+                            If tradingDay Then
+                                Dim previousTradingDay As Date = Cmn.GetPreviousTradingDay(Common.DataBaseTable.EOD_Cash, tradingDate)
+                                Dim stockList As Dictionary(Of String, Decimal) = Nothing
+                                For i = 1 To dt.Rows.Count - 1
+                                    Dim rowDate As Date = dt.Rows(i)(0)
+                                    If rowDate.Date = previousTradingDay.Date Then
+                                        If stockList Is Nothing Then stockList = New Dictionary(Of String, Decimal)
+                                        Dim tradingSymbol As String = dt.Rows(i).Item(1)
+                                        Dim instrumentName As String = Nothing
+                                        If tradingSymbol.Contains("FUT") Then
+                                            instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                                        Else
+                                            instrumentName = tradingSymbol
+                                        End If
+                                        stockList.Add(instrumentName, dt.Rows(i).Item(11))
+                                    End If
+                                Next
+                                If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
+                                    Dim minumumGainLossPercentage As Decimal = 0.5
+                                    Dim counter As Integer = 0
+                                    For Each runningStock In stockList.OrderBy(Function(x)
+                                                                                   Return x.Value
+                                                                               End Function)
+                                        If runningStock.Value < minumumGainLossPercentage * -1 Then
+                                            Dim detailsOfStock As StockDetails = New StockDetails With
+                                                    {.StockName = runningStock.Key,
+                                                    .LotSize = 1,
+                                                    .EligibleToTakeTrade = True,
+                                                    .Supporting1 = -1}
+                                            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                            ret.Add(runningStock.Key, detailsOfStock)
+                                            counter += 1
+                                            If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                                        End If
+                                    Next
+                                    counter = 0
+                                    For Each runningStock In stockList.OrderByDescending(Function(x)
+                                                                                             Return x.Value
+                                                                                         End Function)
+                                        If runningStock.Value > minumumGainLossPercentage Then
+                                            Dim detailsOfStock As StockDetails = New StockDetails With
+                                                    {.StockName = runningStock.Key,
+                                                    .LotSize = 1,
+                                                    .EligibleToTakeTrade = True,
+                                                    .Supporting1 = 1}
+                                            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                            ret.Add(runningStock.Key, detailsOfStock)
+                                            counter += 1
+                                            If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                                        End If
+                                    Next
+                                End If
+                            End If
                         Case Else
                             Dim counter As Integer = 0
                             For i = 1 To dt.Rows.Count - 1
