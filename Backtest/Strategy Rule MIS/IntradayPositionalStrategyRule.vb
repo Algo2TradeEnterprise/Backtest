@@ -219,7 +219,9 @@ Public Class IntradayPositionalStrategyRule
                                                                     End Function)
             If runningPayload.Key < currentCandle.PayloadDate AndAlso runningPayload.Key.Date = _tradingDate.Date Then
                 If _fractalHighPayload(runningPayload.Value.PayloadDate) < _fractalHighPayload(runningPayload.Value.PreviousCandlePayload.PayloadDate) Then
-                    ret = True
+                    If Not IsSignalTriggered(_fractalHighPayload(runningPayload.Value.PayloadDate), Trade.TradeExecutionDirection.Buy, runningPayload.Value.PayloadDate, currentCandle.PayloadDate) Then
+                        ret = True
+                    End If
                     Exit For
                 End If
             End If
@@ -234,7 +236,9 @@ Public Class IntradayPositionalStrategyRule
                                                                     End Function)
             If runningPayload.Key < currentCandle.PayloadDate AndAlso runningPayload.Key.Date = _tradingDate.Date Then
                 If _fractalLowPayload(runningPayload.Value.PayloadDate) > _fractalLowPayload(runningPayload.Value.PreviousCandlePayload.PayloadDate) Then
-                    ret = True
+                    If Not IsSignalTriggered(_fractalLowPayload(runningPayload.Value.PayloadDate), Trade.TradeExecutionDirection.Sell, runningPayload.Value.PayloadDate, currentCandle.PayloadDate) Then
+                        ret = True
+                    End If
                     Exit For
                 End If
             End If
