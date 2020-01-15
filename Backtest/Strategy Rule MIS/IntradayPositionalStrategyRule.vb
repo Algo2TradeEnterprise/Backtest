@@ -85,7 +85,7 @@ Public Class IntradayPositionalStrategyRule
                     If slPoint < _dayATR / 4 Then
                         Dim quantity As Decimal = 1
                         Dim slRemark As String = "Normal SL"
-                        If slPoint < Math.Round(_dayATR / 8, 1) Then
+                        If slPoint <= Math.Round(_dayATR / 8, 1) Then
                             slPrice = entryPrice - ConvertFloorCeling(_dayATR / 8, _parentStrategy.TickSize, RoundOfType.Floor)
                             slRemark = "1/8 Of Day ATR"
 
@@ -118,7 +118,7 @@ Public Class IntradayPositionalStrategyRule
                     If slPoint < _dayATR / 4 Then
                         Dim quantity As Decimal = 1
                         Dim slRemark As String = "Normal SL"
-                        If slPoint < _dayATR / 8 Then
+                        If slPoint <= Math.Round(_dayATR / 8, 1) Then
                             slPrice = entryPrice + ConvertFloorCeling(_dayATR / 8, _parentStrategy.TickSize, RoundOfType.Floor)
                             slRemark = "1/8 of Day ATR"
 
