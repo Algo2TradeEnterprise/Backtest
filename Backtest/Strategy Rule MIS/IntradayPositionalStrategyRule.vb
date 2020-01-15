@@ -73,7 +73,7 @@ Public Class IntradayPositionalStrategyRule
             End If
 
             If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
-                If signalCandleSatisfied.Item3 = Trade.TradeExecutionDirection.Buy Then
+                If signalCandleSatisfied.Item4 = Trade.TradeExecutionDirection.Buy Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2, RoundOfType.Floor)
                     Dim entryPrice As Decimal = signalCandleSatisfied.Item2 + buffer
                     Dim slPrice As Decimal = signalCandleSatisfied.Item3 - buffer
@@ -98,7 +98,7 @@ Public Class IntradayPositionalStrategyRule
                         .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
                         .Supporting2 = slRemark
                     }
-                ElseIf signalCandleSatisfied.Item3 = Trade.TradeExecutionDirection.Sell Then
+                ElseIf signalCandleSatisfied.Item4 = Trade.TradeExecutionDirection.Sell Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2, RoundOfType.Floor)
                     Dim entryPrice As Decimal = signalCandleSatisfied.Item2 - buffer
                     Dim slPrice As Decimal = signalCandleSatisfied.Item3 + buffer
