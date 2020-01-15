@@ -235,7 +235,8 @@ Public Class IntradayPositionalStrategyRule
                                                                     End Function)
             If runningPayload.Key < currentCandle.PayloadDate AndAlso runningPayload.Key.Date = _tradingDate.Date Then
                 If _fractalHighPayload(runningPayload.Value.PayloadDate) < _fractalHighPayload(runningPayload.Value.PreviousCandlePayload.PayloadDate) Then
-                    If Not IsSignalTriggered(_fractalHighPayload(runningPayload.Value.PayloadDate), Trade.TradeExecutionDirection.Buy, runningPayload.Value.PayloadDate, currentCandle.PayloadDate) Then
+                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(_fractalHighPayload(runningPayload.Value.PayloadDate), RoundOfType.Floor)
+                    If Not IsSignalTriggered(_fractalHighPayload(runningPayload.Value.PayloadDate) + buffer, Trade.TradeExecutionDirection.Buy, runningPayload.Value.PayloadDate, currentCandle.PayloadDate) Then
                         ret = True
                     End If
                     Exit For
@@ -252,7 +253,8 @@ Public Class IntradayPositionalStrategyRule
                                                                     End Function)
             If runningPayload.Key < currentCandle.PayloadDate AndAlso runningPayload.Key.Date = _tradingDate.Date Then
                 If _fractalLowPayload(runningPayload.Value.PayloadDate) > _fractalLowPayload(runningPayload.Value.PreviousCandlePayload.PayloadDate) Then
-                    If Not IsSignalTriggered(_fractalLowPayload(runningPayload.Value.PayloadDate), Trade.TradeExecutionDirection.Sell, runningPayload.Value.PayloadDate, currentCandle.PayloadDate) Then
+                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(_fractalLowPayload(runningPayload.Value.PayloadDate), RoundOfType.Floor)
+                    If Not IsSignalTriggered(_fractalLowPayload(runningPayload.Value.PayloadDate) - buffer, Trade.TradeExecutionDirection.Sell, runningPayload.Value.PayloadDate, currentCandle.PayloadDate) Then
                         ret = True
                     End If
                     Exit For
