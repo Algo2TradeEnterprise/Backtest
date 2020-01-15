@@ -144,7 +144,7 @@ Public Class IntradayPositionalStrategyRule
         '        End If
         '    End If
         'End If
-        'Return ret
+        Return ret
     End Function
 
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
