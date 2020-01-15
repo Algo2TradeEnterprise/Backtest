@@ -197,7 +197,7 @@ Public Class IntradayPositionalStrategyRule
             ElseIf _direction < 0 Then
                 Dim buffer As Decimal = _parentStrategy.CalculateBuffer(_fractalLowPayload(currentCandle.PreviousCandlePayload.PayloadDate), RoundOfType.Floor)
                 If currentCandle.Low <= _fractalLowPayload(currentCandle.PreviousCandlePayload.PayloadDate) AndAlso IsFractalLowSatisfied(currentCandle) Then
-                    ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, _fractalLowPayload(currentCandle.PreviousCandlePayload.PayloadDate), _fractalHighPayload(currentCandle.PreviousCandlePayload.PayloadDate), Trade.TradeExecutionDirection.Buy)
+                    ret = New Tuple(Of Boolean, Decimal, Decimal, Trade.TradeExecutionDirection)(True, _fractalLowPayload(currentCandle.PreviousCandlePayload.PayloadDate), _fractalHighPayload(currentCandle.PreviousCandlePayload.PayloadDate), Trade.TradeExecutionDirection.Sell)
                 End If
             End If
         End If
