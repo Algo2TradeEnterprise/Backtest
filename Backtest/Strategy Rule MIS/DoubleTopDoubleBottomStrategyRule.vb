@@ -163,7 +163,7 @@ Public Class DoubleTopDoubleBottomStrategyRule
                 Dim currentFractalU As Tuple(Of Date, Date) = GetFractalUFormingCandle(_fractalHighPayload, currentCandle.PayloadDate, 1)
                 If currentFractalU IsNot Nothing AndAlso currentFractalU.Item2 = currentCandle.PayloadDate Then
                     Dim previousFractalU As Tuple(Of Date, Date) = GetFractalUFormingCandle(_fractalHighPayload, currentFractalU.Item1, 1)
-                    If previousFractalU IsNot Nothing Then
+                    If previousFractalU IsNot Nothing AndAlso previousFractalU.Item1.Date = _tradingDate.Date Then
                         Dim atr As Decimal = Math.Round(_atrPayload(currentCandle.PayloadDate), 4)
                         If Math.Abs(_signalPayload(currentFractalU.Item1).PreviousCandlePayload.High - _signalPayload(previousFractalU.Item1).PreviousCandlePayload.High) <= atr Then
                             _lastSignalTime = currentCandle.PayloadDate
@@ -178,7 +178,7 @@ Public Class DoubleTopDoubleBottomStrategyRule
                 Dim currentFractalU As Tuple(Of Date, Date) = GetFractalUFormingCandle(_fractalLowPayload, currentCandle.PayloadDate, -1)
                 If currentFractalU IsNot Nothing AndAlso currentFractalU.Item2 = currentCandle.PayloadDate Then
                     Dim previousFractalU As Tuple(Of Date, Date) = GetFractalUFormingCandle(_fractalLowPayload, currentFractalU.Item1, -1)
-                    If previousFractalU IsNot Nothing Then
+                    If previousFractalU IsNot Nothing AndAlso previousFractalU.Item1.Date = _tradingDate.Date Then
                         Dim atr As Decimal = Math.Round(_atrPayload(currentCandle.PayloadDate), 4)
                         If Math.Abs(_signalPayload(currentFractalU.Item1).PreviousCandlePayload.Low - _signalPayload(previousFractalU.Item1).PreviousCandlePayload.Low) <= atr Then
                             _lastSignalTime = currentCandle.PayloadDate
