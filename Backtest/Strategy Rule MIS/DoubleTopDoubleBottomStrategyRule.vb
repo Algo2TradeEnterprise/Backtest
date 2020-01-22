@@ -75,9 +75,9 @@ Public Class DoubleTopDoubleBottomStrategyRule
 
             If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
                 If signalCandleSatisfied.Item5 = Trade.TradeExecutionDirection.Buy Then
-                    Dim buffer As Decimal = 0
+                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2, RoundOfType.Floor)
                     Dim entryPrice As Decimal = signalCandleSatisfied.Item2
-                    Dim slPrice As Decimal = signalCandleSatisfied.Item3
+                    Dim slPrice As Decimal = signalCandleSatisfied.Item3 - buffer
                     Dim targetPrice As Decimal = signalCandleSatisfied.Item4
                     Dim slPoint As Decimal = entryPrice - slPrice
                     Dim targetPoint As Decimal = targetPrice - entryPrice
@@ -97,9 +97,9 @@ Public Class DoubleTopDoubleBottomStrategyRule
                                 }
                     End If
                 ElseIf signalCandleSatisfied.Item5 = Trade.TradeExecutionDirection.Sell Then
-                    Dim buffer As Decimal = 0
+                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2, RoundOfType.Floor)
                     Dim entryPrice As Decimal = signalCandleSatisfied.Item2
-                    Dim slPrice As Decimal = signalCandleSatisfied.Item3
+                    Dim slPrice As Decimal = signalCandleSatisfied.Item3 + buffer
                     Dim targetPrice As Decimal = signalCandleSatisfied.Item4
                     Dim slPoint As Decimal = slPrice - entryPrice
                     Dim targetPoint As Decimal = entryPrice - targetPrice
