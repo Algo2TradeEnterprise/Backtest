@@ -59,6 +59,7 @@ Public Class DoubleTopDoubleBottomStrategyRule
             _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) > Math.Abs(_parentStrategy.StockMaxLossPerDay) * -1 AndAlso
             _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) < Me.MaxProfitOfThisStock AndAlso
             _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) > Math.Abs(Me.MaxLossOfThisStock) * -1 AndAlso
+            _parentStrategy.IsAnyTradeOfTheStockTargetReached(currentMinuteCandlePayload, _parentStrategy.TradeType) AndAlso
             currentMinuteCandlePayload.PayloadDate >= tradeStartTime AndAlso Me.EligibleToTakeTrade Then
 
             Dim signalCandle As Payload = Nothing
