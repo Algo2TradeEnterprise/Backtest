@@ -842,8 +842,8 @@ Namespace StrategyHelper
                             Dim counter As Integer = 0
                             For i = 1 To dt.Rows.Count - 1
                                 Dim rowDate As Date = dt.Rows(i)(0)
-                                If rowDate.Date = tradingDate.Date Then
-                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                'If rowDate.Date = tradingDate.Date Then
+                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
                                     Dim tradingSymbol As String = dt.Rows(i).Item(1)
                                     Dim instrumentName As String = Nothing
                                     If tradingSymbol.Contains("FUT") Then
@@ -860,7 +860,7 @@ Namespace StrategyHelper
                                     ret.Add(instrumentName, detailsOfStock)
                                     counter += 1
                                     If counter = Me.NumberOfTradeableStockPerDay Then Exit For
-                                End If
+                                'End If
                             Next
                     End Select
                 End If

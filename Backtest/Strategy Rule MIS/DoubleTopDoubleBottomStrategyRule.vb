@@ -196,6 +196,9 @@ Public Class DoubleTopDoubleBottomStrategyRule
                         Dim slPrice As Decimal = Math.Max(_fractalLowPayload(_signalPayload(_lastSignalTime).PreviousCandlePayload.PayloadDate), _fractalLowPayload(_signalPayload(_lastPreviousSignalTime).PreviousCandlePayload.PayloadDate))
 
                         ret = New Tuple(Of Boolean, Decimal, Decimal, Decimal, Trade.TradeExecutionDirection)(True, entryPrice, slPrice, targetPrice, Trade.TradeExecutionDirection.Buy)
+                        _lastSignalTime = Date.MinValue
+                        _lastPreviousSignalTime = Date.MinValue
+                        _lastSignalDirection = Trade.TradeExecutionDirection.None
                     End If
                 ElseIf _lastSignalDirection = Trade.TradeExecutionDirection.Sell Then
                     Dim entryPrice As Decimal = Math.Min(_swingHighPayload(currentCandle.PayloadDate), _fractalHighPayload(currentCandle.PayloadDate))
@@ -204,6 +207,9 @@ Public Class DoubleTopDoubleBottomStrategyRule
                         Dim slPrice As Decimal = Math.Min(_fractalHighPayload(_signalPayload(_lastSignalTime).PreviousCandlePayload.PayloadDate), _fractalHighPayload(_signalPayload(_lastPreviousSignalTime).PreviousCandlePayload.PayloadDate))
 
                         ret = New Tuple(Of Boolean, Decimal, Decimal, Decimal, Trade.TradeExecutionDirection)(True, entryPrice, slPrice, targetPrice, Trade.TradeExecutionDirection.Sell)
+                        _lastSignalTime = Date.MinValue
+                        _lastPreviousSignalTime = Date.MinValue
+                        _lastSignalDirection = Trade.TradeExecutionDirection.None
                     End If
                 End If
             End If
