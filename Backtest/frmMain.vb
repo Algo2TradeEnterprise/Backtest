@@ -1028,7 +1028,7 @@ Public Class frmMain
                     .RealtimeTrailingPercentage = 50
                 End With
 
-                Dim ruleData As IntradayPositionalStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                Dim ruleData As DoubleTopDoubleBottomStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
                 Dim filename As String = String.Format("Double Top Double Bottom Strategy Output")
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
