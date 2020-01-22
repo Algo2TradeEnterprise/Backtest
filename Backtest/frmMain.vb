@@ -913,6 +913,69 @@ Public Class frmMain
 #End Region
 
 #Region "Intraday Positional"
+            'Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+            '                                                  exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+            '                                                  exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+            '                                                  tradeStartTime:=TimeSpan.Parse("9:15:00"),
+            '                                                  lastTradeEntryTime:=TimeSpan.Parse("14:44:59"),
+            '                                                  eodExitTime:=TimeSpan.Parse("15:15:00"),
+            '                                                  tickSize:=tick,
+            '                                                  marginMultiplier:=margin,
+            '                                                  timeframe:=1,
+            '                                                  heikenAshiCandle:=False,
+            '                                                  stockType:=stockType,
+            '                                                  databaseTable:=database,
+            '                                                  dataSource:=sourceData,
+            '                                                  initialCapital:=Decimal.MaxValue / 2,
+            '                                                  usableCapital:=Decimal.MaxValue / 2,
+            '                                                  minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+            '                                                  amountToBeWithdrawn:=100000)
+            '    AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+
+            '    With backtestStrategy
+            '        .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Top Gainer Top Looser.csv")
+
+            '        .AllowBothDirectionEntryAtSameTime = False
+            '        .TrailingStoploss = False
+            '        .TickBasedStrategy = True
+            '        .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+            '        .RuleEntityData = New IntradayPositionalStrategyRule.StrategyRuleEntities With
+            '            {.BreakevenMovement = True,
+            '             .MaxStoplossPerStock = 250,
+            '             .TargetMultiplier = 2,
+            '             .LowSLMaxTarget = 500,
+            '             .LowSLTargetMultiplier = 3
+            '            }
+
+            '        .NumberOfTradeableStockPerDay = 5
+
+            '        .NumberOfTradesPerStockPerDay = 1
+
+            '        .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+            '        .StockMaxLossPercentagePerDay = Decimal.MinValue
+
+            '        .ExitOnStockFixedTargetStoploss = False
+            '        .StockMaxProfitPerDay = Decimal.MaxValue
+            '        .StockMaxLossPerDay = Decimal.MinValue
+
+            '        .ExitOnOverAllFixedTargetStoploss = True
+            '        .OverAllProfitPerDay = Decimal.MaxValue
+            '        .OverAllLossPerDay = Decimal.MinValue
+
+            '        .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+            '        .MTMSlab = Math.Abs(.OverAllLossPerDay)
+            '        .MovementSlab = .MTMSlab / 2
+            '        .RealtimeTrailingPercentage = 50
+            '    End With
+
+            '    Dim ruleData As IntradayPositionalStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+            '    Dim filename As String = String.Format("Intraday Positional Strategy Output")
+
+            '    Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+            'End Using
+#End Region
+
+#Region "Double Top Double Bottom"
             Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                               exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                               exchangeEndTime:=TimeSpan.Parse("15:29:59"),
@@ -933,18 +996,15 @@ Public Class frmMain
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Top Gainer Top Looser.csv")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Test.csv")
 
                     .AllowBothDirectionEntryAtSameTime = False
                     .TrailingStoploss = False
                     .TickBasedStrategy = True
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
-                    .RuleEntityData = New IntradayPositionalStrategyRule.StrategyRuleEntities With
-                        {.BreakevenMovement = True,
-                         .MaxStoplossPerStock = 250,
-                         .TargetMultiplier = 2,
-                         .LowSLMaxTarget = 500,
-                         .LowSLTargetMultiplier = 3
+                    .RuleEntityData = New DoubleTopDoubleBottomStrategyRule.StrategyRuleEntities With
+                        {.MaxStoplossPerStock = 500,
+                         .TargetMultiplier = 10
                         }
 
                     .NumberOfTradeableStockPerDay = 5
@@ -969,7 +1029,7 @@ Public Class frmMain
                 End With
 
                 Dim ruleData As IntradayPositionalStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                Dim filename As String = String.Format("Intraday Positional Strategy Output")
+                Dim filename As String = String.Format("Double Top Double Bottom Strategy Output")
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using
