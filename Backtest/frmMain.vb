@@ -1004,7 +1004,7 @@ Public Class frmMain
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
                     .RuleEntityData = New DoubleTopDoubleBottomStrategyRule.StrategyRuleEntities With
                         {.MaxStoplossPerStock = 500,
-                         .TargetMultiplier = 10
+                         .TargetMultiplier = 9
                         }
 
                     .NumberOfTradeableStockPerDay = 5

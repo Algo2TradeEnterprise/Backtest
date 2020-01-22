@@ -192,9 +192,9 @@ Public Class DoubleTopDoubleBottomStrategyRule
             If _lastSignalTime <> Date.MinValue AndAlso _lastPreviousSignalTime <> Date.MinValue AndAlso _lastSignalDirection <> Trade.TradeExecutionDirection.None Then
                 If _lastSignalDirection = Trade.TradeExecutionDirection.Buy Then
                     Dim entryPrice As Decimal = Math.Max(_swingLowPayload(currentCandle.PayloadDate), _fractalLowPayload(currentCandle.PayloadDate))
-                    If currentCandle.Low > entryPrice AndAlso currentTick.Open <= entryPrice Then
+                    If currentCandle.Low >= entryPrice AndAlso currentTick.Open <= entryPrice Then
                         Dim targetPrice As Decimal = entryPrice + ConvertFloorCeling(_atrPayload(currentCandle.PayloadDate) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
-                        Dim slPrice As Decimal = Math.Max(_fractalLowPayload(_signalPayload(_lastSignalTime).PreviousCandlePayload.PayloadDate), _fractalLowPayload(_signalPayload(_lastPreviousSignalTime).PreviousCandlePayload.PayloadDate))
+                        Dim slPrice As Decimal = Math.Min(_fractalLowPayload(_signalPayload(_lastSignalTime).PreviousCandlePayload.PayloadDate), _fractalLowPayload(_signalPayload(_lastPreviousSignalTime).PreviousCandlePayload.PayloadDate))
 
                         ret = New Tuple(Of Boolean, Decimal, Decimal, Decimal, Trade.TradeExecutionDirection)(True, entryPrice, slPrice, targetPrice, Trade.TradeExecutionDirection.Buy)
                         _lastSignalTime = Date.MinValue
@@ -203,9 +203,9 @@ Public Class DoubleTopDoubleBottomStrategyRule
                     End If
                 ElseIf _lastSignalDirection = Trade.TradeExecutionDirection.Sell Then
                     Dim entryPrice As Decimal = Math.Min(_swingHighPayload(currentCandle.PayloadDate), _fractalHighPayload(currentCandle.PayloadDate))
-                    If currentCandle.Low < entryPrice AndAlso currentTick.Open >= entryPrice Then
+                    If currentCandle.Low <= entryPrice AndAlso currentTick.Open >= entryPrice Then
                         Dim targetPrice As Decimal = entryPrice - ConvertFloorCeling(_atrPayload(currentCandle.PayloadDate) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
-                        Dim slPrice As Decimal = Math.Min(_fractalHighPayload(_signalPayload(_lastSignalTime).PreviousCandlePayload.PayloadDate), _fractalHighPayload(_signalPayload(_lastPreviousSignalTime).PreviousCandlePayload.PayloadDate))
+                        Dim slPrice As Decimal = Math.Max(_fractalHighPayload(_signalPayload(_lastSignalTime).PreviousCandlePayload.PayloadDate), _fractalHighPayload(_signalPayload(_lastPreviousSignalTime).PreviousCandlePayload.PayloadDate))
 
                         ret = New Tuple(Of Boolean, Decimal, Decimal, Decimal, Trade.TradeExecutionDirection)(True, entryPrice, slPrice, targetPrice, Trade.TradeExecutionDirection.Sell)
                         _lastSignalTime = Date.MinValue
