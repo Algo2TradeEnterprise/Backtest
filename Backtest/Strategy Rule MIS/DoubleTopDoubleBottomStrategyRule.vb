@@ -91,7 +91,7 @@ Public Class DoubleTopDoubleBottomStrategyRule
                                     .Target = .EntryPrice + targetPoint,
                                     .Buffer = buffer,
                                     .SignalCandle = signalCandle,
-                                    .OrderType = Trade.TypeOfOrder.SL,
+                                    .OrderType = Trade.TypeOfOrder.Market,
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss")
                                 }
                     End If
@@ -113,7 +113,7 @@ Public Class DoubleTopDoubleBottomStrategyRule
                                     .Target = .EntryPrice - targetPoint,
                                     .Buffer = buffer,
                                     .SignalCandle = signalCandle,
-                                    .OrderType = Trade.TypeOfOrder.SL,
+                                    .OrderType = Trade.TypeOfOrder.Market,
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss")
                                 }
                     End If
