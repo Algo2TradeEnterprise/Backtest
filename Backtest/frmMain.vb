@@ -348,7 +348,7 @@ Public Class frmMain
                 End With
 
                 Dim ruleData As OIBasedStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                Dim filename As String = String.Format("Double Top Double Bottom Strategy Output")
+                Dim filename As String = String.Format("OI Based Strategy Output")
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using
