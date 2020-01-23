@@ -118,6 +118,19 @@ Public Class OIBasedStrategyRule
     Public Overrides Async Function IsTriggerReceivedForExitOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, String))
         Dim ret As Tuple(Of Boolean, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
+        Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
+
+        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
+            Dim signalCandle As Payload = currentTrade.SignalCandle
+            If signalCandle IsNot Nothing Then
+                Dim signalCandleSatisfied As Tuple(Of Boolean, Decimal, Decimal, Decimal, Trade.TradeExecutionDirection) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
+                If signalCandleSatisfied IsNot Nothing AndAlso signalCandleSatisfied.Item1 Then
+                    If currentTrade.EntryDirection <> signalCandleSatisfied.Item5 Then
+                        ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                    End If
+                End If
+            End If
+        End If
         Return ret
     End Function
 
@@ -141,10 +154,48 @@ Public Class OIBasedStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
     End Function
 
+    Private _potentialHighEntryPrice As Decimal = Decimal.MinValue
+    Private _potentialLowEntryPrice As Decimal = Decimal.MinValue
+
     Private Function GetSignalCandle(ByVal currentCandle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Decimal, Decimal, Trade.TradeExecutionDirection)
         Dim ret As Tuple(Of Boolean, Decimal, Decimal, Decimal, Trade.TradeExecutionDirection) = Nothing
         If currentCandle IsNot Nothing Then
+            If _potentialHighEntryPrice = Decimal.MinValue AndAlso _potentialLowEntryPrice = Decimal.MinValue Then
+                If _oiDetails IsNot Nothing AndAlso _oiDetails.Count > 0 Then
+                    Dim availableOIData As OIData = _oiDetails.Find(Function(x)
+                                                                        Return x.Time = currentCandle.PayloadDate
+                                                                    End Function)
+                    If availableOIData IsNot Nothing Then
+                        If availableOIData.CPCOIChange >= 1000 OrElse availableOIData.CPCOIChange <= -1000 OrElse
+                            availableOIData.PCCOIChange >= 1000 OrElse availableOIData.PCCOIChange <= -1000 Then
+                            If availableOIData.CPCOI >= 100 OrElse availableOIData.CPCOI <= -100 OrElse
+                                availableOIData.PCCOI >= 100 OrElse availableOIData.PCCOI <= -100 Then
+                                _potentialHighEntryPrice = GetSlabBasedLevel(currentCandle.Close, Trade.TradeExecutionDirection.Buy)
+                                _potentialLowEntryPrice = GetSlabBasedLevel(currentCandle.Close, Trade.TradeExecutionDirection.Sell)
+                            End If
+                        End If
+                    End If
+                End If
+            End If
+            If _potentialHighEntryPrice <> Decimal.MinValue AndAlso _potentialLowEntryPrice <> Decimal.MinValue Then
+                Dim middlePoint As Decimal = (_potentialHighEntryPrice + _potentialLowEntryPrice) / 2
+                Dim range As Decimal = _potentialHighEntryPrice - middlePoint
+                If currentTick.Open >= middlePoint + range * 60 / 100 Then
+                    ret = New Tuple(Of Boolean, Decimal, Decimal, Decimal, Trade.TradeExecutionDirection)(True, _potentialHighEntryPrice, ConvertFloorCeling(middlePoint, _parentStrategy.TickSize, RoundOfType.Floor), _potentialHighEntryPrice + _slab * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy)
+                ElseIf currentTick.Open <= middlePoint - range * 60 / 100 Then
+                    ret = New Tuple(Of Boolean, Decimal, Decimal, Decimal, Trade.TradeExecutionDirection)(True, _potentialLowEntryPrice, ConvertFloorCeling(middlePoint, _parentStrategy.TickSize, RoundOfType.Celing), _potentialLowEntryPrice - _slab * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Sell)
+                End If
+            End If
+        End If
+        Return ret
+    End Function
 
+    Private Function GetSlabBasedLevel(ByVal price As Decimal, ByVal direction As Trade.TradeExecutionDirection) As Decimal
+        Dim ret As Decimal = Decimal.MinValue
+        If direction = Trade.TradeExecutionDirection.Buy Then
+            ret = Math.Ceiling(price / _slab) * _slab
+        ElseIf direction = Trade.TradeExecutionDirection.Sell Then
+            ret = Math.Floor(price / _slab) * _slab
         End If
         Return ret
     End Function

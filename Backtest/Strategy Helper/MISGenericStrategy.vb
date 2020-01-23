@@ -549,14 +549,13 @@ Namespace StrategyHelper
                     dt = csvHelper.GetDataTableFromCSV(1)
                 End Using
                 If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
-                    Dim startTime As Date = New Date(tradingDate.Year, tradingDate.Month, tradingDate.Day, 9, 15, 0)
                     For i = 1 To dt.Rows.Count - 1
                         If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
 
                         Dim instrumentName As String = dt.Rows(i).Item("Instrument Name").ToString.ToUpper
-                        Dim rowDate As Date = dt.Rows(i).Item("LastUpdateTime")
-                        rowDate = New Date(tradingDate.Year, tradingDate.Month, tradingDate.Day, rowDate.Hour, rowDate.Minute, rowDate.Second)
-                        If rowDate > startTime Then
+                        If instrumentName = "IBULHSGFIN" Then
+                            Dim rowDate As Date = dt.Rows(i).Item("LastUpdateTime")
+                            rowDate = New Date(tradingDate.Year, tradingDate.Month, tradingDate.Day, rowDate.Hour, rowDate.Minute, 0)
                             Dim atr As Decimal = dt.Rows(i).Item("ATR %")
                             Dim slab As Decimal = dt.Rows(i).Item("Slab")
                             Dim oidetails As OIBasedStrategyRule.OIData = New OIBasedStrategyRule.OIData With {
@@ -575,16 +574,14 @@ Namespace StrategyHelper
                                 .PTROIChange = dt.Rows(i).Item("OIChangePTR %")
                             }
                             If Not ret.ContainsKey(instrumentName) Then
-                                If atr >= 2.5 Then
-                                    Dim detailsOfStock As StockDetails = New StockDetails With
-                                                {.StockName = instrumentName,
-                                                .LotSize = 1,
-                                                .EligibleToTakeTrade = True,
-                                                .Supporting1 = slab,
-                                                .OIDetails = New List(Of OIBasedStrategyRule.OIData) From {oidetails}}
+                                Dim detailsOfStock As StockDetails = New StockDetails With
+                                            {.StockName = instrumentName,
+                                            .LotSize = 1,
+                                            .EligibleToTakeTrade = True,
+                                            .Supporting1 = slab,
+                                            .OIDetails = New List(Of OIBasedStrategyRule.OIData) From {oidetails}}
 
-                                    ret.Add(instrumentName, detailsOfStock)
-                                End If
+                                ret.Add(instrumentName, detailsOfStock)
                             Else
                                 ret(instrumentName).OIDetails.Add(oidetails)
                             End If
