@@ -549,15 +549,70 @@ Namespace StrategyHelper
                     dt = csvHelper.GetDataTableFromCSV(1)
                 End Using
                 If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
+                    Dim atrInstrumnetList As List(Of String) = New List(Of String) From
+                        {"IBULHSGFIN",
+                        "INFRATEL",
+                        "RBLBANK",
+                        "ZEEL",
+                        "JINDALSTEL",
+                        "MFSL",
+                        "PFC",
+                        "INDUSINDBK",
+                        "PEL",
+                        "L&TFH",
+                        "MOTHERSUMI",
+                        "SRTRANSFIN",
+                        "EQUITAS",
+                        "TATAMOTORS",
+                        "CANBK",
+                        "SUNTV",
+                        "LICHSGFIN",
+                        "NMDC",
+                        "ADANIENT",
+                        "JUSTDIAL",
+                        "VEDL",
+                        "CENTURYTEX",
+                        "UJJIVAN",
+                        "GLENMARK",
+                        "HINDPETRO",
+                        "TVSMOTOR",
+                        "CHOLAFIN",
+                        "BEL",
+                        "GAIL",
+                        "CASTROLIND",
+                        "COALINDIA",
+                        "JSWSTEEL",
+                        "M&MFIN",
+                        "TATAGLOBAL",
+                        "MGL",
+                        "RECLTD",
+                        "BHARTIARTL",
+                        "INDIGO",
+                        "AUROPHARMA",
+                        "SBIN",
+                        "BPCL",
+                        "GRASIM",
+                        "APOLLOTYRE",
+                        "DLF",
+                        "IOC",
+                        "MANAPPURAM",
+                        "NIITTECH",
+                        "OIL",
+                        "TATASTEEL",
+                        "CUMMINSIND",
+                        "BHARATFORG",
+                        "MINDTREE"}
+
                     For i = 1 To dt.Rows.Count - 1
                         If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
 
                         Dim instrumentName As String = dt.Rows(i).Item("Instrument Name").ToString.ToUpper
-                        Dim rowDate As Date = dt.Rows(i).Item("LastUpdateTime")
-                        rowDate = New Date(tradingDate.Year, tradingDate.Month, tradingDate.Day, rowDate.Hour, rowDate.Minute, 0)
-                        Dim atr As Decimal = dt.Rows(i).Item("ATR %")
-                        Dim slab As Decimal = dt.Rows(i).Item("Slab")
-                        Dim oidetails As OIBasedStrategyRule.OIData = New OIBasedStrategyRule.OIData With {
+                        If atrInstrumnetList.Contains(instrumentName) Then
+                            Dim rowDate As Date = dt.Rows(i).Item("LastUpdateTime")
+                            rowDate = New Date(tradingDate.Year, tradingDate.Month, tradingDate.Day, rowDate.Hour, rowDate.Minute, 0)
+                            Dim atr As Decimal = dt.Rows(i).Item("ATR %")
+                            Dim slab As Decimal = dt.Rows(i).Item("Slab")
+                            Dim oidetails As OIBasedStrategyRule.OIData = New OIBasedStrategyRule.OIData With {
                             .Time = rowDate,
                             .SumOfPutsOI = dt.Rows(i).Item("SumOfPutsOI"),
                             .SumOfCallsOI = dt.Rows(i).Item("SumOfCallsOI"),
@@ -572,17 +627,18 @@ Namespace StrategyHelper
                             .CTROIChange = dt.Rows(i).Item("OIChangeCTR %"),
                             .PTROIChange = dt.Rows(i).Item("OIChangePTR %")
                         }
-                        If Not ret.ContainsKey(instrumentName) Then
-                            Dim detailsOfStock As StockDetails = New StockDetails With
+                            If Not ret.ContainsKey(instrumentName) Then
+                                Dim detailsOfStock As StockDetails = New StockDetails With
                                         {.StockName = instrumentName,
                                         .LotSize = 1,
                                         .EligibleToTakeTrade = True,
                                         .Supporting1 = slab,
                                         .OIDetails = New List(Of OIBasedStrategyRule.OIData) From {oidetails}}
 
-                            ret.Add(instrumentName, detailsOfStock)
-                        Else
-                            ret(instrumentName).OIDetails.Add(oidetails)
+                                ret.Add(instrumentName, detailsOfStock)
+                            Else
+                                ret(instrumentName).OIDetails.Add(oidetails)
+                            End If
                         End If
                     Next
                 End If
