@@ -109,57 +109,7 @@ Namespace StrategyHelper
                                     Dim tradingSymbol As String = currentDayOneMinutePayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
                                         Case 0
-                                            stockRule = New SmallestCandleBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 1
-                                            stockRule = New HighVolumePinBarStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 2
-                                            stockRule = New MomentumReversalv2StrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 3
-                                            stockRule = New HighVolumePinBarv2StrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 4
-                                            stockRule = New DonchianFractalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 5
-                                            stockRule = New SMIFractalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 6
-                                            stockRule = New BANKNIFTYDayLongSMIStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 7
-                                            stockRule = New DayStartSMIStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 8
-                                            stockRule = New GapFractalBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
-                                        Case 9
-                                            stockRule = New ForwardMomentumv2StrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 10
-                                            stockRule = New VijayCNCStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 11
-                                            stockRule = New TIIOppositeBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 12
-                                            stockRule = New FixedLevelBasedStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
-                                        Case 13
-                                            stockRule = New LowStoplossStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2, stockList(stock).Supporting3, stockList(stock).Supporting4)
-                                        Case 14
-                                            stockRule = New MultiTargetStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 15
-                                            stockRule = New ReversalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting2)
-                                        Case 16
-                                            stockRule = New PinbarBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting2)
-                                        Case 17
-                                            stockRule = New LowSLPinbarStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2, stockList(stock).Supporting3, stockList(stock).Supporting4)
-                                        Case 18
-                                            Throw New ApplicationException("Not a MIS strategy")
-                                        Case 19
-                                            stockRule = New LowStoplossWickStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 20
-                                            stockRule = New LowStoplossCandleStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 21
-                                            stockRule = New PairTradingStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 22
-                                            stockRule = New CoinFlipAtResistanceStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 30
-                                            stockRule = New PivotsPointsStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 32
-                                            stockRule = New IntradayPositionalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2)
-                                        Case 33
-                                            stockRule = New DoubleTopDoubleBottomStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                            stockRule = New OIBasedStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).OIDetails)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -599,270 +549,47 @@ Namespace StrategyHelper
                     dt = csvHelper.GetDataTableFromCSV(1)
                 End Using
                 If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
-                    Select Case Me.RuleNumber
-                        Case 13
-                            Dim counter As Integer = 0
-                            Dim stockList As Dictionary(Of String, StockDetails) = Nothing
-                            For i = 1 To dt.Rows.Count - 1
-                                Dim rowDate As Date = dt.Rows(i)(0)
-                                If rowDate.Date = tradingDate.Date Then
-                                    If stockList Is Nothing Then stockList = New Dictionary(Of String, StockDetails)
-                                    Dim tradingSymbol As String = dt.Rows(i).Item(1)
-                                    Dim instrumentName As String = Nothing
-                                    If tradingSymbol.Contains("FUT") Then
-                                        instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
-                                    Else
-                                        instrumentName = tradingSymbol
-                                    End If
-                                    Dim stockPayload As Dictionary(Of Date, Payload) = Nothing
-                                    If Me.DataSource = SourceOfData.Database Then
-                                        stockPayload = Cmn.GetRawPayload(Me.DatabaseTable, instrumentName, tradingDate, tradingDate)
-                                    ElseIf Me.DataSource = SourceOfData.Live Then
-                                        stockPayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, instrumentName, tradingDate, tradingDate).ConfigureAwait(False)
-                                    End If
-                                    If stockPayload IsNot Nothing AndAlso stockPayload.Count > 0 Then
-                                        Dim time As Date = New Date(tradingDate.Year, tradingDate.Month, tradingDate.Day, 9, 16, 0)
-                                        Dim stockPrice As Decimal = stockPayload.Where(Function(x)
-                                                                                           Return x.Key >= time
-                                                                                       End Function).FirstOrDefault.Value.Close
-                                        Dim quantity As Integer = CalculateQuantityFromInvestment(dt.Rows(i).Item(2), CType(Me.RuleEntityData, LowStoplossStrategyRule.StrategyRuleEntities).MinimumCapital, stockPrice, Me.StockType, True)
-                                        Dim capital As Decimal = stockPrice * quantity / Me.MarginMultiplier
-                                        If capital < 25000 Then
-                                            Dim stoploss As Decimal = CalculatorTargetOrStoploss(instrumentName, stockPrice, quantity, Math.Abs(CType(Me.RuleEntityData, LowStoplossStrategyRule.StrategyRuleEntities).MaxStoploss) * -1, Trade.TradeExecutionDirection.Buy, Me.StockType)
-                                            Dim slPoint As Decimal = stockPrice - stoploss - Me.TickSize
-                                            If slPoint > 0.2 Then
-                                                Dim detailsOfStock As StockDetails = New StockDetails With
-                                                {.StockName = instrumentName,
-                                                .LotSize = dt.Rows(i).Item(2),
-                                                .EligibleToTakeTrade = True,
-                                                .Supporting1 = dt.Rows(i).Item(3),
-                                                .Supporting2 = dt.Rows(i).Item(5),
-                                                .Supporting3 = slPoint,
-                                                .Supporting4 = quantity}
-                                                stockList.Add(instrumentName, detailsOfStock)
-                                                counter += 1
-                                                If CType(Me.RuleEntityData, LowStoplossStrategyRule.StrategyRuleEntities).TypeOfSignal = LowStoplossStrategyRule.SignalType.PreviousDayHighLow Then
-                                                    Dim openPrice As Decimal = stockPayload.Where(Function(x)
-                                                                                                      Return x.Key >= New Date(tradingDate.Year, tradingDate.Month, tradingDate.Day, 9, 15, 0)
-                                                                                                  End Function).FirstOrDefault.Value.Open
-                                                    Dim previousDayLow As Decimal = dt.Rows(i).Item(7)
-                                                    Dim previousDayHigh As Decimal = dt.Rows(i).Item(8)
-                                                    Dim previousDayClose As Decimal = dt.Rows(i).Item(9)
-                                                    If openPrice > previousDayHigh Then
-                                                        detailsOfStock.Supporting5 = previousDayHigh - openPrice
-                                                        detailsOfStock.Supporting6 = 0
-                                                    ElseIf openPrice < previousDayLow Then
-                                                        detailsOfStock.Supporting5 = openPrice - previousDayLow
-                                                        detailsOfStock.Supporting6 = 0
-                                                    Else
-                                                        detailsOfStock.Supporting5 = 0
-                                                        detailsOfStock.Supporting6 = Math.Abs(previousDayClose - openPrice)
-                                                    End If
-                                                Else
-                                                    If counter = Me.NumberOfTradeableStockPerDay Then Exit For
-                                                End If
-                                            End If
-                                        End If
-                                    End If
-                                End If
-                            Next
-                            If CType(Me.RuleEntityData, LowStoplossStrategyRule.StrategyRuleEntities).TypeOfSignal = LowStoplossStrategyRule.SignalType.PreviousDayHighLow Then
-                                If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
-                                    Dim gapupStocks As IEnumerable(Of KeyValuePair(Of String, StockDetails)) = stockList.Where(Function(x)
-                                                                                                                                   Return x.Value.Supporting5 > 0
-                                                                                                                               End Function)
-                                    Dim gapdownStocks As IEnumerable(Of KeyValuePair(Of String, StockDetails)) = stockList.Where(Function(x)
-                                                                                                                                     Return x.Value.Supporting5 < 0
-                                                                                                                                 End Function)
-                                    Dim nmbrOfGapupStock As Integer = Math.Ceiling(Me.NumberOfTradeableStockPerDay / 2)
-                                    Dim nmbrOfGapdownStock As Integer = nmbrOfGapupStock
-                                    Dim totalNmbr As Integer = nmbrOfGapupStock + nmbrOfGapdownStock
-                                    If gapupStocks Is Nothing OrElse gapupStocks.Count < nmbrOfGapupStock Then
-                                        nmbrOfGapdownStock = totalNmbr - gapupStocks.Count
-                                    End If
-                                    If gapdownStocks Is Nothing OrElse gapdownStocks.Count < nmbrOfGapdownStock Then
-                                        nmbrOfGapupStock = totalNmbr - gapdownStocks.Count
-                                    End If
-                                    If gapupStocks IsNot Nothing AndAlso gapupStocks.Count > 0 Then
-                                        Dim ctr As Integer = 0
-                                        For Each runningStock In gapupStocks.OrderByDescending(Function(x)
-                                                                                                   Return x.Value.Supporting1
-                                                                                               End Function)
-                                            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                            ret.Add(runningStock.Key, runningStock.Value)
-                                            ctr += 1
-                                            If ctr = nmbrOfGapupStock Then Exit For
-                                        Next
-                                    End If
-                                    If gapdownStocks IsNot Nothing AndAlso gapdownStocks.Count > 0 Then
-                                        Dim ctr As Integer = 0
-                                        For Each runningStock In gapdownStocks.OrderByDescending(Function(x)
-                                                                                                     Return x.Value.Supporting1
-                                                                                                 End Function)
-                                            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                            ret.Add(runningStock.Key, runningStock.Value)
-                                            ctr += 1
-                                            If ctr = nmbrOfGapdownStock Then Exit For
-                                        Next
-                                    End If
-                                    If ret Is Nothing OrElse ret.Count < totalNmbr Then
-                                        Dim nmbrOfStockNeedToAdd As Integer = totalNmbr - ret.Count
-                                        Dim ctr As Integer = 0
-                                        For Each runningStock In stockList.OrderByDescending(Function(x)
-                                                                                                 Return x.Value.Supporting6
-                                                                                             End Function)
-                                            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                            ret.Add(runningStock.Key, runningStock.Value)
-                                            ctr += 1
-                                            If ctr = nmbrOfStockNeedToAdd Then Exit For
-                                        Next
-                                    End If
-                                End If
-                            Else
-                                ret = stockList
-                            End If
-                        Case 14
-                            For i = 1 To dt.Rows.Count - 1
-                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                Dim instrumentName As String = dt.Rows(i)(0)
-                                Dim tradingSymbol As String = Cmn.GetCurrentTradingSymbol(Common.DataBaseTable.EOD_Futures, tradingDate, instrumentName)
-                                If tradingSymbol IsNot Nothing Then
-                                    Dim lotSize As Integer = Cmn.GetLotSize(Common.DataBaseTable.EOD_Futures, tradingSymbol, tradingDate)
-                                    If lotSize <> Integer.MinValue Then
-                                        Dim detailsOfStock As StockDetails = New StockDetails With
-                                                {.StockName = instrumentName,
-                                                .LotSize = lotSize,
-                                                .EligibleToTakeTrade = True}
-                                        ret.Add(instrumentName, detailsOfStock)
-                                    End If
-                                End If
-                            Next
-                        Case 17
-                            Dim counter As Integer = 0
-                            For i = 1 To dt.Rows.Count - 1
-                                Dim rowDate As Date = dt.Rows(i)(0)
-                                If rowDate.Date = tradingDate.Date Then
-                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                    Dim tradingSymbol As String = dt.Rows(i).Item(1)
-                                    Dim instrumentName As String = Nothing
-                                    If tradingSymbol.Contains("FUT") Then
-                                        instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
-                                    Else
-                                        instrumentName = tradingSymbol
-                                    End If
-                                    Dim stockPayload As Dictionary(Of Date, Payload) = Nothing
-                                    If Me.DataSource = SourceOfData.Database Then
-                                        stockPayload = Cmn.GetRawPayload(Me.DatabaseTable, instrumentName, tradingDate, tradingDate)
-                                    ElseIf Me.DataSource = SourceOfData.Live Then
-                                        stockPayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, instrumentName, tradingDate, tradingDate).ConfigureAwait(False)
-                                    End If
-                                    If stockPayload IsNot Nothing AndAlso stockPayload.Count > 0 Then
-                                        Dim time As Date = New Date(tradingDate.Year, tradingDate.Month, tradingDate.Day, 9, 16, 0)
-                                        Dim stockPrice As Decimal = stockPayload.Where(Function(x)
-                                                                                           Return x.Key >= time
-                                                                                       End Function).FirstOrDefault.Value.Close
-                                        Dim quantity As Integer = CalculateQuantityFromInvestment(dt.Rows(i).Item(2), CType(Me.RuleEntityData, LowSLPinbarStrategyRule.StrategyRuleEntities).MinimumInvestmentPerStock, stockPrice, Me.StockType, True)
-                                        Dim capital As Decimal = stockPrice * quantity / Me.MarginMultiplier
-                                        If capital < 25000 Then
-                                            Dim stoploss As Decimal = CalculatorTargetOrStoploss(instrumentName, stockPrice, quantity, Math.Abs(CType(Me.RuleEntityData, LowSLPinbarStrategyRule.StrategyRuleEntities).MaxLossPerTrade) * -1, Trade.TradeExecutionDirection.Buy, Me.StockType)
-                                            Dim slPoint As Decimal = stockPrice - stoploss
-                                            Dim detailsOfStock As StockDetails = New StockDetails With
-                                            {.StockName = instrumentName,
-                                            .LotSize = dt.Rows(i).Item(2),
-                                            .EligibleToTakeTrade = True,
-                                            .Supporting1 = dt.Rows(i).Item(3),
-                                            .Supporting2 = dt.Rows(i).Item(5),
-                                            .Supporting3 = slPoint,
-                                            .Supporting4 = quantity}
-                                            ret.Add(instrumentName, detailsOfStock)
-                                            counter += 1
-                                            If counter = Me.NumberOfTradeableStockPerDay Then Exit For
-                                        End If
-                                    End If
-                                End If
-                            Next
-                        Case 32
-                            Dim tradingDay As Boolean = Await Cmn.IsTradingDay(tradingDate).ConfigureAwait(False)
-                            If tradingDay Then
-                                Dim previousTradingDay As Date = Cmn.GetPreviousTradingDay(Common.DataBaseTable.EOD_Cash, tradingDate)
-                                Dim stockList As Dictionary(Of String, Decimal()) = Nothing
-                                For i = 1 To dt.Rows.Count - 1
-                                    Dim rowDate As Date = dt.Rows(i)(0)
-                                    If rowDate.Date = previousTradingDay.Date Then
-                                        If stockList Is Nothing Then stockList = New Dictionary(Of String, Decimal())
-                                        Dim tradingSymbol As String = dt.Rows(i).Item(1)
-                                        Dim instrumentName As String = Nothing
-                                        If tradingSymbol.Contains("FUT") Then
-                                            instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
-                                        Else
-                                            instrumentName = tradingSymbol
-                                        End If
-                                        stockList.Add(instrumentName, {dt.Rows(i).Item(11), dt.Rows(i).Item(5)})
-                                    End If
-                                Next
-                                If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
-                                    Dim minumumGainLossPercentage As Decimal = 0.5
-                                    Dim counter As Integer = 0
-                                    For Each runningStock In stockList.OrderBy(Function(x)
-                                                                                   Return x.Value(0)
-                                                                               End Function)
-                                        If runningStock.Value(0) < minumumGainLossPercentage * -1 Then
-                                            Dim detailsOfStock As StockDetails = New StockDetails With
-                                                    {.StockName = runningStock.Key,
-                                                    .LotSize = 1,
-                                                    .EligibleToTakeTrade = True,
-                                                    .Supporting1 = -1,
-                                                    .Supporting2 = runningStock.Value(1)}
-                                            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                            ret.Add(runningStock.Key, detailsOfStock)
-                                            counter += 1
-                                            If counter = Me.NumberOfTradeableStockPerDay Then Exit For
-                                        End If
-                                    Next
-                                    counter = 0
-                                    For Each runningStock In stockList.OrderByDescending(Function(x)
-                                                                                             Return x.Value(0)
-                                                                                         End Function)
-                                        If runningStock.Value(0) > minumumGainLossPercentage Then
-                                            Dim detailsOfStock As StockDetails = New StockDetails With
-                                                    {.StockName = runningStock.Key,
-                                                    .LotSize = 1,
-                                                    .EligibleToTakeTrade = True,
-                                                    .Supporting1 = 1,
-                                                    .Supporting2 = runningStock.Value(1)}
-                                            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                            ret.Add(runningStock.Key, detailsOfStock)
-                                            counter += 1
-                                            If counter = Me.NumberOfTradeableStockPerDay Then Exit For
-                                        End If
-                                    Next
-                                End If
-                            End If
-                        Case Else
-                            Dim counter As Integer = 0
-                            For i = 1 To dt.Rows.Count - 1
-                                Dim rowDate As Date = dt.Rows(i)(0)
-                                'If rowDate.Date = tradingDate.Date Then
-                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                    Dim tradingSymbol As String = dt.Rows(i).Item(1)
-                                    Dim instrumentName As String = Nothing
-                                    If tradingSymbol.Contains("FUT") Then
-                                        instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
-                                    Else
-                                        instrumentName = tradingSymbol
-                                    End If
+                    Dim startTime As Date = New Date(tradingDate.Year, tradingDate.Month, tradingDate.Day, 9, 15, 0)
+                    For i = 1 To dt.Rows.Count - 1
+                        If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+
+                        Dim instrumentName As String = dt.Rows(i).Item("Instrument Name").ToString.ToUpper
+                        Dim rowDate As Date = dt.Rows(i).Item("LastUpdateTime")
+                        rowDate = New Date(tradingDate.Year, tradingDate.Month, tradingDate.Day, rowDate.Hour, rowDate.Minute, rowDate.Second)
+                        If rowDate > startTime Then
+                            Dim atr As Decimal = dt.Rows(i).Item("ATR %")
+                            Dim slab As Decimal = dt.Rows(i).Item("Slab")
+                            Dim oidetails As OIBasedStrategyRule.OIData = New OIBasedStrategyRule.OIData With {
+                                .Time = rowDate,
+                                .SumOfPutsOI = dt.Rows(i).Item("SumOfPutsOI"),
+                                .SumOfCallsOI = dt.Rows(i).Item("SumOfCallsOI"),
+                                .CPCOI = dt.Rows(i).Item("OICPC %"),
+                                .PCCOI = dt.Rows(i).Item("OIPCC %"),
+                                .CTROI = dt.Rows(i).Item("OICTR %"),
+                                .PTROI = dt.Rows(i).Item("OIPTR %"),
+                                .SumOfPutsOIChange = dt.Rows(i).Item("SumOfPutsOIChange"),
+                                .SumOfCallsOIChange = dt.Rows(i).Item("SumOfCallsOIChange"),
+                                .CPCOIChange = dt.Rows(i).Item("OIChangeCPC %"),
+                                .PCCOIChange = dt.Rows(i).Item("OIChangePCC %"),
+                                .CTROIChange = dt.Rows(i).Item("OIChangeCTR %"),
+                                .PTROIChange = dt.Rows(i).Item("OIChangePTR %")
+                            }
+                            If Not ret.ContainsKey(instrumentName) Then
+                                If atr >= 2.5 Then
                                     Dim detailsOfStock As StockDetails = New StockDetails With
                                                 {.StockName = instrumentName,
-                                                .LotSize = dt.Rows(i).Item(2),
+                                                .LotSize = 1,
                                                 .EligibleToTakeTrade = True,
-                                                .Supporting1 = dt.Rows(i).Item(3),
-                                                .Supporting2 = dt.Rows(i).Item(5)}
+                                                .Supporting1 = slab,
+                                                .OIDetails = New List(Of OIBasedStrategyRule.OIData) From {oidetails}}
+
                                     ret.Add(instrumentName, detailsOfStock)
-                                    counter += 1
-                                    If counter = Me.NumberOfTradeableStockPerDay Then Exit For
-                                'End If
-                            Next
-                    End Select
+                                End If
+                            Else
+                                ret(instrumentName).OIDetails.Add(oidetails)
+                            End If
+                        End If
+                    Next
                 End If
             End If
             Return ret

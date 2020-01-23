@@ -73,7 +73,8 @@ Namespace DAL
                             For Each col In data
                                 _canceller.Token.ThrowIfCancellationRequested()
                                 colCtr += 1
-                                ret.Columns.Add(New DataColumn(String.Format("{0}_{1}", col, colCtr), GetType(String)))
+                                'ret.Columns.Add(New DataColumn(String.Format("{0}_{1}", col, colCtr), GetType(String)))
+                                ret.Columns.Add(New DataColumn(String.Format("{0}", col), GetType(String)))
                             Next
                         End If
                         If headerScanned Then

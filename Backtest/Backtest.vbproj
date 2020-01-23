@@ -143,6 +143,7 @@
     <Compile Include="Strategy Rule MIS\MomentumReversalv2StrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\LowStoplossPreviousDayHighLowStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\MultiTargetStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\OIBasedStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\PairTradingStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\PinbarBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\PivotsPointsStrategyRule.vb" />
