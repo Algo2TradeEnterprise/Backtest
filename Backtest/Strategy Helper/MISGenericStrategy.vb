@@ -553,38 +553,36 @@ Namespace StrategyHelper
                         If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
 
                         Dim instrumentName As String = dt.Rows(i).Item("Instrument Name").ToString.ToUpper
-                        If instrumentName = "IBULHSGFIN" Then
-                            Dim rowDate As Date = dt.Rows(i).Item("LastUpdateTime")
-                            rowDate = New Date(tradingDate.Year, tradingDate.Month, tradingDate.Day, rowDate.Hour, rowDate.Minute, 0)
-                            Dim atr As Decimal = dt.Rows(i).Item("ATR %")
-                            Dim slab As Decimal = dt.Rows(i).Item("Slab")
-                            Dim oidetails As OIBasedStrategyRule.OIData = New OIBasedStrategyRule.OIData With {
-                                .Time = rowDate,
-                                .SumOfPutsOI = dt.Rows(i).Item("SumOfPutsOI"),
-                                .SumOfCallsOI = dt.Rows(i).Item("SumOfCallsOI"),
-                                .CPCOI = dt.Rows(i).Item("OICPC %"),
-                                .PCCOI = dt.Rows(i).Item("OIPCC %"),
-                                .CTROI = dt.Rows(i).Item("OICTR %"),
-                                .PTROI = dt.Rows(i).Item("OIPTR %"),
-                                .SumOfPutsOIChange = dt.Rows(i).Item("SumOfPutsOIChange"),
-                                .SumOfCallsOIChange = dt.Rows(i).Item("SumOfCallsOIChange"),
-                                .CPCOIChange = dt.Rows(i).Item("OIChangeCPC %"),
-                                .PCCOIChange = dt.Rows(i).Item("OIChangePCC %"),
-                                .CTROIChange = dt.Rows(i).Item("OIChangeCTR %"),
-                                .PTROIChange = dt.Rows(i).Item("OIChangePTR %")
-                            }
-                            If Not ret.ContainsKey(instrumentName) Then
-                                Dim detailsOfStock As StockDetails = New StockDetails With
-                                            {.StockName = instrumentName,
-                                            .LotSize = 1,
-                                            .EligibleToTakeTrade = True,
-                                            .Supporting1 = slab,
-                                            .OIDetails = New List(Of OIBasedStrategyRule.OIData) From {oidetails}}
+                        Dim rowDate As Date = dt.Rows(i).Item("LastUpdateTime")
+                        rowDate = New Date(tradingDate.Year, tradingDate.Month, tradingDate.Day, rowDate.Hour, rowDate.Minute, 0)
+                        Dim atr As Decimal = dt.Rows(i).Item("ATR %")
+                        Dim slab As Decimal = dt.Rows(i).Item("Slab")
+                        Dim oidetails As OIBasedStrategyRule.OIData = New OIBasedStrategyRule.OIData With {
+                            .Time = rowDate,
+                            .SumOfPutsOI = dt.Rows(i).Item("SumOfPutsOI"),
+                            .SumOfCallsOI = dt.Rows(i).Item("SumOfCallsOI"),
+                            .CPCOI = dt.Rows(i).Item("OICPC %"),
+                            .PCCOI = dt.Rows(i).Item("OIPCC %"),
+                            .CTROI = dt.Rows(i).Item("OICTR %"),
+                            .PTROI = dt.Rows(i).Item("OIPTR %"),
+                            .SumOfPutsOIChange = dt.Rows(i).Item("SumOfPutsOIChange"),
+                            .SumOfCallsOIChange = dt.Rows(i).Item("SumOfCallsOIChange"),
+                            .CPCOIChange = dt.Rows(i).Item("OIChangeCPC %"),
+                            .PCCOIChange = dt.Rows(i).Item("OIChangePCC %"),
+                            .CTROIChange = dt.Rows(i).Item("OIChangeCTR %"),
+                            .PTROIChange = dt.Rows(i).Item("OIChangePTR %")
+                        }
+                        If Not ret.ContainsKey(instrumentName) Then
+                            Dim detailsOfStock As StockDetails = New StockDetails With
+                                        {.StockName = instrumentName,
+                                        .LotSize = 1,
+                                        .EligibleToTakeTrade = True,
+                                        .Supporting1 = slab,
+                                        .OIDetails = New List(Of OIBasedStrategyRule.OIData) From {oidetails}}
 
-                                ret.Add(instrumentName, detailsOfStock)
-                            Else
-                                ret(instrumentName).OIDetails.Add(oidetails)
-                            End If
+                            ret.Add(instrumentName, detailsOfStock)
+                        Else
+                            ret(instrumentName).OIDetails.Add(oidetails)
                         End If
                     Next
                 End If
