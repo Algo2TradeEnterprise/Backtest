@@ -175,8 +175,8 @@ Public Class OIBasedStrategyRule
                             availableOIData.PCCOIChange >= 1000 OrElse availableOIData.PCCOIChange <= -1000 Then
                             If availableOIData.CPCOI >= 100 OrElse availableOIData.CPCOI <= -100 OrElse
                                 availableOIData.PCCOI >= 100 OrElse availableOIData.PCCOI <= -100 Then
-                                _potentialHighEntryPrice = GetSlabBasedLevel(currentCandle.Close, Trade.TradeExecutionDirection.Buy)
-                                _potentialLowEntryPrice = GetSlabBasedLevel(currentCandle.Close, Trade.TradeExecutionDirection.Sell)
+                                _potentialHighEntryPrice = GetSlabBasedLevel(currentTick.Open, Trade.TradeExecutionDirection.Buy)
+                                _potentialLowEntryPrice = GetSlabBasedLevel(currentTick.Open, Trade.TradeExecutionDirection.Sell)
                             End If
                         End If
                     End If
