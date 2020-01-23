@@ -85,7 +85,7 @@ Public Class OIBasedStrategyRule
                                     .Target = targetPrice,
                                     .Buffer = buffer,
                                     .SignalCandle = signalCandle,
-                                    .OrderType = Trade.TypeOfOrder.Market,
+                                    .OrderType = Trade.TypeOfOrder.SL,
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss")
                                 }
                 ElseIf signalCandleSatisfied.Item5 = Trade.TradeExecutionDirection.Sell Then
@@ -103,7 +103,7 @@ Public Class OIBasedStrategyRule
                                     .Target = targetPrice,
                                     .Buffer = buffer,
                                     .SignalCandle = signalCandle,
-                                    .OrderType = Trade.TypeOfOrder.Market,
+                                    .OrderType = Trade.TypeOfOrder.SL,
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss")
                                 }
                 End If
