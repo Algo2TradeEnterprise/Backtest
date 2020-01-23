@@ -165,6 +165,11 @@ Public Class OIBasedStrategyRule
                     Dim availableOIData As OIData = _oiDetails.Find(Function(x)
                                                                         Return x.Time = currentCandle.PayloadDate
                                                                     End Function)
+                    If currentCandle.PayloadDate.Date <> _tradingDate.Date Then
+                        availableOIData = _oiDetails.Find(Function(x)
+                                                              Return x.Time <= currentTick.PayloadDate
+                                                          End Function)
+                    End If
                     If availableOIData IsNot Nothing Then
                         If availableOIData.CPCOIChange >= 1000 OrElse availableOIData.CPCOIChange <= -1000 OrElse
                             availableOIData.PCCOIChange >= 1000 OrElse availableOIData.PCCOIChange <= -1000 Then
