@@ -82,9 +82,12 @@ Public Class DoubleTopDoubleBottomStrategyRule
                     Dim slPoint As Decimal = entryPrice - slPrice
                     Dim targetPoint As Decimal = targetPrice - entryPrice
                     If slPoint * 3 <= targetPoint Then
+                        If 100 * (targetPoint / (slPoint * 3) - 1) < _userInputs.TargetMultiplier Then
+                            targetPoint = ConvertFloorCeling(targetPoint * (_userInputs.TargetMultiplier - 1) / _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
+                        End If
                         Dim quantity As Decimal = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, slPrice, Math.Abs(_userInputs.MaxStoplossPerStock) * -1, _parentStrategy.StockType)
 
-                        parameter = New PlaceOrderParameters With {
+                            parameter = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
                                     .EntryDirection = Trade.TradeExecutionDirection.Buy,
                                     .Quantity = quantity,
@@ -95,8 +98,9 @@ Public Class DoubleTopDoubleBottomStrategyRule
                                     .OrderType = Trade.TypeOfOrder.Market,
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss")
                                 }
-                    End If
-                ElseIf signalCandleSatisfied.Item5 = Trade.TradeExecutionDirection.Sell Then
+                        End If
+                    ElseIf signalCandleSatisfied.Item5 = Trade.TradeExecutionDirection.Sell Then
+
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2, RoundOfType.Floor)
                     Dim entryPrice As Decimal = signalCandleSatisfied.Item2
                     Dim slPrice As Decimal = signalCandleSatisfied.Item3 + buffer
@@ -105,6 +109,9 @@ Public Class DoubleTopDoubleBottomStrategyRule
                     Dim targetPoint As Decimal = entryPrice - targetPrice
                     If slPoint * 3 <= targetPoint Then
                         Dim quantity As Decimal = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, slPrice, entryPrice, Math.Abs(_userInputs.MaxStoplossPerStock) * -1, _parentStrategy.StockType)
+                        If 100 * (targetPoint / (slPoint * 3) - 1) < _userInputs.TargetMultiplier Then
+                            targetPoint = ConvertFloorCeling(targetPoint * (_userInputs.TargetMultiplier - 1) / _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
+                        End If
 
                         parameter = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
