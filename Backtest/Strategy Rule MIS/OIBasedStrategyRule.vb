@@ -72,7 +72,7 @@ Public Class OIBasedStrategyRule
             If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
                 If signalCandleSatisfied.Item5 = Trade.TradeExecutionDirection.Buy Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2, RoundOfType.Floor)
-                    Dim entryPrice As Decimal = signalCandleSatisfied.Item2
+                    Dim entryPrice As Decimal = signalCandleSatisfied.Item2 + buffer
                     Dim slPrice As Decimal = signalCandleSatisfied.Item3
                     Dim targetPrice As Decimal = signalCandleSatisfied.Item4
                     Dim quantity As Decimal = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, slPrice, Math.Abs(_userInputs.MaxStoplossPerStock) * -1, _parentStrategy.StockType)
@@ -90,7 +90,7 @@ Public Class OIBasedStrategyRule
                                 }
                 ElseIf signalCandleSatisfied.Item5 = Trade.TradeExecutionDirection.Sell Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2, RoundOfType.Floor)
-                    Dim entryPrice As Decimal = signalCandleSatisfied.Item2
+                    Dim entryPrice As Decimal = signalCandleSatisfied.Item2 - buffer
                     Dim slPrice As Decimal = signalCandleSatisfied.Item3
                     Dim targetPrice As Decimal = signalCandleSatisfied.Item4
                     Dim quantity As Decimal = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, slPrice, entryPrice, Math.Abs(_userInputs.MaxStoplossPerStock) * -1, _parentStrategy.StockType)
