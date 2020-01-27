@@ -72,8 +72,10 @@ Public Class PositionalHourlyStrategyRule
         Return ret
     End Function
 
-    Public Overrides Function IsTriggerReceivedForExitOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, String))
-        Throw New NotImplementedException
+    Public Overrides Async Function IsTriggerReceivedForExitOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, String))
+        Dim ret As Tuple(Of Boolean, String) = Nothing
+        Await Task.Delay(0).ConfigureAwait(False)
+        Return ret
     End Function
 
     Public Overrides Async Function IsTriggerReceivedForExitCNCEODOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
