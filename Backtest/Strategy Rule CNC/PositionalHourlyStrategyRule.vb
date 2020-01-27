@@ -60,7 +60,8 @@ Public Class PositionalHourlyStrategyRule
                         .Buffer = buffer,
                         .SignalCandle = signalCandle,
                         .OrderType = Trade.TypeOfOrder.SL,
-                        .Supporting1 = lowestSLPoint
+                        .Supporting1 = lowestSLPoint,
+                        .Supporting2 = signalReceivedForEntry.Item3.PayloadDate.ToString("dd-MM-yyyy HH:mm:ss")
                     }
 
                 End If
@@ -79,6 +80,11 @@ Public Class PositionalHourlyStrategyRule
             Dim signalReceivedForEntry As Tuple(Of Boolean, Decimal, Payload) = GetSignalForEntry(currentTick)
             If signalReceivedForEntry IsNot Nothing AndAlso signalReceivedForEntry.Item1 Then
                 If currentTrade.SignalCandle.PayloadDate <> signalReceivedForEntry.Item3.PayloadDate Then
+                    ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                End If
+            Else
+                Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
+                If currentMinuteCandlePayload.Close < _smaPayload(currentMinuteCandlePayload.PayloadDate) Then
                     ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                 End If
             End If
@@ -114,7 +120,7 @@ Public Class PositionalHourlyStrategyRule
             Dim entryPrice As Decimal = lowerHighCandle.High + buffer
             'If currentTick.Open >= entryPrice Then
             If currentMinuteCandlePayload.Open <= lowerHighCandle.High Then
-                ret = New Tuple(Of Boolean, Decimal, Payload)(True, lowerHighCandle.High, lowerHighCandle)
+                ret = New Tuple(Of Boolean, Decimal, Payload)(True, entryPrice, lowerHighCandle)
                 'Else
                 '    Dim totalPayloadsBelowEntryPrice As IEnumerable(Of Payload) = _inputPayload.Values.Where(Function(x)
                 '                                                                                                 If x.PayloadDate >= currentMinuteCandlePayload.PayloadDate AndAlso
