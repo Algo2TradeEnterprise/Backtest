@@ -154,7 +154,7 @@ Public Class PositionalHourlyStrategyRule
                 End If
             End If
         Else
-            If lastExecutedTrade IsNot Nothing Then
+            If lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.ExitCondition = Trade.TradeExitCondition.StopLoss Then
                 Dim entryCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(lastExecutedTrade.EntryTime, _signalPayload))
                 Dim exitCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(lastExecutedTrade.ExitTime, _signalPayload))
                 If entryCandle.Open > entryCandle.PreviousCandlePayload.Close Then
