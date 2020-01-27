@@ -50,7 +50,7 @@ Public Class PositionalHourlyStrategyRule
                     Dim lowestSLPoint As Decimal = slPoint
                     If lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.ExitCondition = Trade.TradeExitCondition.StopLoss Then
                         tradeNumber = lastExecutedTrade.Supporting2 + 1
-                        quantity = lastExecutedTrade.Quantity * tradeNumber
+                        quantity = (lastExecutedTrade.Quantity / (tradeNumber - 1)) * tradeNumber
                         lowestSLPoint = Math.Max(lowestSLPoint, CDec(lastExecutedTrade.Supporting1))
                     End If
                     Dim targetPoint As Decimal = lowestSLPoint
