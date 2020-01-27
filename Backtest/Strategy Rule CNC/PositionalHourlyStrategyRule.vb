@@ -44,11 +44,13 @@ Public Class PositionalHourlyStrategyRule
 
                 If signalCandle IsNot Nothing Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalReceivedForEntry.Item2, RoundOfType.Floor)
-                    Dim quantity As Integer = 1
+                    Dim tradeNumber As Integer = 1
+                    Dim quantity As Integer = _parentStrategy.CalculateQuantityFromInvestment(Me.LotSize, 2000, signalReceivedForEntry.Item2, Trade.TypeOfStock.Cash, True)
                     Dim slPoint As Decimal = signalReceivedForEntry.Item3.CandleRange + 2 * buffer
                     Dim lowestSLPoint As Decimal = slPoint
                     If lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.ExitCondition = Trade.TradeExitCondition.StopLoss Then
-                        quantity = lastExecutedTrade.Quantity + 1
+                        tradeNumber = lastExecutedTrade.Supporting2 + 1
+                        quantity = lastExecutedTrade.Quantity * tradeNumber
                         lowestSLPoint = Math.Max(lowestSLPoint, CDec(lastExecutedTrade.Supporting1))
                     End If
                     Dim targetPoint As Decimal = lowestSLPoint
@@ -84,7 +86,8 @@ Public Class PositionalHourlyStrategyRule
                                 .SignalCandle = signalCandle,
                                 .OrderType = Trade.TypeOfOrder.SL,
                                 .Supporting1 = lowestSLPoint,
-                                .Supporting2 = signalReceivedForEntry.Item3.PayloadDate.ToString("dd-MM-yyyy HH:mm:ss")
+                                .Supporting2 = tradeNumber,
+                                .Supporting3 = signalReceivedForEntry.Item3.PayloadDate.ToString("dd-MM-yyyy HH:mm:ss")
                             }
                     End If
 
