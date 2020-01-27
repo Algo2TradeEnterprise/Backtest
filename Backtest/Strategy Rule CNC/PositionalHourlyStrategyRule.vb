@@ -75,6 +75,14 @@ Public Class PositionalHourlyStrategyRule
     Public Overrides Async Function IsTriggerReceivedForExitOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, String))
         Dim ret As Tuple(Of Boolean, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
+        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
+            Dim signalReceivedForEntry As Tuple(Of Boolean, Decimal, Payload) = GetSignalForEntry(currentTick)
+            If signalReceivedForEntry IsNot Nothing AndAlso signalReceivedForEntry.Item1 Then
+                If currentTrade.SignalCandle.PayloadDate <> signalReceivedForEntry.Item3.PayloadDate Then
+                    ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                End If
+            End If
+        End If
         Return ret
     End Function
 
