@@ -98,7 +98,49 @@ Public Class PositionalHourlyStrategyRule
     Private Function GetSignalForEntry(ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Payload)
         Dim ret As Tuple(Of Boolean, Decimal, Payload) = Nothing
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
+        Dim lowerHighCandle As Payload = GetPreviousLowerHigh(currentMinuteCandlePayload)
+        If lowerHighCandle IsNot Nothing AndAlso lowerHighCandle.Close < _smaPayload(lowerHighCandle.PayloadDate) Then
+            Dim buffer As Decimal = _parentStrategy.CalculateBuffer(lowerHighCandle.High, RoundOfType.Floor)
+            Dim entryPrice As Decimal = lowerHighCandle.High + buffer
+            If currentTick.Open >= entryPrice Then
+                If currentMinuteCandlePayload.Open <= lowerHighCandle.High Then
+                    ret = New Tuple(Of Boolean, Decimal, Payload)(True, lowerHighCandle.High, lowerHighCandle)
+                Else
+                    Dim totalPayloadsBelowEntryPrice As IEnumerable(Of Payload) = _inputPayload.Values.Where(Function(x)
+                                                                                                                 If x.PayloadDate >= currentMinuteCandlePayload.PayloadDate AndAlso
+                                                                                                                    x.PayloadDate < currentTick.PayloadDate AndAlso
+                                                                                                                    x.PayloadDate >= currentTick.PayloadDate.AddMinutes(-5) AndAlso
+                                                                                                                    x.High <= lowerHighCandle.High Then
+                                                                                                                     Return True
+                                                                                                                 Else
+                                                                                                                     Return Nothing
+                                                                                                                 End If
+                                                                                                             End Function)
+                    If totalPayloadsBelowEntryPrice IsNot Nothing AndAlso totalPayloadsBelowEntryPrice.Count >= 5 Then
+                        ret = New Tuple(Of Boolean, Decimal, Payload)(True, lowerHighCandle.High, lowerHighCandle)
+                    End If
+                End If
+            End If
+        End If
+        Return ret
+    End Function
 
+    Private Function GetPreviousLowerHigh(ByVal currentCandle As Payload) As Payload
+        Dim ret As Payload = currentCandle.PreviousCandlePayload
+        While True
+            If ret IsNot Nothing AndAlso ret.PreviousCandlePayload IsNot Nothing Then
+                If ret.High < ret.PreviousCandlePayload.High Then
+                    Exit While
+                ElseIf ret.High = ret.PreviousCandlePayload.High Then
+                    ret = ret.PreviousCandlePayload
+                Else
+                    ret = Nothing
+                    Exit While
+                End If
+            Else
+                Exit While
+            End If
+        End While
         Return ret
     End Function
 #End Region
