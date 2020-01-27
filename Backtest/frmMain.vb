@@ -1087,7 +1087,7 @@ Public Class frmMain
                                                             eodExitTime:=TimeSpan.Parse("15:29:59"),
                                                             tickSize:=tick,
                                                             marginMultiplier:=margin,
-                                                            timeframe:=180,
+                                                            timeframe:=60,
                                                             heikenAshiCandle:=False,
                                                             stockType:=stockType,
                                                             databaseTable:=database,
@@ -1100,7 +1100,7 @@ Public Class frmMain
 
                 With backtestStrategy
                     '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Investment Stock List.csv")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Investment NFO Stock List.csv")
 
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
