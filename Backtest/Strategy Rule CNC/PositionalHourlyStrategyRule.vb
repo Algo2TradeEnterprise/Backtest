@@ -38,17 +38,7 @@ Public Class PositionalHourlyStrategyRule
             Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, _parentStrategy.TradeType)
             Dim signalReceivedForEntry As Tuple(Of Boolean, Decimal, Payload) = GetSignalForEntry(currentTick)
             If signalReceivedForEntry IsNot Nothing AndAlso signalReceivedForEntry.Item1 Then
-                If lastExecutedTrade Is Nothing OrElse lastExecutedTrade.ExitTime <> signalReceivedForEntry.Item3.PayloadDate Then
-                    If lastExecutedTrade Is Nothing Then
-                        signalCandle = signalReceivedForEntry.Item3
-                    Else
-                        Dim exitCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(lastExecutedTrade.ExitTime, _signalPayload))
-                        If signalReceivedForEntry.Item3.PayloadDate >= exitCandle.PayloadDate Then
-                            signalCandle = signalReceivedForEntry.Item3
-                        End If
-                    End If
-                End If
-
+                signalCandle = signalReceivedForEntry.Item3
                 If signalCandle IsNot Nothing Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalReceivedForEntry.Item2, RoundOfType.Floor)
                     Dim tradeNumber As Integer = 1
@@ -57,7 +47,7 @@ Public Class PositionalHourlyStrategyRule
                     Dim lowestSLPoint As Decimal = slPoint
                     If lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.ExitCondition = Trade.TradeExitCondition.StopLoss Then
                         tradeNumber = lastExecutedTrade.Supporting2 + 1
-                        quantity = (lastExecutedTrade.Quantity / (tradeNumber - 1)) * tradeNumber
+                        quantity = lastExecutedTrade.Quantity * 2
                         lowestSLPoint = Math.Max(lowestSLPoint, CDec(lastExecutedTrade.Supporting1))
                     End If
                     Dim targetPoint As Decimal = lowestSLPoint
@@ -82,7 +72,7 @@ Public Class PositionalHourlyStrategyRule
                             End If
                         End If
                     End If
-                    If takeTrade Then
+                    If takeTrade AndAlso (tradeNumber > 1 OrElse signalCandle.Close > _smaPayload(signalCandle.PayloadDate)) Then
                         parameter = New PlaceOrderParameters With {
                                 .EntryPrice = signalReceivedForEntry.Item2,
                                 .EntryDirection = Trade.TradeExecutionDirection.Buy,
@@ -147,30 +137,45 @@ Public Class PositionalHourlyStrategyRule
 #Region "Entry Rule"
     Private Function GetSignalForEntry(ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Payload)
         Dim ret As Tuple(Of Boolean, Decimal, Payload) = Nothing
+        Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, _parentStrategy.TradeType)
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         Dim lowerHighCandle As Payload = GetPreviousLowerHigh(currentMinuteCandlePayload)
-        If lowerHighCandle IsNot Nothing AndAlso lowerHighCandle.Close > _smaPayload(lowerHighCandle.PayloadDate) Then
+        If lowerHighCandle IsNot Nothing Then
             Dim buffer As Decimal = _parentStrategy.CalculateBuffer(lowerHighCandle.High, RoundOfType.Floor)
             Dim entryPrice As Decimal = lowerHighCandle.High + buffer
-            'If currentTick.Open >= entryPrice Then
-            'If currentMinuteCandlePayload.Open <= lowerHighCandle.High Then
-            ret = New Tuple(Of Boolean, Decimal, Payload)(True, entryPrice, lowerHighCandle)
-            'Else
-            '    Dim totalPayloadsBelowEntryPrice As IEnumerable(Of Payload) = _inputPayload.Values.Where(Function(x)
-            '                                                                                                 If x.PayloadDate >= currentMinuteCandlePayload.PayloadDate AndAlso
-            '                                                                                                    x.PayloadDate < currentTick.PayloadDate AndAlso
-            '                                                                                                    x.PayloadDate >= currentTick.PayloadDate.AddMinutes(-5) AndAlso
-            '                                                                                                    x.High <= lowerHighCandle.High Then
-            '                                                                                                     Return True
-            '                                                                                                 Else
-            '                                                                                                     Return Nothing
-            '                                                                                                 End If
-            '                                                                                             End Function)
-            '    If totalPayloadsBelowEntryPrice IsNot Nothing AndAlso totalPayloadsBelowEntryPrice.Count >= 5 Then
-            '        ret = New Tuple(Of Boolean, Decimal, Payload)(True, lowerHighCandle.High, lowerHighCandle)
-            '    End If
-            'End If
-            'End If
+            If lastExecutedTrade Is Nothing Then
+                If lastExecutedTrade Is Nothing Then
+                    ret = New Tuple(Of Boolean, Decimal, Payload)(True, entryPrice, lowerHighCandle)
+                Else
+                    Dim exitCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(lastExecutedTrade.ExitTime, _signalPayload))
+                    If lowerHighCandle.PayloadDate >= exitCandle.PayloadDate Then
+                        ret = New Tuple(Of Boolean, Decimal, Payload)(True, entryPrice, lowerHighCandle)
+                    End If
+                End If
+            End If
+        Else
+            If lastExecutedTrade IsNot Nothing Then
+                Dim entryCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(lastExecutedTrade.EntryTime, _signalPayload))
+                Dim exitCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(lastExecutedTrade.ExitTime, _signalPayload))
+                If entryCandle.Open > entryCandle.PreviousCandlePayload.Close Then
+                    Dim otherLowerHighFound As Boolean = False
+                    For Each runningPayload In _signalPayload.Values
+                        If runningPayload.PayloadDate >= entryCandle.PayloadDate AndAlso
+                            runningPayload.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
+                            If runningPayload.High < runningPayload.PreviousCandlePayload.High Then
+                                otherLowerHighFound = True
+                            End If
+                        End If
+                    Next
+                    If Not otherLowerHighFound Then
+                        If currentMinuteCandlePayload.PayloadDate > exitCandle.PayloadDate Then
+                            Dim buffer As Decimal = _parentStrategy.CalculateBuffer(lastExecutedTrade.SignalCandle.High, RoundOfType.Floor)
+                            Dim entryPrice As Decimal = lastExecutedTrade.SignalCandle.High + buffer
+                            ret = New Tuple(Of Boolean, Decimal, Payload)(True, entryPrice, lastExecutedTrade.SignalCandle)
+                        End If
+                    End If
+                End If
+            End If
         End If
         Return ret
     End Function
