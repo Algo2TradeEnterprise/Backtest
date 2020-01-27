@@ -39,7 +39,7 @@ Public Class PositionalHourlyStrategyRule
             If signalReceivedForEntry IsNot Nothing AndAlso signalReceivedForEntry.Item1 Then
                 signalCandle = signalReceivedForEntry.Item3
 
-                If signalCandle IsNot Nothing Then
+                If signalCandle IsNot Nothing AndAlso currentMinuteCandlePayload.Open < signalReceivedForEntry.Item2 Then
                     Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, _parentStrategy.TradeType)
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalReceivedForEntry.Item2, RoundOfType.Floor)
                     Dim quantity As Integer = 1
@@ -119,23 +119,23 @@ Public Class PositionalHourlyStrategyRule
             Dim buffer As Decimal = _parentStrategy.CalculateBuffer(lowerHighCandle.High, RoundOfType.Floor)
             Dim entryPrice As Decimal = lowerHighCandle.High + buffer
             'If currentTick.Open >= entryPrice Then
-            If currentMinuteCandlePayload.Open <= lowerHighCandle.High Then
-                ret = New Tuple(Of Boolean, Decimal, Payload)(True, entryPrice, lowerHighCandle)
-                'Else
-                '    Dim totalPayloadsBelowEntryPrice As IEnumerable(Of Payload) = _inputPayload.Values.Where(Function(x)
-                '                                                                                                 If x.PayloadDate >= currentMinuteCandlePayload.PayloadDate AndAlso
-                '                                                                                                    x.PayloadDate < currentTick.PayloadDate AndAlso
-                '                                                                                                    x.PayloadDate >= currentTick.PayloadDate.AddMinutes(-5) AndAlso
-                '                                                                                                    x.High <= lowerHighCandle.High Then
-                '                                                                                                     Return True
-                '                                                                                                 Else
-                '                                                                                                     Return Nothing
-                '                                                                                                 End If
-                '                                                                                             End Function)
-                '    If totalPayloadsBelowEntryPrice IsNot Nothing AndAlso totalPayloadsBelowEntryPrice.Count >= 5 Then
-                '        ret = New Tuple(Of Boolean, Decimal, Payload)(True, lowerHighCandle.High, lowerHighCandle)
-                '    End If
-            End If
+            'If currentMinuteCandlePayload.Open <= lowerHighCandle.High Then
+            ret = New Tuple(Of Boolean, Decimal, Payload)(True, entryPrice, lowerHighCandle)
+            'Else
+            '    Dim totalPayloadsBelowEntryPrice As IEnumerable(Of Payload) = _inputPayload.Values.Where(Function(x)
+            '                                                                                                 If x.PayloadDate >= currentMinuteCandlePayload.PayloadDate AndAlso
+            '                                                                                                    x.PayloadDate < currentTick.PayloadDate AndAlso
+            '                                                                                                    x.PayloadDate >= currentTick.PayloadDate.AddMinutes(-5) AndAlso
+            '                                                                                                    x.High <= lowerHighCandle.High Then
+            '                                                                                                     Return True
+            '                                                                                                 Else
+            '                                                                                                     Return Nothing
+            '                                                                                                 End If
+            '                                                                                             End Function)
+            '    If totalPayloadsBelowEntryPrice IsNot Nothing AndAlso totalPayloadsBelowEntryPrice.Count >= 5 Then
+            '        ret = New Tuple(Of Boolean, Decimal, Payload)(True, lowerHighCandle.High, lowerHighCandle)
+            '    End If
+            'End If
             'End If
         End If
         Return ret
