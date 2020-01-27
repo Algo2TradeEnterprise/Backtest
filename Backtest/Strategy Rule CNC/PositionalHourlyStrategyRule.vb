@@ -35,12 +35,14 @@ Public Class PositionalHourlyStrategyRule
             Not _parentStrategy.IsTradeOpen(currentTick, _parentStrategy.TradeType) AndAlso Not _parentStrategy.IsTradeActive(currentTick, _parentStrategy.TradeType) Then
             Dim signalCandle As Payload = Nothing
 
+            Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, _parentStrategy.TradeType)
             Dim signalReceivedForEntry As Tuple(Of Boolean, Decimal, Payload) = GetSignalForEntry(currentTick)
             If signalReceivedForEntry IsNot Nothing AndAlso signalReceivedForEntry.Item1 Then
-                signalCandle = signalReceivedForEntry.Item3
+                If lastExecutedTrade Is Nothing OrElse lastExecutedTrade.SignalCandle.PayloadDate <> signalReceivedForEntry.Item3.PayloadDate Then
+                    signalCandle = signalReceivedForEntry.Item3
+                End If
 
                 If signalCandle IsNot Nothing AndAlso currentMinuteCandlePayload.Open < signalReceivedForEntry.Item2 Then
-                    Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, _parentStrategy.TradeType)
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalReceivedForEntry.Item2, RoundOfType.Floor)
                     Dim quantity As Integer = 1
                     Dim slPoint As Decimal = signalReceivedForEntry.Item3.CandleRange + 2 * buffer
