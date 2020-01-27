@@ -101,7 +101,7 @@ Public Class PositionalHourlyStrategyRule
         Dim ret As Tuple(Of Boolean, Decimal, Payload) = Nothing
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         Dim lowerHighCandle As Payload = GetPreviousLowerHigh(currentMinuteCandlePayload)
-        If lowerHighCandle IsNot Nothing AndAlso lowerHighCandle.Close < _smaPayload(lowerHighCandle.PayloadDate) Then
+        If lowerHighCandle IsNot Nothing AndAlso lowerHighCandle.Close > _smaPayload(lowerHighCandle.PayloadDate) Then
             Dim buffer As Decimal = _parentStrategy.CalculateBuffer(lowerHighCandle.High, RoundOfType.Floor)
             Dim entryPrice As Decimal = lowerHighCandle.High + buffer
             If currentTick.Open >= entryPrice Then
