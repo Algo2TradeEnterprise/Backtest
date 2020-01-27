@@ -42,7 +42,7 @@ Public Class PositionalHourlyStrategyRule
                     signalCandle = signalReceivedForEntry.Item3
                 End If
 
-                If signalCandle IsNot Nothing AndAlso currentMinuteCandlePayload.Open < signalReceivedForEntry.Item2 Then
+                If signalCandle IsNot Nothing Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalReceivedForEntry.Item2, RoundOfType.Floor)
                     Dim quantity As Integer = 1
                     Dim slPoint As Decimal = signalReceivedForEntry.Item3.CandleRange + 2 * buffer
@@ -53,18 +53,40 @@ Public Class PositionalHourlyStrategyRule
                     End If
                     Dim targetPoint As Decimal = lowestSLPoint
 
-                    parameter = New PlaceOrderParameters With {
-                        .EntryPrice = signalReceivedForEntry.Item2,
-                        .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                        .Quantity = quantity,
-                        .Stoploss = .EntryPrice - slPoint,
-                        .Target = .EntryPrice + targetPoint,
-                        .Buffer = buffer,
-                        .SignalCandle = signalCandle,
-                        .OrderType = Trade.TypeOfOrder.SL,
-                        .Supporting1 = lowestSLPoint,
-                        .Supporting2 = signalReceivedForEntry.Item3.PayloadDate.ToString("dd-MM-yyyy HH:mm:ss")
-                    }
+                    Dim takeTrade As Boolean = False
+                    If currentMinuteCandlePayload.Open < signalReceivedForEntry.Item2 Then
+                        takeTrade = True
+                    Else
+                        Dim currentOneMinutePayload As Payload = _inputPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _inputPayload))
+                        Dim payloadsToCheck As IEnumerable(Of Payload) = _inputPayload.Values.Where(Function(x)
+                                                                                                        Return x.PayloadDate >= currentMinuteCandlePayload.PayloadDate AndAlso
+                                                                                                        x.PayloadDate < currentOneMinutePayload.PayloadDate AndAlso
+                                                                                                        x.PayloadDate >= currentOneMinutePayload.PayloadDate.AddMinutes(-5)
+                                                                                                    End Function)
+                        If payloadsToCheck IsNot Nothing AndAlso payloadsToCheck.Count > 0 Then
+                            Dim high As Decimal = payloadsToCheck.Max(Function(x)
+                                                                          Return x.High
+                                                                      End Function)
+
+                            If high < signalReceivedForEntry.Item2 Then
+                                takeTrade = True
+                            End If
+                        End If
+                    End If
+                    If takeTrade Then
+                        parameter = New PlaceOrderParameters With {
+                                .EntryPrice = signalReceivedForEntry.Item2,
+                                .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                                .Quantity = quantity,
+                                .Stoploss = .EntryPrice - slPoint,
+                                .Target = .EntryPrice + targetPoint,
+                                .Buffer = buffer,
+                                .SignalCandle = signalCandle,
+                                .OrderType = Trade.TypeOfOrder.SL,
+                                .Supporting1 = lowestSLPoint,
+                                .Supporting2 = signalReceivedForEntry.Item3.PayloadDate.ToString("dd-MM-yyyy HH:mm:ss")
+                            }
+                    End If
 
                 End If
             End If
