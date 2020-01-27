@@ -38,8 +38,15 @@ Public Class PositionalHourlyStrategyRule
             Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, _parentStrategy.TradeType)
             Dim signalReceivedForEntry As Tuple(Of Boolean, Decimal, Payload) = GetSignalForEntry(currentTick)
             If signalReceivedForEntry IsNot Nothing AndAlso signalReceivedForEntry.Item1 Then
-                If lastExecutedTrade Is Nothing OrElse lastExecutedTrade.SignalCandle.PayloadDate <> signalReceivedForEntry.Item3.PayloadDate Then
-                    signalCandle = signalReceivedForEntry.Item3
+                If lastExecutedTrade Is Nothing OrElse lastExecutedTrade.ExitTime <> signalReceivedForEntry.Item3.PayloadDate Then
+                    If lastExecutedTrade IsNot Nothing Then
+                        signalCandle = signalReceivedForEntry.Item3
+                    Else
+                        Dim exitCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(lastExecutedTrade.ExitTime, _signalPayload))
+                        If signalReceivedForEntry.Item3.PayloadDate >= exitCandle.PayloadDate Then
+                            signalCandle = signalReceivedForEntry.Item3
+                        End If
+                    End If
                 End If
 
                 If signalCandle IsNot Nothing Then
