@@ -1122,7 +1122,7 @@ Public Class frmMain
                     .NumberOfTradesPerDay = Integer.MaxValue
                     .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
-                    .TickBasedStrategy = True
+                    .TickBasedStrategy = False
                 End With
                 Dim filename As String = String.Format("CNC Output Capital {3} {0}_{1}_{2}", Now.Hour, Now.Minute, Now.Second,
                                                    If(backtestStrategy.UsableCapital = Decimal.MaxValue / 2, "∞", backtestStrategy.UsableCapital))
