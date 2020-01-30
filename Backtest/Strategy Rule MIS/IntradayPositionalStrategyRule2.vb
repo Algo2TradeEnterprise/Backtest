@@ -53,22 +53,22 @@ Public Class IntradayPositionalStrategyRule2
             currentMinuteCandlePayload.PayloadDate >= tradeStartTime AndAlso Me.EligibleToTakeTrade Then
 
             Dim signalCandle As Payload = Nothing
-            Dim signalCandleSatisfied As Tuple(Of Boolean, Trade.TradeExecutionDirection) = GetSignalCandle(currentMinuteCandlePayload, currentTick)
+            Dim signalCandleSatisfied As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection) = GetSignalCandle(currentMinuteCandlePayload, currentTick)
             Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandlePayload, _parentStrategy.TradeType)
             If signalCandleSatisfied IsNot Nothing AndAlso signalCandleSatisfied.Item1 Then
                 If lastExecutedTrade Is Nothing Then
-                    signalCandle = currentMinuteCandlePayload.PreviousCandlePayload
+                    signalCandle = signalCandleSatisfied.Item2
                 Else
                     Dim exitCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(lastExecutedTrade.ExitTime, _signalPayload))
                     If currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate >= exitCandle.PayloadDate Then
-                        signalCandle = currentMinuteCandlePayload.PreviousCandlePayload
+                        signalCandle = signalCandleSatisfied.Item2
                     End If
                 End If
             End If
 
             If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
-                If signalCandleSatisfied.Item2 = Trade.TradeExecutionDirection.Buy Then
-                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2, RoundOfType.Floor)
+                If signalCandleSatisfied.Item3 = Trade.TradeExecutionDirection.Buy Then
+                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.High, RoundOfType.Floor)
                     Dim entryPrice As Decimal = signalCandle.High + buffer
                     Dim slPrice As Decimal = signalCandle.Low - buffer
                     Dim slPoint As Decimal = entryPrice - slPrice
@@ -86,8 +86,8 @@ Public Class IntradayPositionalStrategyRule2
                                     .OrderType = Trade.TypeOfOrder.SL,
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss")
                                 }
-                ElseIf signalCandleSatisfied.Item2 = Trade.TradeExecutionDirection.Sell Then
-                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2, RoundOfType.Floor)
+                ElseIf signalCandleSatisfied.Item3 = Trade.TradeExecutionDirection.Sell Then
+                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Low, RoundOfType.Floor)
                     Dim entryPrice As Decimal = signalCandle.Low - buffer
                     Dim slPrice As Decimal = signalCandle.High + buffer
                     Dim slPoint As Decimal = slPrice - entryPrice
@@ -149,21 +149,40 @@ Public Class IntradayPositionalStrategyRule2
         Await Task.Delay(0).ConfigureAwait(False)
     End Function
 
-    Private Function GetSignalCandle(ByVal currentCandle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, Trade.TradeExecutionDirection)
-        Dim ret As Tuple(Of Boolean, Trade.TradeExecutionDirection) = Nothing
+    Private Function GetSignalCandle(ByVal currentCandle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)
+        Dim ret As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection) = Nothing
         If currentCandle.PreviousCandlePayload IsNot Nothing AndAlso Not currentCandle.PreviousCandlePayload.DeadCandle Then
             Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentCandle.Open, RoundOfType.Floor)
-            If currentCandle.High >= currentCandle.PreviousCandlePayload.High + buffer AndAlso
-                currentCandle.Low <= currentCandle.PreviousCandlePayload.Low - buffer Then
-                If currentCandle.CandleColor = Color.Green Then
-                    ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, Trade.TradeExecutionDirection.Sell)
-                Else
-                    ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, Trade.TradeExecutionDirection.Buy)
+            'If currentCandle.High >= currentCandle.PreviousCandlePayload.High + buffer AndAlso
+            '    currentCandle.Low <= currentCandle.PreviousCandlePayload.Low - buffer Then
+            '    If currentCandle.CandleColor = Color.Green Then
+            '        ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, Trade.TradeExecutionDirection.Sell)
+            '    Else
+            '        ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, Trade.TradeExecutionDirection.Buy)
+            '    End If
+            'ElseIf currentCandle.High >= currentCandle.PreviousCandlePayload.High + buffer Then
+            '    ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, Trade.TradeExecutionDirection.Buy)
+            'ElseIf currentCandle.Low <= currentCandle.PreviousCandlePayload.Low - buffer Then
+            '    ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, Trade.TradeExecutionDirection.Sell)
+            'End If
+            Dim signalCandle As Payload = Nothing
+            For Each runningPayload In _signalPayload.Values
+                If runningPayload.PayloadDate.Date = _tradingDate.Date Then
+                    signalCandle = runningPayload
+                    Exit For
                 End If
-            ElseIf currentCandle.High >= currentCandle.PreviousCandlePayload.High + buffer Then
-                ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, Trade.TradeExecutionDirection.Buy)
-            ElseIf currentCandle.Low <= currentCandle.PreviousCandlePayload.Low - buffer Then
-                ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, Trade.TradeExecutionDirection.Sell)
+            Next
+            If currentCandle.High >= signalCandle.High + buffer AndAlso
+                currentCandle.Low <= signalCandle.Low - buffer Then
+                If currentCandle.CandleColor = Color.Green Then
+                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, signalCandle, Trade.TradeExecutionDirection.Sell)
+                Else
+                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, signalCandle, Trade.TradeExecutionDirection.Buy)
+                End If
+            ElseIf currentCandle.High >= signalCandle.High + buffer Then
+                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, signalCandle, Trade.TradeExecutionDirection.Buy)
+            ElseIf currentCandle.Low <= signalCandle.Low - buffer Then
+                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, signalCandle, Trade.TradeExecutionDirection.Sell)
             End If
         End If
         Return ret
