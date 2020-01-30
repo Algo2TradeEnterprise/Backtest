@@ -1064,7 +1064,7 @@ Public Class frmMain
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
                     .RuleEntityData = New IntradayPositionalStrategyRule2.StrategyRuleEntities With
                         {.MaxStoplossPerTrade = -500,
-                         .TargetMultiplier = 2
+                         .TargetMultiplier = 2.5
                         }
 
                     .NumberOfTradeableStockPerDay = 10
