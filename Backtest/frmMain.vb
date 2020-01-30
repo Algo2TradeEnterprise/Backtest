@@ -1035,7 +1035,7 @@ Public Class frmMain
             'End Using
 #End Region
 
-#Region "Intraday Positional"
+#Region "Intraday Positional 2"
             Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                               exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                               exchangeEndTime:=TimeSpan.Parse("15:29:59"),
@@ -1067,9 +1067,9 @@ Public Class frmMain
                          .TargetMultiplier = 2
                         }
 
-                    .NumberOfTradeableStockPerDay = 1
+                    .NumberOfTradeableStockPerDay = 10
 
-                    .NumberOfTradesPerStockPerDay = 1
+                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
                     .StockMaxProfitPercentagePerDay = Decimal.MaxValue
                     .StockMaxLossPercentagePerDay = Decimal.MinValue
