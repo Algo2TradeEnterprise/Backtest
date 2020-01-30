@@ -1056,7 +1056,7 @@ Public Class frmMain
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Top Gainer Top Looser.csv")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Stock 27_01_20 to 30_01_20.csv")
 
                     .AllowBothDirectionEntryAtSameTime = False
                     .TrailingStoploss = False
