@@ -60,7 +60,7 @@ Public Class IntradayPositionalStrategyRule3
                                     .EntryPrice = signalCandle.Open,
                                     .EntryDirection = Trade.TradeExecutionDirection.Buy,
                                     .Quantity = quantity,
-                                    .Stoploss = .EntryPrice + 1000000,
+                                    .Stoploss = .EntryPrice - 1000000,
                                     .Target = .EntryPrice + 1000000,
                                     .Buffer = 0,
                                     .SignalCandle = signalCandle,
