@@ -53,7 +53,7 @@ Public Class IntradayPositionalStrategyRule3
             Dim signalCandle As Payload = currentMinuteCandlePayload
 
             If signalCandle IsNot Nothing Then
-                If _tradingSymbol.ToUpper = "TATAMTRDVR" Then
+                If _tradingSymbol.ToUpper = "TATAMOTORS" Then
                     Dim quantity As Decimal = _parentStrategy.CalculateQuantityFromInvestment(Me.LotSize, _userInputs.MaxInvestmentPerStock, signalCandle.Open, _parentStrategy.StockType, True)
 
                     parameter = New PlaceOrderParameters With {
@@ -66,7 +66,7 @@ Public Class IntradayPositionalStrategyRule3
                                     .SignalCandle = signalCandle,
                                     .OrderType = Trade.TypeOfOrder.Market
                                 }
-                ElseIf _tradingSymbol.ToUpper = "TATAMOTORS" Then
+                ElseIf _tradingSymbol.ToUpper = "TATAMTRDVR" Then
                     Dim quantity As Decimal = _parentStrategy.CalculateQuantityFromInvestment(Me.LotSize, _userInputs.MaxInvestmentPerStock, signalCandle.Open, _parentStrategy.StockType, True)
 
                     parameter = New PlaceOrderParameters With {

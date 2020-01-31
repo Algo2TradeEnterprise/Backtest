@@ -1105,8 +1105,8 @@ Public Class frmMain
 #End Region
 
 #Region "Intraday Positional 3"
-            For maxProfit As Decimal = 2000 To 2000
-                For maxLoss As Decimal = 2000 To 2000
+            For maxProfit As Decimal = 1500 To 4000 Step 500
+                For maxLoss As Decimal = 1500 To 4000 Step 500
                     Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                       exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                       exchangeEndTime:=TimeSpan.Parse("15:29:59"),
