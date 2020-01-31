@@ -162,6 +162,8 @@ Namespace StrategyHelper
                                             stockRule = New DoubleTopDoubleBottomStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 35
                                             stockRule = New IntradayPositionalStrategyRule2(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case 36
+                                            stockRule = New IntradayPositionalStrategyRule3(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -840,12 +842,28 @@ Namespace StrategyHelper
                                     Next
                                 End If
                             End If
+                        Case 36
+                            For i = 1 To dt.Rows.Count - 1
+                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                Dim tradingSymbol As String = dt.Rows(i).Item(0)
+                                Dim instrumentName As String = Nothing
+                                If tradingSymbol.Contains("FUT") Then
+                                    instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                                Else
+                                    instrumentName = tradingSymbol
+                                End If
+                                Dim detailsOfStock As StockDetails = New StockDetails With
+                                            {.StockName = instrumentName,
+                                            .LotSize = 1,
+                                            .EligibleToTakeTrade = True}
+                                ret.Add(instrumentName, detailsOfStock)
+                            Next
                         Case Else
                             Dim counter As Integer = 0
                             For i = 1 To dt.Rows.Count - 1
                                 Dim rowDate As Date = dt.Rows(i)(0)
-                                'If rowDate.Date = tradingDate.Date Then
-                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                If rowDate.Date = tradingDate.Date Then
+                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
                                     Dim tradingSymbol As String = dt.Rows(i).Item(1)
                                     Dim instrumentName As String = Nothing
                                     If tradingSymbol.Contains("FUT") Then
@@ -862,7 +880,7 @@ Namespace StrategyHelper
                                     ret.Add(instrumentName, detailsOfStock)
                                     counter += 1
                                     If counter = Me.NumberOfTradeableStockPerDay Then Exit For
-                                'End If
+                                End If
                             Next
                     End Select
                 End If
