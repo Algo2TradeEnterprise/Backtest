@@ -15,6 +15,7 @@ Public Class IntradayPositionalStrategyRule3
 #End Region
 
     Private ReadOnly _userInputs As StrategyRuleEntities
+    Private ReadOnly _direction As Trade.TradeExecutionDirection
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -22,9 +23,15 @@ Public Class IntradayPositionalStrategyRule3
                    ByVal tradingDate As Date,
                    ByVal tradingSymbol As String,
                    ByVal canceller As CancellationTokenSource,
-                   ByVal entities As RuleEntities)
+                   ByVal entities As RuleEntities,
+                   ByVal direction As Decimal)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _userInputs = entities
+        If direction > 0 Then
+            _direction = Trade.TradeExecutionDirection.Buy
+        ElseIf direction < 0 Then
+            _direction = Trade.TradeExecutionDirection.Sell
+        End If
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -53,7 +60,7 @@ Public Class IntradayPositionalStrategyRule3
             Dim signalCandle As Payload = currentMinuteCandlePayload
 
             If signalCandle IsNot Nothing Then
-                If _tradingSymbol.ToUpper = "TATAMOTORS" Then
+                If _direction = Trade.TradeExecutionDirection.Buy Then
                     Dim quantity As Decimal = _parentStrategy.CalculateQuantityFromInvestment(Me.LotSize, _userInputs.MaxInvestmentPerStock, signalCandle.Open, _parentStrategy.StockType, True)
 
                     parameter = New PlaceOrderParameters With {
@@ -66,7 +73,7 @@ Public Class IntradayPositionalStrategyRule3
                                     .SignalCandle = signalCandle,
                                     .OrderType = Trade.TypeOfOrder.Market
                                 }
-                ElseIf _tradingSymbol.ToUpper = "TATAMTRDVR" Then
+                ElseIf _direction = Trade.TradeExecutionDirection.Sell Then
                     Dim quantity As Decimal = _parentStrategy.CalculateQuantityFromInvestment(Me.LotSize, _userInputs.MaxInvestmentPerStock, signalCandle.Open, _parentStrategy.StockType, True)
 
                     parameter = New PlaceOrderParameters With {

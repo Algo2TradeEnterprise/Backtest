@@ -163,7 +163,7 @@ Namespace StrategyHelper
                                         Case 35
                                             stockRule = New IntradayPositionalStrategyRule2(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 36
-                                            stockRule = New IntradayPositionalStrategyRule3(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                            stockRule = New IntradayPositionalStrategyRule3(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -846,6 +846,7 @@ Namespace StrategyHelper
                             For i = 1 To dt.Rows.Count - 1
                                 If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
                                 Dim tradingSymbol As String = dt.Rows(i).Item(0)
+                                Dim direction As String = dt.Rows(i).Item(1)
                                 Dim instrumentName As String = Nothing
                                 If tradingSymbol.Contains("FUT") Then
                                     instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
@@ -855,6 +856,7 @@ Namespace StrategyHelper
                                 Dim detailsOfStock As StockDetails = New StockDetails With
                                             {.StockName = instrumentName,
                                             .LotSize = 1,
+                                            .Supporting1 = If(direction.ToUpper = "BUY", 1, -1),
                                             .EligibleToTakeTrade = True}
                                 ret.Add(instrumentName, detailsOfStock)
                             Next
