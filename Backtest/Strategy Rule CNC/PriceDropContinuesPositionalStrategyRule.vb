@@ -45,9 +45,9 @@ Public Class PriceDropContinuesPositionalStrategyRule
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
-        _weeklyPayloads = Common.ConvertDayPayloadsToWeek(_signalPayload)
-
         MyBase.CompletePreProcessing()
+
+        _weeklyPayloads = Common.ConvertDayPayloadsToWeek(_signalPayload)
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
