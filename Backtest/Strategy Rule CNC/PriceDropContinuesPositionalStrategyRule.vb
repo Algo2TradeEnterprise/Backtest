@@ -94,8 +94,7 @@ Public Class PriceDropContinuesPositionalStrategyRule
                                                                         .SignalCandle = signalCandle,
                                                                         .OrderType = Trade.TypeOfOrder.Market,
                                                                         .Supporting1 = signalCandle.PayloadDate.ToString("dd-MM-yy HH:mm:ss"),
-                                                                        .Supporting2 = i,
-                                                                        .Supporting3 = "(-)"
+                                                                        .Supporting2 = i * -1
                                                                     }
 
                             If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
@@ -140,8 +139,7 @@ Public Class PriceDropContinuesPositionalStrategyRule
                                                                         .SignalCandle = signalCandle,
                                                                         .OrderType = Trade.TypeOfOrder.Market,
                                                                         .Supporting1 = signalCandle.PayloadDate.ToString("dd-MM-yy HH:mm:ss"),
-                                                                        .Supporting2 = i,
-                                                                        .Supporting3 = "(+)"
+                                                                        .Supporting2 = i
                                                                     }
 
                             If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
@@ -191,7 +189,7 @@ Public Class PriceDropContinuesPositionalStrategyRule
             If lowChange <= drpPer * -1 Then
                 Dim lastTrade As Trade = GetLastOrder(currentDayPayload)
                 If Not (lastTrade IsNot Nothing AndAlso lastTrade.SignalCandle.PayloadDate = weeklyPayload.PreviousCandlePayload.PayloadDate AndAlso
-                    CDec(lastTrade.Supporting2) >= drpPer) Then
+                    CDec(lastTrade.Supporting2) <= drpPer * -1) Then
                     Dim potentialEntry As Decimal = ConvertFloorCeling(weeklyPayload.PreviousCandlePayload.Close * (100 - drpPer) / 100, _parentStrategy.TickSize, RoundOfType.Floor)
                     If potentialEntry <= weeklyPayload.Open Then
                         ret = New Tuple(Of Boolean, Decimal, Payload)(True, potentialEntry, weeklyPayload.PreviousCandlePayload)
