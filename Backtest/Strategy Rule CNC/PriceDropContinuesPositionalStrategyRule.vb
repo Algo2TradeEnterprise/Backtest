@@ -94,7 +94,54 @@ Public Class PriceDropContinuesPositionalStrategyRule
                                                                         .SignalCandle = signalCandle,
                                                                         .OrderType = Trade.TypeOfOrder.Market,
                                                                         .Supporting1 = signalCandle.PayloadDate.ToString("dd-MM-yy HH:mm:ss"),
-                                                                        .Supporting2 = i
+                                                                        .Supporting2 = i,
+                                                                        .Supporting3 = "(-)"
+                                                                    }
+
+                            If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
+                            parameters.Add(parameter)
+                        End If
+                    End If
+                    ctr += 1
+                Next
+            End If
+
+            If _userInputs.EntryType = TypeOfEntry.Both OrElse _userInputs.EntryType = TypeOfEntry.PriceUp Then
+                Dim initialQuantity As Integer = Integer.MinValue
+                Select Case _userInputs.QuantityType
+                    Case TypeOfQuantity.Forward
+                        initialQuantity = 1
+                    Case TypeOfQuantity.Reverse
+                        initialQuantity = Math.Floor(Math.Abs(_userInputs.BuyTillPriceUpPercentage) / Math.Abs(_userInputs.BuyAtEveryPriceUpPercentage))
+                End Select
+                Dim ctr As Integer = 0
+                For i = Math.Abs(_userInputs.BuyAtEveryPriceUpPercentage) To Math.Abs(_userInputs.BuyTillPriceUpPercentage) Step Math.Abs(_userInputs.BuyAtEveryPriceUpPercentage)
+                    Dim signalCandle As Payload = Nothing
+                    Dim signalReceivedForEntry As Tuple(Of Boolean, Decimal, Payload) = GetSignalForUp(currentTick, i)
+                    If signalReceivedForEntry IsNot Nothing AndAlso signalReceivedForEntry.Item1 Then
+                        signalCandle = signalReceivedForEntry.Item3
+
+                        Dim quantity As Integer = initialQuantity
+                        Select Case _userInputs.QuantityType
+                            Case TypeOfQuantity.Forward
+                                quantity = initialQuantity + ctr
+                            Case TypeOfQuantity.Reverse
+                                quantity = initialQuantity - ctr
+                        End Select
+
+                        If signalCandle IsNot Nothing Then
+                            Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
+                                                                        .EntryPrice = signalReceivedForEntry.Item2,
+                                                                        .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                                                                        .Quantity = quantity,
+                                                                        .Stoploss = .EntryPrice - 1000000000,
+                                                                        .Target = .EntryPrice + 1000000000,
+                                                                        .Buffer = 0,
+                                                                        .SignalCandle = signalCandle,
+                                                                        .OrderType = Trade.TypeOfOrder.Market,
+                                                                        .Supporting1 = signalCandle.PayloadDate.ToString("dd-MM-yy HH:mm:ss"),
+                                                                        .Supporting2 = i,
+                                                                        .Supporting3 = "(+)"
                                                                     }
 
                             If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
@@ -133,7 +180,6 @@ Public Class PriceDropContinuesPositionalStrategyRule
         Return ret
     End Function
 
-#Region "Entry Rule"
     Private Function GetSignalForDrop(ByVal currentTick As Payload, ByVal drpPer As Decimal) As Tuple(Of Boolean, Decimal, Payload)
         Dim ret As Tuple(Of Boolean, Decimal, Payload) = Nothing
         Dim currentDayPayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
@@ -155,7 +201,28 @@ Public Class PriceDropContinuesPositionalStrategyRule
         End If
         Return ret
     End Function
-#End Region
+
+    Private Function GetSignalForUp(ByVal currentTick As Payload, ByVal upPer As Decimal) As Tuple(Of Boolean, Decimal, Payload)
+        Dim ret As Tuple(Of Boolean, Decimal, Payload) = Nothing
+        Dim currentDayPayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
+        Dim weeklyPayload As Payload = _weeklyPayloads.Where(Function(x)
+                                                                 Return x.Value.PayloadDate <= currentDayPayload.PayloadDate
+                                                             End Function).LastOrDefault.Value
+        If weeklyPayload.PreviousCandlePayload IsNot Nothing Then
+            Dim highChange As Decimal = ((currentDayPayload.High / weeklyPayload.PreviousCandlePayload.Close) - 1) * 100
+            If highChange >= upPer Then
+                Dim lastTrade As Trade = GetLastOrder(currentDayPayload)
+                If Not (lastTrade IsNot Nothing AndAlso lastTrade.SignalCandle.PayloadDate = weeklyPayload.PreviousCandlePayload.PayloadDate AndAlso
+                    CDec(lastTrade.Supporting2) >= upPer) Then
+                    Dim potentialEntry As Decimal = ConvertFloorCeling(weeklyPayload.PreviousCandlePayload.Close * (100 + upPer) / 100, _parentStrategy.TickSize, RoundOfType.Floor)
+                    If potentialEntry >= weeklyPayload.Open Then
+                        ret = New Tuple(Of Boolean, Decimal, Payload)(True, potentialEntry, weeklyPayload.PreviousCandlePayload)
+                    End If
+                End If
+            End If
+        End If
+        Return ret
+    End Function
 
     Private Function GetLastOrder(ByVal currentPayload As Payload) As Trade
         Dim ret As Trade = Nothing
