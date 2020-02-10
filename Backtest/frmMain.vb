@@ -1701,7 +1701,7 @@ Public Class frmMain
 
                     .RuleEntityData = New PriceDropContinuesPositionalStrategyRule.StrategyRuleEntities With
                         {.QuantityType = PriceDropContinuesPositionalStrategyRule.TypeOfQuantity.Reverse,
-                         .EntryType = PriceDropContinuesPositionalStrategyRule.TypeOfEntry.Both,
+                         .EntryType = PriceDropContinuesPositionalStrategyRule.TypeOfEntry.PriceDrop,
                          .BuyAtEveryPriceDropPercentage = 1,
                          .BuyTillPriceDropPercentage = 10,
                          .BuyAtEveryPriceUpPercentage = 1,
