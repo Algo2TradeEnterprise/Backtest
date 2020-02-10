@@ -1350,7 +1350,7 @@ Public Class frmMain
                 Case Trade.TypeOfStock.Cash
                     database = Common.DataBaseTable.EOD_Cash
                     margin = 1
-                    tick = 0.05
+                    tick = 0.01
                 Case Trade.TypeOfStock.Commodity
                     database = Common.DataBaseTable.EOD_Commodity
                     margin = 1
