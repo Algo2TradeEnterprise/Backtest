@@ -1617,61 +1617,107 @@ Public Class frmMain
             'Next
 #End Region
 
-
 #Region "Trend Line Positional Strategy Rule"
-            Dim tgtMulList As List(Of Decimal) = New List(Of Decimal) From {200000000}
-            For qntyTyp As Integer = 2 To 2
-                For Each tgtMul In tgtMulList
-                    For prtlExt As Integer = 0 To 0
-                        Dim filename As String = Nothing
-                        Using backtestStrategy As New CNCEODGenericStrategy(canceller:=_canceller,
-                                                                                exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                                                exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                                                tradeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                                                lastTradeEntryTime:=TimeSpan.Parse("15:29:59"),
-                                                                                eodExitTime:=TimeSpan.Parse("15:29:59"),
-                                                                                tickSize:=tick,
-                                                                                marginMultiplier:=margin,
-                                                                                timeframe:=1,
-                                                                                heikenAshiCandle:=False,
-                                                                                stockType:=stockType,
-                                                                                databaseTable:=database,
-                                                                                dataSource:=sourceData,
-                                                                                initialCapital:=Decimal.MaxValue / 2,
-                                                                                usableCapital:=Decimal.MaxValue / 2,
-                                                                                minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
-                                                                                amountToBeWithdrawn:=50000)
-                            AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+            'Dim tgtMulList As List(Of Decimal) = New List(Of Decimal) From {200000000}
+            'For qntyTyp As Integer = 2 To 2
+            '    For Each tgtMul In tgtMulList
+            '        For prtlExt As Integer = 0 To 0
+            '            Dim filename As String = Nothing
+            '            Using backtestStrategy As New CNCEODGenericStrategy(canceller:=_canceller,
+            '                                                                    exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+            '                                                                    exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+            '                                                                    tradeStartTime:=TimeSpan.Parse("09:15:00"),
+            '                                                                    lastTradeEntryTime:=TimeSpan.Parse("15:29:59"),
+            '                                                                    eodExitTime:=TimeSpan.Parse("15:29:59"),
+            '                                                                    tickSize:=tick,
+            '                                                                    marginMultiplier:=margin,
+            '                                                                    timeframe:=1,
+            '                                                                    heikenAshiCandle:=False,
+            '                                                                    stockType:=stockType,
+            '                                                                    databaseTable:=database,
+            '                                                                    dataSource:=sourceData,
+            '                                                                    initialCapital:=Decimal.MaxValue / 2,
+            '                                                                    usableCapital:=Decimal.MaxValue / 2,
+            '                                                                    minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+            '                                                                    amountToBeWithdrawn:=50000)
+            '                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                            With backtestStrategy
-                                '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
-                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Investment Stock List.csv")
+            '                With backtestStrategy
+            '                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
+            '                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Investment Stock List.csv")
 
-                                .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+            '                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                                .RuleEntityData = New TrendLinePositionalStrategyRule.StrategyRuleEntities With
-                                        {.QuantityType = qntyTyp,
-                                         .TargetMultiplier = tgtMul,
-                                         .PartialExit = prtlExt}
+            '                    .RuleEntityData = New TrendLinePositionalStrategyRule.StrategyRuleEntities With
+            '                            {.QuantityType = qntyTyp,
+            '                             .TargetMultiplier = tgtMul,
+            '                             .PartialExit = prtlExt}
 
-                                filename = String.Format("CNC Price Drop Capital {0},QuantityType {1},TargetMul {2},Partial Exit {3}",
-                                                            If(backtestStrategy.UsableCapital = Decimal.MaxValue / 2, "∞", backtestStrategy.UsableCapital),
-                                                            CType(.RuleEntityData, TrendLinePositionalStrategyRule.StrategyRuleEntities).QuantityType,
-                                                            CType(.RuleEntityData, TrendLinePositionalStrategyRule.StrategyRuleEntities).TargetMultiplier,
-                                                            CType(.RuleEntityData, TrendLinePositionalStrategyRule.StrategyRuleEntities).PartialExit)
+            '                    filename = String.Format("CNC Price Drop Capital {0},QuantityType {1},TargetMul {2},Partial Exit {3}",
+            '                                                If(backtestStrategy.UsableCapital = Decimal.MaxValue / 2, "∞", backtestStrategy.UsableCapital),
+            '                                                CType(.RuleEntityData, TrendLinePositionalStrategyRule.StrategyRuleEntities).QuantityType,
+            '                                                CType(.RuleEntityData, TrendLinePositionalStrategyRule.StrategyRuleEntities).TargetMultiplier,
+            '                                                CType(.RuleEntityData, TrendLinePositionalStrategyRule.StrategyRuleEntities).PartialExit)
 
-                                .NumberOfTradeableStockPerDay = 1
+            '                    .NumberOfTradeableStockPerDay = 1
 
-                                .NumberOfTradesPerDay = Integer.MaxValue
-                                .NumberOfTradesPerStockPerDay = Integer.MaxValue
+            '                    .NumberOfTradesPerDay = Integer.MaxValue
+            '                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
-                                .TickBasedStrategy = True
-                            End With
-                            Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-                        End Using
-                    Next
-                Next
-            Next
+            '                    .TickBasedStrategy = True
+            '                End With
+            '                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+            '            End Using
+            '        Next
+            '    Next
+            'Next
+#End Region
+
+#Region "Price Drop"
+            Using backtestStrategy As New CNCEODGenericStrategy(canceller:=_canceller,
+                                                                exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                tradeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                lastTradeEntryTime:=TimeSpan.Parse("15:29:59"),
+                                                                eodExitTime:=TimeSpan.Parse("15:29:59"),
+                                                                tickSize:=tick,
+                                                                marginMultiplier:=margin,
+                                                                timeframe:=1,
+                                                                heikenAshiCandle:=False,
+                                                                stockType:=stockType,
+                                                                databaseTable:=database,
+                                                                dataSource:=sourceData,
+                                                                initialCapital:=Decimal.MaxValue / 2,
+                                                                usableCapital:=Decimal.MaxValue / 2,
+                                                                minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
+                                                                amountToBeWithdrawn:=50000)
+                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+
+                With backtestStrategy
+                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Vijay CNC Instrument Details.csv")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Investment Stock List.csv")
+
+                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+
+                    .RuleEntityData = New PriceDropContinuesPositionalStrategyRule.StrategyRuleEntities With
+                        {.QuantityType = PriceDropContinuesPositionalStrategyRule.TypeOfQuantity.Reverse,
+                         .EntryType = PriceDropContinuesPositionalStrategyRule.TypeOfEntry.Both,
+                         .BuyAtEveryPriceDropPercentage = 1,
+                         .BuyTillPriceDropPercentage = 10,
+                         .BuyAtEveryPriceUpPercentage = 1,
+                         .BuyTillPriceUpPercentage = 10}
+
+
+                    .NumberOfTradeableStockPerDay = 1
+
+                    .NumberOfTradesPerDay = Integer.MaxValue
+                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
+
+                    .TickBasedStrategy = True
+                End With
+                Dim filename As String = String.Format("CNC Output {0}_{1}_{2}", Now.Hour, Now.Minute, Now.Second)
+                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+            End Using
 #End Region
 
         Catch ex As Exception

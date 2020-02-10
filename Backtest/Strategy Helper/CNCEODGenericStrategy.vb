@@ -78,9 +78,9 @@ Namespace StrategyHelper
                             Dim XDayPayload As Dictionary(Of Date, Payload) = Nothing
                             Dim currentDayPayload As Dictionary(Of Date, Payload) = Nothing
                             If Me.DataSource = SourceOfData.Database Then
-                                XDayPayload = Cmn.GetRawPayload(Common.DataBaseTable.EOD_POSITIONAL, stock, tradeCheckingDate.AddMonths(-10), tradeCheckingDate)
+                                XDayPayload = Cmn.GetRawPayload(Common.DataBaseTable.EOD_POSITIONAL, stock, tradeCheckingDate.AddMonths(-1), tradeCheckingDate)
                             ElseIf Me.DataSource = SourceOfData.Live Then
-                                XDayPayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, stock, tradeCheckingDate.AddMonths(-10), tradeCheckingDate).ConfigureAwait(False)
+                                XDayPayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, stock, tradeCheckingDate.AddMonths(-1), tradeCheckingDate).ConfigureAwait(False)
                             End If
 
                             _canceller.Token.ThrowIfCancellationRequested()
@@ -168,6 +168,8 @@ Namespace StrategyHelper
                                             stockRule = New PriceDropPositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2)
                                         Case 29
                                             stockRule = New TrendLinePositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case 38
+                                            stockRule = New PriceDropContinuesPositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
