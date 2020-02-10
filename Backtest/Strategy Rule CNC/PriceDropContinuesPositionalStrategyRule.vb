@@ -56,6 +56,7 @@ Public Class PriceDropContinuesPositionalStrategyRule
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         Dim tradeStartTime As Date = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, _parentStrategy.TradeStartTime.Hours, _parentStrategy.TradeStartTime.Minutes, _parentStrategy.TradeStartTime.Seconds)
 
+        Dim parameters As List(Of PlaceOrderParameters) = Nothing
         If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
             Not _parentStrategy.IsTradeOpen(currentTick, _parentStrategy.TradeType) Then
 
@@ -69,7 +70,6 @@ Public Class PriceDropContinuesPositionalStrategyRule
                 End Select
                 Dim ctr As Integer = 0
                 For i = Math.Abs(_userInputs.BuyAtEveryPriceDropPercentage) To Math.Abs(_userInputs.BuyTillPriceDropPercentage) Step Math.Abs(_userInputs.BuyAtEveryPriceDropPercentage)
-                    Dim parameter As PlaceOrderParameters = Nothing
                     Dim signalCandle As Payload = Nothing
                     Dim signalReceivedForEntry As Tuple(Of Boolean, Decimal, Payload) = GetSignalForDrop(currentTick, i)
                     If signalReceivedForEntry IsNot Nothing AndAlso signalReceivedForEntry.Item1 Then
@@ -84,27 +84,29 @@ Public Class PriceDropContinuesPositionalStrategyRule
                         End Select
 
                         If signalCandle IsNot Nothing Then
-                            parameter = New PlaceOrderParameters With {
-                                    .EntryPrice = signalReceivedForEntry.Item2,
-                                    .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                    .Quantity = quantity,
-                                    .Stoploss = .EntryPrice - 1000000000,
-                                    .Target = .EntryPrice + 1000000000,
-                                    .Buffer = 0,
-                                    .SignalCandle = signalCandle,
-                                    .OrderType = Trade.TypeOfOrder.Market,
-                                    .Supporting1 = signalCandle.PayloadDate.ToString("dd-MM-yy HH:mm:ss"),
-                                    .Supporting2 = i
-                                }
+                            Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
+                                                                        .EntryPrice = signalReceivedForEntry.Item2,
+                                                                        .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                                                                        .Quantity = quantity,
+                                                                        .Stoploss = .EntryPrice - 1000000000,
+                                                                        .Target = .EntryPrice + 1000000000,
+                                                                        .Buffer = 0,
+                                                                        .SignalCandle = signalCandle,
+                                                                        .OrderType = Trade.TypeOfOrder.Market,
+                                                                        .Supporting1 = signalCandle.PayloadDate.ToString("dd-MM-yy HH:mm:ss"),
+                                                                        .Supporting2 = i
+                                                                    }
 
+                            If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
+                            parameters.Add(parameter)
                         End If
-                    End If
-                    If parameter IsNot Nothing Then
-                        ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
                     End If
                     ctr += 1
                 Next
             End If
+        End If
+        If parameters IsNot Nothing Then
+            ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, parameters)
         End If
         Return ret
     End Function
