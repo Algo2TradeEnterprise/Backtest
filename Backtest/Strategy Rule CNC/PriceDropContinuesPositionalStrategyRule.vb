@@ -94,7 +94,8 @@ Public Class PriceDropContinuesPositionalStrategyRule
                                                                         .SignalCandle = signalCandle,
                                                                         .OrderType = Trade.TypeOfOrder.Market,
                                                                         .Supporting1 = signalCandle.PayloadDate.ToString("dd-MM-yy HH:mm:ss"),
-                                                                        .Supporting2 = i * -1
+                                                                        .Supporting2 = i * -1,
+                                                                        .Supporting3 = signalCandle.Close
                                                                     }
 
                             If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
@@ -139,7 +140,8 @@ Public Class PriceDropContinuesPositionalStrategyRule
                                                                         .SignalCandle = signalCandle,
                                                                         .OrderType = Trade.TypeOfOrder.Market,
                                                                         .Supporting1 = signalCandle.PayloadDate.ToString("dd-MM-yy HH:mm:ss"),
-                                                                        .Supporting2 = i
+                                                                        .Supporting2 = i,
+                                                                        .Supporting3 = signalCandle.Close
                                                                     }
 
                             If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
