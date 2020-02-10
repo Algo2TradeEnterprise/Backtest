@@ -60,7 +60,14 @@ Public Class PriceDropContinuesPositionalStrategyRule
             Not _parentStrategy.IsTradeOpen(currentTick, _parentStrategy.TradeType) Then
 
             If _userInputs.EntryType = TypeOfEntry.Both OrElse _userInputs.EntryType = TypeOfEntry.PriceDrop Then
-                Dim lastQuantity As Integer = Integer.MinValue
+                Dim initialQuantity As Integer = Integer.MinValue
+                Select Case _userInputs.QuantityType
+                    Case TypeOfQuantity.Forward
+                        initialQuantity = 1
+                    Case TypeOfQuantity.Reverse
+                        initialQuantity = Math.Floor(Math.Abs(_userInputs.BuyTillPriceDropPercentage) / Math.Abs(_userInputs.BuyAtEveryPriceDropPercentage))
+                End Select
+                Dim ctr As Integer = 0
                 For i = Math.Abs(_userInputs.BuyAtEveryPriceDropPercentage) To Math.Abs(_userInputs.BuyTillPriceDropPercentage) Step Math.Abs(_userInputs.BuyAtEveryPriceDropPercentage)
                     Dim parameter As PlaceOrderParameters = Nothing
                     Dim signalCandle As Payload = Nothing
@@ -68,27 +75,19 @@ Public Class PriceDropContinuesPositionalStrategyRule
                     If signalReceivedForEntry IsNot Nothing AndAlso signalReceivedForEntry.Item1 Then
                         signalCandle = signalReceivedForEntry.Item3
 
-                        If lastQuantity = Integer.MinValue Then
-                            Select Case _userInputs.QuantityType
-                                Case TypeOfQuantity.Forward
-                                    lastQuantity = 1
-                                Case TypeOfQuantity.Reverse
-                                    lastQuantity = Math.Floor(Math.Abs(_userInputs.BuyTillPriceDropPercentage) / Math.Abs(_userInputs.BuyAtEveryPriceDropPercentage))
-                            End Select
-                        Else
-                            Select Case _userInputs.QuantityType
-                                Case TypeOfQuantity.Forward
-                                    lastQuantity = lastQuantity + 1
-                                Case TypeOfQuantity.Reverse
-                                    lastQuantity = lastQuantity - 1
-                            End Select
-                        End If
-                        If lastQuantity = 0 Then Throw New ApplicationException("Check Quantity")
-                        If signalCandle IsNot Nothing AndAlso lastQuantity <> 0 Then
+                        Dim quantity As Integer = initialQuantity
+                        Select Case _userInputs.QuantityType
+                            Case TypeOfQuantity.Forward
+                                quantity = initialQuantity + ctr
+                            Case TypeOfQuantity.Reverse
+                                quantity = initialQuantity - ctr
+                        End Select
+
+                        If signalCandle IsNot Nothing Then
                             parameter = New PlaceOrderParameters With {
                                     .EntryPrice = signalReceivedForEntry.Item2,
                                     .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                    .Quantity = lastQuantity,
+                                    .Quantity = quantity,
                                     .Stoploss = .EntryPrice - 1000000000,
                                     .Target = .EntryPrice + 1000000000,
                                     .Buffer = 0,
@@ -103,6 +102,7 @@ Public Class PriceDropContinuesPositionalStrategyRule
                     If parameter IsNot Nothing Then
                         ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
                     End If
+                    ctr += 1
                 Next
             End If
         End If
