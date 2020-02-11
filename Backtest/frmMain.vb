@@ -1700,7 +1700,7 @@ Public Class frmMain
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
                     .RuleEntityData = New PriceDropContinuesPositionalStrategyRule.StrategyRuleEntities With
-                        {.QuantityType = PriceDropContinuesPositionalStrategyRule.TypeOfQuantity.Reverse,
+                        {.QuantityType = PriceDropContinuesPositionalStrategyRule.TypeOfQuantity.Forward,
                          .EntryType = PriceDropContinuesPositionalStrategyRule.TypeOfEntry.PriceDrop,
                          .BuyAtEveryPriceDropPercentage = 1,
                          .BuyTillPriceDropPercentage = 10,
@@ -1715,7 +1715,10 @@ Public Class frmMain
 
                     .TickBasedStrategy = True
                 End With
-                Dim filename As String = String.Format("CNC Output {0}_{1}_{2}", Now.Hour, Now.Minute, Now.Second)
+                Dim ruleData As PriceDropContinuesPositionalStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                Dim filename As String = String.Format("CNC Output Entry Type {3},Quantity Type {4} {0}_{1}_{2}",
+                                                       Now.Hour, Now.Minute, Now.Second,
+                                                       ruleData.EntryType, ruleData.QuantityType)
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using
 #End Region
