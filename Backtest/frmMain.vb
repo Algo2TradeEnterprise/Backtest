@@ -1266,9 +1266,9 @@ Public Class frmMain
                                     New NiftyBankMarketPairTradingStrategyRule.StockSelectionDetails With
                                         {.StockPosition = NiftyBankMarketPairTradingStrategyRule.PositionOfStock.Bottom, .PositionNumber = 1, .Direction = Trade.TradeExecutionDirection.Buy},
                                     New NiftyBankMarketPairTradingStrategyRule.StockSelectionDetails With
-                                        {.StockPosition = NiftyBankMarketPairTradingStrategyRule.PositionOfStock.Middle1, .PositionNumber = 1, .Direction = Trade.TradeExecutionDirection.Buy},
+                                        {.StockPosition = NiftyBankMarketPairTradingStrategyRule.PositionOfStock.Top, .PositionNumber = 2, .Direction = Trade.TradeExecutionDirection.Buy},
                                     New NiftyBankMarketPairTradingStrategyRule.StockSelectionDetails With
-                                        {.StockPosition = NiftyBankMarketPairTradingStrategyRule.PositionOfStock.Middle2, .PositionNumber = 1, .Direction = Trade.TradeExecutionDirection.Sell}
+                                        {.StockPosition = NiftyBankMarketPairTradingStrategyRule.PositionOfStock.Bottom, .PositionNumber = 2, .Direction = Trade.TradeExecutionDirection.Sell}
                                     }
                                 }
 
@@ -1294,8 +1294,12 @@ Public Class frmMain
                         End With
 
                         Dim ruleData As NiftyBankMarketPairTradingStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                        Dim filename As String = String.Format("Pair Nifty Bank Output,Max Profit {0},Max Loss {1}",
-                                                               backtestStrategy.OverAllProfitPerDay, backtestStrategy.OverAllLossPerDay)
+                        Dim contentString As String = Nothing
+                        For Each rule In ruleData.StockSelectionDetails
+                            contentString = String.Format("{0},{1}{2}{3}", contentString, rule.StockPosition, rule.PositionNumber, rule.Direction)
+                        Next
+                        Dim filename As String = String.Format("Pair Nifty Bank Output,Max Profit {0},Max Loss {1},{2}",
+                                                               backtestStrategy.OverAllProfitPerDay, backtestStrategy.OverAllLossPerDay, contentString.Substring(1))
 
                         Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
                     End Using
