@@ -1258,7 +1258,19 @@ Public Class frmMain
                             .TickBasedStrategy = False
                             .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
                             .RuleEntityData = New NiftyBankMarketPairTradingStrategyRule.StrategyRuleEntities With
-                                {.NumberOfLots = 1}
+                                {
+                                    .NumberOfLots = 1,
+                                    .StockSelectionDetails = New List(Of NiftyBankMarketPairTradingStrategyRule.StockSelectionDetails) From
+                                    {New NiftyBankMarketPairTradingStrategyRule.StockSelectionDetails With
+                                        {.StockPosition = NiftyBankMarketPairTradingStrategyRule.PositionOfStock.Top, .PositionNumber = 1, .Direction = Trade.TradeExecutionDirection.Sell},
+                                    New NiftyBankMarketPairTradingStrategyRule.StockSelectionDetails With
+                                        {.StockPosition = NiftyBankMarketPairTradingStrategyRule.PositionOfStock.Bottom, .PositionNumber = 1, .Direction = Trade.TradeExecutionDirection.Buy},
+                                    New NiftyBankMarketPairTradingStrategyRule.StockSelectionDetails With
+                                        {.StockPosition = NiftyBankMarketPairTradingStrategyRule.PositionOfStock.Middle1, .PositionNumber = 1, .Direction = Trade.TradeExecutionDirection.Buy},
+                                    New NiftyBankMarketPairTradingStrategyRule.StockSelectionDetails With
+                                        {.StockPosition = NiftyBankMarketPairTradingStrategyRule.PositionOfStock.Middle2, .PositionNumber = 1, .Direction = Trade.TradeExecutionDirection.Sell}
+                                    }
+                                }
 
                             .NumberOfTradeableStockPerDay = Integer.MaxValue
 

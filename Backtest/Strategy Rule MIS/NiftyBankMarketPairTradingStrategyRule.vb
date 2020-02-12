@@ -10,20 +10,40 @@ Public Class NiftyBankMarketPairTradingStrategyRule
         Inherits RuleEntities
 
         Public NumberOfLots As Integer
+        Public StockSelectionDetails As List(Of StockSelectionDetails)
     End Class
+
+    Public Class StockData
+        Public InstrumentName As String
+        Public LotSize As Integer
+        Public ChangePer As Decimal
+    End Class
+
+    Public Class StockSelectionDetails
+        Public StockPosition As PositionOfStock
+        Public PositionNumber As Integer
+        Public Direction As Trade.TradeExecutionDirection
+    End Class
+
+    Enum PositionOfStock
+        Top = 1
+        Bottom
+        Middle1
+        Middle2
+    End Enum
 #End Region
 
     Private ReadOnly _userInputs As StrategyRuleEntities
     Private ReadOnly _direction As Trade.TradeExecutionDirection
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
-                   ByVal lotSize As Integer,
-                   ByVal parentStrategy As Strategy,
-                   ByVal tradingDate As Date,
-                   ByVal tradingSymbol As String,
-                   ByVal canceller As CancellationTokenSource,
-                   ByVal entities As RuleEntities,
-                   ByVal direction As Decimal)
+               ByVal lotSize As Integer,
+               ByVal parentStrategy As Strategy,
+               ByVal tradingDate As Date,
+               ByVal tradingSymbol As String,
+               ByVal canceller As CancellationTokenSource,
+               ByVal entities As RuleEntities,
+               ByVal direction As Decimal)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _userInputs = entities
         If direction > 0 Then
@@ -46,15 +66,15 @@ Public Class NiftyBankMarketPairTradingStrategyRule
 
         Dim parameter As PlaceOrderParameters = Nothing
         If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
-            Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS) AndAlso Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS) AndAlso
-            _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol) < Me._parentStrategy.NumberOfTradesPerStockPerDay AndAlso
-            _parentStrategy.TotalPLAfterBrokerage(currentTick.PayloadDate) < _parentStrategy.OverAllProfitPerDay AndAlso
-            _parentStrategy.TotalPLAfterBrokerage(currentTick.PayloadDate) > _parentStrategy.OverAllLossPerDay AndAlso
-            _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) < _parentStrategy.StockMaxProfitPerDay AndAlso
-            _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) > Math.Abs(_parentStrategy.StockMaxLossPerDay) * -1 AndAlso
-            _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) < Me.MaxProfitOfThisStock AndAlso
-            _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) > Math.Abs(Me.MaxLossOfThisStock) * -1 AndAlso
-            currentMinuteCandlePayload.PayloadDate >= tradeStartTime AndAlso Me.EligibleToTakeTrade Then
+        Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS) AndAlso Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS) AndAlso
+        _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol) < Me._parentStrategy.NumberOfTradesPerStockPerDay AndAlso
+        _parentStrategy.TotalPLAfterBrokerage(currentTick.PayloadDate) < _parentStrategy.OverAllProfitPerDay AndAlso
+        _parentStrategy.TotalPLAfterBrokerage(currentTick.PayloadDate) > _parentStrategy.OverAllLossPerDay AndAlso
+        _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) < _parentStrategy.StockMaxProfitPerDay AndAlso
+        _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) > Math.Abs(_parentStrategy.StockMaxLossPerDay) * -1 AndAlso
+        _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) < Me.MaxProfitOfThisStock AndAlso
+        _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) > Math.Abs(Me.MaxLossOfThisStock) * -1 AndAlso
+        currentMinuteCandlePayload.PayloadDate >= tradeStartTime AndAlso Me.EligibleToTakeTrade Then
 
             Dim signalCandle As Payload = currentMinuteCandlePayload
 
@@ -64,29 +84,29 @@ Public Class NiftyBankMarketPairTradingStrategyRule
                     Dim quantity As Decimal = Me.LotSize * _userInputs.NumberOfLots
 
                     parameter = New PlaceOrderParameters With {
-                                    .EntryPrice = signalCandle.Open,
-                                    .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                    .Quantity = quantity,
-                                    .Stoploss = .EntryPrice - 1000000,
-                                    .Target = .EntryPrice + 1000000,
-                                    .Buffer = 0,
-                                    .SignalCandle = signalCandle,
-                                    .OrderType = Trade.TypeOfOrder.Market
-                                }
+                                .EntryPrice = signalCandle.Open,
+                                .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                                .Quantity = quantity,
+                                .Stoploss = .EntryPrice - 1000000,
+                                .Target = .EntryPrice + 1000000,
+                                .Buffer = 0,
+                                .SignalCandle = signalCandle,
+                                .OrderType = Trade.TypeOfOrder.Market
+                            }
                 ElseIf _direction = Trade.TradeExecutionDirection.Sell Then
                     'Dim quantity As Decimal = _parentStrategy.CalculateQuantityFromInvestment(Me.LotSize, _userInputs.MaxInvestmentPerStock, signalCandle.Open, _parentStrategy.StockType, True)
                     Dim quantity As Decimal = Me.LotSize * _userInputs.NumberOfLots
 
                     parameter = New PlaceOrderParameters With {
-                                    .EntryPrice = signalCandle.Open,
-                                    .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                                    .Quantity = quantity,
-                                    .Stoploss = .EntryPrice + 1000000,
-                                    .Target = .EntryPrice - 1000000,
-                                    .Buffer = 0,
-                                    .SignalCandle = signalCandle,
-                                    .OrderType = Trade.TypeOfOrder.Market
-                                }
+                                .EntryPrice = signalCandle.Open,
+                                .EntryDirection = Trade.TradeExecutionDirection.Sell,
+                                .Quantity = quantity,
+                                .Stoploss = .EntryPrice + 1000000,
+                                .Target = .EntryPrice - 1000000,
+                                .Buffer = 0,
+                                .SignalCandle = signalCandle,
+                                .OrderType = Trade.TypeOfOrder.Market
+                            }
                 End If
             End If
         End If
@@ -122,4 +142,102 @@ Public Class NiftyBankMarketPairTradingStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
     End Function
 
+    Public Shared Function GetStockData(ByVal allStocks As List(Of StockData), ByVal stockSelectionDetails As List(Of StockSelectionDetails)) As Dictionary(Of String, StockDetails)
+        Dim ret As Dictionary(Of String, StockDetails) = Nothing
+        If allStocks IsNot Nothing AndAlso allStocks.Count > 0 AndAlso stockSelectionDetails IsNot Nothing AndAlso stockSelectionDetails.Count > 0 Then
+            For Each runningStockSelection In stockSelectionDetails
+                Dim stock As StockData = Nothing
+                Select Case runningStockSelection.StockPosition
+                    Case PositionOfStock.Top
+                        stock = GetNthStockFromTop(allStocks, runningStockSelection.PositionNumber)
+                    Case PositionOfStock.Bottom
+                        stock = GetNthStockFromBottom(allStocks, runningStockSelection.PositionNumber)
+                    Case PositionOfStock.Middle1
+                        stock = GetMiddleStock1(allStocks)
+                    Case PositionOfStock.Middle2
+                        stock = GetMiddleStock2(allStocks)
+                End Select
+                If stock IsNot Nothing Then
+                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                    Dim detailsOfStock As StockDetails = New StockDetails With
+                                                {.StockName = stock.InstrumentName,
+                                                 .LotSize = stock.LotSize,
+                                                 .EligibleToTakeTrade = True,
+                                                 .Supporting1 = If(runningStockSelection.Direction = Trade.TradeExecutionDirection.Buy, 1, -1)}
+                    ret.Add(detailsOfStock.StockName, detailsOfStock)
+                End If
+            Next
+        End If
+        Return ret
+    End Function
+
+    Private Shared Function GetNthStockFromTop(ByVal allStocks As List(Of StockData), ByVal stockNumber As Integer) As StockData
+        Dim ret As StockData = Nothing
+        If allStocks IsNot Nothing AndAlso allStocks.Count > 0 Then
+            Dim ctr As Integer = 0
+            For Each runningStock In allStocks.OrderByDescending(Function(x)
+                                                                     Return x.ChangePer
+                                                                 End Function)
+                ctr += 1
+                If ctr = stockNumber Then
+                    ret = runningStock
+                    Exit For
+                End If
+            Next
+        End If
+        Return ret
+    End Function
+
+    Private Shared Function GetNthStockFromBottom(ByVal allStocks As List(Of StockData), ByVal stockNumber As Integer) As StockData
+        Dim ret As StockData = Nothing
+        If allStocks IsNot Nothing AndAlso allStocks.Count > 0 Then
+            Dim ctr As Integer = 0
+            For Each runningStock In allStocks.OrderBy(Function(x)
+                                                           Return x.ChangePer
+                                                       End Function)
+                ctr += 1
+                If ctr = stockNumber Then
+                    ret = runningStock
+                    Exit For
+                End If
+            Next
+        End If
+        Return ret
+    End Function
+
+    Private Shared Function GetMiddleStock1(ByVal allStocks As List(Of StockData)) As StockData
+        Dim ret As StockData = Nothing
+        If allStocks IsNot Nothing AndAlso allStocks.Count > 0 Then
+            Dim ctr As Integer = 0
+            Dim stockNumber As Integer = Math.Floor(allStocks.Count / 2)
+            For Each runningStock In allStocks.OrderByDescending(Function(x)
+                                                                     Return x.ChangePer
+                                                                 End Function)
+                ctr += 1
+                If ctr = stockNumber Then
+                    ret = runningStock
+                    Exit For
+                End If
+            Next
+        End If
+        Return ret
+    End Function
+
+    Private Shared Function GetMiddleStock2(ByVal allStocks As List(Of StockData)) As StockData
+        Dim ret As StockData = Nothing
+        If allStocks IsNot Nothing AndAlso allStocks.Count > 0 Then
+            Dim ctr As Integer = 0
+            Dim stockNumber As Integer = Math.Floor(allStocks.Count / 2) + 1
+            For Each runningStock In allStocks.OrderByDescending(Function(x)
+                                                                     Return x.ChangePer
+                                                                 End Function)
+                ctr += 1
+                If ctr = stockNumber Then
+                    ret = runningStock
+                    Exit For
+                End If
+            Next
+        End If
+        Return ret
+    End Function
 End Class
