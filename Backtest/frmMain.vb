@@ -272,7 +272,7 @@ Public Class frmMain
             Else
                 sourceData = Strategy.SourceOfData.Database
             End If
-            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
+            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Futures
             Dim database As Common.DataBaseTable = Common.DataBaseTable.None
             Dim margin As Decimal = 0
             Dim tick As Decimal = 0
@@ -1169,63 +1169,126 @@ Public Class frmMain
 #End Region
 
 #Region "Intraday Positional 4"
-            Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
-                                                              exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                              exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                              tradeStartTime:=TimeSpan.Parse("9:16:00"),
-                                                              lastTradeEntryTime:=TimeSpan.Parse("14:44:59"),
-                                                              eodExitTime:=TimeSpan.Parse("15:15:00"),
-                                                              tickSize:=tick,
-                                                              marginMultiplier:=margin,
-                                                              timeframe:=1,
-                                                              heikenAshiCandle:=False,
-                                                              stockType:=stockType,
-                                                              databaseTable:=database,
-                                                              dataSource:=sourceData,
-                                                              initialCapital:=Decimal.MaxValue / 2,
-                                                              usableCapital:=Decimal.MaxValue / 2,
-                                                              minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
-                                                              amountToBeWithdrawn:=100000)
-                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+            'Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+            '                                                  exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+            '                                                  exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+            '                                                  tradeStartTime:=TimeSpan.Parse("9:16:00"),
+            '                                                  lastTradeEntryTime:=TimeSpan.Parse("14:44:59"),
+            '                                                  eodExitTime:=TimeSpan.Parse("15:15:00"),
+            '                                                  tickSize:=tick,
+            '                                                  marginMultiplier:=margin,
+            '                                                  timeframe:=1,
+            '                                                  heikenAshiCandle:=False,
+            '                                                  stockType:=stockType,
+            '                                                  databaseTable:=database,
+            '                                                  dataSource:=sourceData,
+            '                                                  initialCapital:=Decimal.MaxValue / 2,
+            '                                                  usableCapital:=Decimal.MaxValue / 2,
+            '                                                  minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+            '                                                  amountToBeWithdrawn:=100000)
+            '    AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                With backtestStrategy
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR STOCK.csv")
+            '    With backtestStrategy
+            '        .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR STOCK.csv")
 
-                    .AllowBothDirectionEntryAtSameTime = False
-                    .TrailingStoploss = False
-                    .TickBasedStrategy = True
-                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
-                    .RuleEntityData = New IntradayPositionalStrategyRule4.StrategyRuleEntities With
-                        {.MaxProfitPerTrade = 1000,
-                         .MaxStoplossPerTrade = -500
-                        }
+            '        .AllowBothDirectionEntryAtSameTime = False
+            '        .TrailingStoploss = False
+            '        .TickBasedStrategy = True
+            '        .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+            '        .RuleEntityData = New IntradayPositionalStrategyRule4.StrategyRuleEntities With
+            '            {.MaxProfitPerTrade = 1000,
+            '             .MaxStoplossPerTrade = -500
+            '            }
 
-                    .NumberOfTradeableStockPerDay = 10
+            '        .NumberOfTradeableStockPerDay = 10
 
-                    .NumberOfTradesPerStockPerDay = 1
+            '        .NumberOfTradesPerStockPerDay = 1
 
-                    .StockMaxProfitPercentagePerDay = Decimal.MaxValue
-                    .StockMaxLossPercentagePerDay = Decimal.MinValue
+            '        .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+            '        .StockMaxLossPercentagePerDay = Decimal.MinValue
 
-                    .ExitOnStockFixedTargetStoploss = False
-                    .StockMaxProfitPerDay = Decimal.MaxValue
-                    .StockMaxLossPerDay = Decimal.MinValue
+            '        .ExitOnStockFixedTargetStoploss = False
+            '        .StockMaxProfitPerDay = Decimal.MaxValue
+            '        .StockMaxLossPerDay = Decimal.MinValue
 
-                    .ExitOnOverAllFixedTargetStoploss = False
-                    .OverAllProfitPerDay = Decimal.MaxValue
-                    .OverAllLossPerDay = Decimal.MinValue
+            '        .ExitOnOverAllFixedTargetStoploss = False
+            '        .OverAllProfitPerDay = Decimal.MaxValue
+            '        .OverAllLossPerDay = Decimal.MinValue
 
-                    .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
-                    .MTMSlab = Math.Abs(.OverAllLossPerDay)
-                    .MovementSlab = .MTMSlab / 2
-                    .RealtimeTrailingPercentage = 50
-                End With
+            '        .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+            '        .MTMSlab = Math.Abs(.OverAllLossPerDay)
+            '        .MovementSlab = .MTMSlab / 2
+            '        .RealtimeTrailingPercentage = 50
+            '    End With
 
-                Dim ruleData As IntradayPositionalStrategyRule4.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                Dim filename As String = String.Format("Lower High Higher Low Output")
+            '    Dim ruleData As IntradayPositionalStrategyRule4.StrategyRuleEntities = backtestStrategy.RuleEntityData
+            '    Dim filename As String = String.Format("Lower High Higher Low Output")
 
-                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-            End Using
+            '    Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+            'End Using
+#End Region
+
+#Region "Nifty Bank Market Pair Trading"
+            For maxProfit As Decimal = 5000 To 5000 Step 1
+                For maxLoss As Decimal = 100000 To 100000 Step 1
+                    Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+                                                                      exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                      exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                      tradeStartTime:=TimeSpan.Parse("9:19:00"),
+                                                                      lastTradeEntryTime:=TimeSpan.Parse("14:44:59"),
+                                                                      eodExitTime:=TimeSpan.Parse("15:15:00"),
+                                                                      tickSize:=tick,
+                                                                      marginMultiplier:=margin,
+                                                                      timeframe:=1,
+                                                                      heikenAshiCandle:=False,
+                                                                      stockType:=stockType,
+                                                                      databaseTable:=database,
+                                                                      dataSource:=sourceData,
+                                                                      initialCapital:=Decimal.MaxValue / 2,
+                                                                      usableCapital:=Decimal.MaxValue / 2,
+                                                                      minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                                      amountToBeWithdrawn:=100000)
+                        AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+
+                        With backtestStrategy
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pair Stock List.csv")
+
+                            .AllowBothDirectionEntryAtSameTime = False
+                            .TrailingStoploss = False
+                            .TickBasedStrategy = False
+                            .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+                            .RuleEntityData = New NiftyBankMarketPairTradingStrategyRule.StrategyRuleEntities With
+                                {.NumberOfLots = 1}
+
+                            .NumberOfTradeableStockPerDay = Integer.MaxValue
+
+                            .NumberOfTradesPerStockPerDay = 1
+
+                            .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                            .StockMaxLossPercentagePerDay = Decimal.MinValue
+
+                            .ExitOnStockFixedTargetStoploss = False
+                            .StockMaxProfitPerDay = Decimal.MaxValue
+                            .StockMaxLossPerDay = Decimal.MinValue
+
+                            .ExitOnOverAllFixedTargetStoploss = True
+                            .OverAllProfitPerDay = maxProfit
+                            .OverAllLossPerDay = Math.Abs(maxLoss) * -1
+
+                            .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+                            .MTMSlab = Math.Abs(.OverAllLossPerDay)
+                            .MovementSlab = .MTMSlab / 2
+                            .RealtimeTrailingPercentage = 50
+                        End With
+
+                        Dim ruleData As NiftyBankMarketPairTradingStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                        Dim filename As String = String.Format("Pair Nifty Bank Output,Max Profit {0},Max Loss {1}",
+                                                               backtestStrategy.OverAllProfitPerDay, backtestStrategy.OverAllLossPerDay)
+
+                        Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                    End Using
+                Next
+            Next
 #End Region
 
         Catch ex As Exception
