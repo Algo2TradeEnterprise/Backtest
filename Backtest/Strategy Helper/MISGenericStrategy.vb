@@ -864,6 +864,27 @@ Namespace StrategyHelper
                                             .EligibleToTakeTrade = True}
                                 ret.Add(instrumentName, detailsOfStock)
                             Next
+                        Case 39
+                            For i = 1 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i)(0)
+                                If rowDate.Date = tradingDate.Date Then
+                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                    Dim tradingSymbol As String = dt.Rows(i).Item(1)
+                                    Dim direction As String = dt.Rows(i).Item(2)
+                                    Dim instrumentName As String = Nothing
+                                    If tradingSymbol.Contains("FUT") Then
+                                        instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                                    Else
+                                        instrumentName = tradingSymbol
+                                    End If
+                                    Dim detailsOfStock As StockDetails = New StockDetails With
+                                                {.StockName = instrumentName,
+                                                .LotSize = dt.Rows(i).Item(3),
+                                                .Supporting1 = If(direction.ToUpper = "BUY", 1, -1),
+                                                .EligibleToTakeTrade = True}
+                                    ret.Add(instrumentName, detailsOfStock)
+                                End If
+                            Next
                         Case Else
                             Dim counter As Integer = 0
                             For i = 1 To dt.Rows.Count - 1
