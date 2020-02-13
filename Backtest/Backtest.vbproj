@@ -129,6 +129,7 @@
     <Compile Include="Strategy Rule CNC\VijayCNCStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\CoinFlipAtResistanceStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\DoubleTopDoubleBottomStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\FavourableFractalBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\FixedLevelBasedStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\BANKNIFTYDayLongSMIStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\DayStartSMIStrategyRule.vb" />
