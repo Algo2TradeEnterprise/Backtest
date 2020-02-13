@@ -1231,6 +1231,11 @@ Public Class frmMain
 #Region "Nifty Bank Market Pair Trading"
             For maxProfit As Decimal = 5000 To 5000 Step 1
                 For maxLoss As Decimal = 100000 To 100000 Step 1
+                    For top1Direction As Integer = 1 To 2 Step 1
+                        For bottom1Direction As Integer = 1 To 2 Step 1
+
+                        Next
+                    Next
                     Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                       exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                       exchangeEndTime:=TimeSpan.Parse("15:29:59"),
