@@ -148,6 +148,8 @@ Public Class FavourableFractalBreakoutStrategyRule
                         ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                     End If
                 End If
+            ElseIf _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol) >= Me._parentStrategy.NumberOfTradesPerStockPerDay Then
+                ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
             End If
         End If
         Return ret
