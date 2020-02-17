@@ -164,14 +164,15 @@ Public Class FractalDipStrategyRule
             If _signalPayload IsNot Nothing AndAlso _signalPayload.Count > 0 Then
                 Dim lastFractalHighPayload As Payload = Nothing
                 Dim lastFractalLowPayload As Payload = Nothing
+                Dim eligibleToTakeTrade As Boolean = False
                 For Each runningPayload In _signalPayload.Keys
                     _cts.Token.ThrowIfCancellationRequested()
                     If runningPayload.Date = _tradingDate.Date AndAlso runningPayload <= candle.PayloadDate Then
-                        'If lastFractalLowPayload IsNot Nothing AndAlso _fractalHighPayload(runningPayload) < _fractalLowPayload(lastFractalLowPayload.PayloadDate) Then
-
-                        'ElseIf lastFractalHighPayload IsNot Nothing AndAlso _fractalLowPayload(runningPayload) > _fractalLowPayload(lastFractalHighPayload.PayloadDate) Then
-
-                        'End If
+                        If lastFractalLowPayload IsNot Nothing AndAlso _fractalHighPayload(runningPayload) < _fractalLowPayload(lastFractalLowPayload.PayloadDate) Then
+                            eligibleToTakeTrade = True
+                        ElseIf lastFractalHighPayload IsNot Nothing AndAlso _fractalLowPayload(runningPayload) > _fractalLowPayload(lastFractalHighPayload.PayloadDate) Then
+                            eligibleToTakeTrade = True
+                        End If
                         If lastFractalHighPayload Is Nothing Then
                             lastFractalHighPayload = _signalPayload(runningPayload)
                         Else
@@ -188,16 +189,18 @@ Public Class FractalDipStrategyRule
                         End If
                     End If
                 Next
-                If lastFractalHighPayload IsNot Nothing AndAlso lastFractalLowPayload IsNot Nothing Then
-                    If lastFractalHighPayload.PayloadDate > lastFractalLowPayload.PayloadDate Then
+                If eligibleToTakeTrade Then
+                    If lastFractalHighPayload IsNot Nothing AndAlso lastFractalLowPayload IsNot Nothing Then
+                        If lastFractalHighPayload.PayloadDate > lastFractalLowPayload.PayloadDate Then
+                            ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, _fractalHighPayload(lastFractalHighPayload.PayloadDate), Trade.TradeExecutionDirection.Buy, lastFractalHighPayload)
+                        Else
+                            ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, _fractalLowPayload(lastFractalLowPayload.PayloadDate), Trade.TradeExecutionDirection.Sell, lastFractalLowPayload)
+                        End If
+                    ElseIf lastFractalHighPayload IsNot Nothing Then
                         ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, _fractalHighPayload(lastFractalHighPayload.PayloadDate), Trade.TradeExecutionDirection.Buy, lastFractalHighPayload)
-                    Else
+                    ElseIf lastFractalLowPayload IsNot Nothing Then
                         ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, _fractalLowPayload(lastFractalLowPayload.PayloadDate), Trade.TradeExecutionDirection.Sell, lastFractalLowPayload)
                     End If
-                ElseIf lastFractalHighPayload IsNot Nothing Then
-                    ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, _fractalHighPayload(lastFractalHighPayload.PayloadDate), Trade.TradeExecutionDirection.Buy, lastFractalHighPayload)
-                ElseIf lastFractalLowPayload IsNot Nothing Then
-                    ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, _fractalLowPayload(lastFractalLowPayload.PayloadDate), Trade.TradeExecutionDirection.Sell, lastFractalLowPayload)
                 End If
             End If
         End If
