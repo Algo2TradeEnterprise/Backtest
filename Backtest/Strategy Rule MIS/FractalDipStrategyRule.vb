@@ -171,7 +171,7 @@ Public Class FractalDipStrategyRule
                         If lastFractalLowPayload IsNot Nothing AndAlso _fractalHighPayload(runningPayload) < _fractalLowPayload(lastFractalLowPayload.PayloadDate) Then
                             'eligibleToTakeTrade = True
                             ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, _fractalHighPayload(lastFractalHighPayload.PayloadDate), Trade.TradeExecutionDirection.Buy, lastFractalHighPayload)
-                        ElseIf lastFractalHighPayload IsNot Nothing AndAlso _fractalLowPayload(runningPayload) > _fractalLowPayload(lastFractalHighPayload.PayloadDate) Then
+                        ElseIf lastFractalHighPayload IsNot Nothing AndAlso _fractalLowPayload(runningPayload) > _fractalHighPayload(lastFractalHighPayload.PayloadDate) Then
                             'eligibleToTakeTrade = True
                             ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, _fractalLowPayload(lastFractalLowPayload.PayloadDate), Trade.TradeExecutionDirection.Sell, lastFractalLowPayload)
                         End If
