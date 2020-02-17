@@ -178,54 +178,31 @@ Public Class FractalDipStrategyRule
         Throw New NotImplementedException()
     End Function
 
+    Private _lastFractalHigh As Decimal = Decimal.MinValue
+    Private _lastFractalLow As Decimal = Decimal.MinValue
     Private Function GetSignalCandle(ByVal candle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)
         Dim ret As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload) = Nothing
         If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then
-            If _signalPayload IsNot Nothing AndAlso _signalPayload.Count > 0 Then
-                Dim lastFractalHighPayload As Payload = Nothing
-                Dim lastFractalLowPayload As Payload = Nothing
-                'Dim eligibleToTakeTrade As Boolean = False
-                For Each runningPayload In _signalPayload.Keys
-                    _cts.Token.ThrowIfCancellationRequested()
-                    If runningPayload.Date = _tradingDate.Date AndAlso runningPayload <= candle.PayloadDate Then
-                        If lastFractalLowPayload IsNot Nothing AndAlso _fractalHighPayload(runningPayload) < _fractalLowPayload(lastFractalLowPayload.PayloadDate) AndAlso
-                            _fractalHighPayload(_signalPayload(runningPayload).PreviousCandlePayload.PayloadDate) > _fractalLowPayload(lastFractalLowPayload.PayloadDate) Then
-                            'eligibleToTakeTrade = True
-                            ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, _fractalHighPayload(runningPayload), Trade.TradeExecutionDirection.Buy, _signalPayload(runningPayload))
-                        ElseIf lastFractalHighPayload IsNot Nothing AndAlso _fractalLowPayload(runningPayload) > _fractalHighPayload(lastFractalHighPayload.PayloadDate) AndAlso
-                            _fractalLowPayload(_signalPayload(runningPayload).PreviousCandlePayload.PayloadDate) < _fractalHighPayload(lastFractalHighPayload.PayloadDate) Then
-                            'eligibleToTakeTrade = True
-                            ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, _fractalLowPayload(runningPayload), Trade.TradeExecutionDirection.Sell, _signalPayload(runningPayload))
-                        End If
-                        If lastFractalHighPayload Is Nothing Then
-                            lastFractalHighPayload = _signalPayload(runningPayload)
-                        Else
-                            If _fractalHighPayload(runningPayload) <> _fractalHighPayload(_signalPayload(runningPayload).PreviousCandlePayload.PayloadDate) Then
-                                lastFractalHighPayload = _signalPayload(runningPayload).PreviousCandlePayload
-                            End If
-                        End If
-                        If lastFractalLowPayload Is Nothing Then
-                            lastFractalLowPayload = _signalPayload(runningPayload)
-                        Else
-                            If _fractalLowPayload(runningPayload) <> _fractalLowPayload(_signalPayload(runningPayload).PreviousCandlePayload.PayloadDate) Then
-                                lastFractalLowPayload = _signalPayload(runningPayload).PreviousCandlePayload
-                            End If
-                        End If
-                    End If
-                Next
-                'If eligibleToTakeTrade Then
-                '    If lastFractalHighPayload IsNot Nothing AndAlso lastFractalLowPayload IsNot Nothing Then
-                '        If lastFractalHighPayload.PayloadDate > lastFractalLowPayload.PayloadDate Then
-                '            ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, _fractalHighPayload(lastFractalHighPayload.PayloadDate), Trade.TradeExecutionDirection.Buy, lastFractalHighPayload)
-                '        Else
-                '            ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, _fractalLowPayload(lastFractalLowPayload.PayloadDate), Trade.TradeExecutionDirection.Sell, lastFractalLowPayload)
-                '        End If
-                '    ElseIf lastFractalHighPayload IsNot Nothing Then
-                '        ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, _fractalHighPayload(lastFractalHighPayload.PayloadDate), Trade.TradeExecutionDirection.Buy, lastFractalHighPayload)
-                '    ElseIf lastFractalLowPayload IsNot Nothing Then
-                '        ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, _fractalLowPayload(lastFractalLowPayload.PayloadDate), Trade.TradeExecutionDirection.Sell, lastFractalLowPayload)
-                '    End If
-                'End If
+            If _lastFractalLow <> Decimal.MinValue AndAlso _fractalHighPayload(candle.PayloadDate) < _lastFractalLow AndAlso
+                _fractalHighPayload(candle.PreviousCandlePayload.PayloadDate) > _lastFractalLow Then
+                ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, _fractalHighPayload(candle.PayloadDate), Trade.TradeExecutionDirection.Buy, candle)
+            ElseIf _lastFractalHigh <> Decimal.MinValue AndAlso _fractalLowPayload(candle.PayloadDate) > _lastFractalHigh AndAlso
+                _fractalLowPayload(candle.PreviousCandlePayload.PayloadDate) < _lastFractalHigh Then
+                ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, _fractalLowPayload(candle.PayloadDate), Trade.TradeExecutionDirection.Sell, candle)
+            End If
+            If _lastFractalHigh = Decimal.MinValue Then
+                _lastFractalHigh = _fractalHighPayload(candle.PayloadDate)
+            Else
+                If _fractalHighPayload(candle.PayloadDate) <> _fractalHighPayload(candle.PreviousCandlePayload.PayloadDate) Then
+                    _lastFractalHigh = _fractalHighPayload(candle.PreviousCandlePayload.PayloadDate)
+                End If
+            End If
+            If _lastFractalLow = Decimal.MinValue Then
+                _lastFractalLow = _fractalLowPayload(candle.PayloadDate)
+            Else
+                If _fractalLowPayload(candle.PayloadDate) <> _fractalLowPayload(candle.PreviousCandlePayload.PayloadDate) Then
+                    _lastFractalLow = _fractalLowPayload(candle.PreviousCandlePayload.PayloadDate)
+                End If
             End If
         End If
         Return ret
