@@ -168,10 +168,12 @@ Public Class FractalDipStrategyRule
                 For Each runningPayload In _signalPayload.Keys
                     _cts.Token.ThrowIfCancellationRequested()
                     If runningPayload.Date = _tradingDate.Date AndAlso runningPayload <= candle.PayloadDate Then
-                        If lastFractalLowPayload IsNot Nothing AndAlso _fractalHighPayload(runningPayload) < _fractalLowPayload(lastFractalLowPayload.PayloadDate) Then
+                        If lastFractalLowPayload IsNot Nothing AndAlso _fractalHighPayload(runningPayload) < _fractalLowPayload(lastFractalLowPayload.PayloadDate) AndAlso
+                            _fractalHighPayload(_signalPayload(runningPayload).PreviousCandlePayload.PayloadDate) > _fractalLowPayload(lastFractalLowPayload.PayloadDate) Then
                             'eligibleToTakeTrade = True
                             ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, _fractalHighPayload(runningPayload), Trade.TradeExecutionDirection.Buy, _signalPayload(runningPayload))
-                        ElseIf lastFractalHighPayload IsNot Nothing AndAlso _fractalLowPayload(runningPayload) > _fractalHighPayload(lastFractalHighPayload.PayloadDate) Then
+                        ElseIf lastFractalHighPayload IsNot Nothing AndAlso _fractalLowPayload(runningPayload) > _fractalHighPayload(lastFractalHighPayload.PayloadDate) AndAlso
+                            _fractalLowPayload(_signalPayload(runningPayload).PreviousCandlePayload.PayloadDate) < _fractalHighPayload(lastFractalHighPayload.PayloadDate) Then
                             'eligibleToTakeTrade = True
                             ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, _fractalLowPayload(runningPayload), Trade.TradeExecutionDirection.Sell, _signalPayload(runningPayload))
                         End If
