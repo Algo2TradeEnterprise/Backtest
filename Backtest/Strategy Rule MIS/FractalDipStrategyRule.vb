@@ -84,7 +84,8 @@ Public Class FractalDipStrategyRule
                                         .Buffer = buffer,
                                         .SignalCandle = signalCandle,
                                         .OrderType = Trade.TypeOfOrder.SL,
-                                        .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss")
+                                        .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                                        .Supporting2 = atr
                                     }
                         ElseIf signalCandleSatisfied.Item3 = Trade.TradeExecutionDirection.Sell Then
                             Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandleSatisfied.Item2, RoundOfType.Floor)
@@ -103,7 +104,8 @@ Public Class FractalDipStrategyRule
                                         .Buffer = buffer,
                                         .SignalCandle = signalCandle,
                                         .OrderType = Trade.TypeOfOrder.SL,
-                                        .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss")
+                                        .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                                        .Supporting2 = atr
                                     }
                         End If
                     Else
