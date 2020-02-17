@@ -95,52 +95,52 @@ Public Class LowStoplossWickStrategyRule
                 End If
 
                 If signalCandleSatisfied.Item3 = Trade.TradeExecutionDirection.Buy Then
-                        Dim slPrice As Decimal = Decimal.MinValue
-                        If signalCandle.CandleColor = Color.Red Then
-                            slPrice = signalCandle.Open
-                        Else
-                            slPrice = signalCandle.Close
-                        End If
-                        Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.High, RoundOfType.Floor)
-                        parameter = New PlaceOrderParameters With {
-                        .EntryPrice = signalCandle.High + buffer,
-                        .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                        .Quantity = _quantity,
-                        .Stoploss = slPrice,
-                        .Target = .EntryPrice + targetPoint,
-                        .Buffer = buffer,
-                        .SignalCandle = signalCandle,
-                        .OrderType = Trade.TypeOfOrder.SL,
-                        .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
-                        .Supporting2 = targetRemark,
-                        .Supporting3 = targetPoint,
-                        .Supporting4 = (.EntryPrice - .Stoploss)
-                    }
-                    ElseIf signalCandleSatisfied.Item3 = Trade.TradeExecutionDirection.Sell Then
-                        Dim slPrice As Decimal = Decimal.MinValue
-                        If signalCandle.CandleColor = Color.Green Then
-                            slPrice = signalCandle.Open
-                        Else
-                            slPrice = signalCandle.Close
-                        End If
-                        Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Low, RoundOfType.Floor)
-                        parameter = New PlaceOrderParameters With {
-                        .EntryPrice = signalCandle.Low - buffer,
-                        .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                        .Quantity = _quantity,
-                        .Stoploss = slPrice,
-                        .Target = .EntryPrice - targetPoint,
-                        .Buffer = buffer,
-                        .SignalCandle = signalCandle,
-                        .OrderType = Trade.TypeOfOrder.SL,
-                        .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
-                        .Supporting2 = targetRemark,
-                        .Supporting3 = targetPoint,
-                        .Supporting4 = (.Stoploss - .EntryPrice)
-                    }
+                    Dim slPrice As Decimal = Decimal.MinValue
+                    If signalCandle.CandleColor = Color.Red Then
+                        slPrice = signalCandle.Open
+                    Else
+                        slPrice = signalCandle.Close
                     End If
+                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.High, RoundOfType.Floor)
+                    parameter = New PlaceOrderParameters With {
+                    .EntryPrice = signalCandle.High + buffer,
+                    .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                    .Quantity = _quantity,
+                    .Stoploss = slPrice,
+                    .Target = .EntryPrice + targetPoint,
+                    .Buffer = buffer,
+                    .SignalCandle = signalCandle,
+                    .OrderType = Trade.TypeOfOrder.SL,
+                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                    .Supporting2 = targetRemark,
+                    .Supporting3 = targetPoint,
+                    .Supporting4 = (.EntryPrice - .Stoploss)
+                }
+                ElseIf signalCandleSatisfied.Item3 = Trade.TradeExecutionDirection.Sell Then
+                    Dim slPrice As Decimal = Decimal.MinValue
+                    If signalCandle.CandleColor = Color.Green Then
+                        slPrice = signalCandle.Open
+                    Else
+                        slPrice = signalCandle.Close
+                    End If
+                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Low, RoundOfType.Floor)
+                    parameter = New PlaceOrderParameters With {
+                    .EntryPrice = signalCandle.Low - buffer,
+                    .EntryDirection = Trade.TradeExecutionDirection.Sell,
+                    .Quantity = _quantity,
+                    .Stoploss = slPrice,
+                    .Target = .EntryPrice - targetPoint,
+                    .Buffer = buffer,
+                    .SignalCandle = signalCandle,
+                    .OrderType = Trade.TypeOfOrder.SL,
+                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                    .Supporting2 = targetRemark,
+                    .Supporting3 = targetPoint,
+                    .Supporting4 = (.Stoploss - .EntryPrice)
+                }
                 End If
             End If
+        End If
         If parameter IsNot Nothing Then
             ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
 

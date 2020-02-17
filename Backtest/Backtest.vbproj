@@ -135,6 +135,7 @@
     <Compile Include="Strategy Rule MIS\DayStartSMIStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\DonchianFractalStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\ForwardMomentumv2StrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\FractalDipStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\GapFractalBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\HighVolumePinBarStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\HighVolumePinBarv2StrategyRule.vb" />
