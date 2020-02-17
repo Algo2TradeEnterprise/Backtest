@@ -65,7 +65,7 @@ Public Class FractalDipStrategyRule
                     signalCandle = signalCandleSatisfied.Item4
                 End If
                 If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
-                    Dim atr As Decimal = ConvertFloorCeling(_atrPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Floor)
+                    Dim atr As Decimal = ConvertFloorCeling(_atrPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
                     Dim minATR As Decimal = signalCandleSatisfied.Item2 * 0.1 / 100
                     If atr > minATR Then
                         If signalCandleSatisfied.Item3 = Trade.TradeExecutionDirection.Buy Then
