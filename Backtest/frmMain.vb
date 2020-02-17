@@ -1412,7 +1412,8 @@ Public Class frmMain
                     .RuleEntityData = New FractalDipStrategyRule.StrategyRuleEntities With
                         {
                             .MaxLossPerTrade = -500,
-                            .TargetMultiplier = 2
+                            .TargetMultiplier = 2,
+                            .BreakevenMovement = True
                         }
 
                     .NumberOfTradeableStockPerDay = 15

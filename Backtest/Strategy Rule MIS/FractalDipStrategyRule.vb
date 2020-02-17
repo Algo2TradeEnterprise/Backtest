@@ -12,6 +12,7 @@ Public Class FractalDipStrategyRule
 
         Public MaxLossPerTrade As Decimal
         Public TargetMultiplier As Decimal
+        Public BreakevenMovement As Boolean
     End Class
 #End Region
 
@@ -56,7 +57,7 @@ Public Class FractalDipStrategyRule
             currentMinuteCandlePayload.PayloadDate >= tradeStartTime AndAlso Me.EligibleToTakeTrade Then
             Dim signalCandle As Payload = Nothing
             Dim signalCandleSatisfied As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
-            Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandlePayload, _parentStrategy.TradeType)
+            Dim lastExecutedTrade As Trade = _parentStrategy.GetLastTradeOfTheStock(currentMinuteCandlePayload, _parentStrategy.TradeType)
             If signalCandleSatisfied IsNot Nothing AndAlso signalCandleSatisfied.Item1 Then
                 If lastExecutedTrade Is Nothing Then
                     signalCandle = signalCandleSatisfied.Item4
@@ -147,7 +148,7 @@ Public Class FractalDipStrategyRule
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(ByVal currentTick As Payload, ByVal currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
-        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+        If _userInputs.BreakevenMovement AndAlso currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
             Dim triggerPrice As Decimal = Decimal.MinValue
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                 Dim excpectedTarget As Decimal = currentTrade.EntryPrice + (currentTrade.PotentialTarget - currentTrade.EntryPrice) / 2
