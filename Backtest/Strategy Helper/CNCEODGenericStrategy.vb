@@ -170,6 +170,8 @@ Namespace StrategyHelper
                                             stockRule = New TrendLinePositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 38
                                             stockRule = New PriceDropContinuesPositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case 43
+                                            stockRule = New HighestPriceDropContinuesPositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -526,6 +528,37 @@ Namespace StrategyHelper
                                 End If
                                 For Each stock In ret.Keys
                                     ret(stock).Supporting2 = _highestInvestment
+                                Next
+                            End If
+                        Case 43
+                            For i = 1 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i)(0)
+                                'If rowDate.Date = tradingDate.Date Then
+                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                Dim tradingSymbol As String = dt.Rows(i).Item(1)
+                                Dim instrumentName As String = Nothing
+                                If tradingSymbol.Contains("FUT") Then
+                                    instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                                Else
+                                    instrumentName = tradingSymbol
+                                End If
+                                Dim detailsOfStock As StockDetails = New StockDetails With
+                                    {.StockName = instrumentName,
+                                    .LotSize = 1,
+                                    .EligibleToTakeTrade = True,
+                                    .Supporting1 = dt.Rows(i).Item(2)}
+                                ret.Add(instrumentName, detailsOfStock)
+                                If i = Me.NumberOfTradeableStockPerDay Then Exit For
+                                'End If
+                            Next
+                            If ret IsNot Nothing AndAlso ret.Count > 0 Then
+                                For Each stock In ret.Keys
+                                    Dim eodPayloads As Dictionary(Of Date, Payload) = Cmn.GetRawPayload(Common.DataBaseTable.EOD_POSITIONAL, stock, tradeStartingDate, tradingDate.AddDays(-1))
+                                    If eodPayloads IsNot Nothing AndAlso eodPayloads.Count > 0 Then
+                                        ret(stock).Supporting1 = eodPayloads.Values.Max(Function(x)
+                                                                                            Return x.High
+                                                                                        End Function)
+                                    End If
                                 Next
                             End If
                         Case Else
