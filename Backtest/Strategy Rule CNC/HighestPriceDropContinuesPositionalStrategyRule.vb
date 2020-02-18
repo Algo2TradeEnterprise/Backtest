@@ -66,7 +66,7 @@ Public Class HighestPriceDropContinuesPositionalStrategyRule
                             Case TypeOfQuantity.AP
                                 quantity = initialQuantity * ctr
                             Case TypeOfQuantity.GP
-                                quantity = initialQuantity * Math.Pow(2, ctr - 1)
+                                quantity = initialQuantity * Math.Pow(2, Math.Min(ctr - 1, 10))
                             Case TypeOfQuantity.Linear
                                 quantity = initialQuantity
                         End Select
