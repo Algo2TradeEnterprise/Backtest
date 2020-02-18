@@ -552,8 +552,9 @@ Namespace StrategyHelper
                                 'End If
                             Next
                             If ret IsNot Nothing AndAlso ret.Count > 0 Then
+                                Dim startDate As Date = New Date(2004, 1, 1)
                                 For Each stock In ret.Keys
-                                    Dim eodPayloads As Dictionary(Of Date, Payload) = Cmn.GetRawPayload(Common.DataBaseTable.EOD_POSITIONAL, stock, tradeStartingDate, tradingDate.AddDays(-1))
+                                    Dim eodPayloads As Dictionary(Of Date, Payload) = Cmn.GetRawPayload(Common.DataBaseTable.EOD_POSITIONAL, stock, startDate, tradingDate.AddDays(-1))
                                     If eodPayloads IsNot Nothing AndAlso eodPayloads.Count > 0 Then
                                         ret(stock).Supporting1 = eodPayloads.Values.Max(Function(x)
                                                                                             Return x.High
