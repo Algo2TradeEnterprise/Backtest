@@ -272,14 +272,14 @@ Public Class frmMain
             Else
                 sourceData = Strategy.SourceOfData.Database
             End If
-            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Commodity
+            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
             Dim database As Common.DataBaseTable = Common.DataBaseTable.None
             Dim margin As Decimal = 0
             Dim tick As Decimal = 0
             Select Case stockType
                 Case Trade.TypeOfStock.Cash
                     database = Common.DataBaseTable.Intraday_Cash
-                    margin = 8
+                    margin = 12.5
                     tick = 0.05
                 Case Trade.TypeOfStock.Commodity
                     database = Common.DataBaseTable.Intraday_Commodity
@@ -1445,38 +1445,99 @@ Public Class frmMain
 #End Region
 
 #Region "CRUDEOIL EOD"
+            'Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+            '                                                  exchangeStartTime:=TimeSpan.Parse("09:00:00"),
+            '                                                  exchangeEndTime:=TimeSpan.Parse("23:54:59"),
+            '                                                  tradeStartTime:=TimeSpan.Parse("9:00:00"),
+            '                                                  lastTradeEntryTime:=TimeSpan.Parse("22:00:00"),
+            '                                                  eodExitTime:=TimeSpan.Parse("22:30:00"),
+            '                                                  tickSize:=tick,
+            '                                                  marginMultiplier:=margin,
+            '                                                  timeframe:=1,
+            '                                                  heikenAshiCandle:=False,
+            '                                                  stockType:=stockType,
+            '                                                  databaseTable:=database,
+            '                                                  dataSource:=sourceData,
+            '                                                  initialCapital:=10000,
+            '                                                  usableCapital:=8000,
+            '                                                  minimumEarnedCapitalToWithdraw:=15000,
+            '                                                  amountToBeWithdrawn:=5000)
+            '    AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+
+            '    With backtestStrategy
+            '        .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Crudeoil.csv")
+
+            '        .AllowBothDirectionEntryAtSameTime = False
+            '        .TrailingStoploss = False
+            '        .TickBasedStrategy = True
+            '        .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+            '        .RuleEntityData = New CRUDEOIL_EODStrategyRule.StrategyRuleEntities With
+            '            {
+            '                .NumberOfLots = 1
+            '            }
+
+            '        .NumberOfTradeableStockPerDay = 1
+
+            '        .NumberOfTradesPerStockPerDay = 1
+
+            '        .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+            '        .StockMaxLossPercentagePerDay = Decimal.MinValue
+
+            '        .ExitOnStockFixedTargetStoploss = False
+            '        .StockMaxProfitPerDay = Decimal.MaxValue
+            '        .StockMaxLossPerDay = Decimal.MinValue
+
+            '        .ExitOnOverAllFixedTargetStoploss = False
+            '        .OverAllProfitPerDay = Decimal.MaxValue
+            '        .OverAllLossPerDay = Decimal.MinValue
+
+            '        .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+            '        .MTMSlab = Math.Abs(.OverAllLossPerDay)
+            '        .MovementSlab = .MTMSlab / 2
+            '        .RealtimeTrailingPercentage = 50
+            '    End With
+
+            '    Dim ruleData As CRUDEOIL_EODStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+            '    Dim filename As String = String.Format("CRUDEOIL EOD")
+
+            '    Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+            'End Using
+#End Region
+
+#Region "Outside Bollinger"
             Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
-                                                              exchangeStartTime:=TimeSpan.Parse("09:00:00"),
-                                                              exchangeEndTime:=TimeSpan.Parse("23:54:59"),
-                                                              tradeStartTime:=TimeSpan.Parse("9:00:00"),
-                                                              lastTradeEntryTime:=TimeSpan.Parse("22:00:00"),
-                                                              eodExitTime:=TimeSpan.Parse("22:30:00"),
+                                                              exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                              exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                              tradeStartTime:=TimeSpan.Parse("9:30:00"),
+                                                              lastTradeEntryTime:=TimeSpan.Parse("14:30:00"),
+                                                              eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                               tickSize:=tick,
                                                               marginMultiplier:=margin,
-                                                              timeframe:=1,
+                                                              timeframe:=5,
                                                               heikenAshiCandle:=False,
                                                               stockType:=stockType,
                                                               databaseTable:=database,
                                                               dataSource:=sourceData,
-                                                              initialCapital:=10000,
-                                                              usableCapital:=8000,
-                                                              minimumEarnedCapitalToWithdraw:=15000,
-                                                              amountToBeWithdrawn:=5000)
+                                                              initialCapital:=Decimal.MaxValue / 2,
+                                                              usableCapital:=Decimal.MaxValue / 2,
+                                                              minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                              amountToBeWithdrawn:=0)
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Crudeoil.csv")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Stock.csv")
 
                     .AllowBothDirectionEntryAtSameTime = False
                     .TrailingStoploss = False
                     .TickBasedStrategy = True
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
-                    .RuleEntityData = New CRUDEOIL_EODStrategyRule.StrategyRuleEntities With
+                    .RuleEntityData = New OutsideBollingerStrategyRule.StrategyRuleEntities With
                         {
-                            .NumberOfLots = 1
+                            .MinimumInvestmentPerStock = 10000,
+                            .TargetMultiplier = 2
                         }
 
-                    .NumberOfTradeableStockPerDay = 1
+                    .NumberOfTradeableStockPerDay = 15
 
                     .NumberOfTradesPerStockPerDay = 1
 
@@ -1497,8 +1558,8 @@ Public Class frmMain
                     .RealtimeTrailingPercentage = 50
                 End With
 
-                Dim ruleData As CRUDEOIL_EODStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                Dim filename As String = String.Format("CRUDEOIL EOD")
+                Dim ruleData As OutsideBollingerStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                Dim filename As String = String.Format("Outside Bollinger Output")
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using
