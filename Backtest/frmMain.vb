@@ -1537,7 +1537,7 @@ Public Class frmMain
                             .TargetMultiplier = 2
                         }
 
-                    .NumberOfTradeableStockPerDay = 15
+                    .NumberOfTradeableStockPerDay = Integer.MaxValue
 
                     .NumberOfTradesPerStockPerDay = 1
 
