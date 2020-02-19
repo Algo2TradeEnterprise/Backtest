@@ -1534,7 +1534,8 @@ Public Class frmMain
                     .RuleEntityData = New OutsideBollingerStrategyRule.StrategyRuleEntities With
                         {
                             .MinimumInvestmentPerStock = 10000,
-                            .TargetMultiplier = 2
+                            .TargetMultiplier = 2,
+                            .LastSignalTime = New Date(Now.Year, Now.Month, Now.Day, 9, 30, 0)
                         }
 
                     .NumberOfTradeableStockPerDay = Integer.MaxValue
