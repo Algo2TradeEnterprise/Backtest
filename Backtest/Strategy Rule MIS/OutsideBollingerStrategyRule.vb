@@ -66,7 +66,7 @@ Public Class OutsideBollingerStrategyRule
 
             If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
                 If _quantity = Integer.MinValue Then
-                    _quantity = _parentStrategy.CalculateQuantityFromInvestment(Me.LotSize, _userInputs.MinimumInvestmentPerStock, signalCandleSatisfied.Item2, _parentStrategy.StockType, True)
+                    _quantity = _parentStrategy.CalculateQuantityFromInvestment(1, _userInputs.MinimumInvestmentPerStock, signalCandleSatisfied.Item2, _parentStrategy.StockType, True)
                 End If
 
                 If signalCandleSatisfied.Item3 = Trade.TradeExecutionDirection.Buy Then
