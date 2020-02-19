@@ -918,6 +918,7 @@ Namespace StrategyHelper
 
         Public Function CalculateQuantityFromInvestment(ByVal lotSize As Integer, ByVal totalInvestment As Decimal, ByVal stockPrice As Decimal, ByVal typeOfStock As Trade.TypeOfStock, ByVal allowIncreaseCapital As Boolean) As Integer
             Dim quantity As Integer = lotSize
+            If typeOfStock = Trade.TypeOfStock.Cash Then quantity = 1
             Dim quantityMultiplier As Integer = 1
             If allowIncreaseCapital Then
                 quantityMultiplier = Math.Ceiling(totalInvestment / (quantity * stockPrice / Me.MarginMultiplier))

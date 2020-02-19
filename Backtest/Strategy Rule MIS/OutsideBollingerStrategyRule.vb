@@ -12,6 +12,7 @@ Public Class OutsideBollingerStrategyRule
 
         Public MinimumInvestmentPerStock As Decimal
         Public TargetMultiplier As Decimal
+        Public LastSignalTime As Date
     End Class
 #End Region
 
@@ -66,7 +67,7 @@ Public Class OutsideBollingerStrategyRule
 
             If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
                 If _quantity = Integer.MinValue Then
-                    _quantity = _parentStrategy.CalculateQuantityFromInvestment(1, _userInputs.MinimumInvestmentPerStock, signalCandleSatisfied.Item2, _parentStrategy.StockType, True)
+                    _quantity = _parentStrategy.CalculateQuantityFromInvestment(Me.LotSize, _userInputs.MinimumInvestmentPerStock, signalCandleSatisfied.Item2, _parentStrategy.StockType, True)
                 End If
 
                 If signalCandleSatisfied.Item3 = Trade.TradeExecutionDirection.Buy Then
@@ -144,29 +145,32 @@ Public Class OutsideBollingerStrategyRule
         Dim ret As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection) = Nothing
         If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing AndAlso
             Not candle.DeadCandle AndAlso Not candle.PreviousCandlePayload.DeadCandle Then
-            'If candle.Volume > candle.PreviousCandlePayload.Volume Then
-            '    Dim firstCandleOfTheDay As Payload = GetFirstCandleOfTheDay(candle.PayloadDate.Date)
-            '    If firstCandleOfTheDay IsNot Nothing Then
-            '        Dim firstCandleOfThePreviousDay As Payload = GetFirstCandleOfTheDay(firstCandleOfTheDay.PreviousCandlePayload.PayloadDate.Date)
-            '        If firstCandleOfThePreviousDay IsNot Nothing AndAlso firstCandleOfTheDay.Volume > firstCandleOfThePreviousDay.Volume Then
-            '            Dim previous20Payoads As List(Of KeyValuePair(Of Date, Payload)) = Common.GetSubPayload(_signalPayload, candle.PayloadDate, 20, False)
-            '            If previous20Payoads IsNot Nothing AndAlso previous20Payoads.Count > 0 Then
-            '                Dim maxVolume As Long = previous20Payoads.Max(Function(x)
-            '                                                                  Return x.Value.Volume
-            '                                                              End Function)
-            '                If candle.Volume > maxVolume Then
-            If candle.Low > _upperBollingerPayloads(candle.PayloadDate) AndAlso
+            If candle.PayloadDate <= New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day,
+                                              _userInputs.LastSignalTime.Hour, _userInputs.LastSignalTime.Minute, _userInputs.LastSignalTime.Second) Then
+                'If candle.Volume > candle.PreviousCandlePayload.Volume Then
+                '    Dim firstCandleOfTheDay As Payload = GetFirstCandleOfTheDay(candle.PayloadDate.Date)
+                '    If firstCandleOfTheDay IsNot Nothing Then
+                '        Dim firstCandleOfThePreviousDay As Payload = GetFirstCandleOfTheDay(firstCandleOfTheDay.PreviousCandlePayload.PayloadDate.Date)
+                '        If firstCandleOfThePreviousDay IsNot Nothing AndAlso firstCandleOfTheDay.Volume > firstCandleOfThePreviousDay.Volume Then
+                '            Dim previous20Payoads As List(Of KeyValuePair(Of Date, Payload)) = Common.GetSubPayload(_signalPayload, candle.PayloadDate, 20, False)
+                '            If previous20Payoads IsNot Nothing AndAlso previous20Payoads.Count > 0 Then
+                '                Dim maxVolume As Long = previous20Payoads.Max(Function(x)
+                '                                                                  Return x.Value.Volume
+                '                                                              End Function)
+                '                If candle.Volume > maxVolume Then
+                If candle.Low > _upperBollingerPayloads(candle.PayloadDate) AndAlso
                                     candle.PreviousCandlePayload.Low > _upperBollingerPayloads(candle.PreviousCandlePayload.PayloadDate) Then
-                _lastSignalCandle = candle
-            ElseIf candle.High < _lowerBollingerPayloads(candle.PayloadDate) AndAlso
+                    _lastSignalCandle = candle
+                ElseIf candle.High < _lowerBollingerPayloads(candle.PayloadDate) AndAlso
                 candle.PreviousCandlePayload.High < _lowerBollingerPayloads(candle.PreviousCandlePayload.PayloadDate) Then
-                _lastSignalCandle = candle
+                    _lastSignalCandle = candle
+                End If
+                '                End If
+                '            End If
+                '        End If
+                '    End If
+                'End If
             End If
-            '                End If
-            '            End If
-            '        End If
-            '    End If
-            'End If
 
             If _lastSignalCandle IsNot Nothing Then
                 Dim buyPrice As Decimal = _lastSignalCandle.High
