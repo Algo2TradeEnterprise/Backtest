@@ -115,6 +115,7 @@
     <Compile Include="Strategy Helper\StrategyRule.vb" />
     <Compile Include="Strategy Helper\Trade.vb" />
     <Compile Include="Strategy Rule CNC\ATRPositionalStrategyRule.vb" />
+    <Compile Include="Strategy Rule CNC\AveragePriceDropContinuesStrategyRule.vb" />
     <Compile Include="Strategy Rule CNC\HighestPriceDropContinuesPositionalStrategyRule.vb" />
     <Compile Include="Strategy Rule CNC\HKPositionalHourlyStrategyRule1.vb" />
     <Compile Include="Strategy Rule CNC\HKPositionalStrategyRule.vb" />
