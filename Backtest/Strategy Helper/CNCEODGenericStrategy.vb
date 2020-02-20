@@ -172,6 +172,8 @@ Namespace StrategyHelper
                                             stockRule = New PriceDropContinuesPositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 43
                                             stockRule = New HighestPriceDropContinuesPositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
+                                        Case 46
+                                            stockRule = New AveragePriceDropContinuesStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -530,7 +532,7 @@ Namespace StrategyHelper
                                     ret(stock).Supporting2 = _highestInvestment
                                 Next
                             End If
-                        Case 43
+                        Case 43, 46
                             For i = 1 To dt.Rows.Count - 1
                                 Dim rowDate As Date = dt.Rows(i)(0)
                                 'If rowDate.Date = tradingDate.Date Then

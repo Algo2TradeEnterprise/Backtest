@@ -22,6 +22,7 @@ Public Class AveragePriceDropContinuesStrategyRule
 #End Region
 
     Private ReadOnly _userInputs As StrategyRuleEntities
+    Private ReadOnly _highestPrice As Decimal
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -33,6 +34,7 @@ Public Class AveragePriceDropContinuesStrategyRule
                    ByVal highestPrice As Decimal)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _userInputs = entities
+        _highestPrice = highestPrice
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -48,9 +50,10 @@ Public Class AveragePriceDropContinuesStrategyRule
         Dim parameters As List(Of PlaceOrderParameters) = Nothing
         If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
             Not _parentStrategy.IsTradeOpen(currentTick, _parentStrategy.TradeType) Then
-            For i = 1 To 50
+            Dim currentDayPayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
+            For runningTick As Decimal = currentDayPayload.Open To currentDayPayload.Low Step _parentStrategy.TickSize
                 Dim signalCandle As Payload = Nothing
-                Dim signal As Tuple(Of Boolean, Decimal, Integer, Payload, Integer) = GetSignalForDrop(currentTick)
+                Dim signal As Tuple(Of Boolean, Decimal, Integer, Payload, Integer) = GetSignalForDrop(currentTick, runningTick)
                 If signal IsNot Nothing AndAlso signal.Item1 Then
                     signalCandle = signal.Item4
                     Dim quantity As Integer = signal.Item3
@@ -85,7 +88,8 @@ Public Class AveragePriceDropContinuesStrategyRule
                                                                 .SignalCandle = signalCandle,
                                                                 .OrderType = Trade.TypeOfOrder.Market,
                                                                 .Supporting1 = ConvertFloorCeling(averageTradePrice, Me._parentStrategy.TickSize, RoundOfType.Floor),
-                                                                .Supporting2 = signal.Item5
+                                                                .Supporting2 = signal.Item5,
+                                                                .Supporting3 = _highestPrice
                                                             }
 
                         If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
@@ -122,23 +126,40 @@ Public Class AveragePriceDropContinuesStrategyRule
         Return ret
     End Function
 
-    Private Function GetSignalForDrop(ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Integer, Payload, Integer)
+    Private Function GetSignalForDrop(ByVal currentTick As Payload, ByVal runningTick As Decimal) As Tuple(Of Boolean, Decimal, Integer, Payload, Integer)
         Dim ret As Tuple(Of Boolean, Decimal, Integer, Payload, Integer) = Nothing
         Dim currentDayPayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
         Dim initialQuantity As Integer = 1
         Dim lastTrade As Trade = GetLastOrder(currentDayPayload)
         If lastTrade IsNot Nothing Then
-            'Dim lowChange As Decimal = ((currentDayPayload.Low / _highestPrice) - 1) * 100
-            'If lowChange <= drpPer * -1 Then
-            '    Dim potentialEntry As Decimal = ConvertFloorCeling(_highestPrice * (100 - drpPer) / 100, _parentStrategy.TickSize, RoundOfType.Floor)
-            '    If potentialEntry <= currentDayPayload.Open Then
-            '        ret = New Tuple(Of Boolean, Decimal, Payload)(True, potentialEntry, currentDayPayload)
-            '    End If
-            'End If
+            Dim averagePrice As Decimal = lastTrade.Supporting1
+            Dim changePer As Decimal = ((runningTick / averagePrice) - 1) * 100
+            If changePer <= Math.Abs(_userInputs.BuyAtEveryPriceDropPercentage) * -1 Then
+                Dim potentialEntry As Decimal = ConvertFloorCeling(averagePrice * (100 - Math.Floor(Math.Abs(changePer))) / 100, _parentStrategy.TickSize, RoundOfType.Floor)
+                If CInt(lastTrade.Supporting2) = 0 Then
+                    ret = New Tuple(Of Boolean, Decimal, Integer, Payload, Integer)(True, potentialEntry, initialQuantity, currentDayPayload, Math.Floor(Math.Abs(changePer)))
+                Else
+                    Dim quantity As Integer = initialQuantity
+                    Select Case _userInputs.QuantityType
+                        Case TypeOfQuantity.AP
+                            quantity = lastTrade.Quantity + initialQuantity
+                        Case TypeOfQuantity.GP
+                            quantity = lastTrade.Quantity * 2
+                        Case TypeOfQuantity.Linear
+                            quantity = initialQuantity
+                    End Select
+                    ret = New Tuple(Of Boolean, Decimal, Integer, Payload, Integer)(True, potentialEntry, quantity, currentDayPayload, Math.Floor(Math.Abs(changePer)))
+                End If
+            ElseIf runningTick > averagePrice Then
+                Dim drpPer As Decimal = ((runningTick / _highestPrice) - 1) * 100
+                If drpPer <= Math.Abs(_userInputs.BuyAtEveryPriceDropPercentage) * -1 Then
+                    Dim potentialEntry As Decimal = ConvertFloorCeling(_highestPrice * (100 - Math.Floor(Math.Abs(drpPer))) / 100, _parentStrategy.TickSize, RoundOfType.Floor)
+                    ret = New Tuple(Of Boolean, Decimal, Integer, Payload, Integer)(True, potentialEntry, initialQuantity, currentDayPayload, Math.Floor(Math.Abs(changePer)))
+                End If
+            End If
         Else
             ret = New Tuple(Of Boolean, Decimal, Integer, Payload, Integer)(True, currentDayPayload.Open, initialQuantity, currentDayPayload, 0)
         End If
-
         Return ret
     End Function
 
