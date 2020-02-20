@@ -1593,11 +1593,10 @@ Public Class frmMain
                     .TrailingStoploss = False
                     .TickBasedStrategy = True
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
-                    .RuleEntityData = New OutsideBollingerStrategyRule.StrategyRuleEntities With
+                    .RuleEntityData = New FavourableFractalBreakoutStrategyRule2.StrategyRuleEntities With
                         {
-                            .MinimumInvestmentPerStock = 10000,
-                            .TargetMultiplier = 2,
-                            .LastSignalTime = New Date(Now.Year, Now.Month, Now.Day, 9, 30, 0)
+                            .MaxLossPercentagePerTrade = 0.3,
+                            .MaxProfitPercentagePerTrade = 0.35
                         }
 
                     .NumberOfTradeableStockPerDay = Integer.MaxValue
@@ -1621,8 +1620,8 @@ Public Class frmMain
                     .RealtimeTrailingPercentage = 50
                 End With
 
-                Dim ruleData As OutsideBollingerStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                Dim filename As String = String.Format("Outside Bollinger Output")
+                Dim ruleData As FavourableFractalBreakoutStrategyRule2.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                Dim filename As String = String.Format("Favourable Fractal Breakout Output")
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using
