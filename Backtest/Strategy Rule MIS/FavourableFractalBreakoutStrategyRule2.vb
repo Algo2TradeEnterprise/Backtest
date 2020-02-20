@@ -151,6 +151,25 @@ Public Class FavourableFractalBreakoutStrategyRule2
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(ByVal currentTick As Payload, ByVal currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
+        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            Dim currentOneMinuteCandlePayload As Payload = _inputPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
+            Dim entryOneMinuteCandlePayload As Payload = _inputPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTrade.EntryTime, _signalPayload))
+            If entryOneMinuteCandlePayload.PayloadDate = currentOneMinuteCandlePayload.PreviousCandlePayload.PreviousCandlePayload.PayloadDate Then
+                Dim triggerPrice As Decimal = Decimal.MinValue
+                If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy AndAlso
+                    currentOneMinuteCandlePayload.PreviousCandlePayload.Low < currentTrade.EntryPrice Then
+                    triggerPrice = currentOneMinuteCandlePayload.PreviousCandlePayload.Low - currentTrade.EntryBuffer
+                ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell AndAlso
+                    currentOneMinuteCandlePayload.PreviousCandlePayload.High > currentTrade.EntryPrice Then
+                    triggerPrice = currentOneMinuteCandlePayload.PreviousCandlePayload.High + currentTrade.EntryBuffer
+                End If
+                If triggerPrice <> Decimal.MinValue AndAlso currentTrade.PotentialStopLoss <> triggerPrice Then
+                    ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, String.Format("SL moved at:{0}, Time:{1}",
+                                                                                                   triggerPrice,
+                                                                                                   currentTick.PayloadDate.ToString("HH:mm:ss")))
+                End If
+            End If
+        End If
         Return ret
     End Function
 
