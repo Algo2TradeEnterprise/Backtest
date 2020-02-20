@@ -132,6 +132,7 @@
     <Compile Include="Strategy Rule MIS\CRUDEOIL_EODStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\DoubleTopDoubleBottomStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\FavourableFractalBreakoutStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\FavourableFractalBreakoutStrategyRule2.vb" />
     <Compile Include="Strategy Rule MIS\FixedLevelBasedStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\BANKNIFTYDayLongSMIStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\DayStartSMIStrategyRule.vb" />
