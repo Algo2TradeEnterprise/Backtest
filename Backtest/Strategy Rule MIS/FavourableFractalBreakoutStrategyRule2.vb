@@ -152,8 +152,8 @@ Public Class FavourableFractalBreakoutStrategyRule2
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-            Dim currentOneMinuteCandlePayload As Payload = _inputPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
-            Dim entryOneMinuteCandlePayload As Payload = _inputPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTrade.EntryTime, _signalPayload))
+            Dim currentOneMinuteCandlePayload As Payload = _inputPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _inputPayload))
+            Dim entryOneMinuteCandlePayload As Payload = _inputPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTrade.EntryTime, _inputPayload))
             If entryOneMinuteCandlePayload.PayloadDate = currentOneMinuteCandlePayload.PreviousCandlePayload.PreviousCandlePayload.PayloadDate Then
                 Dim triggerPrice As Decimal = Decimal.MinValue
                 If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy AndAlso
