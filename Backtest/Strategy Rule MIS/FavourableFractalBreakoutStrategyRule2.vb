@@ -62,7 +62,8 @@ Public Class FavourableFractalBreakoutStrategyRule2
             Dim signal As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
             If signal IsNot Nothing AndAlso signal.Item1 Then
                 Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandlePayload, _parentStrategy.TradeType)
-                If Not (lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.SignalCandle.PayloadDate = signal.Item4.PayloadDate) Then
+                If Not (lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.SignalCandle.PayloadDate = signal.Item4.PayloadDate AndAlso
+                    lastExecutedOrder.EntryDirection = signal.Item3) Then
                     signalCandle = signal.Item4
                 End If
             End If
