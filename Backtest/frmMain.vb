@@ -272,7 +272,7 @@ Public Class frmMain
             Else
                 sourceData = Strategy.SourceOfData.Database
             End If
-            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
+            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Futures
             Dim database As Common.DataBaseTable = Common.DataBaseTable.None
             Dim margin As Decimal = 0
             Dim tick As Decimal = 0
@@ -1601,7 +1601,7 @@ Public Class frmMain
 
                     .NumberOfTradeableStockPerDay = Integer.MaxValue
 
-                    .NumberOfTradesPerStockPerDay = 1
+                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
                     .StockMaxProfitPercentagePerDay = Decimal.MaxValue
                     .StockMaxLossPercentagePerDay = Decimal.MinValue
