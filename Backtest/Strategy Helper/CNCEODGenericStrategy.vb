@@ -297,9 +297,13 @@ Namespace StrategyHelper
                                     'Place Order
                                     _canceller.Token.ThrowIfCancellationRequested()
                                     Dim stkPlAftrBrkrg As Decimal = Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol)
+                                    Console.WriteLine(String.Format("6_-2:{0}", sw1.ElapsedMilliseconds))
                                     Dim totlPlAftrBrkrg As Decimal = Me.TotalPLAfterBrokerage(runningTick.PayloadDate)
+                                    Console.WriteLine(String.Format("6_-1:{0}", sw1.ElapsedMilliseconds))
+                                    Dim stkNmbrTrd As Integer = Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol)
+                                    Console.WriteLine(String.Format("6_0:{0}", sw1.ElapsedMilliseconds))
                                     Dim placeOrderDetails As Tuple(Of Boolean, List(Of PlaceOrderParameters)) = Nothing
-                                    If Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.NumberOfTradesPerStockPerDay AndAlso
+                                    If stkNmbrTrd < Me.NumberOfTradesPerStockPerDay AndAlso
                                     totlPlAftrBrkrg < Me.OverAllProfitPerDay AndAlso
                                     totlPlAftrBrkrg > Math.Abs(Me.OverAllLossPerDay) * -1 AndAlso
                                     stkPlAftrBrkrg < Me.StockMaxProfitPerDay AndAlso
