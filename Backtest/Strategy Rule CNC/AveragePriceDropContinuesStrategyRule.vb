@@ -51,7 +51,7 @@ Public Class AveragePriceDropContinuesStrategyRule
         If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
             Not _parentStrategy.IsTradeOpen(currentTick, _parentStrategy.TradeType) Then
             Dim currentDayPayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
-            For runningTick As Decimal = currentDayPayload.Open To currentDayPayload.Low Step _parentStrategy.TickSize
+            For runningTick As Decimal = currentDayPayload.Open To currentDayPayload.Low Step _parentStrategy.TickSize * -1
                 Dim signalCandle As Payload = Nothing
                 Dim signal As Tuple(Of Boolean, Decimal, Integer, Payload, Integer) = GetSignalForDrop(currentTick, runningTick)
                 If signal IsNot Nothing AndAlso signal.Item1 Then
