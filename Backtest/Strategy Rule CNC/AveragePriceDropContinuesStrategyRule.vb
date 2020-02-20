@@ -69,12 +69,23 @@ Public Class AveragePriceDropContinuesStrategyRule
                                 End If
                             Next
                         End If
+                        If parameters IsNot Nothing AndAlso parameters.Count > 0 Then
+                            For Each runningParameter In parameters
+                                totalCapitalUsedWithoutMargin += runningParameter.EntryPrice * runningParameter.Quantity
+                                totalQuantity += runningParameter.Quantity
+                            Next
+                        End If
                         totalCapitalUsedWithoutMargin += signal.Item2 * quantity
                         totalQuantity += quantity
                         Dim averageTradePrice As Decimal = totalCapitalUsedWithoutMargin / totalQuantity
                         If openActiveTrades IsNot Nothing AndAlso openActiveTrades.Count > 0 Then
                             For Each runningTrade In openActiveTrades
                                 runningTrade.UpdateTrade(Supporting1:=ConvertFloorCeling(averageTradePrice, Me._parentStrategy.TickSize, RoundOfType.Floor))
+                            Next
+                        End If
+                        If parameters IsNot Nothing AndAlso parameters.Count > 0 Then
+                            For Each runningParameter In parameters
+                                runningParameter.Supporting1 = ConvertFloorCeling(averageTradePrice, Me._parentStrategy.TickSize, RoundOfType.Floor)
                             Next
                         End If
 
