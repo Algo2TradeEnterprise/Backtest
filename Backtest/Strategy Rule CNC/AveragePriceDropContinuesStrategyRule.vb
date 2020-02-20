@@ -144,7 +144,7 @@ Public Class AveragePriceDropContinuesStrategyRule
         Dim ret As Tuple(Of Boolean, Decimal, Integer, Payload, Integer) = Nothing
         Dim currentDayPayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
         Dim initialQuantity As Integer = 1
-        Dim lastOrderDetails As Tuple(Of Decimal, Integer, Integer) = GetLastOrderDetails(currentDayPayload)
+        Dim lastOrderDetails As Tuple(Of Decimal, Integer, Integer, Decimal) = GetLastOrderDetails(currentDayPayload)
         If lastOrderDetails IsNot Nothing Then
             Dim averagePrice As Decimal = lastOrderDetails.Item1
             Dim changePer As Decimal = ((runningTick / averagePrice) - 1) * 100
@@ -173,7 +173,9 @@ Public Class AveragePriceDropContinuesStrategyRule
                 If drpPer <= Math.Abs(_userInputs.BuyAtEveryPriceDropPercentage) * -1 Then
                     Dim potentialEntry As Decimal = ConvertFloorCeling(_highestPrice * (100 - Math.Floor(Math.Abs(drpPer))) / 100, _parentStrategy.TickSize, RoundOfType.Floor)
                     If potentialEntry <= currentDayPayload.Open Then
-                        ret = New Tuple(Of Boolean, Decimal, Integer, Payload, Integer)(True, potentialEntry, initialQuantity, currentDayPayload, 0)
+                        If lastOrderDetails.Item4 <> potentialEntry Then
+                            ret = New Tuple(Of Boolean, Decimal, Integer, Payload, Integer)(True, potentialEntry, initialQuantity, currentDayPayload, 0)
+                        End If
                     End If
                 End If
             End If
@@ -196,14 +198,14 @@ Public Class AveragePriceDropContinuesStrategyRule
         Return ret
     End Function
 
-    Private Function GetLastOrderDetails(ByVal currentPayload As Payload) As Tuple(Of Decimal, Integer, Integer)
-        Dim ret As Tuple(Of Decimal, Integer, Integer) = Nothing
+    Private Function GetLastOrderDetails(ByVal currentPayload As Payload) As Tuple(Of Decimal, Integer, Integer, Decimal)
+        Dim ret As Tuple(Of Decimal, Integer, Integer, Decimal) = Nothing
         If _lastParameter IsNot Nothing Then
-            ret = New Tuple(Of Decimal, Integer, Integer)(CDec(_lastParameter.Supporting1), CInt(_lastParameter.Supporting2), _lastParameter.Quantity)
+            ret = New Tuple(Of Decimal, Integer, Integer, Decimal)(CDec(_lastParameter.Supporting1), CInt(_lastParameter.Supporting2), _lastParameter.Quantity, _lastParameter.EntryPrice)
         Else
             Dim lastTrade As Trade = GetLastOrder(currentPayload)
             If lastTrade IsNot Nothing Then
-                ret = New Tuple(Of Decimal, Integer, Integer)(CDec(lastTrade.Supporting1), CInt(lastTrade.Supporting2), lastTrade.Quantity)
+                ret = New Tuple(Of Decimal, Integer, Integer, Decimal)(CDec(lastTrade.Supporting1), CInt(lastTrade.Supporting2), lastTrade.Quantity, lastTrade.EntryPrice)
             End If
         End If
         Return ret
