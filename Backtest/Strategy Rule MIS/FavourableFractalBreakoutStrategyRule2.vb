@@ -154,7 +154,7 @@ Public Class FavourableFractalBreakoutStrategyRule2
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
             Dim currentOneMinuteCandlePayload As Payload = _inputPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _inputPayload))
             Dim entryOneMinuteCandlePayload As Payload = _inputPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTrade.EntryTime, _inputPayload))
-            If entryOneMinuteCandlePayload.PayloadDate = currentOneMinuteCandlePayload.PreviousCandlePayload.PreviousCandlePayload.PayloadDate Then
+            If entryOneMinuteCandlePayload.PayloadDate <= currentOneMinuteCandlePayload.PreviousCandlePayload.PreviousCandlePayload.PayloadDate Then
                 Dim triggerPrice As Decimal = Decimal.MinValue
                 If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy AndAlso
                     currentOneMinuteCandlePayload.PreviousCandlePayload.Low < currentTrade.EntryPrice Then
