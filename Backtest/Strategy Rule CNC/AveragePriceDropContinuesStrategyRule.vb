@@ -151,7 +151,9 @@ Public Class AveragePriceDropContinuesStrategyRule
             If changePer <= Math.Abs(_userInputs.BuyAtEveryPriceDropPercentage) * -1 Then
                 Dim potentialEntry As Decimal = ConvertFloorCeling(averagePrice * (100 - Math.Floor(Math.Abs(changePer))) / 100, _parentStrategy.TickSize, RoundOfType.Floor)
                 If lastOrderDetails.Item2 = 0 Then
-                    ret = New Tuple(Of Boolean, Decimal, Integer, Payload, Integer)(True, potentialEntry, initialQuantity, currentDayPayload, Math.Floor(Math.Abs(changePer)))
+                    If potentialEntry <= currentDayPayload.Open Then
+                        ret = New Tuple(Of Boolean, Decimal, Integer, Payload, Integer)(True, potentialEntry, initialQuantity, currentDayPayload, Math.Floor(Math.Abs(changePer)))
+                    End If
                 Else
                     Dim quantity As Integer = initialQuantity
                     Select Case _userInputs.QuantityType
