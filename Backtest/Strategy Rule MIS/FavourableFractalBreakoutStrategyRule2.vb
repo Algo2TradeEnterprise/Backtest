@@ -182,7 +182,7 @@ Public Class FavourableFractalBreakoutStrategyRule2
                 Dim range As Decimal = (buyPrice - middle) * 40 / 100
                 If currentTick.Open > middle + range Then
                     ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, _fractalHighPayload(_higherSignalCandle.PayloadDate), Trade.TradeExecutionDirection.Buy, _higherSignalCandle)
-                ElseIf currentTick.Open > middle + range Then
+                ElseIf currentTick.Open < middle - range Then
                     ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, _fractalLowPayload(_lowerSignalCandle.PayloadDate), Trade.TradeExecutionDirection.Sell, _lowerSignalCandle)
                 End If
             ElseIf _higherSignalCandle IsNot Nothing Then
