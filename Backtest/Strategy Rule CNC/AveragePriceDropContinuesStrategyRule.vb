@@ -162,13 +162,17 @@ Public Class AveragePriceDropContinuesStrategyRule
                         Case TypeOfQuantity.Linear
                             quantity = initialQuantity
                     End Select
-                    ret = New Tuple(Of Boolean, Decimal, Integer, Payload, Integer)(True, potentialEntry, quantity, currentDayPayload, Math.Floor(Math.Abs(changePer)))
+                    If potentialEntry <= currentDayPayload.Open Then
+                        ret = New Tuple(Of Boolean, Decimal, Integer, Payload, Integer)(True, potentialEntry, quantity, currentDayPayload, Math.Floor(Math.Abs(changePer)))
+                    End If
                 End If
             ElseIf runningTick > averagePrice Then
                 Dim drpPer As Decimal = ((runningTick / _highestPrice) - 1) * 100
                 If drpPer <= Math.Abs(_userInputs.BuyAtEveryPriceDropPercentage) * -1 Then
                     Dim potentialEntry As Decimal = ConvertFloorCeling(_highestPrice * (100 - Math.Floor(Math.Abs(drpPer))) / 100, _parentStrategy.TickSize, RoundOfType.Floor)
-                    ret = New Tuple(Of Boolean, Decimal, Integer, Payload, Integer)(True, potentialEntry, initialQuantity, currentDayPayload, 0)
+                    If potentialEntry <= currentDayPayload.Open Then
+                        ret = New Tuple(Of Boolean, Decimal, Integer, Payload, Integer)(True, potentialEntry, initialQuantity, currentDayPayload, 0)
+                    End If
                 End If
             End If
         Else
