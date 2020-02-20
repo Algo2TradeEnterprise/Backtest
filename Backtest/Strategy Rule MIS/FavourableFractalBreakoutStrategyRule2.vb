@@ -137,7 +137,8 @@ Public Class FavourableFractalBreakoutStrategyRule2
                 End If
                 If ret Is Nothing Then
                     Dim signal As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
-                    If signal IsNot Nothing AndAlso signal.Item1 AndAlso signal.Item3 <> currentTrade.EntryDirection Then
+                    If signal IsNot Nothing AndAlso signal.Item1 AndAlso
+                        (signal.Item3 <> currentTrade.EntryDirection OrElse signalCandle.PayloadDate <> signal.Item4.PayloadDate) Then
                         ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                     End If
                 End If
@@ -183,16 +184,20 @@ Public Class FavourableFractalBreakoutStrategyRule2
                 Dim buyPrice As Decimal = _fractalHighPayload(_higherSignalCandle.PayloadDate)
                 Dim sellPrice As Decimal = _fractalLowPayload(_lowerSignalCandle.PayloadDate)
                 Dim middle As Decimal = (buyPrice + sellPrice) / 2
-                Dim range As Decimal = (buyPrice - middle) * 40 / 100
+                Dim range As Decimal = (buyPrice - middle) * 90 / 100
                 If currentTick.Open > middle + range Then
                     ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, _fractalHighPayload(_higherSignalCandle.PayloadDate), Trade.TradeExecutionDirection.Buy, _higherSignalCandle)
                 ElseIf currentTick.Open < middle - range Then
                     ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, _fractalLowPayload(_lowerSignalCandle.PayloadDate), Trade.TradeExecutionDirection.Sell, _lowerSignalCandle)
                 End If
             ElseIf _higherSignalCandle IsNot Nothing Then
-                ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, _fractalHighPayload(_higherSignalCandle.PayloadDate), Trade.TradeExecutionDirection.Buy, _higherSignalCandle)
+                If currentTick.Open > _fractalHighPayload(_higherSignalCandle.PayloadDate) * 0.98 Then
+                    ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, _fractalHighPayload(_higherSignalCandle.PayloadDate), Trade.TradeExecutionDirection.Buy, _higherSignalCandle)
+                End If
             ElseIf _lowerSignalCandle IsNot Nothing Then
-                ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, _fractalLowPayload(_lowerSignalCandle.PayloadDate), Trade.TradeExecutionDirection.Sell, _lowerSignalCandle)
+                If currentTick.Open < _fractalLowPayload(_lowerSignalCandle.PayloadDate) * 1.02 Then
+                    ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, _fractalLowPayload(_lowerSignalCandle.PayloadDate), Trade.TradeExecutionDirection.Sell, _lowerSignalCandle)
+                End If
             End If
         End If
         Return ret
