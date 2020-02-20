@@ -24,6 +24,8 @@ Public Class AveragePriceDropContinuesStrategyRule
     Private ReadOnly _userInputs As StrategyRuleEntities
     Private ReadOnly _highestPrice As Decimal
 
+    Private _lastParameter As PlaceOrderParameters
+
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
                    ByVal parentStrategy As Strategy,
@@ -105,6 +107,7 @@ Public Class AveragePriceDropContinuesStrategyRule
 
                         If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
                         parameters.Add(parameter)
+                        _lastParameter = parameter
                     End If
                 End If
             Next
@@ -141,21 +144,21 @@ Public Class AveragePriceDropContinuesStrategyRule
         Dim ret As Tuple(Of Boolean, Decimal, Integer, Payload, Integer) = Nothing
         Dim currentDayPayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
         Dim initialQuantity As Integer = 1
-        Dim lastTrade As Trade = GetLastOrder(currentDayPayload)
-        If lastTrade IsNot Nothing Then
-            Dim averagePrice As Decimal = lastTrade.Supporting1
+        Dim lastOrderDetails As Tuple(Of Decimal, Integer, Integer) = GetLastOrderDetails(currentDayPayload)
+        If lastOrderDetails IsNot Nothing Then
+            Dim averagePrice As Decimal = lastOrderDetails.Item1
             Dim changePer As Decimal = ((runningTick / averagePrice) - 1) * 100
             If changePer <= Math.Abs(_userInputs.BuyAtEveryPriceDropPercentage) * -1 Then
                 Dim potentialEntry As Decimal = ConvertFloorCeling(averagePrice * (100 - Math.Floor(Math.Abs(changePer))) / 100, _parentStrategy.TickSize, RoundOfType.Floor)
-                If CInt(lastTrade.Supporting2) = 0 Then
+                If lastOrderDetails.Item2 = 0 Then
                     ret = New Tuple(Of Boolean, Decimal, Integer, Payload, Integer)(True, potentialEntry, initialQuantity, currentDayPayload, Math.Floor(Math.Abs(changePer)))
                 Else
                     Dim quantity As Integer = initialQuantity
                     Select Case _userInputs.QuantityType
                         Case TypeOfQuantity.AP
-                            quantity = lastTrade.Quantity + initialQuantity
+                            quantity = lastOrderDetails.Item3 + initialQuantity
                         Case TypeOfQuantity.GP
-                            quantity = lastTrade.Quantity * 2
+                            quantity = lastOrderDetails.Item3 * 2
                         Case TypeOfQuantity.Linear
                             quantity = initialQuantity
                     End Select
@@ -182,6 +185,19 @@ Public Class AveragePriceDropContinuesStrategyRule
             If lastEntryOrder IsNot Nothing Then ret = lastEntryOrder
             If lastClosedOrder IsNot Nothing AndAlso lastClosedOrder.ExitTime >= lastEntryOrder.EntryTime Then
                 ret = lastClosedOrder
+            End If
+        End If
+        Return ret
+    End Function
+
+    Private Function GetLastOrderDetails(ByVal currentPayload As Payload) As Tuple(Of Decimal, Integer, Integer)
+        Dim ret As Tuple(Of Decimal, Integer, Integer) = Nothing
+        If _lastParameter IsNot Nothing Then
+            ret = New Tuple(Of Decimal, Integer, Integer)(CDec(_lastParameter.Supporting1), CInt(_lastParameter.Supporting2), _lastParameter.Quantity)
+        Else
+            Dim lastTrade As Trade = GetLastOrder(currentPayload)
+            If lastTrade IsNot Nothing Then
+                ret = New Tuple(Of Decimal, Integer, Integer)(CDec(lastTrade.Supporting1), CInt(lastTrade.Supporting2), lastTrade.Quantity)
             End If
         End If
         Return ret
