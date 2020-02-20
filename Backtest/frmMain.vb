@@ -1596,7 +1596,7 @@ Public Class frmMain
                     .RuleEntityData = New FavourableFractalBreakoutStrategyRule2.StrategyRuleEntities With
                         {
                             .MaxLossPercentagePerTrade = 0.3,
-                            .MaxProfitPercentagePerTrade = 0.35
+                            .MaxProfitPercentagePerTrade = 0.5
                         }
 
                     .NumberOfTradeableStockPerDay = Integer.MaxValue
