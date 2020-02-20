@@ -161,10 +161,10 @@ Public Class FavourableFractalBreakoutStrategyRule2
     Private Function GetSignalCandle(ByVal candle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)
         Dim ret As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload) = Nothing
         If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then
-            If _fractalHighPayload(candle.PayloadDate) <> _fractalHighPayload(_higherSignalCandle.PayloadDate) Then
+            If _higherSignalCandle IsNot Nothing AndAlso _fractalHighPayload(candle.PayloadDate) <> _fractalHighPayload(_higherSignalCandle.PayloadDate) Then
                 _higherSignalCandle = Nothing
             End If
-            If _fractalLowPayload(candle.PayloadDate) <> _fractalLowPayload(_lowerSignalCandle.PayloadDate) Then
+            If _lowerSignalCandle IsNot Nothing AndAlso _fractalLowPayload(candle.PayloadDate) <> _fractalLowPayload(_lowerSignalCandle.PayloadDate) Then
                 _lowerSignalCandle = Nothing
             End If
 
