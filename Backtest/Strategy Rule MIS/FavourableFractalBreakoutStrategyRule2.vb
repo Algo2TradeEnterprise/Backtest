@@ -116,6 +116,10 @@ Public Class FavourableFractalBreakoutStrategyRule2
             Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
             Dim signalCandle As Payload = currentTrade.SignalCandle
             If signalCandle IsNot Nothing Then
+                Dim lastEntryTime As Date = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, _parentStrategy.LastTradeEntryTime.Hours, _parentStrategy.LastTradeEntryTime.Minutes, _parentStrategy.LastTradeEntryTime.Seconds)
+                If currentTick.PayloadDate > lastEntryTime Then
+                    ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                End If
                 If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                     Dim currentFractal As Decimal = _fractalHighPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate)
                     Dim signalFractal As Decimal = _fractalHighPayload(signalCandle.PayloadDate)
