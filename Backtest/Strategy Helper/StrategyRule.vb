@@ -45,7 +45,8 @@ Namespace StrategyHelper
         Protected ReadOnly _inputPayload As Dictionary(Of Date, Payload)
         Protected ReadOnly _cts As CancellationTokenSource
         Protected ReadOnly _entities As RuleEntities
-        Protected ReadOnly _anotherPairInstrument As StrategyRule
+
+        Public AnotherPairInstrument As StrategyRule
 
         Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                        ByVal lotSize As Integer,
@@ -53,7 +54,6 @@ Namespace StrategyHelper
                        ByVal tradingDate As Date,
                        ByVal tradingSymbol As String,
                        ByVal entities As RuleEntities,
-                       ByVal anotherPairInstrument As StrategyRule,
                        ByVal canceller As CancellationTokenSource)
             _inputPayload = inputPayload
             Me.LotSize = lotSize
@@ -62,7 +62,6 @@ Namespace StrategyHelper
             _tradingSymbol = tradingSymbol
             _cts = canceller
             _entities = entities
-            _anotherPairInstrument = anotherPairInstrument
 
             EligibleToTakeTrade = True
         End Sub

@@ -13,10 +13,9 @@ Public Class PairStrategyRule
                    ByVal tradingDate As Date,
                    ByVal tradingSymbol As String,
                    ByVal entities As RuleEntities,
-                   ByVal anotherPairInstrument As StrategyRule,
                    ByVal canceller As CancellationTokenSource,
                    ByVal direction As Integer)
-        MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, entities, anotherPairInstrument, canceller)
+        MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, entities, canceller)
         If direction > 1 Then
             _direction = Trade.TradeExecutionDirection.Buy
         Else
@@ -58,7 +57,7 @@ Public Class PairStrategyRule
             End If
 
             ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
-            _anotherPairInstrument.ForceTakeTrade = False
+            Me.ForceTakeTrade = False
         Else
             Dim tradeStartTime As Date = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, _parentStrategy.TradeStartTime.Hours, _parentStrategy.TradeStartTime.Minutes, _parentStrategy.TradeStartTime.Seconds)
             Dim parameter As PlaceOrderParameters = Nothing
@@ -110,7 +109,7 @@ Public Class PairStrategyRule
             End If
             If parameter IsNot Nothing Then
                 ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
-                _anotherPairInstrument.ForceTakeTrade = True
+                Me.AnotherPairInstrument.ForceTakeTrade = True
             End If
         End If
         Return ret
