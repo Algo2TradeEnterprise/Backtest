@@ -16,7 +16,7 @@ Public Class PairStrategyRule
                    ByVal canceller As CancellationTokenSource,
                    ByVal direction As Integer)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, entities, canceller)
-        If direction > 1 Then
+        If direction > 0 Then
             _direction = Trade.TradeExecutionDirection.Buy
         Else
             _direction = Trade.TradeExecutionDirection.Sell
