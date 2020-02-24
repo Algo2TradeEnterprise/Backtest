@@ -119,8 +119,8 @@ Namespace StrategyHelper
                             End If
                         Next
                         If stocksRuleData IsNot Nothing AndAlso stocksRuleData.Count > 0 Then
-                            stocksRuleData.FirstOrDefault.Value.AnotherPairInstrument = stocksRuleData.LastOrDefault.Value.AnotherPairInstrument
-                            stocksRuleData.LastOrDefault.Value.AnotherPairInstrument = stocksRuleData.FirstOrDefault.Value.AnotherPairInstrument
+                            stocksRuleData.FirstOrDefault.Value.AnotherPairInstrument = stocksRuleData.LastOrDefault.Value
+                            stocksRuleData.LastOrDefault.Value.AnotherPairInstrument = stocksRuleData.FirstOrDefault.Value
                         End If
                         '---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
