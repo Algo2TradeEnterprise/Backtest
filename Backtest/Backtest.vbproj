@@ -114,6 +114,7 @@
     <Compile Include="Strategy Helper\StrategyOutput.vb" />
     <Compile Include="Strategy Helper\StrategyRule.vb" />
     <Compile Include="Strategy Helper\Trade.vb" />
+    <Compile Include="Strategy Rule MIS\PairStrategyRule.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="frmMain.resx">
@@ -157,7 +158,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Strategy Rule CNC\" />
-    <Folder Include="Strategy Rule MIS\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
 </Project>

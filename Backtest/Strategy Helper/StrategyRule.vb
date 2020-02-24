@@ -33,7 +33,8 @@ Namespace StrategyHelper
         Public MaxLossOfThisStock As Decimal = Decimal.MinValue
         Public LotSize As Integer
 
-        Private _lastTick As Payload = Nothing
+        Public ForceTakeTrade As Boolean = False
+        Public ForceCancelTrade As Boolean = False
 
         Public EligibleToTakeTrade As Boolean = True
         Protected _signalPayload As Dictionary(Of Date, Payload)
@@ -51,9 +52,9 @@ Namespace StrategyHelper
                        ByVal parentStrategy As Strategy,
                        ByVal tradingDate As Date,
                        ByVal tradingSymbol As String,
-                       ByVal canceller As CancellationTokenSource,
                        ByVal entities As RuleEntities,
-                       ByVal anotherPairInstrument As StrategyRule)
+                       ByVal anotherPairInstrument As StrategyRule,
+                       ByVal canceller As CancellationTokenSource)
             _inputPayload = inputPayload
             Me.LotSize = lotSize
             _parentStrategy = parentStrategy
