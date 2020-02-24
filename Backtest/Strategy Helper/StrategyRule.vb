@@ -33,6 +33,8 @@ Namespace StrategyHelper
         Public MaxLossOfThisStock As Decimal = Decimal.MinValue
         Public LotSize As Integer
 
+        Private _lastTick As Payload = Nothing
+
         Public EligibleToTakeTrade As Boolean = True
         Protected _signalPayload As Dictionary(Of Date, Payload)
 
@@ -42,6 +44,7 @@ Namespace StrategyHelper
         Protected ReadOnly _inputPayload As Dictionary(Of Date, Payload)
         Protected ReadOnly _cts As CancellationTokenSource
         Protected ReadOnly _entities As RuleEntities
+        Protected ReadOnly _anotherPairInstrument As StrategyRule
 
         Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                        ByVal lotSize As Integer,
@@ -49,7 +52,8 @@ Namespace StrategyHelper
                        ByVal tradingDate As Date,
                        ByVal tradingSymbol As String,
                        ByVal canceller As CancellationTokenSource,
-                       ByVal entities As RuleEntities)
+                       ByVal entities As RuleEntities,
+                       ByVal anotherPairInstrument As StrategyRule)
             _inputPayload = inputPayload
             Me.LotSize = lotSize
             _parentStrategy = parentStrategy
@@ -57,6 +61,7 @@ Namespace StrategyHelper
             _tradingSymbol = tradingSymbol
             _cts = canceller
             _entities = entities
+            _anotherPairInstrument = anotherPairInstrument
 
             EligibleToTakeTrade = True
         End Sub
