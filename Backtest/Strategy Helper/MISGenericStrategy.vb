@@ -109,7 +109,7 @@ Namespace StrategyHelper
                                     Dim tradingSymbol As String = currentDayOneMinutePayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
                                         Case 0
-
+                                            stockRule = New PairStrategyRule()
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
