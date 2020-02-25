@@ -159,7 +159,7 @@ Public Class PairDifferenceStrategyRule
         If myPair.LastTick IsNot Nothing Then
             Dim myPairChange As Decimal = ((myPair.LastTick.Open / myPair.PreviousDayFirstCandleClose) - 1) * 100
             Dim myChange As Decimal = ((Me.LastTick.Open / Me.PreviousDayFirstCandleClose) - 1) * 100
-            If Math.Abs(myChange - myPairChange) >= 2 Then
+            If Math.Abs(myChange - myPairChange) >= 3 Then
                 Console.WriteLine(String.Format("{0},{1},{2},{3}", LastTick.PayloadDate.ToString("dd-MM-yyyy HH:mm:ss"), Me.LastTick.Open, myPair.LastTick.Open, Math.Round(Math.Abs(myChange - myPairChange), 2)))
             End If
         End If
