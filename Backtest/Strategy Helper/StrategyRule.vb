@@ -84,6 +84,10 @@ Namespace StrategyHelper
             End If
         End Sub
 
+        Public Overridable Sub CompletePairProcessing()
+
+        End Sub
+
         Public Overridable Async Function UpdateRequiredCollectionsAsync(ByVal currentTick As Payload) As Task
             Await Task.Delay(0).ConfigureAwait(False)
         End Function
