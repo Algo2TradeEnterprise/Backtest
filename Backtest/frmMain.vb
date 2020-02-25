@@ -299,7 +299,7 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-#Region ""
+#Region "Pair Strategy Rule"
             Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                               exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                               exchangeEndTime:=TimeSpan.Parse("15:29:59"),

@@ -109,7 +109,7 @@ Namespace StrategyHelper
                                     Dim tradingSymbol As String = currentDayOneMinutePayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
                                         Case 0
-                                            stockRule = New PairStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, _canceller)
+                                            stockRule = New PairChangePercentStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, _canceller)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat

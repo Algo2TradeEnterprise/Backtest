@@ -3,7 +3,7 @@ Imports System.Threading
 Imports Algo2TradeBLL
 Imports Utilities.Numbers.NumberManipulation
 
-Public Class PairStrategyRule
+Public Class PairChangePercentStrategyRule
     Inherits StrategyRule
 
     Public Direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
@@ -121,7 +121,7 @@ Public Class PairStrategyRule
                                     .OrderType = Trade.TypeOfOrder.Market,
                                     .Supporting1 = _lastSwingHigh.ToString("HH:mm:ss")
                                 }
-                    CType(Me.AnotherPairInstrument, PairStrategyRule).Direction = Trade.TradeExecutionDirection.Sell
+                    CType(Me.AnotherPairInstrument, PairChangePercentStrategyRule).Direction = Trade.TradeExecutionDirection.Sell
                 ElseIf signalCandleSatisfied.Item2 = Trade.TradeExecutionDirection.Sell Then
                     parameter = New PlaceOrderParameters With {
                                     .EntryPrice = currentTick.Open,
@@ -134,7 +134,7 @@ Public Class PairStrategyRule
                                     .OrderType = Trade.TypeOfOrder.Market,
                                     .Supporting1 = _lastSwingLow.ToString("HH:mm:ss")
                                 }
-                    CType(Me.AnotherPairInstrument, PairStrategyRule).Direction = Trade.TradeExecutionDirection.Buy
+                    CType(Me.AnotherPairInstrument, PairChangePercentStrategyRule).Direction = Trade.TradeExecutionDirection.Buy
                 End If
             End If
         End If
@@ -177,7 +177,7 @@ Public Class PairStrategyRule
             End If
             If _lastSwingHigh <> Date.MinValue AndAlso Me.ChangePercentagePayloads(candle.PayloadDate).High >= Me.ChangePercentagePayloads(_lastSwingHigh).High Then
                 If Me.Direction = Trade.TradeExecutionDirection.None Then
-                    Dim myPair As PairStrategyRule = Me.AnotherPairInstrument
+                    Dim myPair As PairChangePercentStrategyRule = Me.AnotherPairInstrument
                     If Me.ChangePercentagePayloads(candle.PayloadDate).Low < myPair.ChangePercentagePayloads(candle.PayloadDate).Low Then
                         ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, Trade.TradeExecutionDirection.Buy)
                     End If
@@ -192,7 +192,7 @@ Public Class PairStrategyRule
             End If
             If _lastSwingLow <> Date.MinValue AndAlso Me.ChangePercentagePayloads(candle.PayloadDate).Low <= Me.ChangePercentagePayloads(_lastSwingLow).Low Then
                 If Me.Direction = Trade.TradeExecutionDirection.None Then
-                    Dim myPair As PairStrategyRule = Me.AnotherPairInstrument
+                    Dim myPair As PairChangePercentStrategyRule = Me.AnotherPairInstrument
                     If Me.ChangePercentagePayloads(candle.PayloadDate).High > myPair.ChangePercentagePayloads(candle.PayloadDate).High Then
                         ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, Trade.TradeExecutionDirection.Sell)
                     End If
