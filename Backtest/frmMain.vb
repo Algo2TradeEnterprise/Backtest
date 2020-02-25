@@ -303,7 +303,7 @@ Public Class frmMain
             Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                               exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                               exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                              tradeStartTime:=TimeSpan.Parse("9:20:00"),
+                                                              tradeStartTime:=TimeSpan.Parse("9:25:00"),
                                                               lastTradeEntryTime:=TimeSpan.Parse("14:45:59"),
                                                               eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                               tickSize:=tick,
@@ -339,8 +339,8 @@ Public Class frmMain
                     .StockMaxProfitPerDay = Decimal.MaxValue
                     .StockMaxLossPerDay = Decimal.MinValue
 
-                    .ExitOnOverAllFixedTargetStoploss = False
-                    .OverAllProfitPerDay = Decimal.MaxValue
+                    .ExitOnOverAllFixedTargetStoploss = True
+                    .OverAllProfitPerDay = 1500
                     .OverAllLossPerDay = Decimal.MinValue
 
                     .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
