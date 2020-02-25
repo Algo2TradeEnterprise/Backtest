@@ -104,8 +104,8 @@ Namespace StrategyHelper
 
                                     Dim tradingSymbol As String = currentDayOneMinutePayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
-                                        Case 0
-
+                                        Case 1
+                                            stockRule = New PairDifferenceStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, _canceller)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -114,6 +114,14 @@ Namespace StrategyHelper
                                 End If
                             End If
                         Next
+                        If stocksRuleData IsNot Nothing AndAlso stocksRuleData.Count > 0 Then
+                            stocksRuleData.FirstOrDefault.Value.AnotherPairInstrument = stocksRuleData.LastOrDefault.Value
+                            stocksRuleData.LastOrDefault.Value.AnotherPairInstrument = stocksRuleData.FirstOrDefault.Value
+
+                            For Each stockRule In stocksRuleData.Values
+                                stockRule.CompletePairProcessing()
+                            Next
+                        End If
                         '---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
                         If currentDayOneMinuteStocksPayload IsNot Nothing AndAlso currentDayOneMinuteStocksPayload.Count > 0 Then
@@ -469,13 +477,10 @@ Namespace StrategyHelper
                 End Using
                 If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
                     Select Case Me.RuleNumber
-                        Case 10
-                            Dim counter As Integer = 0
+                        Case 1
                             For i = 1 To dt.Rows.Count - 1
-                                Dim rowDate As Date = dt.Rows(i)(0)
-                                'If rowDate.Date = tradingDate.Date Then
                                 If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                Dim tradingSymbol As String = dt.Rows(i).Item(1)
+                                Dim tradingSymbol As String = dt.Rows(i).Item(0)
                                 Dim instrumentName As String = Nothing
                                 If tradingSymbol.Contains("FUT") Then
                                     instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
@@ -483,14 +488,11 @@ Namespace StrategyHelper
                                     instrumentName = tradingSymbol
                                 End If
                                 Dim detailsOfStock As StockDetails = New StockDetails With
-                                    {.StockName = instrumentName,
-                                    .LotSize = dt.Rows(i).Item(2),
-                                    .EligibleToTakeTrade = True,
-                                    .Supporting1 = dt.Rows(i).Item(5)}
+                                            {.StockName = instrumentName,
+                                             .LotSize = 1,
+                                             .EligibleToTakeTrade = True,
+                                             .Supporting1 = If(i = 1, 1, -1)}
                                 ret.Add(instrumentName, detailsOfStock)
-                                counter += 1
-                                If counter = Me.NumberOfTradeableStockPerDay Then Exit For
-                                'End If
                             Next
                         Case Else
                             For i = 1 To dt.Rows.Count - 1
