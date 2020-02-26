@@ -67,7 +67,7 @@ Public Class PairDifferenceStrategyRule
                                 .OrderType = Trade.TypeOfOrder.Market,
                                 .Supporting1 = "Force Entry"
                             }
-            ElseIf Me.direction = Trade.TradeExecutionDirection.Sell Then
+            ElseIf Me.Direction = Trade.TradeExecutionDirection.Sell Then
                 parameter = New PlaceOrderParameters With {
                                 .EntryPrice = currentTick.Open,
                                 .EntryDirection = Trade.TradeExecutionDirection.Sell,
@@ -91,7 +91,7 @@ Public Class PairDifferenceStrategyRule
                 currentMinuteCandlePayload.PayloadDate >= tradeStartTime AndAlso Me.EligibleToTakeTrade Then
 
                 Dim signalCandle As Payload = Nothing
-                Dim signalCandleSatisfied As Tuple(Of Boolean, Trade.TradeExecutionDirection) = GetEntrySignal(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
+                Dim signalCandleSatisfied As Tuple(Of Boolean, Trade.TradeExecutionDirection) = GetEntrySignal(currentMinuteCandlePayload, currentTick)
                 If signalCandleSatisfied IsNot Nothing AndAlso signalCandleSatisfied.Item1 Then
                     signalCandle = currentMinuteCandlePayload.PreviousCandlePayload
                 End If
@@ -180,13 +180,16 @@ Public Class PairDifferenceStrategyRule
         Dim ret As Tuple(Of Boolean, Trade.TradeExecutionDirection) = Nothing
         Dim myPair As PairDifferenceStrategyRule = Me.AnotherPairInstrument
         If myPair.LastTick IsNot Nothing Then
-            Dim myPairChange As Decimal = ((myPair.LastTick.Open / myPair.PreviousDayFirstCandleClose) - 1) * 100
-            Dim myChange As Decimal = ((Me.LastTick.Open / Me.PreviousDayFirstCandleClose) - 1) * 100
-            If Math.Abs(myChange - myPairChange) >= _minDifferenceForEntry Then
-                If myChange < myPairChange Then
-                    ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, Trade.TradeExecutionDirection.Buy)
-                Else
-                    ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, Trade.TradeExecutionDirection.Sell)
+            Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(candle, Trade.TypeOfTrade.CNC)
+            If lastExecutedTrade Is Nothing OrElse lastExecutedTrade.ExitTime < candle.PayloadDate Then
+                Dim myPairChange As Decimal = ((myPair.LastTick.Open / myPair.PreviousDayFirstCandleClose) - 1) * 100
+                Dim myChange As Decimal = ((Me.LastTick.Open / Me.PreviousDayFirstCandleClose) - 1) * 100
+                If Math.Abs(myChange - myPairChange) >= _minDifferenceForEntry Then
+                    If myChange < myPairChange Then
+                        ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, Trade.TradeExecutionDirection.Buy)
+                    Else
+                        ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, Trade.TradeExecutionDirection.Sell)
+                    End If
                 End If
             End If
         End If
