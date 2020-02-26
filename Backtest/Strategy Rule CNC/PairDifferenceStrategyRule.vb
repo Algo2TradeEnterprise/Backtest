@@ -8,10 +8,12 @@ Public Class PairDifferenceStrategyRule
 
     Private ReadOnly _minDifferenceForEntry As Decimal = 2
     Private ReadOnly _maxDifferenceForExit As Decimal = 0.5
+    Private ReadOnly _exitAtEntryDayCandle As Boolean = False
 
 
     Public Direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
     Public PreviousDayFirstCandleClose As Decimal = Decimal.MinValue
+    Public EntryDayFirstCandleClose As Decimal = Decimal.MinValue
     Public LastTick As Payload = Nothing
 
     Private ReadOnly _controller As Boolean
@@ -36,12 +38,22 @@ Public Class PairDifferenceStrategyRule
         If _signalPayload IsNot Nothing AndAlso _signalPayload.Count > 0 Then
             Dim previousTradingDay As Date = _parentStrategy.Cmn.GetPreviousTradingDay(Common.DataBaseTable.EOD_Cash, _tradingDate)
 
-            PreviousDayFirstCandleClose = _signalPayload.Where(Function(x)
-                                                                   Return x.Key.Date = previousTradingDay.Date
-                                                               End Function).OrderBy(Function(y)
-                                                                                         Return y.Key
-                                                                                     End Function).FirstOrDefault.Value.Close
+            Me.PreviousDayFirstCandleClose = _signalPayload.Where(Function(x)
+                                                                      Return x.Key.Date = previousTradingDay.Date
+                                                                  End Function).OrderBy(Function(y)
+                                                                                            Return y.Key
+                                                                                        End Function).FirstOrDefault.Value.Close
 
+            If _exitAtEntryDayCandle Then
+                Dim lastTrade As Trade = _parentStrategy.GetLastEntryTradeOfTheStock(_signalPayload.LastOrDefault.Value, Trade.TypeOfTrade.CNC)
+                If lastTrade IsNot Nothing Then
+                    Me.EntryDayFirstCandleClose = _signalPayload.Where(Function(x)
+                                                                           Return x.Key.Date = lastTrade.EntryTime.Date
+                                                                       End Function).OrderBy(Function(y)
+                                                                                                 Return y.Key
+                                                                                             End Function).FirstOrDefault.Value.Close
+                End If
+            End If
         End If
     End Sub
 
@@ -83,6 +95,7 @@ Public Class PairDifferenceStrategyRule
 
             ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
             Me.ForceTakeTrade = False
+            Me.EntryDayFirstCandleClose = Me.PreviousDayFirstCandleClose
         ElseIf _controller Then
             Dim tradeStartTime As Date = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, _parentStrategy.TradeStartTime.Hours, _parentStrategy.TradeStartTime.Minutes, _parentStrategy.TradeStartTime.Seconds)
             Dim parameter As PlaceOrderParameters = Nothing
@@ -130,6 +143,7 @@ Public Class PairDifferenceStrategyRule
             If parameter IsNot Nothing Then
                 ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
                 Me.AnotherPairInstrument.ForceTakeTrade = True
+                Me.EntryDayFirstCandleClose = Me.PreviousDayFirstCandleClose
             End If
         End If
         Return ret
@@ -146,11 +160,20 @@ Public Class PairDifferenceStrategyRule
             ElseIf _controller Then
                 Dim myPair As PairDifferenceStrategyRule = Me.AnotherPairInstrument
                 If myPair.LastTick IsNot Nothing Then
-                    Dim myPairChange As Decimal = ((myPair.LastTick.Open / myPair.PreviousDayFirstCandleClose) - 1) * 100
-                    Dim myChange As Decimal = ((Me.LastTick.Open / Me.PreviousDayFirstCandleClose) - 1) * 100
-                    If Math.Abs(myChange - myPairChange) <= _maxDifferenceForExit Then
-                        ret = New Tuple(Of Boolean, String)(True, String.Format("Normal Exit as Difference({0}) is less than {1}", Math.Round(Math.Abs(myChange - myPairChange), 2), _maxDifferenceForExit))
-                        Me.AnotherPairInstrument.ForceCancelTrade = True
+                    If _exitAtEntryDayCandle Then
+                        Dim myPairChange As Decimal = ((myPair.LastTick.Open / myPair.EntryDayFirstCandleClose) - 1) * 100
+                        Dim myChange As Decimal = ((Me.LastTick.Open / Me.EntryDayFirstCandleClose) - 1) * 100
+                        If Math.Abs(myChange - myPairChange) <= _maxDifferenceForExit Then
+                            ret = New Tuple(Of Boolean, String)(True, String.Format("(E)Normal Exit as Difference({0}) is less than {1}", Math.Round(Math.Abs(myChange - myPairChange), 2), _maxDifferenceForExit))
+                            Me.AnotherPairInstrument.ForceCancelTrade = True
+                        End If
+                    Else
+                        Dim myPairChange As Decimal = ((myPair.LastTick.Open / myPair.PreviousDayFirstCandleClose) - 1) * 100
+                        Dim myChange As Decimal = ((Me.LastTick.Open / Me.PreviousDayFirstCandleClose) - 1) * 100
+                        If Math.Abs(myChange - myPairChange) <= _maxDifferenceForExit Then
+                            ret = New Tuple(Of Boolean, String)(True, String.Format("Normal Exit as Difference({0}) is less than {1}", Math.Round(Math.Abs(myChange - myPairChange), 2), _maxDifferenceForExit))
+                            Me.AnotherPairInstrument.ForceCancelTrade = True
+                        End If
                     End If
                 End If
             End If
