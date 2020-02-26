@@ -8,7 +8,7 @@ Public Class PairDifferenceStrategyRule
 
     Private ReadOnly _minDifferenceForEntry As Decimal = 2
     Private ReadOnly _maxDifferenceForExit As Decimal = 0.5
-    Private ReadOnly _exitAtEntryDayCandle As Boolean = False
+    Private ReadOnly _exitAtEntryDayCandle As Boolean = True
 
 
     Public Direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
@@ -47,8 +47,9 @@ Public Class PairDifferenceStrategyRule
             If _exitAtEntryDayCandle Then
                 Dim lastTrade As Trade = _parentStrategy.GetLastEntryTradeOfTheStock(_signalPayload.LastOrDefault.Value, Trade.TypeOfTrade.CNC)
                 If lastTrade IsNot Nothing Then
+                    Dim previousTradingDayOnEntry As Date = _parentStrategy.Cmn.GetPreviousTradingDay(Common.DataBaseTable.EOD_Cash, lastTrade.EntryTime.Date)
                     Me.EntryDayFirstCandleClose = _signalPayload.Where(Function(x)
-                                                                           Return x.Key.Date = lastTrade.EntryTime.Date
+                                                                           Return x.Key.Date = previousTradingDayOnEntry.Date
                                                                        End Function).OrderBy(Function(y)
                                                                                                  Return y.Key
                                                                                              End Function).FirstOrDefault.Value.Close
