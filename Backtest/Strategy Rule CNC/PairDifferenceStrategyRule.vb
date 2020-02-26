@@ -142,6 +142,7 @@ Public Class PairDifferenceStrategyRule
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
             If Me.ForceCancelTrade AndAlso Not _controller Then
                 ret = New Tuple(Of Boolean, String)(True, "Force Exit")
+                Me.ForceCancelTrade = False
             ElseIf _controller Then
                 Dim myPair As PairDifferenceStrategyRule = Me.AnotherPairInstrument
                 If myPair.LastTick IsNot Nothing Then
