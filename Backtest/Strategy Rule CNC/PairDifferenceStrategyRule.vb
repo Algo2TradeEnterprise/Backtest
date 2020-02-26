@@ -6,8 +6,11 @@ Imports Utilities.Numbers.NumberManipulation
 Public Class PairDifferenceStrategyRule
     Inherits StrategyRule
 
-    Public Direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
+    Private ReadOnly _minDifferenceForEntry As Decimal = 2
+    Private ReadOnly _maxDifferenceForExit As Decimal = 0.5
 
+
+    Public Direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
     Public PreviousDayFirstCandleClose As Decimal = Decimal.MinValue
     Public LastTick As Payload = Nothing
 
@@ -19,10 +22,11 @@ Public Class PairDifferenceStrategyRule
                    ByVal tradingDate As Date,
                    ByVal tradingSymbol As String,
                    ByVal entities As RuleEntities,
-                   ByVal canceller As CancellationTokenSource)
+                   ByVal canceller As CancellationTokenSource,
+                   ByVal controller As Integer)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, entities, canceller)
 
-        If _tradingSymbol.ToUpper = "MARUTI" Then
+        If controller = 1 Then
             _controller = True
         End If
     End Sub
@@ -47,20 +51,22 @@ Public Class PairDifferenceStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         If Me.ForceTakeTrade AndAlso Not _controller Then
-            Dim quantity As Integer = _parentStrategy.CalculateQuantityFromInvestment(Me.LotSize, 10000, currentTick.Open, _parentStrategy.StockType, True)
+            Dim myPair As PairDifferenceStrategyRule = Me.AnotherPairInstrument
+            Dim quantity As Integer = Math.Ceiling(myPair.LotSize * (myPair.LastTick.Open / Me.LastTick.Open))
+
             Dim parameter As PlaceOrderParameters = Nothing
             If Me.Direction = Trade.TradeExecutionDirection.Buy Then
                 parameter = New PlaceOrderParameters With {
-                                        .EntryPrice = currentTick.Open,
-                                        .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                        .Quantity = quantity,
-                                        .Stoploss = .EntryPrice - 100000,
-                                        .Target = .EntryPrice + 100000,
-                                        .Buffer = 0,
-                                        .SignalCandle = currentMinuteCandlePayload.PreviousCandlePayload,
-                                        .OrderType = Trade.TypeOfOrder.Market,
-                                        .Supporting1 = "Force Entry"
-                                    }
+                                .EntryPrice = currentTick.Open,
+                                .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                                .Quantity = quantity,
+                                .Stoploss = .EntryPrice - 100000,
+                                .Target = .EntryPrice + 100000,
+                                .Buffer = 0,
+                                .SignalCandle = currentMinuteCandlePayload.PreviousCandlePayload,
+                                .OrderType = Trade.TypeOfOrder.Market,
+                                .Supporting1 = "Force Entry"
+                            }
             ElseIf Me.direction = Trade.TradeExecutionDirection.Sell Then
                 parameter = New PlaceOrderParameters With {
                                 .EntryPrice = currentTick.Open,
@@ -81,7 +87,7 @@ Public Class PairDifferenceStrategyRule
             Dim tradeStartTime As Date = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, _parentStrategy.TradeStartTime.Hours, _parentStrategy.TradeStartTime.Minutes, _parentStrategy.TradeStartTime.Seconds)
             Dim parameter As PlaceOrderParameters = Nothing
             If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
-                Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS) AndAlso Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS) AndAlso
+                Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.CNC) AndAlso Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.CNC) AndAlso
                 currentMinuteCandlePayload.PayloadDate >= tradeStartTime AndAlso Me.EligibleToTakeTrade Then
 
                 Dim signalCandle As Payload = Nothing
@@ -90,7 +96,7 @@ Public Class PairDifferenceStrategyRule
                     signalCandle = currentMinuteCandlePayload.PreviousCandlePayload
                 End If
                 If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
-                    Dim quantity As Integer = _parentStrategy.CalculateQuantityFromInvestment(Me.LotSize, 10000, currentTick.Open, _parentStrategy.StockType, True)
+                    Dim quantity As Integer = Me.LotSize
 
                     If signalCandleSatisfied.Item2 = Trade.TradeExecutionDirection.Buy Then
                         parameter = New PlaceOrderParameters With {
@@ -104,7 +110,7 @@ Public Class PairDifferenceStrategyRule
                                         .OrderType = Trade.TypeOfOrder.Market,
                                         .Supporting1 = "Normal Entry"
                                     }
-                        CType(Me.AnotherPairInstrument, PairChangePercentStrategyRule).Direction = Trade.TradeExecutionDirection.Sell
+                        CType(Me.AnotherPairInstrument, PairDifferenceStrategyRule).Direction = Trade.TradeExecutionDirection.Sell
                     ElseIf signalCandleSatisfied.Item2 = Trade.TradeExecutionDirection.Sell Then
                         parameter = New PlaceOrderParameters With {
                                         .EntryPrice = currentTick.Open,
@@ -117,12 +123,13 @@ Public Class PairDifferenceStrategyRule
                                         .OrderType = Trade.TypeOfOrder.Market,
                                         .Supporting1 = "Normal Entry"
                                     }
-                        CType(Me.AnotherPairInstrument, PairChangePercentStrategyRule).Direction = Trade.TradeExecutionDirection.Buy
+                        CType(Me.AnotherPairInstrument, PairDifferenceStrategyRule).Direction = Trade.TradeExecutionDirection.Buy
                     End If
                 End If
             End If
             If parameter IsNot Nothing Then
                 ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
+                Me.AnotherPairInstrument.ForceTakeTrade = True
             End If
         End If
         Return ret
@@ -132,6 +139,21 @@ Public Class PairDifferenceStrategyRule
         Me.LastTick = currentTick
         Dim ret As Tuple(Of Boolean, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
+        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            If Me.ForceCancelTrade AndAlso Not _controller Then
+                ret = New Tuple(Of Boolean, String)(True, "Force Exit")
+            ElseIf _controller Then
+                Dim myPair As PairDifferenceStrategyRule = Me.AnotherPairInstrument
+                If myPair.LastTick IsNot Nothing Then
+                    Dim myPairChange As Decimal = ((myPair.LastTick.Open / myPair.PreviousDayFirstCandleClose) - 1) * 100
+                    Dim myChange As Decimal = ((Me.LastTick.Open / Me.PreviousDayFirstCandleClose) - 1) * 100
+                    If Math.Abs(myChange - myPairChange) <= _maxDifferenceForExit Then
+                        ret = New Tuple(Of Boolean, String)(True, String.Format("Normal Exit as Difference({0}) is less than {1}", Math.Round(Math.Abs(myChange - myPairChange), 2), _maxDifferenceForExit))
+                        Me.AnotherPairInstrument.ForceCancelTrade = True
+                    End If
+                End If
+            End If
+        End If
         Return ret
     End Function
 
@@ -159,8 +181,12 @@ Public Class PairDifferenceStrategyRule
         If myPair.LastTick IsNot Nothing Then
             Dim myPairChange As Decimal = ((myPair.LastTick.Open / myPair.PreviousDayFirstCandleClose) - 1) * 100
             Dim myChange As Decimal = ((Me.LastTick.Open / Me.PreviousDayFirstCandleClose) - 1) * 100
-            If Math.Abs(myChange - myPairChange) >= 3 Then
-                Console.WriteLine(String.Format("{0},{1},{2},{3}", LastTick.PayloadDate.ToString("dd-MM-yyyy HH:mm:ss"), Me.LastTick.Open, myPair.LastTick.Open, Math.Round(Math.Abs(myChange - myPairChange), 2)))
+            If Math.Abs(myChange - myPairChange) >= _minDifferenceForEntry Then
+                If myChange < myPairChange Then
+                    ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, Trade.TradeExecutionDirection.Buy)
+                Else
+                    ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, Trade.TradeExecutionDirection.Sell)
+                End If
             End If
         End If
         Return ret

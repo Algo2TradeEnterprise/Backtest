@@ -105,7 +105,7 @@ Namespace StrategyHelper
                                     Dim tradingSymbol As String = currentDayOneMinutePayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
                                         Case 1
-                                            stockRule = New PairDifferenceStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, _canceller)
+                                            stockRule = New PairDifferenceStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, _canceller, stockList(stock).Supporting1)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -478,7 +478,7 @@ Namespace StrategyHelper
                 If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
                     Select Case Me.RuleNumber
                         Case 1
-                            For i = 1 To dt.Rows.Count - 1
+                            For i = 1 To 2
                                 If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
                                 Dim tradingSymbol As String = dt.Rows(i).Item(0)
                                 Dim instrumentName As String = Nothing
@@ -487,11 +487,13 @@ Namespace StrategyHelper
                                 Else
                                     instrumentName = tradingSymbol
                                 End If
+                                Dim lotSize As Integer = dt.Rows(i).Item(1)
+                                Dim controller As String = dt.Rows(i).Item(2)
                                 Dim detailsOfStock As StockDetails = New StockDetails With
                                             {.StockName = instrumentName,
-                                             .LotSize = 1,
+                                             .LotSize = lotSize,
                                              .EligibleToTakeTrade = True,
-                                             .Supporting1 = If(i = 1, 1, -1)}
+                                             .Supporting1 = If(controller.ToUpper = "TRUE", 1, 0)}
                                 ret.Add(instrumentName, detailsOfStock)
                             Next
                         Case Else
