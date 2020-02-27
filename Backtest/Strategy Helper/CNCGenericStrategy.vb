@@ -160,6 +160,8 @@ Namespace StrategyHelper
                                             stockRule = New HKPositionalHourlyStrategyRule1(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                         Case 34
                                             stockRule = New PositionalHourlyStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case 48
+                                            stockRule = New HKPositionalHourlyStrategyRule2(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -544,6 +546,26 @@ Namespace StrategyHelper
                                 ret.Add(instrumentName, detailsOfStock)
                                 counter += 1
                                 If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                                'End If
+                            Next
+                        Case 48
+                            For i = 1 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i)(0)
+                                'If rowDate.Date = tradingDate.Date Then
+                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                Dim tradingSymbol As String = dt.Rows(i).Item(1)
+                                Dim instrumentName As String = Nothing
+                                If tradingSymbol.Contains("FUT") Then
+                                    instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                                Else
+                                    instrumentName = tradingSymbol
+                                End If
+                                Dim lotSize As Integer = dt.Rows(i).Item(2)
+                                Dim detailsOfStock As StockDetails = New StockDetails With
+                                    {.StockName = instrumentName,
+                                    .LotSize = lotSize,
+                                    .EligibleToTakeTrade = True}
+                                ret.Add(instrumentName, detailsOfStock)
                                 'End If
                             Next
                         Case Else
