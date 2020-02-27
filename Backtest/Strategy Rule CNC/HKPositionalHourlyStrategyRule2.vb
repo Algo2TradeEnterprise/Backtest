@@ -110,7 +110,8 @@ Public Class HKPositionalHourlyStrategyRule2
         Dim ret As Tuple(Of Boolean, Decimal, Payload) = Nothing
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         Dim currentHKPayload As Payload = _hkPayload(currentMinuteCandlePayload.PayloadDate)
-        If currentTick.PayloadDate >= currentHKPayload.PayloadDate.AddMinutes(59) Then
+        If currentTick.PayloadDate >= currentHKPayload.PayloadDate.AddMinutes(59) OrElse
+            currentTick.PayloadDate >= New Date(currentTick.PayloadDate.Year, currentTick.PayloadDate.Month, currentTick.PayloadDate.Day, 15, 29, 0) Then
             If currentHKPayload.Open = currentHKPayload.Low Then
                 ret = New Tuple(Of Boolean, Decimal, Payload)(True, currentTick.Open, currentHKPayload)
             End If
