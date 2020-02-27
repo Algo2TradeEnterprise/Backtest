@@ -35,24 +35,37 @@ Public Class HKPositionalHourlyStrategyRule2
             Not _parentStrategy.IsTradeOpen(currentTick, _parentStrategy.TradeType) AndAlso Not _parentStrategy.IsTradeActive(currentTick, _parentStrategy.TradeType) Then
             Dim signalCandle As Payload = Nothing
 
-            Dim signal As Tuple(Of Boolean, Decimal, Payload) = GetSignalForEntry(currentTick)
+            Dim signal As Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection) = GetSignalForEntry(currentTick)
             If signal IsNot Nothing AndAlso signal.Item1 Then
                 signalCandle = signal.Item3
                 If signalCandle IsNot Nothing Then
                     'Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentTick.Open, RoundOfType.Floor)
                     Dim buffer As Decimal = 1
-                    parameter = New PlaceOrderParameters With {
-                                .EntryPrice = currentTick.Open,
-                                .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                .Quantity = Me.LotSize,
-                                .Stoploss = ConvertFloorCeling(signalCandle.Open - buffer, _parentStrategy.TickSize, RoundOfType.Floor),
-                                .Target = .EntryPrice + 1000000,
-                                .Buffer = buffer,
-                                .SignalCandle = signalCandle,
-                                .OrderType = Trade.TypeOfOrder.Market
-                            }
+                    If signal.Item4 = Trade.TradeExecutionDirection.Buy Then
+                        parameter = New PlaceOrderParameters With {
+                                        .EntryPrice = currentTick.Open,
+                                        .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                                        .Quantity = Me.LotSize,
+                                        .Stoploss = ConvertFloorCeling(signalCandle.Open - buffer, _parentStrategy.TickSize, RoundOfType.Floor),
+                                        .Target = .EntryPrice + 1000000,
+                                        .Buffer = buffer,
+                                        .SignalCandle = signalCandle,
+                                        .OrderType = Trade.TypeOfOrder.Market
+                                    }
+                    ElseIf signal.Item4 = Trade.TradeExecutionDirection.Sell Then
+                        parameter = New PlaceOrderParameters With {
+                                        .EntryPrice = currentTick.Open,
+                                        .EntryDirection = Trade.TradeExecutionDirection.Sell,
+                                        .Quantity = Me.LotSize,
+                                        .Stoploss = ConvertFloorCeling(signalCandle.Open + buffer, _parentStrategy.TickSize, RoundOfType.Floor),
+                                        .Target = .EntryPrice - 1000000,
+                                        .Buffer = buffer,
+                                        .SignalCandle = signalCandle,
+                                        .OrderType = Trade.TypeOfOrder.Market
+                                    }
+                    End If
                 End If
-            End If
+                End If
         End If
         If parameter IsNot Nothing Then
             ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
@@ -106,14 +119,16 @@ Public Class HKPositionalHourlyStrategyRule2
     End Function
 
 #Region "Entry Rule"
-    Private Function GetSignalForEntry(ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Payload)
-        Dim ret As Tuple(Of Boolean, Decimal, Payload) = Nothing
+    Private Function GetSignalForEntry(ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection)
+        Dim ret As Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection) = Nothing
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         Dim currentHKPayload As Payload = _hkPayload(currentMinuteCandlePayload.PayloadDate)
         If currentTick.PayloadDate >= currentHKPayload.PayloadDate.AddMinutes(59) OrElse
             currentTick.PayloadDate >= New Date(currentTick.PayloadDate.Year, currentTick.PayloadDate.Month, currentTick.PayloadDate.Day, 15, 29, 0) Then
-            If currentHKPayload.Open = currentHKPayload.Low Then
-                ret = New Tuple(Of Boolean, Decimal, Payload)(True, currentTick.Open, currentHKPayload)
+            If currentHKPayload.Open - 1 <= currentHKPayload.Low Then
+                ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection)(True, currentTick.Open, currentHKPayload, Trade.TradeExecutionDirection.Buy)
+            ElseIf currentHKPayload.Open + 1 >= currentHKPayload.High Then
+                ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection)(True, currentTick.Open, currentHKPayload, Trade.TradeExecutionDirection.Sell)
             End If
         End If
         Return ret
