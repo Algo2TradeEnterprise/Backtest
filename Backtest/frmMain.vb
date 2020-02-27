@@ -2167,6 +2167,49 @@ Public Class frmMain
 #End Region
 
 #Region "Average Price Drop"
+            'Using backtestStrategy As New CNCEODGenericStrategy(canceller:=_canceller,
+            '                                                    exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+            '                                                    exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+            '                                                    tradeStartTime:=TimeSpan.Parse("09:15:00"),
+            '                                                    lastTradeEntryTime:=TimeSpan.Parse("15:29:59"),
+            '                                                    eodExitTime:=TimeSpan.Parse("15:29:59"),
+            '                                                    tickSize:=tick,
+            '                                                    marginMultiplier:=margin,
+            '                                                    timeframe:=1,
+            '                                                    heikenAshiCandle:=False,
+            '                                                    stockType:=stockType,
+            '                                                    databaseTable:=database,
+            '                                                    dataSource:=sourceData,
+            '                                                    initialCapital:=Decimal.MaxValue / 2,
+            '                                                    usableCapital:=Decimal.MaxValue / 2,
+            '                                                    minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
+            '                                                    amountToBeWithdrawn:=50000)
+            '    AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+
+            '    With backtestStrategy
+            '        .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Investment Stock List.csv")
+
+            '        .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+
+            '        .RuleEntityData = New AveragePriceDropContinuesStrategyRule.StrategyRuleEntities With
+            '            {.BuyAtEveryPriceDropPercentage = 1,
+            '             .QuantityType = AveragePriceDropContinuesStrategyRule.TypeOfQuantity.GP}
+
+            '        .NumberOfTradeableStockPerDay = 1
+
+            '        .NumberOfTradesPerDay = Integer.MaxValue
+            '        .NumberOfTradesPerStockPerDay = Integer.MaxValue
+
+            '        .TickBasedStrategy = True
+            '    End With
+            '    Dim ruleData As AveragePriceDropContinuesStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+            '    Dim filename As String = String.Format("AvrgPrcDrp,Quantity Type {3} {0}_{1}_{2}",
+            '                                           Now.Hour, Now.Minute, Now.Second, ruleData.QuantityType)
+            '    Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+            'End Using
+#End Region
+
+#Region "Swing CNC"
             Using backtestStrategy As New CNCEODGenericStrategy(canceller:=_canceller,
                                                                 exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                 exchangeEndTime:=TimeSpan.Parse("15:29:59"),
@@ -2191,9 +2234,7 @@ Public Class frmMain
 
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                    .RuleEntityData = New AveragePriceDropContinuesStrategyRule.StrategyRuleEntities With
-                        {.BuyAtEveryPriceDropPercentage = 1,
-                         .QuantityType = AveragePriceDropContinuesStrategyRule.TypeOfQuantity.GP}
+                    .RuleEntityData = Nothing
 
                     .NumberOfTradeableStockPerDay = 1
 
@@ -2202,9 +2243,8 @@ Public Class frmMain
 
                     .TickBasedStrategy = True
                 End With
-                Dim ruleData As AveragePriceDropContinuesStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                Dim filename As String = String.Format("AvrgPrcDrp,Quantity Type {3} {0}_{1}_{2}",
-                                                       Now.Hour, Now.Minute, Now.Second, ruleData.QuantityType)
+                Dim filename As String = String.Format("Swing CNC {0}_{1}_{2}",
+                                                       Now.Hour, Now.Minute, Now.Second)
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using
 #End Region

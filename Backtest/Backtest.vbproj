@@ -123,6 +123,7 @@
     <Compile Include="Strategy Rule CNC\InvestmentCNCStrategyRule.vb" />
     <Compile Include="Strategy Rule CNC\PositionalHourlyStrategyRule.vb" />
     <Compile Include="Strategy Rule CNC\PriceDropContinuesPositionalStrategyRule.vb" />
+    <Compile Include="Strategy Rule CNC\SwingStrategyRule.vb" />
     <Compile Include="Strategy Rule CNC\TIICNCStrategyRule.vb" />
     <Compile Include="Strategy Rule CNC\PriceDropPositionalStrategyRule.vb" />
     <Compile Include="Strategy Rule CNC\SMIHKPositionalStrategyRule.vb" />

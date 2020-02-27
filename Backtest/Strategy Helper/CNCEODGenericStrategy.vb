@@ -59,8 +59,6 @@ Namespace StrategyHelper
                 Dim tradeCheckingDate As Date = startDate.Date
                 TradesTaken = New Dictionary(Of Date, Dictionary(Of String, List(Of Trade)))
                 Me.AvailableCapital = Me.UsableCapital
-                Dim sw As Stopwatch = New Stopwatch
-                sw.Start()
                 While tradeCheckingDate <= endDate.Date
                     'Console.WriteLine(String.Format("Capital available:{0},{1},", tradeCheckingDate.ToShortDateString, Me.AvailableCapital))
                     _canceller.Token.ThrowIfCancellationRequested()
@@ -80,7 +78,7 @@ Namespace StrategyHelper
                             Dim XDayPayload As Dictionary(Of Date, Payload) = Nothing
                             Dim currentDayPayload As Dictionary(Of Date, Payload) = Nothing
                             If Me.DataSource = SourceOfData.Database Then
-                                XDayPayload = Cmn.GetRawPayload(Common.DataBaseTable.EOD_POSITIONAL, stock, tradeCheckingDate.AddMonths(-1), tradeCheckingDate)
+                                XDayPayload = Cmn.GetRawPayload(Common.DataBaseTable.EOD_POSITIONAL, stock, tradeCheckingDate.AddYears(-1), tradeCheckingDate)
                             ElseIf Me.DataSource = SourceOfData.Live Then
                                 XDayPayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, stock, tradeCheckingDate.AddMonths(-1), tradeCheckingDate).ConfigureAwait(False)
                             End If
@@ -110,60 +108,16 @@ Namespace StrategyHelper
 
                                     Dim tradingSymbol As String = currentDayPayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
-                                        Case 0
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 1
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 2
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 3
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 4
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 5
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 6
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 7
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 8
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 9
-                                            Throw New ApplicationException("Not a CNC strategy")
                                         Case 10
                                             stockRule = New VijayCNCStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 11
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 12
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 13
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 14
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 15
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 16
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 17
-                                            Throw New ApplicationException("Not a CNC strategy")
                                         Case 18
                                             stockRule = New InvestmentCNCStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
-                                        Case 19
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 20
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 21
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 22
-                                            Throw New ApplicationException("Not a CNC strategy")
                                         Case 23
                                             stockRule = New HKPositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                         Case 24
                                             stockRule = New HKPositionalStrategyRule1(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                         Case 25
                                             stockRule = New SMIHKPositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
-                                        Case 26
-                                            Throw New ApplicationException("Not a CNC strategy")
                                         Case 27
                                             stockRule = New ATRPositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2)
                                         Case 28
@@ -176,6 +130,8 @@ Namespace StrategyHelper
                                             stockRule = New HighestPriceDropContinuesPositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                         Case 46
                                             stockRule = New AveragePriceDropContinuesStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
+                                        Case 47
+                                            stockRule = New SwingStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -199,8 +155,6 @@ Namespace StrategyHelper
                             For Each stockName In stockList.Keys
                                 _canceller.Token.ThrowIfCancellationRequested()
 
-                                Dim sw1 As New Stopwatch
-                                sw1.Start()
                                 If Not stocksRuleData.ContainsKey(stockName) Then
                                     Continue For
                                 End If
@@ -213,7 +167,6 @@ Namespace StrategyHelper
                                 If Not currentDayStocksPayload.ContainsKey(stockName) Then
                                     Continue For
                                 End If
-                                Console.WriteLine(String.Format("1:{0}", sw1.ElapsedMilliseconds))
 
                                 'Get the current candle from the stock collection for this stock for that day
                                 _canceller.Token.ThrowIfCancellationRequested()
@@ -222,7 +175,6 @@ Namespace StrategyHelper
                                     currentDayStocksPayload(stockName).ContainsKey(tradeCheckingDate.Date) Then
                                     currentDayCandlePayload = currentDayStocksPayload(stockName)(tradeCheckingDate.Date)
                                 End If
-                                Console.WriteLine(String.Format("2:{0}", sw1.ElapsedMilliseconds))
 
                                 'Now check trade
                                 _canceller.Token.ThrowIfCancellationRequested()
@@ -237,11 +189,9 @@ Namespace StrategyHelper
                                     }
 
                                     SetCurrentLTPForStock(currentDayCandlePayload, runningTick, Trade.TypeOfTrade.CNC)
-                                    Console.WriteLine(String.Format("3:{0}", sw1.ElapsedMilliseconds))
 
                                     'Update Collection
                                     Await stockStrategyRule.UpdateRequiredCollectionsAsync(runningTick).ConfigureAwait(False)
-                                    Console.WriteLine(String.Format("4:{0}", sw1.ElapsedMilliseconds))
 
                                     'Exit Trade From Rule
                                     _canceller.Token.ThrowIfCancellationRequested()
@@ -267,7 +217,6 @@ Namespace StrategyHelper
                                             stockList(stockName).CancelOrderDoneForTheMinute = True
                                         End If
                                     End If
-                                    Console.WriteLine(String.Format("5:{0}", sw1.ElapsedMilliseconds))
 
                                     _canceller.Token.ThrowIfCancellationRequested()
                                     Dim potentialRuleExitTrades As List(Of Trade) = GetSpecificTrades(currentDayCandlePayload, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
@@ -292,16 +241,12 @@ Namespace StrategyHelper
                                             stockList(stockName).ExitOrderDoneForTheMinute = True
                                         End If
                                     End If
-                                    Console.WriteLine(String.Format("6:{0}", sw1.ElapsedMilliseconds))
 
                                     'Place Order
                                     _canceller.Token.ThrowIfCancellationRequested()
                                     Dim stkPlAftrBrkrg As Decimal = Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol)
-                                    Console.WriteLine(String.Format("6_-2:{0}", sw1.ElapsedMilliseconds))
                                     Dim totlPlAftrBrkrg As Decimal = Me.TotalPLAfterBrokerage(runningTick.PayloadDate)
-                                    Console.WriteLine(String.Format("6_-1:{0}", sw1.ElapsedMilliseconds))
                                     Dim stkNmbrTrd As Integer = Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol)
-                                    Console.WriteLine(String.Format("6_0:{0}", sw1.ElapsedMilliseconds))
                                     Dim placeOrderDetails As Tuple(Of Boolean, List(Of PlaceOrderParameters)) = Nothing
                                     If stkNmbrTrd < Me.NumberOfTradesPerStockPerDay AndAlso
                                     totlPlAftrBrkrg < Me.OverAllProfitPerDay AndAlso
@@ -310,18 +255,14 @@ Namespace StrategyHelper
                                     stkPlAftrBrkrg > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso
                                     stkPlAftrBrkrg < stockStrategyRule.MaxProfitOfThisStock AndAlso
                                     stkPlAftrBrkrg > Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
-                                        Console.WriteLine(String.Format("6_1:{0}", sw1.ElapsedMilliseconds))
                                         placeOrderDetails = Await stockStrategyRule.IsTriggerReceivedForPlaceOrderAsync(runningTick).ConfigureAwait(False)
-                                        Console.WriteLine(String.Format("6_2:{0}", sw1.ElapsedMilliseconds))
                                         stockList(stockName).PlaceOrderTrigger = placeOrderDetails
                                         stockList(stockName).PlaceOrderDoneForTheMinute = True
                                     End If
-                                    Console.WriteLine(String.Format("7:{0}", sw1.ElapsedMilliseconds))
                                     If placeOrderDetails IsNot Nothing AndAlso placeOrderDetails.Item1 Then
                                         Dim placeOrders As List(Of PlaceOrderParameters) = placeOrderDetails.Item2
                                         If placeOrders IsNot Nothing AndAlso placeOrders.Count > 0 Then
                                             Dim tradeTag As String = System.Guid.NewGuid.ToString()
-                                            Console.WriteLine(String.Format("7_1:{0}", sw1.ElapsedMilliseconds))
                                             Dim ctr1 As Integer = 0
                                             For Each runningOrder In placeOrders
                                                 _canceller.Token.ThrowIfCancellationRequested()
@@ -348,7 +289,6 @@ Namespace StrategyHelper
                                                                                       slRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Stoploss),
                                                                                       signalCandle:=runningOrder.SignalCandle)
 
-                                                Console.WriteLine(String.Format("7_1_{1}:{0}", sw1.ElapsedMilliseconds, ctr1))
                                                 ctr1 += 1
                                                 runningTrade.UpdateTrade(Tag:=tradeTag,
                                                                          SquareOffValue:=Math.Abs(runningOrder.EntryPrice - runningOrder.Target),
@@ -357,22 +297,18 @@ Namespace StrategyHelper
                                                                          Supporting3:=runningOrder.Supporting3,
                                                                          Supporting4:=runningOrder.Supporting4,
                                                                          Supporting5:=runningOrder.Supporting5)
-                                                Console.WriteLine(String.Format("7_1_{1}:{0}", sw1.ElapsedMilliseconds, ctr1))
                                                 ctr1 += 1
 
                                                 If PlaceOrModifyOrder(runningTrade, Nothing) Then
                                                     runningOrder.Used = True
                                                 End If
-                                                Console.WriteLine(String.Format("7_1_{1}:{0}", sw1.ElapsedMilliseconds, ctr1))
                                             Next
                                         End If
                                     End If
-                                    Console.WriteLine(String.Format("8:{0}", sw1.ElapsedMilliseconds))
 
                                     'Enter Trade
                                     _canceller.Token.ThrowIfCancellationRequested()
                                     Dim potentialEntryTrades As List(Of Trade) = GetSpecificTrades(currentDayCandlePayload, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Open)
-                                    Console.WriteLine(String.Format("8_1:{0}", sw1.ElapsedMilliseconds))
                                     If potentialEntryTrades IsNot Nothing AndAlso potentialEntryTrades.Count > 0 Then
                                         Dim ctr As Integer = 0
                                         For Each runningPotentialEntryTrade In potentialEntryTrades
@@ -387,10 +323,8 @@ Namespace StrategyHelper
                                                             }
                                             EnterTradeIfPossible(runningPotentialEntryTrade, entryTick)
                                             ctr += 1
-                                            Console.WriteLine(String.Format("8_2_{1}:{0}", sw1.ElapsedMilliseconds, ctr))
                                         Next
                                     End If
-                                    Console.WriteLine(String.Format("9:{0}", sw1.ElapsedMilliseconds))
 
                                     'Modify Stoploss Trade
                                     _canceller.Token.ThrowIfCancellationRequested()
@@ -408,7 +342,6 @@ Namespace StrategyHelper
                                             stockList(stockName).ModifyStoplossOrderDoneForTheMinute = True
                                         End If
                                     End If
-                                    Console.WriteLine(String.Format("10:{0}", sw1.ElapsedMilliseconds))
 
                                     'Modify Target Trade
                                     _canceller.Token.ThrowIfCancellationRequested()
@@ -426,11 +359,9 @@ Namespace StrategyHelper
                                             stockList(stockName).ModifyTargetOrderDoneForTheMinute = True
                                         End If
                                     End If
-                                    Console.WriteLine(String.Format("11:{0}", sw1.ElapsedMilliseconds))
                                 End If
                             Next
                         End If
-                        Console.WriteLine(String.Format("12:{0}", sw.ElapsedMilliseconds))
                         If tradeCheckingDate.Date = endDate.Date Then
                             If XDayStocksPayload IsNot Nothing AndAlso XDayStocksPayload.Count > 0 Then
                                 Dim currentDayStocksExitPayload As Dictionary(Of String, Dictionary(Of Date, Payload)) = Nothing
@@ -454,14 +385,9 @@ Namespace StrategyHelper
                             End If
                         End If
                     End If
-                    Console.WriteLine(String.Format("13:{0}", sw.ElapsedMilliseconds))
                     SetOverallDrawUpDrawDownForTheDay(tradeCheckingDate)
-                    Console.WriteLine(String.Format("14:{0}", sw.ElapsedMilliseconds))
                     totalPL += TotalPLAfterBrokerage(tradeCheckingDate)
                     tradeCheckingDate = tradeCheckingDate.AddDays(1)
-                    sw.Stop()
-                    Console.WriteLine(String.Format("Date Loop:{0}", sw.ElapsedMilliseconds))
-                    sw.Reset()
                 End While   'Date Loop
 
                 'Serialization
