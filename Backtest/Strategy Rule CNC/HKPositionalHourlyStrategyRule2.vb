@@ -30,7 +30,7 @@ Public Class HKPositionalHourlyStrategyRule2
         If previousTradingDay <> Date.MinValue Then
             Dim rawInstrument As String = _tradingSymbol.Remove(_tradingSymbol.Count - 8)
             Dim previousTradingDaySymbol As String = _parentStrategy.Cmn.GetCurrentTradingSymbol(_parentStrategy.DatabaseTable, previousTradingDay, rawInstrument)
-            If previousTradingDaySymbol.ToUpper <> _tradingSymbol.ToUpper Then
+            If previousTradingDaySymbol IsNot Nothing AndAlso previousTradingDaySymbol.ToUpper <> _tradingSymbol.ToUpper Then
                 _exitForContractRollover = True
                 _previousSymbolPayloads = _parentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(_parentStrategy.DatabaseTable, previousTradingDaySymbol, _tradingDate, _tradingDate)
             End If
