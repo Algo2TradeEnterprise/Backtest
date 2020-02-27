@@ -531,6 +531,26 @@ Namespace StrategyHelper
                                     End If
                                 Next
                             End If
+                        Case 47
+                            For i = 1 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i)(0)
+                                'If rowDate.Date = tradingDate.Date Then
+                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                Dim tradingSymbol As String = dt.Rows(i).Item(1)
+                                Dim instrumentName As String = Nothing
+                                If tradingSymbol.Contains("FUT") Then
+                                    instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                                Else
+                                    instrumentName = tradingSymbol
+                                End If
+                                Dim detailsOfStock As StockDetails = New StockDetails With
+                                    {.StockName = instrumentName,
+                                    .LotSize = dt.Rows(i).Item(2),
+                                    .EligibleToTakeTrade = True}
+                                ret.Add(instrumentName, detailsOfStock)
+                                If i = Me.NumberOfTradeableStockPerDay Then Exit For
+                                'End If
+                            Next
                         Case Else
                             For i = 1 To dt.Rows.Count - 1
                                 Dim rowDate As Date = dt.Rows(i)(0)
