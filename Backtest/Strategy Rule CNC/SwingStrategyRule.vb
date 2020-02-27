@@ -47,8 +47,7 @@ Public Class SwingStrategyRule
                     .Target = .EntryPrice + 1000000,
                     .Buffer = 0,
                     .SignalCandle = currentMinuteCandlePayload,
-                    .OrderType = Trade.TypeOfOrder.Market,
-                    .Supporting1 = currentMinuteCandlePayload.ToString("yyyy-MM-dd")
+                    .OrderType = Trade.TypeOfOrder.Market
                 }
             End If
         End If
