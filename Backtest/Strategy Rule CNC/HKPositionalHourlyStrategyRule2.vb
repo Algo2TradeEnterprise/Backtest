@@ -141,11 +141,18 @@ Public Class HKPositionalHourlyStrategyRule2
 
     Private Sub ExitForContractRollover(ByVal currentTick As Payload)
         If _exitForContractRollover Then
-            Dim currentCandlePayload As Payload = _previousSymbolPayloads(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _previousSymbolPayloads))
-            Dim potentialRuleExitTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentCandlePayload, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
-            If potentialRuleExitTrades IsNot Nothing AndAlso potentialRuleExitTrades.Count > 0 Then
-                For Each runningExitTrade In potentialRuleExitTrades
-                    Dim exitTick As Payload = New Payload(Payload.CandleDataSource.Calculated) With {
+            Dim currentCandlePayload As Payload = Nothing
+            If _previousSymbolPayloads IsNot Nothing AndAlso _previousSymbolPayloads.Count > 0 Then
+                currentCandlePayload = _previousSymbolPayloads(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _previousSymbolPayloads))
+            End If
+            If _signalPayload IsNot Nothing AndAlso _signalPayload.Count > 0 Then
+                currentCandlePayload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
+            End If
+            If currentCandlePayload IsNot Nothing Then
+                Dim potentialRuleExitTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentCandlePayload, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
+                If potentialRuleExitTrades IsNot Nothing AndAlso potentialRuleExitTrades.Count > 0 Then
+                    For Each runningExitTrade In potentialRuleExitTrades
+                        Dim exitTick As Payload = New Payload(Payload.CandleDataSource.Calculated) With {
                                                         .Open = currentCandlePayload.Open,
                                                         .Low = currentCandlePayload.Open,
                                                         .High = currentCandlePayload.Open,
@@ -153,10 +160,11 @@ Public Class HKPositionalHourlyStrategyRule2
                                                         .PayloadDate = currentCandlePayload.PayloadDate,
                                                         .TradingSymbol = currentCandlePayload.TradingSymbol
                                                     }
-                    _parentStrategy.ExitTradeByForce(runningExitTrade, exitTick, "Contract Rollover Exit")
-                Next
-                _exitForContractRollover = False
-                _entryForContractRolloverDirection = potentialRuleExitTrades.LastOrDefault.EntryDirection
+                        _parentStrategy.ExitTradeByForce(runningExitTrade, exitTick, "Contract Rollover Exit")
+                    Next
+                    _exitForContractRollover = False
+                    _entryForContractRolloverDirection = potentialRuleExitTrades.LastOrDefault.EntryDirection
+                End If
             End If
         End If
     End Sub
