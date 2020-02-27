@@ -144,8 +144,7 @@ Public Class HKPositionalHourlyStrategyRule2
             Dim currentCandlePayload As Payload = Nothing
             If _previousSymbolPayloads IsNot Nothing AndAlso _previousSymbolPayloads.Count > 0 Then
                 currentCandlePayload = _previousSymbolPayloads(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _previousSymbolPayloads))
-            End If
-            If _signalPayload IsNot Nothing AndAlso _signalPayload.Count > 0 Then
+            ElseIf _signalPayload IsNot Nothing AndAlso _signalPayload.Count > 0 Then
                 currentCandlePayload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
             End If
             If currentCandlePayload IsNot Nothing Then
