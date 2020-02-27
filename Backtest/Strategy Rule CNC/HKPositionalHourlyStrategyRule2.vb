@@ -39,7 +39,8 @@ Public Class HKPositionalHourlyStrategyRule2
             If signal IsNot Nothing AndAlso signal.Item1 Then
                 signalCandle = signal.Item3
                 If signalCandle IsNot Nothing Then
-                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentTick.Open, RoundOfType.Floor)
+                    'Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentTick.Open, RoundOfType.Floor)
+                    Dim buffer As Decimal = 1
                     parameter = New PlaceOrderParameters With {
                                 .EntryPrice = currentTick.Open,
                                 .EntryDirection = Trade.TradeExecutionDirection.Buy,
@@ -90,8 +91,8 @@ Public Class HKPositionalHourlyStrategyRule2
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
             Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
             Dim currentHKPayload As Payload = _hkPayload(currentMinuteCandlePayload.PayloadDate)
-            If currentTrade.PotentialStopLoss <> currentHKPayload.Open Then
-                ret = New Tuple(Of Boolean, Decimal, String)(True, currentHKPayload.Open, String.Format("Modified at {0}",
+            If currentTrade.PotentialStopLoss <> currentHKPayload.Open - currentTrade.StoplossBuffer Then
+                ret = New Tuple(Of Boolean, Decimal, String)(True, currentHKPayload.Open - currentTrade.StoplossBuffer, String.Format("Modified at {0}",
                                                                                                         currentTick.PayloadDate.ToString("dd-MM-yyyy HH:mm:ss")))
             End If
         End If
