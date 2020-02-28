@@ -89,7 +89,8 @@ Public Class HKATRTraillingStrategyRule
                                     .SignalCandle = signalCandle,
                                     .OrderType = Trade.TypeOfOrder.SL,
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
-                                    .Supporting2 = targetRemark
+                                    .Supporting2 = targetRemark,
+                                    .Supporting3 = Math.Round(_atrPayloads(signalCandle.PayloadDate), 4)
                                 }
 
                 ElseIf signal.Item3 = Trade.TradeExecutionDirection.Sell Then
@@ -117,7 +118,8 @@ Public Class HKATRTraillingStrategyRule
                                     .SignalCandle = signalCandle,
                                     .OrderType = Trade.TypeOfOrder.SL,
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
-                                    .Supporting2 = targetRemark
+                                    .Supporting2 = targetRemark,
+                                    .Supporting3 = Math.Round(_atrPayloads(signalCandle.PayloadDate), 4)
                                 }
 
                 End If
