@@ -164,6 +164,22 @@ Public Class HKATRTraillingStrategyRule
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(ByVal currentTick As Payload, ByVal currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
+        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            Dim triggerPrice As Decimal = Decimal.MinValue
+            Dim slPoint As Decimal = currentTrade.SignalCandle.CandleRange + 2 * currentTrade.StoplossBuffer
+            Dim atr As Decimal = _atrPayloads(currentTrade.SignalCandle.PayloadDate)
+            Dim potentialTarget As Decimal = Math.Max(slPoint, atr)
+            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy AndAlso currentTick.Open >= currentTrade.EntryPrice + potentialTarget Then
+                Dim brkevnPoint As Decimal = _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, Me.LotSize, _parentStrategy.StockType)
+                triggerPrice = currentTrade.EntryPrice + brkevnPoint
+            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell AndAlso currentTick.Open <= currentTrade.EntryPrice - potentialTarget Then
+                Dim brkevnPoint As Decimal = _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, Me.LotSize, _parentStrategy.StockType)
+                triggerPrice = currentTrade.EntryPrice - brkevnPoint
+            End If
+            If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
+                ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, String.Format("Breakeven {0}", currentTick.PayloadDate.ToString("HH:mm:ss")))
+            End If
+        End If
         Return ret
     End Function
 
