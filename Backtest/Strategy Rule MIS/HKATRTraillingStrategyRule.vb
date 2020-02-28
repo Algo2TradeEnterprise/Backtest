@@ -66,8 +66,8 @@ Public Class HKATRTraillingStrategyRule
             If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
                 If signal.Item3 = Trade.TradeExecutionDirection.Buy Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.High, RoundOfType.Floor)
-                    Dim entry As Decimal = signalCandle.High + buffer
-                    Dim stoploss As Decimal = signalCandle.Low - buffer
+                    Dim entry As Decimal = ConvertFloorCeling(signalCandle.High + buffer, _parentStrategy.TickSize, RoundOfType.Floor)
+                    Dim stoploss As Decimal = ConvertFloorCeling(signalCandle.Low - buffer, _parentStrategy.TickSize, RoundOfType.Floor)
                     Dim slTargetPoint As Decimal = ConvertFloorCeling(Math.Abs(entry - stoploss) * _userInputs.SLTargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
                     Dim atrTargetPoint As Decimal = ConvertFloorCeling(_atrPayloads(signalCandle.PayloadDate) * _userInputs.ATRTargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
                     Dim target As Decimal = Decimal.MinValue
@@ -94,8 +94,8 @@ Public Class HKATRTraillingStrategyRule
 
                 ElseIf signal.Item3 = Trade.TradeExecutionDirection.Sell Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Low, RoundOfType.Floor)
-                    Dim entry As Decimal = signalCandle.Low - buffer
-                    Dim stoploss As Decimal = signalCandle.High + buffer
+                    Dim entry As Decimal = ConvertFloorCeling(signalCandle.Low - buffer, _parentStrategy.TickSize, RoundOfType.Floor)
+                    Dim stoploss As Decimal = ConvertFloorCeling(signalCandle.High + buffer, _parentStrategy.TickSize, RoundOfType.Floor)
                     Dim slTargetPoint As Decimal = ConvertFloorCeling(Math.Abs(stoploss - entry) * _userInputs.SLTargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
                     Dim atrTargetPoint As Decimal = ConvertFloorCeling(_atrPayloads(signalCandle.PayloadDate) * _userInputs.ATRTargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
                     Dim target As Decimal = Decimal.MinValue
