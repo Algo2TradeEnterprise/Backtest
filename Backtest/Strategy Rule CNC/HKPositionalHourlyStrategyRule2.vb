@@ -108,8 +108,11 @@ Public Class HKPositionalHourlyStrategyRule2
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
             Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
             Dim currentHKPayload As Payload = _hkPayload(currentMinuteCandlePayload.PayloadDate)
-            If currentTrade.PotentialStopLoss <> currentHKPayload.Open - currentTrade.StoplossBuffer Then
+            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy AndAlso currentTrade.PotentialStopLoss <> currentHKPayload.Open - currentTrade.StoplossBuffer Then
                 ret = New Tuple(Of Boolean, Decimal, String)(True, currentHKPayload.Open - currentTrade.StoplossBuffer, String.Format("Modified at {0}",
+                                                                                                        currentTick.PayloadDate.ToString("dd-MM-yyyy HH:mm:ss")))
+            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell AndAlso currentTrade.PotentialStopLoss <> currentHKPayload.Open + currentTrade.StoplossBuffer Then
+                ret = New Tuple(Of Boolean, Decimal, String)(True, currentHKPayload.Open + currentTrade.StoplossBuffer, String.Format("Modified at {0}",
                                                                                                         currentTick.PayloadDate.ToString("dd-MM-yyyy HH:mm:ss")))
             End If
         End If
