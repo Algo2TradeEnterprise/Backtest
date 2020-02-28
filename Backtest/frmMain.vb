@@ -1567,6 +1567,67 @@ Public Class frmMain
 #End Region
 
 #Region "Favourable fractal breakout 2"
+            'Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+            '                                                  exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+            '                                                  exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+            '                                                  tradeStartTime:=TimeSpan.Parse("9:45:00"),
+            '                                                  lastTradeEntryTime:=TimeSpan.Parse("14:45:59"),
+            '                                                  eodExitTime:=TimeSpan.Parse("15:15:00"),
+            '                                                  tickSize:=tick,
+            '                                                  marginMultiplier:=margin,
+            '                                                  timeframe:=30,
+            '                                                  heikenAshiCandle:=False,
+            '                                                  stockType:=stockType,
+            '                                                  databaseTable:=database,
+            '                                                  dataSource:=sourceData,
+            '                                                  initialCapital:=Decimal.MaxValue / 2,
+            '                                                  usableCapital:=Decimal.MaxValue / 2,
+            '                                                  minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+            '                                                  amountToBeWithdrawn:=0)
+            '    AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+
+            '    With backtestStrategy
+            '        .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Stock.csv")
+
+            '        .AllowBothDirectionEntryAtSameTime = False
+            '        .TrailingStoploss = False
+            '        .TickBasedStrategy = True
+            '        .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+            '        .RuleEntityData = New FavourableFractalBreakoutStrategyRule2.StrategyRuleEntities With
+            '            {
+            '                .MaxLossPercentagePerTrade = 0.3,
+            '                .MaxProfitPercentagePerTrade = 0.5
+            '            }
+
+            '        .NumberOfTradeableStockPerDay = Integer.MaxValue
+
+            '        .NumberOfTradesPerStockPerDay = Integer.MaxValue
+
+            '        .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+            '        .StockMaxLossPercentagePerDay = Decimal.MinValue
+
+            '        .ExitOnStockFixedTargetStoploss = False
+            '        .StockMaxProfitPerDay = Decimal.MaxValue
+            '        .StockMaxLossPerDay = Decimal.MinValue
+
+            '        .ExitOnOverAllFixedTargetStoploss = False
+            '        .OverAllProfitPerDay = Decimal.MaxValue
+            '        .OverAllLossPerDay = Decimal.MinValue
+
+            '        .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+            '        .MTMSlab = Math.Abs(.OverAllLossPerDay)
+            '        .MovementSlab = .MTMSlab / 2
+            '        .RealtimeTrailingPercentage = 50
+            '    End With
+
+            '    Dim ruleData As FavourableFractalBreakoutStrategyRule2.StrategyRuleEntities = backtestStrategy.RuleEntityData
+            '    Dim filename As String = String.Format("Favourable Fractal Breakout Output")
+
+            '    Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+            'End Using
+#End Region
+
+#Region "HK ATR Trailing"
             Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                               exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                               exchangeEndTime:=TimeSpan.Parse("15:29:59"),
@@ -1575,7 +1636,7 @@ Public Class frmMain
                                                               eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                               tickSize:=tick,
                                                               marginMultiplier:=margin,
-                                                              timeframe:=30,
+                                                              timeframe:=1,
                                                               heikenAshiCandle:=False,
                                                               stockType:=stockType,
                                                               databaseTable:=database,
@@ -1587,19 +1648,19 @@ Public Class frmMain
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Stock.csv")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Stocklist.csv")
 
                     .AllowBothDirectionEntryAtSameTime = False
                     .TrailingStoploss = False
-                    .TickBasedStrategy = True
+                    .TickBasedStrategy = False
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
-                    .RuleEntityData = New FavourableFractalBreakoutStrategyRule2.StrategyRuleEntities With
+                    .RuleEntityData = New HKATRTraillingStrategyRule.StrategyRuleEntities With
                         {
-                            .MaxLossPercentagePerTrade = 0.3,
-                            .MaxProfitPercentagePerTrade = 0.5
+                            .ATRTargetMultiplier = 4,
+                            .SLTargetMultiplier = 3
                         }
 
-                    .NumberOfTradeableStockPerDay = Integer.MaxValue
+                    .NumberOfTradeableStockPerDay = 1
 
                     .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
@@ -1620,8 +1681,8 @@ Public Class frmMain
                     .RealtimeTrailingPercentage = 50
                 End With
 
-                Dim ruleData As FavourableFractalBreakoutStrategyRule2.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                Dim filename As String = String.Format("Favourable Fractal Breakout Output")
+                Dim ruleData As HKATRTraillingStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                Dim filename As String = String.Format("HK ATR Trailling,ATR Mul {0},SL Mul {1}", ruleData.ATRTargetMultiplier, ruleData.SLTargetMultiplier)
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using
