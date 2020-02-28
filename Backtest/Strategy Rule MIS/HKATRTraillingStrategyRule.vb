@@ -63,8 +63,11 @@ Public Class HKATRTraillingStrategyRule
             Dim signal As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
             If signal IsNot Nothing AndAlso signal.Item1 Then
                 Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandlePayload, _parentStrategy.TradeType)
-                If Not (lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.PLPoint > 0 AndAlso
-                    lastExecutedTrade.EntryDirection = signal.Item3) Then
+                If lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.PLPoint > 0 AndAlso lastExecutedTrade.EntryDirection = signal.Item3 Then
+                    If IsSignalValid(lastExecutedTrade.ExitTime, currentMinuteCandlePayload.PayloadDate, signal.Item3) Then
+                        signalCandle = signal.Item4
+                    End If
+                Else
                     signalCandle = signal.Item4
                 End If
             End If
@@ -268,6 +271,22 @@ Public Class HKATRTraillingStrategyRule
                 End If
             End If
         End If
+        Return ret
+    End Function
+
+    Private Function IsSignalValid(ByVal previousTradeExitTime As Date, ByVal currentTime As Date, ByVal direction As Trade.TradeExecutionDirection) As Boolean
+        Dim ret As Boolean = False
+        For Each runningPayload In _atrTrailingColorPayloads
+            If runningPayload.Key >= previousTradeExitTime AndAlso runningPayload.Key < currentTime Then
+                If runningPayload.Value = Color.Green AndAlso direction = Trade.TradeExecutionDirection.Sell Then
+                    ret = True
+                    Exit For
+                ElseIf runningPayload.Value = Color.Red AndAlso direction = Trade.TradeExecutionDirection.Buy Then
+                    ret = True
+                    Exit For
+                End If
+            End If
+        Next
         Return ret
     End Function
 End Class
