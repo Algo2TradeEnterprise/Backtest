@@ -1656,8 +1656,8 @@ Public Class frmMain
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
                     .RuleEntityData = New HKATRTraillingStrategyRule.StrategyRuleEntities With
                         {
-                            .ATRTargetMultiplier = 4,
-                            .SLTargetMultiplier = 3
+                            .ATRTargetMultiplier = 3,
+                            .SLTargetMultiplier = 2
                         }
 
                     .NumberOfTradeableStockPerDay = 5

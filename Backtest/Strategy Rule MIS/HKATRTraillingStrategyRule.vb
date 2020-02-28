@@ -60,7 +60,11 @@ Public Class HKATRTraillingStrategyRule
             Dim signalCandle As Payload = Nothing
             Dim signal As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
             If signal IsNot Nothing AndAlso signal.Item1 Then
-                signalCandle = signal.Item4
+                Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandlePayload, _parentStrategy.TradeType)
+                If Not (lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.ExitCondition = Trade.TradeExitCondition.Target AndAlso
+                    lastExecutedTrade.EntryDirection = signal.Item3) Then
+                    signalCandle = signal.Item4
+                End If
             End If
 
             If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
