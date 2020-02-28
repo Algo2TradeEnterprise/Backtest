@@ -39,7 +39,7 @@ Public Class HKATRTraillingStrategyRule
 
         Indicator.HeikenAshi.ConvertToHeikenAshi(_signalPayload, _hkPayloads)
         Indicator.ATR.CalculateATR(14, _hkPayloads, _atrPayloads)
-        Indicator.ATRTrailingStop.CalculateATRTrailingStop(7, 2, _hkPayloads, _atrTrailingPayloads, _atrTrailingColorPayloads)
+        Indicator.ATRTrailingStop.CalculateATRTrailingStop(7, 3, _hkPayloads, _atrTrailingPayloads, _atrTrailingColorPayloads)
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(ByVal currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
