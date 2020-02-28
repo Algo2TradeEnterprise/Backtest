@@ -13,6 +13,7 @@ Public Class HKATRTraillingStrategyRule
         Public ATRTargetMultiplier As Decimal
         Public SLTargetMultiplier As Decimal
         Public AddBreakevenMakeupTrade As Boolean
+        Public BreakevenMovement As Boolean
     End Class
 #End Region
 
@@ -39,7 +40,7 @@ Public Class HKATRTraillingStrategyRule
 
         Indicator.HeikenAshi.ConvertToHeikenAshi(_signalPayload, _hkPayloads)
         Indicator.ATR.CalculateATR(14, _hkPayloads, _atrPayloads)
-        Indicator.ATRTrailingStop.CalculateATRTrailingStop(7, 3, _hkPayloads, _atrTrailingPayloads, _atrTrailingColorPayloads)
+        Indicator.ATRTrailingStop.CalculateATRTrailingStop(7, 2, _hkPayloads, _atrTrailingPayloads, _atrTrailingColorPayloads)
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(ByVal currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -222,7 +223,7 @@ Public Class HKATRTraillingStrategyRule
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(ByVal currentTick As Payload, ByVal currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
-        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+        If _userInputs.BreakevenMovement AndAlso currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
             Dim triggerPrice As Decimal = Decimal.MinValue
             Dim slPoint As Decimal = currentTrade.SignalCandle.CandleRange + 2 * currentTrade.StoplossBuffer
             Dim atr As Decimal = _atrPayloads(currentTrade.SignalCandle.PayloadDate)

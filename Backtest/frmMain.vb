@@ -1648,7 +1648,8 @@ Public Class frmMain
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Stocklist.csv")
+                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Stocklist.csv")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Top Gainer Top Looser.csv")
 
                     .AllowBothDirectionEntryAtSameTime = False
                     .TrailingStoploss = False
@@ -1658,7 +1659,8 @@ Public Class frmMain
                         {
                             .ATRTargetMultiplier = 4,
                             .SLTargetMultiplier = 3,
-                            .AddBreakevenMakeupTrade = False
+                            .AddBreakevenMakeupTrade = False,
+                            .BreakevenMovement = True
                         }
 
                     .NumberOfTradeableStockPerDay = 5
