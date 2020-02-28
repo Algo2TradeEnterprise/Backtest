@@ -12,6 +12,7 @@ Public Class HKATRTraillingStrategyRule
 
         Public ATRTargetMultiplier As Decimal
         Public SLTargetMultiplier As Decimal
+        Public AddBreakevenMakeupTrade As Boolean
     End Class
 #End Region
 
@@ -181,7 +182,10 @@ Public Class HKATRTraillingStrategyRule
             End If
         End If
         If parameter1 IsNot Nothing Then
-            ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter1, parameter2})
+            Dim parameters As List(Of PlaceOrderParameters) = New List(Of PlaceOrderParameters)
+            parameters.Add(parameter1)
+            If _userInputs.AddBreakevenMakeupTrade Then parameters.Add(parameter2)
+            ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, parameters)
         End If
         Return ret
     End Function
