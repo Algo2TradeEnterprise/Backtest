@@ -26,13 +26,15 @@ Public Class HKPositionalHourlyStrategyRule2
 
         Indicator.HeikenAshi.ConvertToHeikenAshi(_signalPayload, _hkPayload)
 
-        Dim previousTradingDay As Date = _parentStrategy.Cmn.GetPreviousTradingDay(_parentStrategy.DatabaseTable, _tradingDate)
-        If previousTradingDay <> Date.MinValue Then
-            Dim rawInstrument As String = _tradingSymbol.Remove(_tradingSymbol.Count - 8)
-            Dim previousTradingDaySymbol As String = _parentStrategy.Cmn.GetCurrentTradingSymbol(_parentStrategy.DatabaseTable, previousTradingDay, rawInstrument)
-            If previousTradingDaySymbol IsNot Nothing AndAlso previousTradingDaySymbol.ToUpper <> _tradingSymbol.ToUpper Then
-                _exitForContractRollover = True
-                _previousSymbolPayloads = _parentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(_parentStrategy.DatabaseTable, previousTradingDaySymbol, _tradingDate, _tradingDate)
+        If _parentStrategy.StockType = Trade.TypeOfStock.Futures Then
+            Dim previousTradingDay As Date = _parentStrategy.Cmn.GetPreviousTradingDay(_parentStrategy.DatabaseTable, _tradingDate)
+            If previousTradingDay <> Date.MinValue Then
+                Dim rawInstrument As String = _tradingSymbol.Remove(_tradingSymbol.Count - 8)
+                Dim previousTradingDaySymbol As String = _parentStrategy.Cmn.GetCurrentTradingSymbol(_parentStrategy.DatabaseTable, previousTradingDay, rawInstrument)
+                If previousTradingDaySymbol IsNot Nothing AndAlso previousTradingDaySymbol.ToUpper <> _tradingSymbol.ToUpper Then
+                    _exitForContractRollover = True
+                    _previousSymbolPayloads = _parentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(_parentStrategy.DatabaseTable, previousTradingDaySymbol, _tradingDate, _tradingDate)
+                End If
             End If
         End If
     End Sub
