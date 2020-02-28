@@ -1197,7 +1197,7 @@ Namespace StrategyHelper
                 If openTrades IsNot Nothing AndAlso openTrades.Count > 0 Then allTrades.AddRange(openTrades)
                 If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
                     ret = allTrades.OrderBy(Function(x)
-                                                Return x.ExitTime
+                                                Return x.EntryTime
                                             End Function).LastOrDefault
                 End If
             End If

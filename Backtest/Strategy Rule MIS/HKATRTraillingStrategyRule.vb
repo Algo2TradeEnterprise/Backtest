@@ -49,7 +49,8 @@ Public Class HKATRTraillingStrategyRule
         Dim stkTrdNmbr As Integer = _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol)
         Dim ttlPL As Decimal = _parentStrategy.TotalPLAfterBrokerage(currentTick.PayloadDate)
         Dim stkPL As Decimal = _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol)
-        Dim parameter As PlaceOrderParameters = Nothing
+        Dim parameter1 As PlaceOrderParameters = Nothing
+        Dim parameter2 As PlaceOrderParameters = Nothing
         If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
             Not _parentStrategy.IsTradeActive(currentTick, _parentStrategy.TradeType) AndAlso Not _parentStrategy.IsTradeOpen(currentTick, _parentStrategy.TradeType) AndAlso
             stkTrdNmbr < Me._parentStrategy.NumberOfTradesPerStockPerDay AndAlso ttlPL < _parentStrategy.OverAllProfitPerDay AndAlso ttlPL > _parentStrategy.OverAllLossPerDay AndAlso
@@ -61,7 +62,7 @@ Public Class HKATRTraillingStrategyRule
             Dim signal As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
             If signal IsNot Nothing AndAlso signal.Item1 Then
                 Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandlePayload, _parentStrategy.TradeType)
-                If Not (lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.ExitCondition = Trade.TradeExitCondition.Target AndAlso
+                If Not (lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.PLPoint > 0 AndAlso
                     lastExecutedTrade.EntryDirection = signal.Item3) Then
                     signalCandle = signal.Item4
                 End If
@@ -83,7 +84,7 @@ Public Class HKATRTraillingStrategyRule
                         target = entry + slTargetPoint
                         targetRemark = "SL Target"
                     End If
-                    parameter = New PlaceOrderParameters With {
+                    parameter1 = New PlaceOrderParameters With {
                                     .EntryPrice = entry,
                                     .EntryDirection = Trade.TradeExecutionDirection.Buy,
                                     .Quantity = Me.LotSize,
@@ -94,7 +95,32 @@ Public Class HKATRTraillingStrategyRule
                                     .OrderType = Trade.TypeOfOrder.SL,
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = targetRemark,
-                                    .Supporting3 = Math.Round(_atrPayloads(signalCandle.PayloadDate), 4)
+                                    .Supporting3 = Math.Round(_atrPayloads(signalCandle.PayloadDate), 4),
+                                    .Supporting4 = "Normal"
+                                }
+
+                    slTargetPoint = ConvertFloorCeling(Math.Abs(entry - stoploss), _parentStrategy.TickSize, RoundOfType.Floor)
+                    atrTargetPoint = ConvertFloorCeling(_atrPayloads(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Floor)
+                    If atrTargetPoint >= slTargetPoint Then
+                        target = entry + atrTargetPoint
+                        targetRemark = "ATR Target"
+                    Else
+                        target = entry + slTargetPoint
+                        targetRemark = "SL Target"
+                    End If
+                    parameter2 = New PlaceOrderParameters With {
+                                    .EntryPrice = entry,
+                                    .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                                    .Quantity = Me.LotSize,
+                                    .Stoploss = stoploss,
+                                    .Target = target,
+                                    .Buffer = buffer,
+                                    .SignalCandle = signalCandle,
+                                    .OrderType = Trade.TypeOfOrder.SL,
+                                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                                    .Supporting2 = targetRemark,
+                                    .Supporting3 = Math.Round(_atrPayloads(signalCandle.PayloadDate), 4),
+                                    .Supporting4 = "1:1"
                                 }
 
                 ElseIf signal.Item3 = Trade.TradeExecutionDirection.Sell Then
@@ -112,7 +138,7 @@ Public Class HKATRTraillingStrategyRule
                         target = entry - slTargetPoint
                         targetRemark = "SL Target"
                     End If
-                    parameter = New PlaceOrderParameters With {
+                    parameter1 = New PlaceOrderParameters With {
                                     .EntryPrice = entry,
                                     .EntryDirection = Trade.TradeExecutionDirection.Sell,
                                     .Quantity = Me.LotSize,
@@ -123,14 +149,39 @@ Public Class HKATRTraillingStrategyRule
                                     .OrderType = Trade.TypeOfOrder.SL,
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = targetRemark,
-                                    .Supporting3 = Math.Round(_atrPayloads(signalCandle.PayloadDate), 4)
+                                    .Supporting3 = Math.Round(_atrPayloads(signalCandle.PayloadDate), 4),
+                                    .Supporting4 = "Normal"
+                                }
+
+                    slTargetPoint = ConvertFloorCeling(Math.Abs(stoploss - entry), _parentStrategy.TickSize, RoundOfType.Floor)
+                    atrTargetPoint = ConvertFloorCeling(_atrPayloads(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Floor)
+                    If atrTargetPoint >= slTargetPoint Then
+                        target = entry - atrTargetPoint
+                        targetRemark = "ATR Target"
+                    Else
+                        target = entry - slTargetPoint
+                        targetRemark = "SL Target"
+                    End If
+                    parameter2 = New PlaceOrderParameters With {
+                                    .EntryPrice = entry,
+                                    .EntryDirection = Trade.TradeExecutionDirection.Sell,
+                                    .Quantity = Me.LotSize,
+                                    .Stoploss = stoploss,
+                                    .Target = target,
+                                    .Buffer = buffer,
+                                    .SignalCandle = signalCandle,
+                                    .OrderType = Trade.TypeOfOrder.SL,
+                                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                                    .Supporting2 = targetRemark,
+                                    .Supporting3 = Math.Round(_atrPayloads(signalCandle.PayloadDate), 4),
+                                    .Supporting4 = "1:1"
                                 }
 
                 End If
             End If
         End If
-        If parameter IsNot Nothing Then
-            ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
+        If parameter1 IsNot Nothing Then
+            ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter1, parameter2})
         End If
         Return ret
     End Function
