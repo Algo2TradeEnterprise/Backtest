@@ -51,7 +51,7 @@ Public Class HKSlabBasedStrategyRule
             If Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) AndAlso
                 Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) Then
                 Dim signalCandle As Payload = Nothing
-                Dim signal As Tuple(Of Boolean, Decimal, Payload) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, Trade.TradeExecutionDirection.Buy)
+                Dim signal As Tuple(Of Boolean, Decimal, Payload, String) = GetSignalCandle(currentMinuteCandlePayload, currentTick, Trade.TradeExecutionDirection.Buy)
                 If signal IsNot Nothing AndAlso signal.Item1 Then
                     signalCandle = signal.Item3
                 End If
@@ -71,14 +71,15 @@ Public Class HKSlabBasedStrategyRule
                                     .Buffer = buffer,
                                     .SignalCandle = signalCandle,
                                     .OrderType = Trade.TypeOfOrder.SL,
-                                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss")
+                                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                                    .Supporting2 = signal.Item4
                                 }
                 End If
             End If
             If parameter Is Nothing AndAlso Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) AndAlso
                 Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) Then
                 Dim signalCandle As Payload = Nothing
-                Dim signal As Tuple(Of Boolean, Decimal, Payload) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, Trade.TradeExecutionDirection.Sell)
+                Dim signal As Tuple(Of Boolean, Decimal, Payload, String) = GetSignalCandle(currentMinuteCandlePayload, currentTick, Trade.TradeExecutionDirection.Sell)
                 If signal IsNot Nothing AndAlso signal.Item1 Then
                     signalCandle = signal.Item3
                 End If
@@ -99,7 +100,8 @@ Public Class HKSlabBasedStrategyRule
                                     .Buffer = buffer,
                                     .SignalCandle = signalCandle,
                                     .OrderType = Trade.TypeOfOrder.SL,
-                                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss")
+                                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                                    .Supporting2 = signal.Item4
                                 }
                 End If
             End If
@@ -114,8 +116,18 @@ Public Class HKSlabBasedStrategyRule
         Dim ret As Tuple(Of Boolean, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
-        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
-
+        If _parentStrategy.IsAnyTradeOfTheStockTargetReached(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS) Then
+            ret = New Tuple(Of Boolean, String)(True, "One trade target reached")
+        End If
+        If ret Is Nothing Then
+            If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
+                Dim signal As Tuple(Of Boolean, Decimal, Payload, String) = GetSignalCandle(currentMinuteCandlePayload, currentTick, currentTrade.EntryDirection)
+                If signal IsNot Nothing AndAlso signal.Item1 Then
+                    If signal.Item3.PayloadDate <> currentTrade.SignalCandle.PayloadDate Then
+                        ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                    End If
+                End If
+            End If
         End If
         Return ret
     End Function
@@ -123,6 +135,37 @@ Public Class HKSlabBasedStrategyRule
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
+        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
+            Dim triggerPrice As Decimal = Decimal.MinValue
+            Dim remark As String = Nothing
+            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                Dim signal As Tuple(Of Boolean, Decimal, Payload, String) = GetSignalCandle(currentMinuteCandlePayload, currentTick, Trade.TradeExecutionDirection.Sell)
+                If signal IsNot Nothing AndAlso signal.Item1 Then
+                    Dim signalTrade As Trade = GetLastOrderFromSignalCandle(Trade.TradeExecutionDirection.Sell, signal.Item3)
+                    If signalTrade Is Nothing Then
+                        If signal.Item3.Low < currentTrade.EntryPrice Then
+                            triggerPrice = signal.Item3.Low
+                            remark = "Opposite signal low"
+                        End If
+                    End If
+                End If
+            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                Dim signal As Tuple(Of Boolean, Decimal, Payload, String) = GetSignalCandle(currentMinuteCandlePayload, currentTick, Trade.TradeExecutionDirection.Buy)
+                If signal IsNot Nothing AndAlso signal.Item1 Then
+                    Dim signalTrade As Trade = GetLastOrderFromSignalCandle(Trade.TradeExecutionDirection.Buy, signal.Item3)
+                    If signalTrade Is Nothing Then
+                        If signal.Item3.High > currentTrade.EntryPrice Then
+                            triggerPrice = signal.Item3.Low
+                            remark = "Opposite signal high"
+                        End If
+                    End If
+                End If
+            End If
+            If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
+                ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, remark)
+            End If
+        End If
         Return ret
     End Function
 
@@ -150,14 +193,40 @@ Public Class HKSlabBasedStrategyRule
         Return ret
     End Function
 
-    Private Function GetSignalCandle(ByVal candle As Payload, ByVal currentTick As Payload, ByVal direction As Trade.TradeExecutionDirection) As Tuple(Of Boolean, Decimal, Payload)
-        Dim ret As Tuple(Of Boolean, Decimal, Payload) = Nothing
-
+    Private Function GetSignalCandle(ByVal candle As Payload, ByVal currentTick As Payload, ByVal direction As Trade.TradeExecutionDirection) As Tuple(Of Boolean, Decimal, Payload, String)
+        Dim ret As Tuple(Of Boolean, Decimal, Payload, String) = Nothing
+        Dim buySignal As Payload = GetBuySignalCandle(candle.PayloadDate)
+        If buySignal IsNot Nothing Then _lastBuySignal = buySignal
+        Dim sellSignal As Payload = GetSellSignalCandle(candle.PayloadDate)
+        If sellSignal IsNot Nothing Then _lastSellSignal = sellSignal
+        If direction = Trade.TradeExecutionDirection.Buy Then
+            If _lastBuySignal IsNot Nothing Then
+                Dim lastTrade As Trade = GetLastOrder(Trade.TradeExecutionDirection.Buy, candle)
+                If lastTrade Is Nothing OrElse lastTrade.SignalCandle.PayloadDate <> _lastBuySignal.PayloadDate Then
+                    Dim buyPrice As Decimal = GetSlabBasedLevel(_lastBuySignal.High, Trade.TradeExecutionDirection.Buy)
+                    ret = New Tuple(Of Boolean, Decimal, Payload, String)(True, buyPrice, _lastBuySignal, "Normal Entry")
+                End If
+            End If
+        ElseIf direction = Trade.TradeExecutionDirection.Sell Then
+            If _lastSellSignal IsNot Nothing Then
+                Dim lastTrade As Trade = GetLastOrder(Trade.TradeExecutionDirection.Sell, candle)
+                If lastTrade Is Nothing OrElse lastTrade.SignalCandle.PayloadDate <> _lastSellSignal.PayloadDate Then
+                    Dim sellPrice As Decimal = GetSlabBasedLevel(_lastSellSignal.Low, Trade.TradeExecutionDirection.Sell)
+                    ret = New Tuple(Of Boolean, Decimal, Payload, String)(True, sellPrice, _lastSellSignal, "Normal Entry")
+                End If
+            End If
+        End If
         Return ret
     End Function
 
     Private Function GetBuySignalCandle(ByVal beforeThisTime As Date) As Payload
         Dim ret As Payload = Nothing
+        If _lastBuySignal IsNot Nothing Then
+            Dim signalTrade As Trade = GetLastOrderFromSignalCandle(Trade.TradeExecutionDirection.Buy, _lastBuySignal)
+            If signalTrade IsNot Nothing AndAlso signalTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
+                _lastBuySignal = Nothing
+            End If
+        End If
         For Each runningPayload In _hkPayloads.OrderByDescending(Function(x)
                                                                      Return x.Key
                                                                  End Function)
@@ -181,6 +250,12 @@ Public Class HKSlabBasedStrategyRule
 
     Private Function GetSellSignalCandle(ByVal beforeThisTime As Date) As Payload
         Dim ret As Payload = Nothing
+        If _lastSellSignal IsNot Nothing Then
+            Dim signalTrade As Trade = GetLastOrderFromSignalCandle(Trade.TradeExecutionDirection.Sell, _lastSellSignal)
+            If signalTrade IsNot Nothing AndAlso signalTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
+                _lastSellSignal = Nothing
+            End If
+        End If
         For Each runningPayload In _hkPayloads.OrderByDescending(Function(x)
                                                                      Return x.Key
                                                                  End Function)
@@ -189,7 +264,7 @@ Public Class HKSlabBasedStrategyRule
                     Dim level As Decimal = GetSlabBasedLevel(runningPayload.Value.Low, Trade.TradeExecutionDirection.Buy)
                     If runningPayload.Value.Open < level AndAlso runningPayload.Value.Close > level Then
                         If _lastSellSignal Is Nothing OrElse
-                            (_lastSellSignal.Low < runningPayload.Value.Low AndAlso runningPayload.Value.PayloadDate > _lastBuySignal.PayloadDate) Then
+                            (_lastSellSignal.Low < runningPayload.Value.Low AndAlso runningPayload.Value.PayloadDate > _lastSellSignal.PayloadDate) Then
                             ret = runningPayload.Value
                             Exit For
                         End If
@@ -199,6 +274,60 @@ Public Class HKSlabBasedStrategyRule
                 Exit For
             End If
         Next
+        Return ret
+    End Function
+
+    Private Function GetLastOrder(ByVal direction As Trade.TradeExecutionDirection, ByVal candle As Payload) As Trade
+        Dim ret As Trade = Nothing
+        Dim cancelTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(candle, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Cancel)
+        Dim closeTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(candle, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Close)
+        Dim inprogressTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(candle, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Inprogress)
+        Dim openTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(candle, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Open)
+        Dim allTrades As List(Of Trade) = New List(Of Trade)
+        If cancelTrades IsNot Nothing AndAlso cancelTrades.Count > 0 Then allTrades.AddRange(cancelTrades)
+        If closeTrades IsNot Nothing AndAlso closeTrades.Count > 0 Then allTrades.AddRange(closeTrades)
+        If inprogressTrades IsNot Nothing AndAlso inprogressTrades.Count > 0 Then allTrades.AddRange(inprogressTrades)
+        If openTrades IsNot Nothing AndAlso openTrades.Count > 0 Then allTrades.AddRange(openTrades)
+        If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
+            Dim specificDirectionTrades As List(Of Trade) = allTrades.FindAll(Function(x)
+                                                                                  Return x.EntryDirection = direction
+                                                                              End Function)
+            If specificDirectionTrades IsNot Nothing AndAlso specificDirectionTrades.Count > 0 Then
+                ret = specificDirectionTrades.OrderBy(Function(x)
+                                                          Return x.EntryTime
+                                                      End Function).LastOrDefault
+            End If
+        End If
+        Return ret
+    End Function
+
+    Private Function GetLastOrderFromSignalCandle(ByVal direction As Trade.TradeExecutionDirection, ByVal signalCandle As Payload) As Trade
+        Dim ret As Trade = Nothing
+        Dim cancelTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(signalCandle, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Cancel)
+        Dim closeTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(signalCandle, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Close)
+        Dim inprogressTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(signalCandle, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Inprogress)
+        Dim openTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(signalCandle, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Open)
+        Dim allTrades As List(Of Trade) = New List(Of Trade)
+        If cancelTrades IsNot Nothing AndAlso cancelTrades.Count > 0 Then allTrades.AddRange(cancelTrades)
+        If closeTrades IsNot Nothing AndAlso closeTrades.Count > 0 Then allTrades.AddRange(closeTrades)
+        If inprogressTrades IsNot Nothing AndAlso inprogressTrades.Count > 0 Then allTrades.AddRange(inprogressTrades)
+        If openTrades IsNot Nothing AndAlso openTrades.Count > 0 Then allTrades.AddRange(openTrades)
+        If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
+            Dim specificDirectionTrades As List(Of Trade) = allTrades.FindAll(Function(x)
+                                                                                  Return x.EntryDirection = direction
+                                                                              End Function)
+            If specificDirectionTrades IsNot Nothing AndAlso specificDirectionTrades.Count > 0 Then
+                Dim signalTrades As List(Of Trade) = specificDirectionTrades.FindAll(Function(x)
+                                                                                         Return x.SignalCandle.PayloadDate = signalCandle.PayloadDate
+                                                                                     End Function)
+
+                If signalTrades IsNot Nothing AndAlso signalTrades.Count > 0 Then
+                    ret = signalTrades.OrderBy(Function(x)
+                                                   Return x.EntryTime
+                                               End Function).LastOrDefault
+                End If
+            End If
+        End If
         Return ret
     End Function
 End Class

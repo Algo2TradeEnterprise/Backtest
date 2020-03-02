@@ -1628,10 +1628,74 @@ Public Class frmMain
 #End Region
 
 #Region "HK ATR Trailing"
+            'Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+            '                                                  exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+            '                                                  exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+            '                                                  tradeStartTime:=TimeSpan.Parse("9:16:00"),
+            '                                                  lastTradeEntryTime:=TimeSpan.Parse("14:45:59"),
+            '                                                  eodExitTime:=TimeSpan.Parse("15:15:00"),
+            '                                                  tickSize:=tick,
+            '                                                  marginMultiplier:=margin,
+            '                                                  timeframe:=1,
+            '                                                  heikenAshiCandle:=False,
+            '                                                  stockType:=stockType,
+            '                                                  databaseTable:=database,
+            '                                                  dataSource:=sourceData,
+            '                                                  initialCapital:=Decimal.MaxValue / 2,
+            '                                                  usableCapital:=Decimal.MaxValue / 2,
+            '                                                  minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+            '                                                  amountToBeWithdrawn:=0)
+            '    AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+
+            '    With backtestStrategy
+            '        '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Stocklist.csv")
+            '        .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Top Gainer Top Looser.csv")
+
+            '        .AllowBothDirectionEntryAtSameTime = False
+            '        .TrailingStoploss = False
+            '        .TickBasedStrategy = True
+            '        .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+            '        .RuleEntityData = New HKATRTraillingStrategyRule.StrategyRuleEntities With
+            '            {
+            '                .ATRTargetMultiplier = 4,
+            '                .SLTargetMultiplier = 3,
+            '                .AddBreakevenMakeupTrade = False,
+            '                .BreakevenMovement = True
+            '            }
+
+            '        .NumberOfTradeableStockPerDay = 5
+
+            '        .NumberOfTradesPerStockPerDay = Integer.MaxValue
+
+            '        .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+            '        .StockMaxLossPercentagePerDay = Decimal.MinValue
+
+            '        .ExitOnStockFixedTargetStoploss = False
+            '        .StockMaxProfitPerDay = Decimal.MaxValue
+            '        .StockMaxLossPerDay = Decimal.MinValue
+
+            '        .ExitOnOverAllFixedTargetStoploss = False
+            '        .OverAllProfitPerDay = Decimal.MaxValue
+            '        .OverAllLossPerDay = Decimal.MinValue
+
+            '        .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+            '        .MTMSlab = Math.Abs(.OverAllLossPerDay)
+            '        .MovementSlab = .MTMSlab / 2
+            '        .RealtimeTrailingPercentage = 50
+            '    End With
+
+            '    Dim ruleData As HKATRTraillingStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+            '    Dim filename As String = String.Format("HK ATR Trailling,ATR Mul {0},SL Mul {1}", ruleData.ATRTargetMultiplier, ruleData.SLTargetMultiplier)
+
+            '    Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+            'End Using
+#End Region
+
+#Region "HK ATR Trailing"
             Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                               exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                               exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                              tradeStartTime:=TimeSpan.Parse("9:16:00"),
+                                                              tradeStartTime:=TimeSpan.Parse("9:20:00"),
                                                               lastTradeEntryTime:=TimeSpan.Parse("14:45:59"),
                                                               eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                               tickSize:=tick,
@@ -1648,20 +1712,13 @@ Public Class frmMain
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
-                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Stocklist.csv")
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Top Gainer Top Looser.csv")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Stocklist.csv")
 
                     .AllowBothDirectionEntryAtSameTime = False
                     .TrailingStoploss = False
                     .TickBasedStrategy = True
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
-                    .RuleEntityData = New HKATRTraillingStrategyRule.StrategyRuleEntities With
-                        {
-                            .ATRTargetMultiplier = 4,
-                            .SLTargetMultiplier = 3,
-                            .AddBreakevenMakeupTrade = False,
-                            .BreakevenMovement = True
-                        }
+                    .RuleEntityData = Nothing
 
                     .NumberOfTradeableStockPerDay = 5
 
@@ -1684,8 +1741,7 @@ Public Class frmMain
                     .RealtimeTrailingPercentage = 50
                 End With
 
-                Dim ruleData As HKATRTraillingStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                Dim filename As String = String.Format("HK ATR Trailling,ATR Mul {0},SL Mul {1}", ruleData.ATRTargetMultiplier, ruleData.SLTargetMultiplier)
+                Dim filename As String = String.Format("HK Slab")
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using
