@@ -121,6 +121,7 @@
     <Compile Include="Strategy Rule CNC\HKPositionalHourlyStrategyRule2.vb" />
     <Compile Include="Strategy Rule CNC\HKPositionalStrategyRule.vb" />
     <Compile Include="Strategy Rule CNC\HKPositionalStrategyRule1.vb" />
+    <Compile Include="Strategy Rule CNC\HKRSIContinuesStrategyRule.vb" />
     <Compile Include="Strategy Rule CNC\InvestmentCNCStrategyRule.vb" />
     <Compile Include="Strategy Rule CNC\PositionalHourlyStrategyRule.vb" />
     <Compile Include="Strategy Rule CNC\PriceDropContinuesPositionalStrategyRule.vb" />

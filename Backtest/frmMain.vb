@@ -2315,6 +2315,51 @@ Public Class frmMain
 #End Region
 
 #Region "RSI CNC"
+            'Using backtestStrategy As New CNCEODGenericStrategy(canceller:=_canceller,
+            '                                                    exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+            '                                                    exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+            '                                                    tradeStartTime:=TimeSpan.Parse("09:15:00"),
+            '                                                    lastTradeEntryTime:=TimeSpan.Parse("15:29:59"),
+            '                                                    eodExitTime:=TimeSpan.Parse("15:29:59"),
+            '                                                    tickSize:=tick,
+            '                                                    marginMultiplier:=margin,
+            '                                                    timeframe:=1,
+            '                                                    heikenAshiCandle:=False,
+            '                                                    stockType:=stockType,
+            '                                                    databaseTable:=database,
+            '                                                    dataSource:=sourceData,
+            '                                                    initialCapital:=Decimal.MaxValue / 2,
+            '                                                    usableCapital:=Decimal.MaxValue / 2,
+            '                                                    minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
+            '                                                    amountToBeWithdrawn:=50000)
+            '    AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+
+            '    With backtestStrategy
+            '        .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Investment Stock List.csv")
+
+            '        .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+
+            '        .RuleEntityData = New RSIContinuesStrategyRule.StrategyRuleEntities With
+            '            {
+            '             .QuantityType = RSIContinuesStrategyRule.TypeOfQuantity.AP,
+            '             .BuyAtBelowRSI = 3
+            '            }
+
+            '        .NumberOfTradeableStockPerDay = 1
+
+            '        .NumberOfTradesPerDay = Integer.MaxValue
+            '        .NumberOfTradesPerStockPerDay = Integer.MaxValue
+
+            '        .TickBasedStrategy = True
+            '    End With
+            '    Dim ruleData As RSIContinuesStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+            '    Dim filename As String = String.Format("RSI,Quantity Type {3} {0}_{1}_{2}",
+            '                                           Now.Hour, Now.Minute, Now.Second, ruleData.QuantityType)
+            '    Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+            'End Using
+#End Region
+
+#Region "HK RSI CNC"
             Using backtestStrategy As New CNCEODGenericStrategy(canceller:=_canceller,
                                                                 exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                 exchangeEndTime:=TimeSpan.Parse("15:29:59"),
@@ -2339,9 +2384,9 @@ Public Class frmMain
 
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                    .RuleEntityData = New RSIContinuesStrategyRule.StrategyRuleEntities With
+                    .RuleEntityData = New HKRSIContinuesStrategyRule.StrategyRuleEntities With
                         {
-                         .QuantityType = RSIContinuesStrategyRule.TypeOfQuantity.AP,
+                         .QuantityType = HKRSIContinuesStrategyRule.TypeOfQuantity.AP,
                          .BuyAtBelowRSI = 3
                         }
 
@@ -2352,8 +2397,8 @@ Public Class frmMain
 
                     .TickBasedStrategy = True
                 End With
-                Dim ruleData As RSIContinuesStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                Dim filename As String = String.Format("RSI,Quantity Type {3} {0}_{1}_{2}",
+                Dim ruleData As HKRSIContinuesStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                Dim filename As String = String.Format("HK RSI,Quantity Type {3} {0}_{1}_{2}",
                                                        Now.Hour, Now.Minute, Now.Second, ruleData.QuantityType)
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using
