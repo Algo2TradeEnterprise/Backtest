@@ -192,7 +192,15 @@ Public Class HKSlabBasedStrategyRule
                 End If
             End If
             If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
-                ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, remark)
+                If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                    If triggerPrice >= currentTrade.SignalCandle.Low - currentTrade.StoplossBuffer Then
+                        ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, remark)
+                    End If
+                ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                    If triggerPrice <= currentTrade.SignalCandle.High + currentTrade.StoplossBuffer Then
+                        ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, remark)
+                    End If
+                End If
             End If
         End If
         Return ret

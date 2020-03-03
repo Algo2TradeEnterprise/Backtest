@@ -182,6 +182,8 @@ Namespace StrategyHelper
                                             stockRule = New HKATRTraillingStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 52
                                             stockRule = New HKSlabBasedStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
+                                        Case 53
+                                            stockRule = New HighLowSlabLevelBasedStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -987,7 +989,7 @@ Namespace StrategyHelper
                                     If counter = Me.NumberOfTradeableStockPerDay Then Exit For
                                 Next
                             End If
-                        Case 52
+                        Case 52, 53
                             Dim counter As Integer = 0
                             For i = 1 To dt.Rows.Count - 1
                                 Dim rowDate As Date = dt.Rows(i)(0)
