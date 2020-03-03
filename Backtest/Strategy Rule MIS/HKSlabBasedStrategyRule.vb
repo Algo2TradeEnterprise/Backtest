@@ -62,7 +62,8 @@ Public Class HKSlabBasedStrategyRule
                     Dim quantity As Decimal = Me.LotSize
                     Dim target As Decimal = _slab * 3
 
-                    parameter = New PlaceOrderParameters With {
+                    If currentTick.Open < entryPrice Then
+                        parameter = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
                                     .EntryDirection = Trade.TradeExecutionDirection.Buy,
                                     .Quantity = quantity,
@@ -74,6 +75,7 @@ Public Class HKSlabBasedStrategyRule
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = signal.Item4
                                 }
+                    End If
                 End If
             End If
             If parameter Is Nothing AndAlso Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) AndAlso
@@ -91,7 +93,8 @@ Public Class HKSlabBasedStrategyRule
                     Dim quantity As Decimal = Me.LotSize
                     Dim target As Decimal = _slab * 3
 
-                    parameter = New PlaceOrderParameters With {
+                    If currentTick.Open > entryPrice Then
+                        parameter = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
                                     .EntryDirection = Trade.TradeExecutionDirection.Sell,
                                     .Quantity = quantity,
@@ -103,6 +106,7 @@ Public Class HKSlabBasedStrategyRule
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = signal.Item4
                                 }
+                    End If
                 End If
             End If
         End If
@@ -162,6 +166,31 @@ Public Class HKSlabBasedStrategyRule
                     End If
                 End If
             End If
+            If triggerPrice = Decimal.MinValue Then
+                Dim entryCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTrade.EntryTime, _signalPayload))
+                Dim previousHKCandle As Payload = _hkPayloads(currentMinuteCandlePayload.PayloadDate).PreviousCandlePayload
+                If previousHKCandle.PayloadDate >= entryCandlePayload.PayloadDate Then
+                    If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                        Dim buyLevel As Decimal = GetSlabBasedLevel(currentTrade.SignalCandle.High, Trade.TradeExecutionDirection.Buy)
+                        If currentTrade.SLRemark.ToUpper <> "NORMAL SL" AndAlso previousHKCandle.Close < buyLevel Then
+                            triggerPrice = GetSlabBasedLevel(previousHKCandle.Low, Trade.TradeExecutionDirection.Sell)
+                            remark = "Force SL"
+                        Else
+                            triggerPrice = currentTrade.SignalCandle.Low - currentTrade.StoplossBuffer
+                            remark = "Normal SL"
+                        End If
+                    ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                        Dim sellLevel As Decimal = GetSlabBasedLevel(currentTrade.SignalCandle.Low, Trade.TradeExecutionDirection.Sell)
+                        If currentTrade.SLRemark.ToUpper <> "NORMAL SL" AndAlso previousHKCandle.Close > sellLevel Then
+                            triggerPrice = GetSlabBasedLevel(previousHKCandle.High, Trade.TradeExecutionDirection.Buy)
+                            remark = "Force SL"
+                        Else
+                            triggerPrice = currentTrade.SignalCandle.High + currentTrade.StoplossBuffer
+                            remark = "Normal SL"
+                        End If
+                    End If
+                End If
+            End If
             If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
                 ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, remark)
             End If
@@ -199,20 +228,41 @@ Public Class HKSlabBasedStrategyRule
         If buySignal IsNot Nothing Then _lastBuySignal = buySignal
         Dim sellSignal As Payload = GetSellSignalCandle(candle.PayloadDate)
         If sellSignal IsNot Nothing Then _lastSellSignal = sellSignal
-        If direction = Trade.TradeExecutionDirection.Buy Then
-            If _lastBuySignal IsNot Nothing Then
-                Dim lastTrade As Trade = GetLastOrder(Trade.TradeExecutionDirection.Buy, candle)
-                If lastTrade Is Nothing OrElse lastTrade.SignalCandle.PayloadDate <> _lastBuySignal.PayloadDate Then
-                    Dim buyPrice As Decimal = GetSlabBasedLevel(_lastBuySignal.High, Trade.TradeExecutionDirection.Buy)
-                    ret = New Tuple(Of Boolean, Decimal, Payload, String)(True, buyPrice, _lastBuySignal, "Normal Entry")
+        Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(candle, Trade.TypeOfTrade.MIS)
+        If lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.SLRemark.ToUpper = "FORCE SL" AndAlso
+            lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            If lastExecutedTrade.EntryDirection <> direction Then
+                If direction = Trade.TradeExecutionDirection.Buy Then
+                    Dim lastTrade As Trade = GetLastOrder(Trade.TradeExecutionDirection.Buy, candle)
+                    If lastTrade IsNot Nothing AndAlso lastTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
+                        Dim buyPrice As Decimal = GetSlabBasedLevel(lastTrade.SignalCandle.High, Trade.TradeExecutionDirection.Buy)
+                        ret = New Tuple(Of Boolean, Decimal, Payload, String)(True, buyPrice, lastTrade.SignalCandle, "Force Entry")
+                    End If
+                ElseIf direction = Trade.TradeExecutionDirection.Sell Then
+                    Dim lastTrade As Trade = GetLastOrder(Trade.TradeExecutionDirection.Sell, candle)
+                    If lastTrade IsNot Nothing AndAlso lastTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
+                        Dim sellPrice As Decimal = GetSlabBasedLevel(lastTrade.SignalCandle.Low, Trade.TradeExecutionDirection.Sell)
+                        ret = New Tuple(Of Boolean, Decimal, Payload, String)(True, sellPrice, lastTrade.SignalCandle, "Force Entry")
+                    End If
                 End If
             End If
-        ElseIf direction = Trade.TradeExecutionDirection.Sell Then
-            If _lastSellSignal IsNot Nothing Then
-                Dim lastTrade As Trade = GetLastOrder(Trade.TradeExecutionDirection.Sell, candle)
-                If lastTrade Is Nothing OrElse lastTrade.SignalCandle.PayloadDate <> _lastSellSignal.PayloadDate Then
-                    Dim sellPrice As Decimal = GetSlabBasedLevel(_lastSellSignal.Low, Trade.TradeExecutionDirection.Sell)
-                    ret = New Tuple(Of Boolean, Decimal, Payload, String)(True, sellPrice, _lastSellSignal, "Normal Entry")
+        End If
+        If ret Is Nothing Then
+            If direction = Trade.TradeExecutionDirection.Buy Then
+                If _lastBuySignal IsNot Nothing Then
+                    Dim lastTrade As Trade = GetLastOrder(Trade.TradeExecutionDirection.Buy, candle)
+                    If lastTrade Is Nothing OrElse lastTrade.SignalCandle.PayloadDate <> _lastBuySignal.PayloadDate Then
+                        Dim buyPrice As Decimal = GetSlabBasedLevel(_lastBuySignal.High, Trade.TradeExecutionDirection.Buy)
+                        ret = New Tuple(Of Boolean, Decimal, Payload, String)(True, buyPrice, _lastBuySignal, "Normal Entry")
+                    End If
+                End If
+            ElseIf direction = Trade.TradeExecutionDirection.Sell Then
+                If _lastSellSignal IsNot Nothing Then
+                    Dim lastTrade As Trade = GetLastOrder(Trade.TradeExecutionDirection.Sell, candle)
+                    If lastTrade Is Nothing OrElse lastTrade.SignalCandle.PayloadDate <> _lastSellSignal.PayloadDate Then
+                        Dim sellPrice As Decimal = GetSlabBasedLevel(_lastSellSignal.Low, Trade.TradeExecutionDirection.Sell)
+                        ret = New Tuple(Of Boolean, Decimal, Payload, String)(True, sellPrice, _lastSellSignal, "Normal Entry")
+                    End If
                 End If
             End If
         End If
