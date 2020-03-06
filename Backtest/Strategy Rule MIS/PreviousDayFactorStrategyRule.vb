@@ -96,7 +96,7 @@ Public Class PreviousDayFactorStrategyRule
                                     .SignalCandle = signalCandle,
                                     .OrderType = Trade.TypeOfOrder.SL,
                                     .Supporting1 = GetDayStartFactor().Item2,
-                                    .Supporting2 = GetCurrentLow(currentTick.PayloadDate)
+                                    .Supporting2 = GetCurrentLow(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate)
                                 }
                 ElseIf signal.Item3 = Trade.TradeExecutionDirection.Sell Then
                     Dim buffer As Decimal = 0
@@ -113,7 +113,7 @@ Public Class PreviousDayFactorStrategyRule
                                     .SignalCandle = signalCandle,
                                     .OrderType = Trade.TypeOfOrder.SL,
                                     .Supporting1 = GetDayStartFactor().Item2,
-                                    .Supporting2 = GetCurrentHigh(currentTick.PayloadDate)
+                                    .Supporting2 = GetCurrentHigh(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate)
                                 }
                 End If
             End If
@@ -187,10 +187,10 @@ Public Class PreviousDayFactorStrategyRule
         If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then
             Dim factor As Tuple(Of Decimal, String) = GetDayStartFactor()
             If factor IsNot Nothing Then
-                Dim buyPrice As Decimal = GetCurrentLow(currentTick.PayloadDate) + factor.Item1
-                Dim sellPrice As Decimal = GetCurrentHigh(currentTick.PayloadDate) - factor.Item1
+                Dim buyPrice As Decimal = GetCurrentLow(candle.PayloadDate) + factor.Item1
+                Dim sellPrice As Decimal = GetCurrentHigh(candle.PayloadDate) - factor.Item1
                 Dim middle As Decimal = (buyPrice + sellPrice) / 2
-                Dim range As Decimal = (buyPrice - middle) * 10 / 100
+                Dim range As Decimal = (buyPrice - middle) * 5 / 100
                 If currentTick.Open > middle + range Then
                     ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, buyPrice, Trade.TradeExecutionDirection.Buy, candle)
                 ElseIf currentTick.Open < middle - range Then
@@ -238,7 +238,7 @@ Public Class PreviousDayFactorStrategyRule
     Private Function GetCurrentHigh(ByVal currentTime As Date) As Decimal
         Dim ret As Decimal = Decimal.MinValue
         ret = _signalPayload.Max(Function(x)
-                                     If x.Key.Date = _tradingDate.Date AndAlso x.Key < currentTime Then
+                                     If x.Key.Date = _tradingDate.Date AndAlso x.Key <= currentTime Then
                                          Return x.Value.High
                                      Else
                                          Return Decimal.MinValue
@@ -251,7 +251,7 @@ Public Class PreviousDayFactorStrategyRule
     Private Function GetCurrentLow(ByVal currentTime As Date) As Decimal
         Dim ret As Decimal = Decimal.MinValue
         ret = _signalPayload.Min(Function(x)
-                                     If x.Key.Date = _tradingDate.Date AndAlso x.Key < currentTime Then
+                                     If x.Key.Date = _tradingDate.Date AndAlso x.Key <= currentTime Then
                                          Return x.Value.Low
                                      Else
                                          Return Decimal.MaxValue

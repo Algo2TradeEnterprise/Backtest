@@ -1838,7 +1838,7 @@ Public Class frmMain
                             .OnwardTradeTargetPercentage = 0.8
                         }
 
-                    .NumberOfTradeableStockPerDay = 10
+                    .NumberOfTradeableStockPerDay = 20
 
                     .NumberOfTradesPerStockPerDay = 2
 
