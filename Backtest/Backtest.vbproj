@@ -166,6 +166,7 @@
     <Compile Include="Strategy Rule MIS\PairTradingStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\PinbarBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\PivotsPointsStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\PreviousDayFactorStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\ReversalStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\SmallestCandleBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\SMIFractalStrategyRule.vb" />
