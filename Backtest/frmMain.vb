@@ -1826,9 +1826,9 @@ Public Class frmMain
                 With backtestStrategy
                     .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Stocklist.csv")
 
-                    .AllowBothDirectionEntryAtSameTime = True
+                    .AllowBothDirectionEntryAtSameTime = False
                     .TrailingStoploss = False
-                    .TickBasedStrategy = True
+                    .TickBasedStrategy = False
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
                     .RuleEntityData = New PreviousDayFactorStrategyRule.StrategyRuleEntities With
@@ -1838,7 +1838,7 @@ Public Class frmMain
                             .OnwardTradeTargetPercentage = 0.8
                         }
 
-                    .NumberOfTradeableStockPerDay = 20
+                    .NumberOfTradeableStockPerDay = 10
 
                     .NumberOfTradesPerStockPerDay = 2
 
