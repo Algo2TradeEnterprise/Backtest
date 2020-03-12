@@ -106,6 +106,8 @@ Namespace StrategyHelper
                                     Select Case RuleNumber
                                         Case 1
                                             stockRule = New PairDifferenceStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, _canceller, stockList(stock).Supporting1)
+                                        Case 2
+                                            stockRule = New PairBollingerDifferenceStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, _canceller, stockList(stock).Supporting1)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -477,7 +479,7 @@ Namespace StrategyHelper
                 End Using
                 If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
                     Select Case Me.RuleNumber
-                        Case 1
+                        Case 1, 2
                             For i = 1 To 2
                                 If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
                                 Dim tradingSymbol As String = dt.Rows(i).Item(0)
