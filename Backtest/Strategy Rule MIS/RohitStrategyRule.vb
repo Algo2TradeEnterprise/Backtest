@@ -180,13 +180,13 @@ Public Class RohitStrategyRule
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
             Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
             Dim signal As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload) = GetSignalForEntry(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
-            If currentTrade.EntryDirection <> signal.Item3 Then
+            If signal IsNot Nothing AndAlso currentTrade.EntryDirection <> signal.Item3 Then
                 ret = New Tuple(Of Boolean, String)(True, "Opposite direction signal")
             End If
         ElseIf currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
             Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
             Dim signal As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload) = GetSignalForEntry(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
-            If currentTrade.EntryDirection <> signal.Item3 OrElse currentTrade.SignalCandle.PayloadDate <> signal.Item4.PayloadDate Then
+            If signal IsNot Nothing AndAlso (currentTrade.EntryDirection <> signal.Item3 OrElse currentTrade.SignalCandle.PayloadDate <> signal.Item4.PayloadDate) Then
                 ret = New Tuple(Of Boolean, String)(True, "Invalid signal")
             End If
         End If
@@ -208,7 +208,7 @@ Public Class RohitStrategyRule
                         If currentTrade.SLRemark.Contains("Moved") Then
                             price = currentMinuteHKCandle.PreviousCandlePayload.Low
                         Else
-                            If currentTick.Open >= currentTrade.EntryPrice + pointsToMoveSL Then
+                            If currentMinuteHKCandle.PreviousCandlePayload.High >= currentTrade.EntryPrice + pointsToMoveSL Then
                                 price = currentMinuteHKCandle.PreviousCandlePayload.Low
                             End If
                         End If
@@ -220,7 +220,7 @@ Public Class RohitStrategyRule
                         If currentTrade.SLRemark.Contains("Moved") Then
                             price = currentMinuteHKCandle.PreviousCandlePayload.High
                         Else
-                            If currentTick.Open <= currentTrade.EntryPrice - pointsToMoveSL Then
+                            If currentMinuteHKCandle.PreviousCandlePayload.Low <= currentTrade.EntryPrice - pointsToMoveSL Then
                                 price = currentMinuteHKCandle.PreviousCandlePayload.High
                             End If
                         End If

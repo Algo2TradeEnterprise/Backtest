@@ -197,7 +197,7 @@ Namespace Calculator
             Dim s = 0.00
             Dim l = 0.00
             Dim c = 0.00
-            s = If(e = "a", Math.Round((0.000036 * o), 2), Math.Round((0.0000105 * o), 2))
+            s = If(e = "a", Math.Round((0.000026 * o), 2), Math.Round((0.0000005 * o), 2))
             l = If(e = "a", Math.Round((0.000026 * o), 2), Math.Round((0.0000005 * o), 2))
             c = 0
             If item = "RBDPMOLEIN" And o >= 100000.0 Then
