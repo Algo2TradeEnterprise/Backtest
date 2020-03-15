@@ -329,7 +329,7 @@ Public Class frmMain
                             .RSIUpperCircuit = 80
                         }
 
-                    .NumberOfTradeableStockPerDay = 1
+                    .NumberOfTradeableStockPerDay = Integer.MaxValue
 
                     .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
