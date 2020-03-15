@@ -107,10 +107,10 @@ Namespace StrategyHelper
 
                                     Dim tradingSymbol As String = currentMinutePayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
-                                        Case 26
-                                            stockRule = New HKPositionalHourlyStrategyRule1(XMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
-                                        Case 31
-                                            stockRule = New TIICNCStrategyRule(XMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        'Case 26
+                                        '    stockRule = New HKPositionalHourlyStrategyRule1(XMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
+                                        'Case 31
+                                        '    stockRule = New TIICNCStrategyRule(XMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat

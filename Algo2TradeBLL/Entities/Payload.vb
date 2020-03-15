@@ -366,6 +366,23 @@ Public Class Payload
         Get
             'Dim tickSize As Decimal = NumberManipulation.ConvertFloorCeling(Me.Close * 0.01 * 0.025, 0.05, RoundOfType.Floor)
             Dim tickSize As Decimal = 0.05
+            If Me.RawInstrumentName = "CRUDEOIL" Then
+                tickSize = 1
+            ElseIf Me.RawInstrumentName = "NATURALGAS" Then
+                tickSize = 0.1
+            ElseIf Me.RawInstrumentName = "ZINCMINI" Then
+                tickSize = 0.05
+            ElseIf Me.RawInstrumentName = "ALUMINI" Then
+                tickSize = 0.05
+            ElseIf Me.RawInstrumentName = "LEADMINI" Then
+                tickSize = 0.05
+            ElseIf Me.RawInstrumentName = "SILVERM" Then
+                tickSize = 1
+            ElseIf Me.RawInstrumentName = "COPPER" Then
+                tickSize = 0.05
+            ElseIf Me.RawInstrumentName = "NICKEL" Then
+                tickSize = 0.1
+            End If
             'TO DO: Change the vaue of tickSize to take the actual tick as per Exchange
             If _Ticks Is Nothing OrElse _Ticks.Count = 0 Then
                 Dim multiplier As Short = 0
