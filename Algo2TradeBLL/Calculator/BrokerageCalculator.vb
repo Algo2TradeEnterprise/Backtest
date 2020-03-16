@@ -40,7 +40,7 @@ Namespace Calculator
                 AddHandler browser.Heartbeat, AddressOf OnHeartbeat
                 AddHandler browser.WaitingFor, AddressOf OnWaitingFor
                 AddHandler browser.DocumentRetryStatus, AddressOf OnDocumentRetryStatus
-                Dim l As Tuple(Of Uri, Object) = Await browser.NonPOSTRequestAsync("https://zerodha.com/static/app.js",
+                Dim l As Tuple(Of Uri, Object) = Await browser.NonPOSTRequestAsync("https://zerodha.com/static/js/brokerage.min.js",
                                                                                      HttpMethod.Get,
                                                                                      Nothing,
                                                                                      True,
@@ -53,7 +53,7 @@ Namespace Calculator
                 If l IsNot Nothing AndAlso l.Item2 IsNot Nothing Then
                     Dim jString As String = l.Item2
                     If jString IsNot Nothing Then
-                        Dim map As String = Utilities.Strings.GetTextBetween("COMMODITY_MULTIPLIER_MAP=", "},", jString)
+                        Dim map As String = Utilities.Strings.GetTextBetween("COMMODITY_MULTIPLIER_MAP=", "}", jString)
                         If map IsNot Nothing Then
                             map = map & "}"
                             GlobalVar.retDictionary = Utilities.Strings.JsonDeserialize(map)

@@ -59,7 +59,12 @@ Namespace StrategyHelper
                 Dim totalPL As Decimal = 0
                 Dim tradeCheckingDate As Date = startDate.Date
                 Dim portfolioLossPerDay As Decimal = Me.OverAllLossPerDay
+                Dim dateToSkip As Date = New Date(2019, 11, 25)
                 While tradeCheckingDate <= endDate.Date
+                    If tradeCheckingDate.Date = dateToSkip.Date Then
+                        tradeCheckingDate = tradeCheckingDate.AddDays(1)
+                        Continue While
+                    End If
                     _canceller.Token.ThrowIfCancellationRequested()
                     Me.AvailableCapital = Me.UsableCapital
                     Me.OverAllLossPerDay = portfolioLossPerDay
@@ -562,34 +567,30 @@ Namespace StrategyHelper
                     Dim counter As Integer = 0
                     For i = 1 To dt.Rows.Count - 1
                         Dim instrumentName As String = dt.Rows(i).Item(0)
-                        Dim buffer As Decimal = dt.Rows(i).Item(1)
-                        Dim target As Decimal = dt.Rows(i).Item(2)
-                        Dim stoploss As Decimal = dt.Rows(i).Item(3)
-                        Dim bb As Decimal = dt.Rows(i).Item(4)
-                        Dim bbTarget As Decimal = dt.Rows(i).Item(5)
-                        Dim bbStoploss As Decimal = dt.Rows(i).Item(6)
+                        Dim lotsize As Integer = dt.Rows(i).Item(1)
+                        Dim buffer As Decimal = dt.Rows(i).Item(2)
+                        Dim target As Decimal = dt.Rows(i).Item(3)
+                        Dim stoploss As Decimal = dt.Rows(i).Item(4)
+                        Dim bb As Decimal = dt.Rows(i).Item(5)
+                        Dim bbTarget As Decimal = dt.Rows(i).Item(6)
+                        Dim bbStoploss As Decimal = dt.Rows(i).Item(7)
 
-                        Dim tradingSymbol As String = Cmn.GetCurrentTradingSymbol(Me.DatabaseTable, tradingDate, instrumentName)
-                        If tradingSymbol IsNot Nothing AndAlso tradingSymbol <> "" Then
-                            Dim lotsize As Integer = Cmn.GetLotSize(Me.DatabaseTable, tradingSymbol, tradingDate)
+                        Dim detailsOfStock As StockDetails = New StockDetails With
+                                            {.StockName = instrumentName,
+                                            .LotSize = lotsize,
+                                            .EligibleToTakeTrade = True,
+                                            .Supporting1 = buffer,
+                                            .Supporting2 = target,
+                                            .Supporting3 = stoploss,
+                                            .Supporting4 = bb,
+                                            .Supporting5 = bbTarget,
+                                            .Supporting6 = bbStoploss}
 
-                            Dim detailsOfStock As StockDetails = New StockDetails With
-                                                {.StockName = instrumentName,
-                                                .LotSize = lotsize,
-                                                .EligibleToTakeTrade = True,
-                                                .Supporting1 = buffer,
-                                                .Supporting2 = target,
-                                                .Supporting3 = stoploss,
-                                                .Supporting4 = bb,
-                                                .Supporting5 = bbTarget,
-                                                .Supporting6 = bbStoploss}
+                        If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                        ret.Add(instrumentName, detailsOfStock)
 
-                            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                            ret.Add(instrumentName, detailsOfStock)
-
-                            counter += 1
-                            If counter = Me.NumberOfTradeableStockPerDay Then Exit For
-                        End If
+                        counter += 1
+                        If counter = Me.NumberOfTradeableStockPerDay Then Exit For
                     Next
                 End If
             End If

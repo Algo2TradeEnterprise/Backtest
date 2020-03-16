@@ -279,7 +279,7 @@ Public Class frmMain
                     tick = 0.05
                 Case Trade.TypeOfStock.Commodity
                     database = Common.DataBaseTable.Intraday_Commodity
-                    margin = 70
+                    margin = 10
                     tick = 1
                 Case Trade.TypeOfStock.Currency
                     database = Common.DataBaseTable.Intraday_Currency
