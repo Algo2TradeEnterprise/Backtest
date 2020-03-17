@@ -172,6 +172,7 @@
     <Compile Include="Strategy Rule MIS\SmallestCandleBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\SMIFractalStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\TIIOppositeBreakoutStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\TopGainerLosserStrategyRule.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="frmMain.resx">

@@ -18,5 +18,6 @@
         Public Supporting4 As Decimal
         Public Supporting5 As Decimal
         Public Supporting6 As Decimal
+        Public SupportingDate As Date
     End Class
 End Namespace
