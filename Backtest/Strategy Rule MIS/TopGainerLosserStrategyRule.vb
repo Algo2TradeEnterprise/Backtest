@@ -10,8 +10,9 @@ Public Class TopGainerLosserStrategyRule
     Public Class StrategyRuleEntities
         Inherits RuleEntities
 
-        Public TargetPercentage As Decimal
+        Public TargetMultiplier As Decimal
         Public StoplossPercentage As Decimal
+        Public MaxStoplossAmount As Decimal
     End Class
 #End Region
 
@@ -59,7 +60,8 @@ Public Class TopGainerLosserStrategyRule
             Dim signalCandle As Payload = currentMinuteCandlePayload
             If signalCandle IsNot Nothing Then
                 Dim slPoint As Decimal = ConvertFloorCeling(currentTick.Open * _userInputs.StoplossPercentage / 100, _parentStrategy.TickSize, RoundOfType.Floor)
-                Dim targetPoint As Decimal = ConvertFloorCeling(currentTick.Open * _userInputs.TargetPercentage / 100, _parentStrategy.TickSize, RoundOfType.Floor)
+                Dim targetPoint As Decimal = ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
+                Dim quantity As Decimal = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, currentTick.Open, currentTick.Open - slPoint, _userInputs.MaxStoplossAmount, _parentStrategy.StockType)
                 If _direction < 0 Then
                     Dim buffer As Decimal = 0
                     Dim entry As Decimal = currentTick.Open
@@ -68,7 +70,7 @@ Public Class TopGainerLosserStrategyRule
                     parameter = New PlaceOrderParameters With {
                                     .EntryPrice = entry,
                                     .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                    .Quantity = Me.LotSize,
+                                    .Quantity = quantity,
                                     .Stoploss = stoploss,
                                     .Target = target,
                                     .Buffer = buffer,
@@ -83,7 +85,7 @@ Public Class TopGainerLosserStrategyRule
                     parameter = New PlaceOrderParameters With {
                                     .EntryPrice = entry,
                                     .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                                    .Quantity = Me.LotSize,
+                                    .Quantity = quantity,
                                     .Stoploss = stoploss,
                                     .Target = target,
                                     .Buffer = buffer,

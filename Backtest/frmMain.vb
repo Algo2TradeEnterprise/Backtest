@@ -1955,8 +1955,9 @@ Public Class frmMain
 
                     .RuleEntityData = New TopGainerLosserStrategyRule.StrategyRuleEntities With
                         {
-                            .TargetPercentage = 2,
-                            .StoplossPercentage = 1
+                            .TargetMultiplier = 2,
+                            .StoplossPercentage = 1,
+                            .MaxStoplossAmount = -2000
                         }
 
                     .NumberOfTradeableStockPerDay = Integer.MaxValue
