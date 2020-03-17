@@ -1957,7 +1957,8 @@ Public Class frmMain
                         {
                             .TargetMultiplier = 2,
                             .StoplossPercentage = 1,
-                            .MaxStoplossAmount = -2000
+                            .MaxStoplossAmount = -2000,
+                            .EntryOppositeDirection = True
                         }
 
                     .NumberOfTradeableStockPerDay = Integer.MaxValue

@@ -13,6 +13,7 @@ Public Class TopGainerLosserStrategyRule
         Public TargetMultiplier As Decimal
         Public StoplossPercentage As Decimal
         Public MaxStoplossAmount As Decimal
+        Public EntryOppositeDirection As Boolean
     End Class
 #End Region
 
@@ -31,7 +32,11 @@ Public Class TopGainerLosserStrategyRule
                    ByVal time As Date)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _userInputs = entities
-        _direction = direction
+        If _userInputs.EntryOppositeDirection Then
+            _direction = direction * -1
+        Else
+            _direction = direction
+        End If
         _time = time.AddMinutes(1)
     End Sub
 
@@ -62,7 +67,7 @@ Public Class TopGainerLosserStrategyRule
                 Dim slPoint As Decimal = ConvertFloorCeling(currentTick.Open * _userInputs.StoplossPercentage / 100, _parentStrategy.TickSize, RoundOfType.Floor)
                 Dim targetPoint As Decimal = ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
                 Dim quantity As Decimal = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, currentTick.Open, currentTick.Open - slPoint, _userInputs.MaxStoplossAmount, _parentStrategy.StockType)
-                If _direction < 0 Then
+                If _direction > 0 Then
                     Dim buffer As Decimal = 0
                     Dim entry As Decimal = currentTick.Open
                     Dim stoploss As Decimal = entry - slPoint
@@ -77,7 +82,7 @@ Public Class TopGainerLosserStrategyRule
                                     .SignalCandle = signalCandle,
                                     .OrderType = Trade.TypeOfOrder.Market
                                 }
-                ElseIf _direction > 0 Then
+                ElseIf _direction < 0 Then
                     Dim buffer As Decimal = 0
                     Dim entry As Decimal = currentTick.Open
                     Dim stoploss As Decimal = entry + slPoint
