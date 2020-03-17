@@ -68,7 +68,8 @@ Namespace StrategyHelper
                        ByVal potentialStopLoss As Double,
                        ByVal stoplossBuffer As Decimal,
                        ByVal slRemark As String,
-                       ByVal signalCandle As Payload)
+                       ByVal signalCandle As Payload,
+                       ByVal margin As Decimal)
             Me._OriginatingStrategy = originatingStrategy
             Me._TradingSymbol = tradingSymbol
             Me._StockType = stockType
@@ -96,12 +97,14 @@ Namespace StrategyHelper
             Me._ExitPrice = Double.MinValue
             Me._ExitCondition = TradeExitCondition.None
             Me._ExitRemark = Nothing
+            Me._Margin = margin
         End Sub
 #End Region
 
 #Region "Variables"
         <NonSerialized>
         Private _OriginatingStrategy As Strategy
+        Public ReadOnly Property Margin As Decimal
         Public ReadOnly Property TradingSymbol As String
         Public ReadOnly Property CoreTradingSymbol As String
             Get
@@ -219,7 +222,7 @@ Namespace StrategyHelper
         End Property
         Public ReadOnly Property CapitalRequiredWithMargin As Double
             Get
-                Return Me.EntryPrice * Me.Quantity / _OriginatingStrategy.MarginMultiplier
+                Return Me.EntryPrice * Me.Quantity / Me.Margin
             End Get
         End Property
 

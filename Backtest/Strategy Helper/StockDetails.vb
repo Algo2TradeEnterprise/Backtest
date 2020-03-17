@@ -2,6 +2,7 @@
     Public Class StockDetails
         Public StockName As String
         Public LotSize As Integer
+        Public Margin As Decimal
         Public EligibleToTakeTrade As Boolean
         Public PlaceOrderTrigger As Tuple(Of Boolean, List(Of PlaceOrderParameters))
         'Public ExitOrderTrigger As Tuple(Of Boolean, String)

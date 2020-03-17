@@ -376,7 +376,8 @@ Namespace StrategyHelper
                                                                                                       potentialStopLoss:=runningOrder.Stoploss,
                                                                                                       stoplossBuffer:=runningOrder.Buffer,
                                                                                                       slRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Stoploss),
-                                                                                                      signalCandle:=runningOrder.SignalCandle)
+                                                                                                      signalCandle:=runningOrder.SignalCandle,
+                                                                                                      margin:=stockList(stockName).Margin)
 
                                                                 runningTrade.UpdateTrade(Tag:=tradeTag,
                                                                                          SquareOffValue:=Math.Abs(runningOrder.EntryPrice - runningOrder.Target),
@@ -466,7 +467,8 @@ Namespace StrategyHelper
                                                                                                       potentialStopLoss:=runningOrder.Stoploss,
                                                                                                       stoplossBuffer:=runningOrder.Buffer,
                                                                                                       slRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Stoploss),
-                                                                                                      signalCandle:=runningOrder.SignalCandle)
+                                                                                                      signalCandle:=runningOrder.SignalCandle,
+                                                                                                      margin:=stockList(stockName).Margin)
 
                                                                 runningTrade.UpdateTrade(Tag:=tradeTag,
                                                                                          SquareOffValue:=Math.Abs(runningOrder.EntryPrice - runningOrder.Target),
@@ -574,10 +576,12 @@ Namespace StrategyHelper
                         Dim bb As Decimal = dt.Rows(i).Item(5)
                         Dim bbTarget As Decimal = dt.Rows(i).Item(6)
                         Dim bbStoploss As Decimal = dt.Rows(i).Item(7)
+                        Dim margin As Decimal = dt.Rows(i).Item(8)
 
                         Dim detailsOfStock As StockDetails = New StockDetails With
                                             {.StockName = instrumentName,
                                             .LotSize = lotsize,
+                                            .Margin = margin,
                                             .EligibleToTakeTrade = True,
                                             .Supporting1 = buffer,
                                             .Supporting2 = target,

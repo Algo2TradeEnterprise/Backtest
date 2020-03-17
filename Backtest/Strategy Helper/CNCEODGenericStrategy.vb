@@ -291,7 +291,8 @@ Namespace StrategyHelper
                                                                                       potentialStopLoss:=runningOrder.Stoploss,
                                                                                       stoplossBuffer:=runningOrder.Buffer,
                                                                                       slRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Stoploss),
-                                                                                      signalCandle:=runningOrder.SignalCandle)
+                                                                                      signalCandle:=runningOrder.SignalCandle,
+                                                                                      margin:=stockList(stockName).Margin)
 
                                                 ctr1 += 1
                                                 runningTrade.UpdateTrade(Tag:=tradeTag,
