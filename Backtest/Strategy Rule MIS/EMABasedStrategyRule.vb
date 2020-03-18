@@ -13,6 +13,7 @@ Public Class EMABasedStrategyRule
         Public MaxProfitPerTrade As Decimal
         Public TargetMultiplier As Decimal
         Public ImmediateBreakout As Boolean
+        Public SlabMultiplier As Integer
     End Class
 #End Region
 
@@ -31,6 +32,7 @@ Public Class EMABasedStrategyRule
                    ByVal entities As RuleEntities)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _userInputs = _entities
+
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -177,6 +179,16 @@ Public Class EMABasedStrategyRule
                     End If
                 End If
             Next
+        End If
+
+        Dim stockPL As Decimal = _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol)
+        If stockPL >= Math.Abs(_userInputs.MaxProfitPerTrade) * _userInputs.SlabMultiplier Then
+            Dim slab As Decimal = _userInputs.MaxProfitPerTrade
+            Dim multiplier As Decimal = Math.Floor(stockPL / slab) - _userInputs.SlabMultiplier + 1
+            Dim trailingMTMLoss As Decimal = slab * multiplier
+            If trailingMTMLoss <> Decimal.MinValue AndAlso trailingMTMLoss > Me.MaxLossOfThisStock Then
+                Me.MaxLossOfThisStock = trailingMTMLoss
+            End If
         End If
     End Function
 

@@ -2077,7 +2077,8 @@ Public Class frmMain
                         {
                          .ImmediateBreakout = False,
                          .MaxProfitPerTrade = 500,
-                         .TargetMultiplier = 1.1
+                         .TargetMultiplier = 1.1,
+                         .SlabMultiplier = 3
                         }
 
                     .NumberOfTradeableStockPerDay = 5
@@ -2088,11 +2089,11 @@ Public Class frmMain
                     .StockMaxLossPercentagePerDay = Decimal.MinValue
 
                     .ExitOnStockFixedTargetStoploss = True
-                    .StockMaxProfitPerDay = 500
-                    .StockMaxLossPerDay = -500
+                    .StockMaxProfitPerDay = Decimal.MaxValue
+                    .StockMaxLossPerDay = -1500
 
-                    .ExitOnOverAllFixedTargetStoploss = True
-                    .OverAllProfitPerDay = 1000
+                    .ExitOnOverAllFixedTargetStoploss = False
+                    .OverAllProfitPerDay = Decimal.MaxValue
                     .OverAllLossPerDay = Decimal.MinValue
 
                     .TypeOfMTMTrailing = Strategy.MTMTrailingType.None

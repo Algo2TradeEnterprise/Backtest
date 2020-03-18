@@ -301,7 +301,7 @@ Namespace StrategyHelper
                                                     If StockPLAfterBrokerage(tradeCheckingDate, runningTick.TradingSymbol) >= stockStrategyRule.MaxProfitOfThisStock Then
                                                         ExitStockTradesByForce(runningTick, Trade.TypeOfTrade.MIS, "Max Stock Profit reached for the day")
                                                         stockList(stockName).EligibleToTakeTrade = False
-                                                    ElseIf StockPLAfterBrokerage(tradeCheckingDate, runningTick.TradingSymbol) <= Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
+                                                    ElseIf StockPLAfterBrokerage(tradeCheckingDate, runningTick.TradingSymbol) <= stockStrategyRule.MaxLossOfThisStock Then
                                                         ExitStockTradesByForce(runningTick, Trade.TypeOfTrade.MIS, "Max Stock Loss reached for the day")
                                                         stockList(stockName).EligibleToTakeTrade = False
                                                     End If
