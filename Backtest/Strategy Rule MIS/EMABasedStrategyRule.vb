@@ -30,6 +30,7 @@ Public Class EMABasedStrategyRule
                    ByVal canceller As CancellationTokenSource,
                    ByVal entities As RuleEntities)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
+        _userInputs = _entities
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -61,7 +62,7 @@ Public Class EMABasedStrategyRule
             Dim signal As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload) = GetSignalForEntry(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
             If signal IsNot Nothing AndAlso signal.Item1 Then
                 Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandlePayload, _parentStrategy.TradeType)
-                If Not (lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.SignalCandle.PayloadDate <> signal.Item4.PayloadDate) Then
+                If Not (lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.SignalCandle.PayloadDate = signal.Item4.PayloadDate) Then
                     signalCandle = signal.Item4
                 End If
             End If
@@ -76,7 +77,7 @@ Public Class EMABasedStrategyRule
                     targetPoint = atr
                     targetRemark = "ATR Target"
                 Else
-                    targetPoint = ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
+                    targetPoint = ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
                     targetRemark = "SL Target"
                 End If
                 Dim quantity As Decimal = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, signal.Item2, signal.Item2 + targetPoint, _userInputs.MaxProfitPerTrade, _parentStrategy.StockType)
@@ -88,7 +89,7 @@ Public Class EMABasedStrategyRule
                                 .Quantity = quantity,
                                 .Stoploss = .EntryPrice - slPoint,
                                 .Target = .EntryPrice + targetPoint,
-                                .Buffer = 0,
+                                .Buffer = buffer,
                                 .SignalCandle = signalCandle,
                                 .OrderType = Trade.TypeOfOrder.SL,
                                 .Supporting1 = signalCandle.PayloadDate,
@@ -102,7 +103,7 @@ Public Class EMABasedStrategyRule
                                 .Quantity = quantity,
                                 .Stoploss = .EntryPrice + slPoint,
                                 .Target = .EntryPrice - targetPoint,
-                                .Buffer = 0,
+                                .Buffer = buffer,
                                 .SignalCandle = signalCandle,
                                 .OrderType = Trade.TypeOfOrder.SL,
                                 .Supporting1 = signalCandle.PayloadDate,
@@ -121,6 +122,31 @@ Public Class EMABasedStrategyRule
     Public Overrides Async Function IsTriggerReceivedForExitOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, String))
         Dim ret As Tuple(Of Boolean, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
+        If currentTrade IsNot Nothing Then
+            Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
+            If currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                Dim signal As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload) = GetSignalForEntry(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
+                If signal IsNot Nothing AndAlso signal.Item1 Then
+                    If currentTrade.EntryDirection <> signal.Item3 Then
+                        ret = New Tuple(Of Boolean, String)(True, "Reverse Signal Exit")
+                    End If
+                End If
+            ElseIf currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
+                If _userInputs.ImmediateBreakout Then
+                    If currentTrade.SignalCandle.PayloadDate <= currentMinuteCandlePayload.PreviousCandlePayload.PreviousCandlePayload.PayloadDate Then
+                        ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                    End If
+                End If
+                If ret Is Nothing Then
+                    Dim signal As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload) = GetSignalForEntry(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
+                    If signal IsNot Nothing AndAlso signal.Item1 Then
+                        If currentTrade.SignalCandle.PayloadDate <> signal.Item4.PayloadDate Then
+                            ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                        End If
+                    End If
+                End If
+            End If
+        End If
         Return ret
     End Function
 
@@ -142,20 +168,33 @@ Public Class EMABasedStrategyRule
 
     Public Overrides Async Function UpdateRequiredCollectionsAsync(currentTick As Payload) As Task
         Await Task.Delay(0).ConfigureAwait(False)
+        Dim inprogressTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Inprogress)
+        If inprogressTrades IsNot Nothing AndAlso inprogressTrades.Count > 0 Then
+            For Each runningTrades In inprogressTrades
+                If runningTrades.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                    If runningTrades.EntryTime >= runningTrades.SignalCandle.PayloadDate.AddMinutes(2) Then
+                        runningTrades.UpdateTrade(Supporting4:="Delay breakout")
+                    End If
+                End If
+            Next
+        End If
     End Function
 
     Private Function GetSignalForEntry(ByVal candle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)
         Dim ret As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload) = Nothing
-        If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then
+        If candle IsNot Nothing AndAlso Not candle.DeadCandle Then
             If Not _eligibleToTakeTrade Then
-                If candle.High >= _emaPayload(candle.PayloadDate) AndAlso candle.Close <= _emaPayload(candle.PayloadDate) Then
+                If candle.High >= _emaPayload(candle.PayloadDate) AndAlso candle.Low <= _emaPayload(candle.PayloadDate) Then
                     _eligibleToTakeTrade = True
                 End If
             ElseIf _eligibleToTakeTrade Then
-                If candle.Low > _emaPayload(candle.PayloadDate) Then
-                    ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, candle.Low, Trade.TradeExecutionDirection.Sell, candle)
-                ElseIf candle.High < _emaPayload(candle.PayloadDate) Then
-                    ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, candle.High, Trade.TradeExecutionDirection.Buy, candle)
+                Dim buffer As Decimal = _parentStrategy.CalculateBuffer(candle.Open, RoundOfType.Floor)
+                If candle.CandleRange >= buffer Then
+                    If candle.Low > _emaPayload(candle.PayloadDate) Then
+                        ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, candle.Low, Trade.TradeExecutionDirection.Sell, candle)
+                    ElseIf candle.High < _emaPayload(candle.PayloadDate) Then
+                        ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, Payload)(True, candle.High, Trade.TradeExecutionDirection.Buy, candle)
+                    End If
                 End If
             End If
         End If

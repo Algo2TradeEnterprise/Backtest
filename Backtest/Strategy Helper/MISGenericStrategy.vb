@@ -192,6 +192,8 @@ Namespace StrategyHelper
                                             stockRule = New TopGainerLosserStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).SupportingDate)
                                         Case 57
                                             stockRule = New NiftyBankniftyPairTradingStrategy(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2, stockList(stock).Supporting3)
+                                        Case 58
+                                            stockRule = New EMABasedStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat

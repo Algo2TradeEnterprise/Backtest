@@ -55,9 +55,9 @@ Public Class NiftyBankniftyPairTradingStrategy
             Dim signalCandle As Payload = currentMinuteCandlePayload
 
             If signalCandle IsNot Nothing Then
-                If _direction = Trade.TradeExecutionDirection.Buy Then
-                    Dim quantity As Decimal = Me.LotSize * _numberOfLots
+                Dim quantity As Decimal = Me.LotSize * _numberOfLots
 
+                If _direction = Trade.TradeExecutionDirection.Buy Then
                     parameter = New PlaceOrderParameters With {
                                 .EntryPrice = signalCandle.Open,
                                 .EntryDirection = Trade.TradeExecutionDirection.Buy,
@@ -69,8 +69,6 @@ Public Class NiftyBankniftyPairTradingStrategy
                                 .OrderType = Trade.TypeOfOrder.Market
                             }
                 ElseIf _direction = Trade.TradeExecutionDirection.Sell Then
-                    Dim quantity As Decimal = Me.LotSize * 2
-
                     parameter = New PlaceOrderParameters With {
                                 .EntryPrice = signalCandle.Open,
                                 .EntryDirection = Trade.TradeExecutionDirection.Sell,
