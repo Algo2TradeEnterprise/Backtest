@@ -191,7 +191,7 @@ Namespace StrategyHelper
                                         Case 56
                                             stockRule = New TopGainerLosserStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).SupportingDate)
                                         Case 57
-                                            stockRule = New NiftyBankniftyPairTradingStrategy(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2)
+                                            stockRule = New NiftyBankniftyPairTradingStrategy(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2, stockList(stock).Supporting3)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -1053,8 +1053,9 @@ Namespace StrategyHelper
                                             {.StockName = instrumentName,
                                             .LotSize = dt.Rows(i).Item(1),
                                             .EligibleToTakeTrade = True,
-                                            .Supporting1 = If(dt.Rows(i).Item(2) = "BUY", 1, -1),
-                                            .Supporting2 = dt.Rows(i).Item(3)}
+                                            .Supporting1 = If(dt.Rows(i).Item(2).ToString.ToUpper = "BUY", 1, -1),
+                                            .Supporting2 = dt.Rows(i).Item(3),
+                                            .Supporting3 = dt.Rows(i).Item(4)}
 
                                 If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
                                 ret.Add(instrumentName, detailsOfStock)

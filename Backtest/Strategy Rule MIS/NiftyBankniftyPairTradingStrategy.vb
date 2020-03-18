@@ -8,6 +8,7 @@ Public Class NiftyBankniftyPairTradingStrategy
 
     Private ReadOnly _direction As Trade.TradeExecutionDirection
     Private ReadOnly _slPoint As Decimal
+    Private ReadOnly _numberOfLots As Integer
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -17,7 +18,8 @@ Public Class NiftyBankniftyPairTradingStrategy
                    ByVal canceller As CancellationTokenSource,
                    ByVal entities As RuleEntities,
                    ByVal direction As Decimal,
-                   ByVal slPoint As Decimal)
+                   ByVal slPoint As Decimal,
+                   ByVal numberOfLots As Integer)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         If direction > 0 Then
             _direction = Trade.TradeExecutionDirection.Buy
@@ -25,6 +27,7 @@ Public Class NiftyBankniftyPairTradingStrategy
             _direction = Trade.TradeExecutionDirection.Sell
         End If
         _slPoint = slPoint
+        _numberOfLots = numberOfLots
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
