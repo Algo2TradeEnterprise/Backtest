@@ -79,34 +79,36 @@ Public Class EMABasedStrategyRule
                     targetPoint = ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
                     targetRemark = "SL Target"
                 End If
+                Dim quantity As Decimal = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, signal.Item2, signal.Item2 + targetPoint, _userInputs.MaxProfitPerTrade, _parentStrategy.StockType)
 
                 If signal.Item3 = Trade.TradeExecutionDirection.Buy Then
-
-                    Dim quantity As Decimal = Me.LotSize * 2
-
-                    'parameter = New PlaceOrderParameters With {
-                    '            .EntryPrice = signalCandle.Open,
-                    '            .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                    '            .Quantity = quantity,
-                    '            .Stoploss = .EntryPrice - _slPoint,
-                    '            .Target = .EntryPrice + 1000000,
-                    '            .Buffer = 0,
-                    '            .SignalCandle = signalCandle,
-                    '            .OrderType = Trade.TypeOfOrder.Market
-                    '        }
+                    parameter = New PlaceOrderParameters With {
+                                .EntryPrice = signal.Item2 + buffer,
+                                .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                                .Quantity = quantity,
+                                .Stoploss = .EntryPrice - slPoint,
+                                .Target = .EntryPrice + targetPoint,
+                                .Buffer = 0,
+                                .SignalCandle = signalCandle,
+                                .OrderType = Trade.TypeOfOrder.SL,
+                                .Supporting1 = signalCandle.PayloadDate,
+                                .Supporting2 = targetRemark,
+                                .Supporting3 = atr
+                            }
                 ElseIf signal.Item3 = Trade.TradeExecutionDirection.Sell Then
-                    Dim quantity As Decimal = Me.LotSize * 2
-
-                    'parameter = New PlaceOrderParameters With {
-                    '            .EntryPrice = signalCandle.Open,
-                    '            .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                    '            .Quantity = quantity,
-                    '            .Stoploss = .EntryPrice + _slPoint,
-                    '            .Target = .EntryPrice - 1000000,
-                    '            .Buffer = 0,
-                    '            .SignalCandle = signalCandle,
-                    '            .OrderType = Trade.TypeOfOrder.Market
-                    '        }
+                    parameter = New PlaceOrderParameters With {
+                                .EntryPrice = signal.Item2 - buffer,
+                                .EntryDirection = Trade.TradeExecutionDirection.Sell,
+                                .Quantity = quantity,
+                                .Stoploss = .EntryPrice + slPoint,
+                                .Target = .EntryPrice - targetPoint,
+                                .Buffer = 0,
+                                .SignalCandle = signalCandle,
+                                .OrderType = Trade.TypeOfOrder.SL,
+                                .Supporting1 = signalCandle.PayloadDate,
+                                .Supporting2 = targetRemark,
+                                .Supporting3 = atr
+                            }
                 End If
             End If
         End If
