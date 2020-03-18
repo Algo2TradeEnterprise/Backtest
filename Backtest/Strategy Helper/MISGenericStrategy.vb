@@ -190,6 +190,8 @@ Namespace StrategyHelper
                                             stockRule = New HighLowEMAStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 56
                                             stockRule = New TopGainerLosserStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).SupportingDate)
+                                        Case 57
+                                            stockRule = New NiftyBankniftyPairTradingStrategy(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -1042,6 +1044,20 @@ Namespace StrategyHelper
                                     counter += 1
                                     If counter = Me.NumberOfTradeableStockPerDay Then Exit For
                                 End If
+                            Next
+                        Case 57
+                            Dim counter As Integer = 0
+                            For i = 1 To dt.Rows.Count - 1
+                                Dim instrumentName As String = dt.Rows(i).Item(0)
+                                Dim detailsOfStock As StockDetails = New StockDetails With
+                                            {.StockName = instrumentName,
+                                            .LotSize = dt.Rows(i).Item(1),
+                                            .EligibleToTakeTrade = True,
+                                            .Supporting1 = If(dt.Rows(i).Item(2) = "BUY", 1, -1),
+                                            .Supporting2 = dt.Rows(i).Item(3)}
+
+                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                ret.Add(instrumentName, detailsOfStock)
                             Next
                         Case Else
                             Dim counter As Integer = 0
