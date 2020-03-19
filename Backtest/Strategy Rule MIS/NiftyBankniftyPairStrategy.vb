@@ -6,6 +6,8 @@ Public Class NiftyBankniftyPairStrategy
     Inherits StrategyRule
 
 
+    Public DummyCandle As Payload = Nothing
+
     Private ReadOnly _direction As Trade.TradeExecutionDirection
     Private ReadOnly _slPoint As Decimal
     Private ReadOnly _numberOfLots As Integer
@@ -52,7 +54,29 @@ Public Class NiftyBankniftyPairStrategy
             _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) > Math.Abs(Me.MaxLossOfThisStock) * -1 AndAlso
             currentMinuteCandlePayload.PayloadDate >= tradeStartTime AndAlso Me.EligibleToTakeTrade Then
 
-            Dim signalCandle As Payload = currentMinuteCandlePayload
+            Me.DummyCandle = currentTick
+
+            Dim signalCandle As Payload = Nothing
+            If CType(Me.AnotherPairInstrument, NiftyBankniftyPairStrategy).DummyCandle IsNot Nothing Then
+                Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(CType(Me.AnotherPairInstrument, NiftyBankniftyPairStrategy).DummyCandle, Trade.TypeOfTrade.MIS)
+                If lastExecutedOrder IsNot Nothing Then
+                    If lastExecutedOrder.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
+                        Dim exitCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(lastExecutedOrder.ExitTime, _signalPayload))
+                        If currentMinuteCandlePayload.PayloadDate > exitCandle.PayloadDate Then
+                            signalCandle = currentMinuteCandlePayload
+                        End If
+                    ElseIf lastExecutedOrder.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                        Dim entryCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(lastExecutedOrder.EntryTime, _signalPayload))
+                        If entryCandle.PayloadDate = currentMinuteCandlePayload.PayloadDate Then
+                            signalCandle = currentMinuteCandlePayload
+                        End If
+                    End If
+                Else
+                    signalCandle = currentMinuteCandlePayload
+                End If
+            Else
+                signalCandle = currentMinuteCandlePayload
+            End If
 
             If signalCandle IsNot Nothing Then
                 Dim quantity As Decimal = Me.LotSize * _numberOfLots
