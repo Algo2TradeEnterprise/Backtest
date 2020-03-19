@@ -110,6 +110,8 @@ Namespace StrategyHelper
                                     Select Case RuleNumber
                                         Case 0
                                             stockRule = New PairChangePercentStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, _canceller)
+                                        Case 1
+                                            stockRule = New NiftyBankniftyPairStrategy(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, RuleEntityData, _canceller, stockList(stock).Supporting1, stockList(stock).Supporting2, stockList(stock).Supporting3)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -574,6 +576,20 @@ Namespace StrategyHelper
                                              .LotSize = 1,
                                              .EligibleToTakeTrade = True,
                                              .Supporting1 = If(i = 1, 1, -1)}
+                                ret.Add(instrumentName, detailsOfStock)
+                            Next
+                        Case 1
+                            For i = 1 To dt.Rows.Count - 1
+                                Dim instrumentName As String = dt.Rows(i).Item(0)
+                                Dim detailsOfStock As StockDetails = New StockDetails With
+                                            {.StockName = instrumentName,
+                                            .LotSize = dt.Rows(i).Item(1),
+                                            .EligibleToTakeTrade = True,
+                                            .Supporting1 = If(dt.Rows(i).Item(2).ToString.ToUpper = "BUY", 1, -1),
+                                            .Supporting2 = dt.Rows(i).Item(3),
+                                            .Supporting3 = dt.Rows(i).Item(4)}
+
+                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
                                 ret.Add(instrumentName, detailsOfStock)
                             Next
                         Case Else
