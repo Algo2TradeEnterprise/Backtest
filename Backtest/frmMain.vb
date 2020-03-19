@@ -2046,10 +2046,74 @@ Public Class frmMain
 #End Region
 
 #Region "EMA Based Strategy"
+            'Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+            '                                                  exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+            '                                                  exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+            '                                                  tradeStartTime:=TimeSpan.Parse("9:16:00"),
+            '                                                  lastTradeEntryTime:=TimeSpan.Parse("14:44:59"),
+            '                                                  eodExitTime:=TimeSpan.Parse("15:15:00"),
+            '                                                  tickSize:=tick,
+            '                                                  marginMultiplier:=margin,
+            '                                                  timeframe:=1,
+            '                                                  heikenAshiCandle:=False,
+            '                                                  stockType:=stockType,
+            '                                                  databaseTable:=database,
+            '                                                  dataSource:=sourceData,
+            '                                                  initialCapital:=Decimal.MaxValue / 2,
+            '                                                  usableCapital:=Decimal.MaxValue / 2,
+            '                                                  minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+            '                                                  amountToBeWithdrawn:=0)
+            '    AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+
+            '    With backtestStrategy
+            '        .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Stocklist.csv")
+
+            '        .AllowBothDirectionEntryAtSameTime = False
+            '        .TrailingStoploss = False
+            '        .TickBasedStrategy = False
+            '        .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+
+            '        .RuleEntityData = New EMABasedStrategyRule.StrategyRuleEntities With
+            '            {
+            '             .ImmediateBreakout = False,
+            '             .MaxProfitPerTrade = 500,
+            '             .TargetMultiplier = 1.1,
+            '             .SlabMultiplier = 3
+            '            }
+
+            '        .NumberOfTradeableStockPerDay = 5
+
+            '        .NumberOfTradesPerStockPerDay = Integer.MaxValue
+
+            '        .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+            '        .StockMaxLossPercentagePerDay = Decimal.MinValue
+
+            '        .ExitOnStockFixedTargetStoploss = True
+            '        .StockMaxProfitPerDay = Decimal.MaxValue
+            '        .StockMaxLossPerDay = -1500
+
+            '        .ExitOnOverAllFixedTargetStoploss = False
+            '        .OverAllProfitPerDay = Decimal.MaxValue
+            '        .OverAllLossPerDay = Decimal.MinValue
+
+            '        .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+            '        .MTMSlab = Math.Abs(.OverAllLossPerDay)
+            '        .MovementSlab = .MTMSlab / 2
+            '        .RealtimeTrailingPercentage = 50
+            '    End With
+
+            '    Dim ruleData As EMABasedStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+            '    Dim filename As String = String.Format("EMA Based Strategy Output")
+
+            '    Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+            'End Using
+#End Region
+
+#Region "Inside Bar Breakout"
             Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                               exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                               exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                              tradeStartTime:=TimeSpan.Parse("9:16:00"),
+                                                              tradeStartTime:=TimeSpan.Parse("9:17:00"),
                                                               lastTradeEntryTime:=TimeSpan.Parse("14:44:59"),
                                                               eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                               tickSize:=tick,
@@ -2066,31 +2130,29 @@ Public Class frmMain
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Stocklist.csv")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Inside Bar Breakout.csv")
 
                     .AllowBothDirectionEntryAtSameTime = False
                     .TrailingStoploss = False
-                    .TickBasedStrategy = False
+                    .TickBasedStrategy = True
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                    .RuleEntityData = New EMABasedStrategyRule.StrategyRuleEntities With
+                    .RuleEntityData = New InsideBarBreakoutStrategyRule.StrategyRuleEntities With
                         {
-                         .ImmediateBreakout = False,
-                         .MaxProfitPerTrade = 500,
-                         .TargetMultiplier = 1.1,
-                         .SlabMultiplier = 3
+                         .MaxLossPerTrade = -500,
+                         .TargetMultiplier = 1
                         }
 
-                    .NumberOfTradeableStockPerDay = 5
+                    .NumberOfTradeableStockPerDay = Integer.MaxValue
 
-                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
+                    .NumberOfTradesPerStockPerDay = 3
 
                     .StockMaxProfitPercentagePerDay = Decimal.MaxValue
                     .StockMaxLossPercentagePerDay = Decimal.MinValue
 
-                    .ExitOnStockFixedTargetStoploss = True
+                    .ExitOnStockFixedTargetStoploss = False
                     .StockMaxProfitPerDay = Decimal.MaxValue
-                    .StockMaxLossPerDay = -1500
+                    .StockMaxLossPerDay = Decimal.MinValue
 
                     .ExitOnOverAllFixedTargetStoploss = False
                     .OverAllProfitPerDay = Decimal.MaxValue
@@ -2102,15 +2164,16 @@ Public Class frmMain
                     .RealtimeTrailingPercentage = 50
                 End With
 
-                Dim ruleData As EMABasedStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                Dim filename As String = String.Format("EMA Based Strategy Output")
+                Dim filename As String = String.Format("Inside Bar Breakout Output")
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using
 #End Region
 
+        Catch cex As TaskCanceledException
+            MsgBox(cex.Message, MsgBoxStyle.Critical)
         Catch ex As Exception
-            MsgBox(ex.StackTrace, MsgBoxStyle.Critical)
+            MsgBox(ex.ToString, MsgBoxStyle.Critical)
         Finally
             OnHeartbeat("Process Complete")
             SetObjectEnableDisable_ThreadSafe(btnStart, True)
