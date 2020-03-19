@@ -191,7 +191,16 @@ Public Class Payload
         End Get
     End Property
 
+    <NonSerialized>
+    Private _PreviousCandlePayload As Payload
     Public Property PreviousCandlePayload As Payload
+        Get
+            Return _PreviousCandlePayload
+        End Get
+        Set(value As Payload)
+            _PreviousCandlePayload = value
+        End Set
+    End Property
 
     Public Property PayloadSource As CandleDataSource
 
