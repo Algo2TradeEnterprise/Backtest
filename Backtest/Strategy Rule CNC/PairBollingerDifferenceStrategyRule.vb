@@ -221,10 +221,10 @@ Public Class PairBollingerDifferenceStrategyRule
                 Me.ForceCancelTrade = False
             ElseIf _controller Then
                 Dim myPair As PairDifferenceStrategyRule = Me.AnotherPairInstrument
-                If Math.Abs(myChange - myPairChange) <= _maxDifferenceForExit Then
-                    ret = New Tuple(Of Boolean, String)(True, String.Format("Normal Exit as Difference({0}) is less than {1}", Math.Round(Math.Abs(myChange - myPairChange), 2), _maxDifferenceForExit))
-                    Me.AnotherPairInstrument.ForceCancelTrade = True
-                End If
+                'If Math.Abs(myChange - myPairChange) <= _maxDifferenceForExit Then
+                '    ret = New Tuple(Of Boolean, String)(True, String.Format("Normal Exit as Difference({0}) is less than {1}", Math.Round(Math.Abs(myChange - myPairChange), 2), _maxDifferenceForExit))
+                '    Me.AnotherPairInstrument.ForceCancelTrade = True
+                'End If
             End If
         End If
         Return ret
@@ -254,13 +254,13 @@ Public Class PairBollingerDifferenceStrategyRule
         If myPair.LastTick IsNot Nothing Then
             Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(candle, Trade.TypeOfTrade.CNC)
             If lastExecutedTrade Is Nothing OrElse lastExecutedTrade.ExitTime < candle.PayloadDate Then
-                If Math.Abs(myChange - myPairChange) >= _minDifferenceForEntry Then
-                    If myChange < myPairChange Then
-                        ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, Trade.TradeExecutionDirection.Buy)
-                    Else
-                        ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, Trade.TradeExecutionDirection.Sell)
-                    End If
-                End If
+                'If Math.Abs(myChange - myPairChange) >= _minDifferenceForEntry Then
+                '    If myChange < myPairChange Then
+                '        ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, Trade.TradeExecutionDirection.Buy)
+                '    Else
+                '        ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, Trade.TradeExecutionDirection.Sell)
+                '    End If
+                'End If
             End If
         End If
         Return ret
