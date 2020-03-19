@@ -58,15 +58,15 @@ Public Class NiftyBankniftyPairStrategy
 
             Dim signalCandle As Payload = Nothing
             If CType(Me.AnotherPairInstrument, NiftyBankniftyPairStrategy).DummyCandle IsNot Nothing Then
-                Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(CType(Me.AnotherPairInstrument, NiftyBankniftyPairStrategy).DummyCandle, Trade.TypeOfTrade.MIS)
-                If lastExecutedOrder IsNot Nothing Then
-                    If lastExecutedOrder.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
-                        Dim exitCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(lastExecutedOrder.ExitTime, _signalPayload))
+                Dim pairlastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(CType(Me.AnotherPairInstrument, NiftyBankniftyPairStrategy).DummyCandle, Trade.TypeOfTrade.MIS)
+                If pairlastExecutedOrder IsNot Nothing Then
+                    If pairlastExecutedOrder.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
+                        Dim exitCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(pairlastExecutedOrder.ExitTime, _signalPayload))
                         If currentMinuteCandlePayload.PayloadDate > exitCandle.PayloadDate Then
                             signalCandle = currentMinuteCandlePayload
                         End If
-                    ElseIf lastExecutedOrder.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-                        Dim entryCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(lastExecutedOrder.EntryTime, _signalPayload))
+                    ElseIf pairlastExecutedOrder.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                        Dim entryCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(pairlastExecutedOrder.EntryTime, _signalPayload))
                         If entryCandle.PayloadDate = currentMinuteCandlePayload.PayloadDate Then
                             signalCandle = currentMinuteCandlePayload
                         End If
@@ -76,6 +76,14 @@ Public Class NiftyBankniftyPairStrategy
                 End If
             Else
                 signalCandle = currentMinuteCandlePayload
+            End If
+            If signalCandle IsNot Nothing Then
+                Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, Trade.TypeOfTrade.MIS)
+                If lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
+                    If currentMinuteCandlePayload.PayloadDate < lastExecutedOrder.ExitTime Then
+                        signalCandle = Nothing
+                    End If
+                End If
             End If
 
             If signalCandle IsNot Nothing Then
