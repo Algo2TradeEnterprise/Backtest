@@ -94,6 +94,7 @@ Public Class Payload
         End Set
     End Property
 
+    <NonSerialized>
     Private _H_L As Decimal
     Public Property H_L As Decimal
         Get
@@ -104,6 +105,7 @@ Public Class Payload
         End Set
     End Property
 
+    <NonSerialized>
     Private _C_AVG_HL As Decimal
     Public Property C_AVG_HL As Decimal
         Get
@@ -114,6 +116,7 @@ Public Class Payload
         End Set
     End Property
 
+    <NonSerialized>
     Private _SMI_EMA As Double
     Public Property SMI_EMA As Double
         Get
@@ -124,6 +127,7 @@ Public Class Payload
         End Set
     End Property
 
+    <NonSerialized>
     Private _Additional_Field As Double
     Public Property Additional_Field As Double
         Get
@@ -159,6 +163,7 @@ Public Class Payload
 
     Public Property PayloadDate As Date
 
+    <NonSerialized>
     Private _CandleColor As Color
     Public ReadOnly Property CandleColor As Color
         Get
@@ -173,6 +178,7 @@ Public Class Payload
         End Get
     End Property
 
+    <NonSerialized>
     Private _VolumeColor As Color
     Public ReadOnly Property VolumeColor As Color
         Get
@@ -204,6 +210,7 @@ Public Class Payload
 
     Public Property PayloadSource As CandleDataSource
 
+    <NonSerialized>
     Private _CandleStrengthNormal As StrongCandle
     Public ReadOnly Property CandleStrengthNormal As StrongCandle
         Get
@@ -220,6 +227,7 @@ Public Class Payload
         End Get
     End Property
 
+    <NonSerialized>
     Private _CandleStrengthHeikenAshi As StrongCandle
     Public ReadOnly Property CandleStrengthHeikenAshi As StrongCandle
         Get
@@ -250,6 +258,7 @@ Public Class Payload
         End Get
     End Property
 
+    <NonSerialized>
     Private _CandleWicksPercentage As Wicks
     Public ReadOnly Property CandleWicksPercentage As Wicks
         Get
@@ -260,6 +269,7 @@ Public Class Payload
         End Get
     End Property
 
+    <NonSerialized>
     Private _CandleWicks As Wicks
     Public ReadOnly Property CandleWicks As Wicks
         Get
@@ -299,6 +309,7 @@ Public Class Payload
         End Get
     End Property
 
+    <NonSerialized>
     Private _VolumeIndex As Double
     Public ReadOnly Property VolumeIndex As Double
         Get
@@ -307,6 +318,7 @@ Public Class Payload
         End Get
     End Property
 
+    <NonSerialized>
     Private _CandleRange As Double
     Public ReadOnly Property CandleRange As Double
         Get
@@ -315,6 +327,7 @@ Public Class Payload
         End Get
     End Property
 
+    <NonSerialized>
     Private _CandleRangePercentage As Double
     Public ReadOnly Property CandleRangePercentage As Double
         Get
@@ -323,6 +336,7 @@ Public Class Payload
         End Get
     End Property
 
+    <NonSerialized>
     Private _CandleBody As Double
     Public ReadOnly Property CandleBody As Double
         Get
@@ -331,6 +345,7 @@ Public Class Payload
         End Get
     End Property
 
+    <NonSerialized>
     Private _DojiCandle As Double
     Public ReadOnly Property DojiCandle As Boolean
         Get
@@ -344,6 +359,7 @@ Public Class Payload
         End Get
     End Property
 
+    <NonSerialized>
     Private _DeadCandle As Double
     Public ReadOnly Property DeadCandle As Boolean
         Get
@@ -356,6 +372,7 @@ Public Class Payload
         End Get
     End Property
 
+    <NonSerialized>
     Private _IsMaribazu As Double
     Public ReadOnly Property IsMaribazu As Boolean
         Get
@@ -370,6 +387,7 @@ Public Class Payload
 
     Public Property Supporting As String
 
+    <NonSerialized>
     Private _Ticks As List(Of Payload)
     Public ReadOnly Property Ticks As List(Of Payload)
         Get
