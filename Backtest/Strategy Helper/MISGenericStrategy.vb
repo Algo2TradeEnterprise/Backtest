@@ -59,9 +59,18 @@ Namespace StrategyHelper
                 Dim totalPL As Decimal = 0
                 Dim tradeCheckingDate As Date = startDate.Date
                 Dim portfolioLossPerDay As Decimal = Me.OverAllLossPerDay
-                Dim dateToSkip As Date = New Date(2019, 11, 25)
+                Dim dateToSkipList As List(Of Date) = New List(Of Date) From {
+                    New Date(2019, 1, 1),
+                    New Date(2019, 4, 23),
+                    New Date(2019, 5, 28),
+                    New Date(2019, 10, 27),
+                    New Date(2019, 11, 25),
+                    New Date(2020, 1, 1),
+                    New Date(2020, 2, 1),
+                    New Date(2020, 2, 18)
+                }
                 While tradeCheckingDate <= endDate.Date
-                    If tradeCheckingDate.Date = dateToSkip.Date Then
+                    If dateToSkipList.Contains(tradeCheckingDate.Date) Then
                         tradeCheckingDate = tradeCheckingDate.AddDays(1)
                         Continue While
                     End If
