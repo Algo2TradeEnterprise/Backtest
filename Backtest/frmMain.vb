@@ -350,7 +350,7 @@ Public Class frmMain
                     .RealtimeTrailingPercentage = 50
                 End With
 
-                Dim filename As String = String.Format("Strategy Output")
+                Dim filename As String = String.Format("Rohit Strategy Output")
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using
