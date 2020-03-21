@@ -1062,8 +1062,8 @@ Namespace StrategyHelper
                         ltpUpdateTrade.CurrentLTPTime = currentTickPayload.PayloadDate
                         ltpUpdateTrade.CurrentLTP = currentTickPayload.Open  'Assuming OHCL of tick is same
                     Next
-                    Dim a = Me.TotalMaxDrawDownPLAfterBrokerage(currentTickPayload.PayloadDate.Date, currentTickPayload.PayloadDate.Date)
-                    Dim b = Me.TotalMaxDrawUpPLAfterBrokerage(currentTickPayload.PayloadDate.Date, currentTickPayload.PayloadDate.Date)
+                    Dim a = Me.TotalMaxDrawDownPLAfterBrokerage(currentTickPayload.PayloadDate.Date, currentTickPayload.PayloadDate)
+                    Dim b = Me.TotalMaxDrawUpPLAfterBrokerage(currentTickPayload.PayloadDate.Date, currentTickPayload.PayloadDate)
                 End If
             End If
         End Sub
