@@ -233,10 +233,14 @@ Public Class PairChangePercentStrategyRule
                     Dim diff As Decimal = _diffPayloads(candle.PreviousCandlePayload.PayloadDate).Close
                     Dim highBollinger As Decimal = _bollingerHighPayloads(candle.PreviousCandlePayload.PayloadDate)
                     Dim lowBollinger As Decimal = _bollingerLowPayloads(candle.PreviousCandlePayload.PayloadDate)
-                    If diff > highBollinger Then
-                        ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, Trade.TradeExecutionDirection.Sell)
-                    ElseIf diff < lowBollinger Then
-                        ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, Trade.TradeExecutionDirection.Buy)
+                    If diff > highBollinger OrElse diff < lowBollinger Then
+                        Dim myChange As Decimal = Me.ChangePercentagePayloads(candle.PreviousCandlePayload.PayloadDate).Close
+                        Dim myPairChange As Decimal = CType(Me.AnotherPairInstrument, PairChangePercentStrategyRule).ChangePercentagePayloads(candle.PreviousCandlePayload.PayloadDate).Close
+                        If myChange > myPairChange Then
+                            ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, Trade.TradeExecutionDirection.Sell)
+                        ElseIf myChange < myPairChange Then
+                            ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, Trade.TradeExecutionDirection.Buy)
+                        End If
                     End If
                 End If
             End If
