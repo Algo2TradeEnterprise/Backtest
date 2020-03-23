@@ -196,6 +196,8 @@ Namespace StrategyHelper
                                             stockRule = New EMABasedStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 59
                                             stockRule = New InsideBarBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).SupportingDate, stockList(stock).Supporting1, stockList(stock).Supporting2, stockList(stock).Supporting3, stockList(stock).Supporting4)
+                                        Case 60
+                                            stockRule = New LowStoplossSlabBasedStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -1092,6 +1094,53 @@ Namespace StrategyHelper
                                     If counter = Me.NumberOfTradeableStockPerDay Then Exit For
                                 End If
                             Next
+                        Case 60
+                            Dim previousDay As Date = Cmn.GetPreviousTradingDay(Me.DatabaseTable, tradingDate)
+                            If previousDay <> Date.MinValue Then
+                                Dim stockList As Dictionary(Of String, StockDetails) = Nothing
+                                For i = 1 To dt.Rows.Count - 1
+                                    Dim rowDate As Date = dt.Rows(i)(0)
+                                    If rowDate.Date = tradingDate.Date Then
+                                        Dim tradingSymbol As String = dt.Rows(i).Item(1)
+                                        Dim instrumentName As String = Nothing
+                                        If tradingSymbol.Contains("FUT") Then
+                                            instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                                        Else
+                                            instrumentName = tradingSymbol
+                                        End If
+
+                                        Dim detailsOfStock As StockDetails = New StockDetails With
+                                                    {.StockName = instrumentName,
+                                                    .LotSize = dt.Rows(i).Item(2),
+                                                    .EligibleToTakeTrade = True,
+                                                    .Supporting1 = dt.Rows(i).Item(16),
+                                                    .Supporting2 = dt.Rows(i).Item(12)}
+
+                                        If stockList Is Nothing Then stockList = New Dictionary(Of String, StockDetails)
+                                        stockList.Add(instrumentName, detailsOfStock)
+                                    End If
+                                Next
+                                If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
+                                    Dim counter As Integer = 0
+                                    For Each runningStock In stockList.OrderBy(Function(x)
+                                                                                   Return x.Value.Supporting2
+                                                                               End Function)
+                                        If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                        ret.Add(runningStock.Key, runningStock.Value)
+                                        counter += 1
+                                        If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                                    Next
+                                    counter = 0
+                                    For Each runningStock In stockList.OrderByDescending(Function(x)
+                                                                                             Return x.Value.Supporting2
+                                                                                         End Function)
+                                        If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                        ret.Add(runningStock.Key, runningStock.Value)
+                                        counter += 1
+                                        If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                                    Next
+                                End If
+                            End If
                         Case Else
                             Dim counter As Integer = 0
                             For i = 1 To dt.Rows.Count - 1
