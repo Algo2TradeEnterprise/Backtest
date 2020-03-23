@@ -160,8 +160,8 @@ Namespace StrategyHelper
                 If Me.MaximumDrawDown = 0 Or Me.MaximumDrawUp = 0 Then
                     Throw New ApplicationException(String.Format("{0} Value: 0", If(Me.MaximumDrawUp = 0, Me.MaximumDrawUp.ToString, Me.MaximumDrawDown.ToString)))
                 End If
-                Dim a = _OriginatingStrategy.TotalMaxDrawDownPLAfterBrokerage(Me.TradingDate, CurrentLTPTime)
-                Dim b = _OriginatingStrategy.TotalMaxDrawUpPLAfterBrokerage(Me.TradingDate, CurrentLTPTime)
+                'Dim a = _OriginatingStrategy.TotalMaxDrawDownPLAfterBrokerage(Me.TradingDate, CurrentLTPTime)
+                'Dim b = _OriginatingStrategy.TotalMaxDrawUpPLAfterBrokerage(Me.TradingDate, CurrentLTPTime)
             End Set
         End Property
 
