@@ -109,7 +109,7 @@ Namespace StrategyHelper
                                     Dim tradingSymbol As String = currentDayOneMinutePayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
                                         Case 0
-                                            stockRule = New PairChangePercentStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, _canceller)
+                                            stockRule = New PairChangePercentStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, _canceller, stockList(stock).Supporting1, stockList(stock).Supporting2, stockList(stock).Supporting3)
                                         Case 3
                                             stockRule = New NiftyBankniftyPairStrategy(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, RuleEntityData, _canceller, stockList(stock).Supporting1, stockList(stock).Supporting2, stockList(stock).Supporting3)
                                     End Select
@@ -562,7 +562,7 @@ Namespace StrategyHelper
                 If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
                     Select Case Me.RuleNumber
                         Case 0
-                            For i = 1 To dt.Rows.Count - 1
+                            For i = 1 To 2
                                 If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
                                 Dim tradingSymbol As String = dt.Rows(i).Item(0)
                                 Dim instrumentName As String = Nothing
@@ -571,11 +571,15 @@ Namespace StrategyHelper
                                 Else
                                     instrumentName = tradingSymbol
                                 End If
+                                Dim lotSize As Integer = dt.Rows(i).Item(1)
+                                Dim controller As String = dt.Rows(i).Item(2)
                                 Dim detailsOfStock As StockDetails = New StockDetails With
                                             {.StockName = instrumentName,
-                                             .LotSize = 1,
+                                             .LotSize = lotSize,
                                              .EligibleToTakeTrade = True,
-                                             .Supporting1 = If(i = 1, 1, -1)}
+                                             .Supporting1 = If(controller.ToUpper = "TRUE", 1, 0),
+                                             .Supporting2 = dt.Rows(i).Item(3),
+                                             .Supporting3 = dt.Rows(i).Item(4)}
                                 ret.Add(instrumentName, detailsOfStock)
                             Next
                         Case 3
