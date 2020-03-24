@@ -2193,12 +2193,20 @@ Public Class frmMain
                 With backtestStrategy
                     .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Top Gainer Top Looser.csv")
 
-                    .AllowBothDirectionEntryAtSameTime = True
+                    .AllowBothDirectionEntryAtSameTime = False
                     .TrailingStoploss = False
                     .TickBasedStrategy = True
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                    .RuleEntityData = Nothing
+                    .RuleEntityData = New LowStoplossSlabBasedStrategyRule.StrategyRuleEntities With
+                        {
+                         .TargetSlabMultiplier = 1000000000,
+                         .StoplossSlabMultiplier = 1,
+                         .ExitAtStockSlabMTM = True,
+                         .TypeOfSlabMTM = LowStoplossSlabBasedStrategyRule.SlabMTMType.Net,
+                         .SlabMTMStoploss = 3,
+                         .SlabMTMTarget = 5
+                        }
 
                     .NumberOfTradeableStockPerDay = 3
 

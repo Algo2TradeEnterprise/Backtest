@@ -6,8 +6,26 @@ Imports Utilities.Numbers.NumberManipulation
 Public Class LowStoplossSlabBasedStrategyRule
     Inherits StrategyRule
 
+#Region "Entity"
+    Enum SlabMTMType
+        Individual = 1
+        Net
+    End Enum
+    Public Class StrategyRuleEntities
+        Inherits RuleEntities
+
+        Public TargetSlabMultiplier As Decimal
+        Public StoplossSlabMultiplier As Decimal
+        Public ExitAtStockSlabMTM As Boolean
+        Public TypeOfSlabMTM As SlabMTMType
+        Public SlabMTMTarget As Decimal
+        Public SlabMTMStoploss As Decimal
+    End Class
+#End Region
+
     Private _hkPayloads As Dictionary(Of Date, Payload)
 
+    Private ReadOnly _userInputs As StrategyRuleEntities
     Private ReadOnly _slab As Decimal
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -19,6 +37,7 @@ Public Class LowStoplossSlabBasedStrategyRule
                    ByVal slab As Decimal)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _slab = slab
+        _userInputs = _entities
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -45,52 +64,44 @@ Public Class LowStoplossSlabBasedStrategyRule
 
             Dim signal As Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection) = GetSignalCandle(currentMinuteCandlePayload, currentTick)
             If signal IsNot Nothing AndAlso signal.Item1 Then
-                Dim quantity As Decimal = Me.LotSize
-                Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2, RoundOfType.Floor)
-                Dim slPoint As Decimal = _slab
-                Dim target As Decimal = _slab + 2 * buffer
-                Dim remark As String = "Satellite"
-                Dim anchorTrade As Trade = GetAnchorTrade(signal.Item4, currentTick)
-                If anchorTrade Is Nothing OrElse (anchorTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close OrElse
-                    anchorTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Cancel) Then
-                    target = 100000000
-                    remark = "Anchor"
-                End If
-                Dim lastOrder As Trade = GetLastOrder(signal.Item4, currentTick)
-                If lastOrder Is Nothing OrElse (lastOrder.TradeCurrentStatus = Trade.TradeExecutionStatus.Close OrElse
-                    lastOrder.TradeCurrentStatus = Trade.TradeExecutionStatus.Cancel) OrElse
-                    (lastOrder.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress AndAlso lastOrder.Supporting2 = "Anchor" AndAlso
-                    lastOrder.SignalCandle.PayloadDate <> signal.Item3.PayloadDate) Then
-                    If remark = "Anchor" Then
-                        If signal.Item4 = Trade.TradeExecutionDirection.Buy Then
+                Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, Trade.TypeOfTrade.MIS)
+                If lastExecutedOrder Is Nothing OrElse lastExecutedOrder.SignalCandle.PayloadDate <> signal.Item3.PayloadDate Then
+                    Dim quantity As Decimal = Me.LotSize
+                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2, RoundOfType.Floor)
+                    Dim slPoint As Decimal = _slab * _userInputs.StoplossSlabMultiplier
+                    Dim target As Decimal = _slab * _userInputs.TargetSlabMultiplier
+                    If signal.Item4 = Trade.TradeExecutionDirection.Buy Then
+                        If Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) AndAlso
+                            Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) Then
                             If currentTick.Open < signal.Item2 + buffer Then
                                 parameter = New PlaceOrderParameters With {
-                                        .EntryPrice = signal.Item2 + buffer,
-                                        .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                        .Quantity = quantity,
-                                        .Stoploss = .EntryPrice - slPoint - 2 * buffer,
-                                        .Target = .EntryPrice + target,
-                                        .Buffer = buffer,
-                                        .SignalCandle = signal.Item3,
-                                        .OrderType = Trade.TypeOfOrder.SL,
-                                        .Supporting1 = signal.Item3.PayloadDate.ToString("HH:mm:ss"),
-                                        .Supporting2 = remark
-                                    }
+                                            .EntryPrice = signal.Item2 + buffer,
+                                            .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                                            .Quantity = quantity,
+                                            .Stoploss = signal.Item2 - slPoint,
+                                            .Target = .EntryPrice + target,
+                                            .Buffer = buffer,
+                                            .SignalCandle = signal.Item3,
+                                            .OrderType = Trade.TypeOfOrder.SL,
+                                            .Supporting1 = signal.Item3.PayloadDate.ToString("HH:mm:ss")
+                                        }
                             End If
-                        ElseIf signal.Item4 = Trade.TradeExecutionDirection.Sell Then
+                        End If
+                    ElseIf signal.Item4 = Trade.TradeExecutionDirection.Sell Then
+                        If Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) AndAlso
+                            Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) Then
                             If currentTick.Open > signal.Item2 - buffer Then
                                 parameter = New PlaceOrderParameters With {
-                                        .EntryPrice = signal.Item2 - buffer,
-                                        .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                                        .Quantity = quantity,
-                                        .Stoploss = .EntryPrice + slPoint + 2 * buffer,
-                                        .Target = .EntryPrice - target,
-                                        .Buffer = buffer,
-                                        .SignalCandle = signal.Item3,
-                                        .OrderType = Trade.TypeOfOrder.SL,
-                                        .Supporting1 = signal.Item3.PayloadDate.ToString("HH:mm:ss"),
-                                        .Supporting2 = remark
-                                    }
+                                            .EntryPrice = signal.Item2 - buffer,
+                                            .EntryDirection = Trade.TradeExecutionDirection.Sell,
+                                            .Quantity = quantity,
+                                            .Stoploss = signal.Item2 + slPoint,
+                                            .Target = .EntryPrice - target,
+                                            .Buffer = buffer,
+                                            .SignalCandle = signal.Item3,
+                                            .OrderType = Trade.TypeOfOrder.SL,
+                                            .Supporting1 = signal.Item3.PayloadDate.ToString("HH:mm:ss")
+                                        }
                             End If
                         End If
                     End If
@@ -99,6 +110,15 @@ Public Class LowStoplossSlabBasedStrategyRule
         End If
         If parameter IsNot Nothing Then
             ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
+
+            If _userInputs.ExitAtStockSlabMTM AndAlso Me.MaxLossOfThisStock = Decimal.MinValue AndAlso Me.MaxProfitOfThisStock = Decimal.MaxValue Then
+                If _userInputs.TypeOfSlabMTM = SlabMTMType.Net Then
+                    Dim projectedLoss As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, parameter.EntryPrice, parameter.EntryPrice - parameter.Buffer - _slab * _userInputs.SlabMTMStoploss, parameter.Quantity, Me.LotSize, _parentStrategy.StockType)
+                    Dim projectedProfit As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, parameter.EntryPrice, parameter.EntryPrice + _slab * _userInputs.SlabMTMTarget, parameter.Quantity, Me.LotSize, _parentStrategy.StockType)
+                    Me.MaxLossOfThisStock = projectedLoss
+                    Me.MaxProfitOfThisStock = projectedProfit
+                End If
+            End If
         End If
         Return ret
     End Function
@@ -114,28 +134,6 @@ Public Class LowStoplossSlabBasedStrategyRule
                     ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                 End If
             End If
-            If ret Is Nothing Then
-                If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                    Dim buyLevel As Decimal = currentTrade.EntryPrice - currentTrade.EntryBuffer
-                    If currentMinuteCandlePayload.PreviousCandlePayload.Low <= buyLevel - 2 * _slab Then
-                        ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
-                    End If
-                ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                    Dim sellLevel As Decimal = currentTrade.EntryPrice + currentTrade.EntryBuffer
-                    If currentMinuteCandlePayload.PreviousCandlePayload.High >= sellLevel + 2 * _slab Then
-                        ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
-                    End If
-                End If
-            End If
-            If ret Is Nothing Then
-                Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, Trade.TypeOfTrade.MIS)
-                If lastExecutedTrade IsNot Nothing AndAlso lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-                    Dim entryCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(lastExecutedTrade.EntryTime, _signalPayload))
-                    If entryCandle.PayloadDate = currentMinuteCandlePayload.PayloadDate Then
-                        ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
-                    End If
-                End If
-            End If
         End If
         Return ret
     End Function
@@ -143,6 +141,31 @@ Public Class LowStoplossSlabBasedStrategyRule
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
+        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            Dim oppositeDirection As Trade.TradeExecutionDirection = StrategyHelper.Trade.TradeExecutionDirection.None
+            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                oppositeDirection = Trade.TradeExecutionDirection.Sell
+            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                oppositeDirection = Trade.TradeExecutionDirection.Buy
+            End If
+            Dim openTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Open)
+            If openTrades IsNot Nothing AndAlso openTrades.Count > 0 Then
+                Dim oppositeTrade As Trade = openTrades.FindAll(Function(x)
+                                                                    Return x.EntryDirection = oppositeDirection
+                                                                End Function).LastOrDefault
+                If oppositeTrade IsNot Nothing Then
+                    Dim triggerPrice As Decimal = Decimal.MinValue
+                    If oppositeTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                        triggerPrice = oppositeTrade.EntryPrice - oppositeTrade.EntryBuffer
+                    ElseIf oppositeTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                        triggerPrice = oppositeTrade.EntryPrice + oppositeTrade.EntryBuffer
+                    End If
+                    If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
+                        ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, "Moved")
+                    End If
+                End If
+            End If
+        End If
         Return ret
     End Function
 
@@ -177,64 +200,11 @@ Public Class LowStoplossSlabBasedStrategyRule
             If hkCandle.PreviousCandlePayload IsNot Nothing Then
                 If hkCandle.PreviousCandlePayload.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
                     Dim buyLevel As Decimal = GetSlabBasedLevel(hkCandle.PreviousCandlePayload.High, Trade.TradeExecutionDirection.Buy)
-                    If hkCandle.PreviousCandlePayload.Low > buyLevel - 2 * _slab Then
-                        ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection)(True, buyLevel, hkCandle.PreviousCandlePayload, Trade.TradeExecutionDirection.Buy)
-                    End If
+                    ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection)(True, buyLevel, hkCandle.PreviousCandlePayload, Trade.TradeExecutionDirection.Buy)
                 ElseIf hkCandle.PreviousCandlePayload.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
                     Dim sellLevel As Decimal = GetSlabBasedLevel(hkCandle.PreviousCandlePayload.Low, Trade.TradeExecutionDirection.Sell)
-                    If hkCandle.PreviousCandlePayload.High < sellLevel + 2 * _slab Then
-                        ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection)(True, sellLevel, hkCandle.PreviousCandlePayload, Trade.TradeExecutionDirection.Sell)
-                    End If
+                    ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection)(True, sellLevel, hkCandle.PreviousCandlePayload, Trade.TradeExecutionDirection.Sell)
                 End If
-            End If
-        End If
-        Return ret
-    End Function
-
-    Private Function GetLastOrder(ByVal direction As Trade.TradeExecutionDirection, ByVal candle As Payload) As Trade
-        Dim ret As Trade = Nothing
-        Dim cancelTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(candle, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Cancel)
-        Dim closeTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(candle, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Close)
-        Dim inprogressTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(candle, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Inprogress)
-        Dim openTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(candle, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Open)
-        Dim allTrades As List(Of Trade) = New List(Of Trade)
-        If cancelTrades IsNot Nothing AndAlso cancelTrades.Count > 0 Then allTrades.AddRange(cancelTrades)
-        If closeTrades IsNot Nothing AndAlso closeTrades.Count > 0 Then allTrades.AddRange(closeTrades)
-        If inprogressTrades IsNot Nothing AndAlso inprogressTrades.Count > 0 Then allTrades.AddRange(inprogressTrades)
-        If openTrades IsNot Nothing AndAlso openTrades.Count > 0 Then allTrades.AddRange(openTrades)
-        If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
-            Dim specificDirectionTrades As List(Of Trade) = allTrades.FindAll(Function(x)
-                                                                                  Return x.EntryDirection = direction
-                                                                              End Function)
-            If specificDirectionTrades IsNot Nothing AndAlso specificDirectionTrades.Count > 0 Then
-                ret = specificDirectionTrades.OrderBy(Function(x)
-                                                          Return x.EntryTime
-                                                      End Function).LastOrDefault
-            End If
-        End If
-        Return ret
-    End Function
-
-    Private Function GetAnchorTrade(ByVal direction As Trade.TradeExecutionDirection, ByVal candle As Payload) As Trade
-        Dim ret As Trade = Nothing
-        Dim cancelTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(candle, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Cancel)
-        Dim closeTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(candle, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Close)
-        Dim inprogressTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(candle, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Inprogress)
-        Dim openTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(candle, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Open)
-        Dim allTrades As List(Of Trade) = New List(Of Trade)
-        If cancelTrades IsNot Nothing AndAlso cancelTrades.Count > 0 Then allTrades.AddRange(cancelTrades)
-        If closeTrades IsNot Nothing AndAlso closeTrades.Count > 0 Then allTrades.AddRange(closeTrades)
-        If inprogressTrades IsNot Nothing AndAlso inprogressTrades.Count > 0 Then allTrades.AddRange(inprogressTrades)
-        If openTrades IsNot Nothing AndAlso openTrades.Count > 0 Then allTrades.AddRange(openTrades)
-        If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
-            Dim specificDirectionTrades As List(Of Trade) = allTrades.FindAll(Function(x)
-                                                                                  Return x.EntryDirection = direction AndAlso
-                                                                                  x.Supporting2 = "Anchor"
-                                                                              End Function)
-            If specificDirectionTrades IsNot Nothing AndAlso specificDirectionTrades.Count > 0 Then
-                ret = specificDirectionTrades.OrderBy(Function(x)
-                                                          Return x.EntryTime
-                                                      End Function).LastOrDefault
             End If
         End If
         Return ret
