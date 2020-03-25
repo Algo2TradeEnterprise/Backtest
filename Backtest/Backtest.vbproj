@@ -159,6 +159,7 @@
     <Compile Include="Strategy Rule MIS\IntradayPositionalStrategyRule4.vb" />
     <Compile Include="Strategy Rule MIS\LowSLPinbarStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\LowStoplossCandleStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\LowStoplossFractalStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\LowStoplossSlabBasedStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\LowStoplossStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\LowStoplossWickStrategyRule.vb" />
