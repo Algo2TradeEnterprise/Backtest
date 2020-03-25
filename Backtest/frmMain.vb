@@ -340,9 +340,9 @@ Public Class frmMain
                     .StockMaxProfitPerDay = Decimal.MaxValue
                     .StockMaxLossPerDay = Decimal.MinValue
 
-                    .ExitOnOverAllFixedTargetStoploss = False
-                    .OverAllProfitPerDay = Decimal.MaxValue
-                    .OverAllLossPerDay = Decimal.MinValue
+                    .ExitOnOverAllFixedTargetStoploss = True
+                    .OverAllProfitPerDay = 5000
+                    .OverAllLossPerDay = -10000
 
                     .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
                     .MTMSlab = Math.Abs(.OverAllLossPerDay)

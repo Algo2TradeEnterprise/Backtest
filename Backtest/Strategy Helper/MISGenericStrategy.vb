@@ -60,6 +60,10 @@ Namespace StrategyHelper
                 Dim tradeCheckingDate As Date = startDate.Date
                 Dim portfolioLossPerDay As Decimal = Me.OverAllLossPerDay
                 Dim dateToSkipList As List(Of Date) = New List(Of Date) From {
+                    New Date(2017, 10, 19),
+                    New Date(2018, 3, 19),
+                    New Date(2018, 9, 24),
+                    New Date(2018, 11, 7),
                     New Date(2019, 1, 1),
                     New Date(2019, 4, 23),
                     New Date(2019, 5, 28),
