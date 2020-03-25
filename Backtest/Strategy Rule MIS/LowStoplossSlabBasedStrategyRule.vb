@@ -78,12 +78,13 @@ Public Class LowStoplossSlabBasedStrategyRule
                                             .EntryPrice = signal.Item2 + buffer,
                                             .EntryDirection = Trade.TradeExecutionDirection.Buy,
                                             .Quantity = quantity,
-                                            .Stoploss = signal.Item2 - slPoint,
+                                            .Stoploss = signal.Item2 - slPoint - buffer,
                                             .Target = .EntryPrice + target,
                                             .Buffer = buffer,
                                             .SignalCandle = signal.Item3,
                                             .OrderType = Trade.TypeOfOrder.SL,
-                                            .Supporting1 = signal.Item3.PayloadDate.ToString("HH:mm:ss")
+                                            .Supporting1 = signal.Item3.PayloadDate.ToString("HH:mm:ss"),
+                                            .Supporting2 = _slab
                                         }
                             End If
                         End If
@@ -95,12 +96,13 @@ Public Class LowStoplossSlabBasedStrategyRule
                                             .EntryPrice = signal.Item2 - buffer,
                                             .EntryDirection = Trade.TradeExecutionDirection.Sell,
                                             .Quantity = quantity,
-                                            .Stoploss = signal.Item2 + slPoint,
+                                            .Stoploss = signal.Item2 + slPoint + buffer,
                                             .Target = .EntryPrice - target,
                                             .Buffer = buffer,
                                             .SignalCandle = signal.Item3,
                                             .OrderType = Trade.TypeOfOrder.SL,
-                                            .Supporting1 = signal.Item3.PayloadDate.ToString("HH:mm:ss")
+                                            .Supporting1 = signal.Item3.PayloadDate.ToString("HH:mm:ss"),
+                                            .Supporting2 = _slab
                                         }
                             End If
                         End If
@@ -113,8 +115,10 @@ Public Class LowStoplossSlabBasedStrategyRule
 
             If _userInputs.ExitAtStockSlabMTM AndAlso Me.MaxLossOfThisStock = Decimal.MinValue AndAlso Me.MaxProfitOfThisStock = Decimal.MaxValue Then
                 If _userInputs.TypeOfSlabMTM = SlabMTMType.Net Then
-                    Dim projectedLoss As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, parameter.EntryPrice, parameter.EntryPrice - parameter.Buffer - _slab * _userInputs.SlabMTMStoploss, parameter.Quantity, Me.LotSize, _parentStrategy.StockType)
-                    Dim projectedProfit As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, parameter.EntryPrice, parameter.EntryPrice + _slab * _userInputs.SlabMTMTarget, parameter.Quantity, Me.LotSize, _parentStrategy.StockType)
+                    Dim slPoint As Decimal = _slab * _userInputs.SlabMTMStoploss + parameter.Buffer * 2 * _userInputs.SlabMTMStoploss
+                    Dim targetPoint As Decimal = _slab * _userInputs.SlabMTMTarget
+                    Dim projectedLoss As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, parameter.EntryPrice, parameter.EntryPrice - slPoint, parameter.Quantity, Me.LotSize, _parentStrategy.StockType)
+                    Dim projectedProfit As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, parameter.EntryPrice, parameter.EntryPrice + targetPoint, parameter.Quantity, Me.LotSize, _parentStrategy.StockType)
                     Me.MaxLossOfThisStock = projectedLoss
                     Me.MaxProfitOfThisStock = projectedProfit
                 End If
@@ -142,28 +146,15 @@ Public Class LowStoplossSlabBasedStrategyRule
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-            Dim oppositeDirection As Trade.TradeExecutionDirection = StrategyHelper.Trade.TradeExecutionDirection.None
+            Dim slPoint As Decimal = _slab * _userInputs.StoplossSlabMultiplier + 2 * currentTrade.StoplossBuffer
+            Dim triggerPrice As Decimal = Decimal.MinValue
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                oppositeDirection = Trade.TradeExecutionDirection.Sell
+                triggerPrice = currentTrade.EntryPrice - slPoint
             ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                oppositeDirection = Trade.TradeExecutionDirection.Buy
+                triggerPrice = currentTrade.EntryPrice + slPoint
             End If
-            Dim openTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Open)
-            If openTrades IsNot Nothing AndAlso openTrades.Count > 0 Then
-                Dim oppositeTrade As Trade = openTrades.FindAll(Function(x)
-                                                                    Return x.EntryDirection = oppositeDirection
-                                                                End Function).LastOrDefault
-                If oppositeTrade IsNot Nothing Then
-                    Dim triggerPrice As Decimal = Decimal.MinValue
-                    If oppositeTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                        triggerPrice = oppositeTrade.EntryPrice - oppositeTrade.EntryBuffer
-                    ElseIf oppositeTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                        triggerPrice = oppositeTrade.EntryPrice + oppositeTrade.EntryBuffer
-                    End If
-                    If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
-                        ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, "Moved")
-                    End If
-                End If
+            If triggerPrice <> Decimal.MinValue AndAlso currentTrade.PotentialStopLoss <> triggerPrice Then
+                ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, slPoint)
             End If
         End If
         Return ret

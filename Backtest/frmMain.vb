@@ -2171,7 +2171,13 @@ Public Class frmMain
 #End Region
 
 #Region "Low Stoploss Slab"
-            Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+            For stockSlabSL As Integer = 1 To 4
+                For stockSlabTarget As Integer = 1 To 4
+                    For stockMaxSL As Decimal = -1000 To -4000 Step -1000
+                        For ovralLossMul As Integer = 1 To 4
+                            For ovalTrlng As Integer = 2 To 4 Step 2
+
+                                Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                               exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                               exchangeEndTime:=TimeSpan.Parse("15:29:59"),
                                                               tradeStartTime:=TimeSpan.Parse("9:16:00"),
@@ -2188,51 +2194,60 @@ Public Class frmMain
                                                               usableCapital:=Decimal.MaxValue / 2,
                                                               minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
                                                               amountToBeWithdrawn:=0)
-                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+                                    AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                With backtestStrategy
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Top Gainer Top Looser.csv")
+                                    With backtestStrategy
+                                        .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pre Market Stock.csv")
 
-                    .AllowBothDirectionEntryAtSameTime = False
-                    .TrailingStoploss = False
-                    .TickBasedStrategy = True
-                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+                                        .AllowBothDirectionEntryAtSameTime = False
+                                        .TrailingStoploss = False
+                                        .TickBasedStrategy = True
+                                        .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                    .RuleEntityData = New LowStoplossSlabBasedStrategyRule.StrategyRuleEntities With
-                        {
-                         .TargetSlabMultiplier = 1000000000,
-                         .StoplossSlabMultiplier = 1,
-                         .ExitAtStockSlabMTM = True,
-                         .TypeOfSlabMTM = LowStoplossSlabBasedStrategyRule.SlabMTMType.Net,
-                         .SlabMTMStoploss = 3,
-                         .SlabMTMTarget = 5
-                        }
+                                        .RuleEntityData = New LowStoplossSlabBasedStrategyRule.StrategyRuleEntities With
+                                            {
+                                             .TargetSlabMultiplier = 1000000000,
+                                             .StoplossSlabMultiplier = 1,
+                                             .ExitAtStockSlabMTM = True,
+                                             .TypeOfSlabMTM = LowStoplossSlabBasedStrategyRule.SlabMTMType.Net,
+                                             .SlabMTMStoploss = stockSlabSL,
+                                             .SlabMTMTarget = stockSlabTarget
+                                            }
 
-                    .NumberOfTradeableStockPerDay = 3
+                                        .NumberOfTradeableStockPerDay = 5
 
-                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
+                                        .NumberOfTradesPerStockPerDay = 12
 
-                    .StockMaxProfitPercentagePerDay = Decimal.MaxValue
-                    .StockMaxLossPercentagePerDay = Decimal.MinValue
+                                        .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                                        .StockMaxLossPercentagePerDay = Decimal.MinValue
 
-                    .ExitOnStockFixedTargetStoploss = False
-                    .StockMaxProfitPerDay = Decimal.MaxValue
-                    .StockMaxLossPerDay = Decimal.MinValue
+                                        .ExitOnStockFixedTargetStoploss = True
+                                        .StockMaxProfitPerDay = Decimal.MaxValue
+                                        .StockMaxLossPerDay = stockMaxSL
 
-                    .ExitOnOverAllFixedTargetStoploss = False
-                    .OverAllProfitPerDay = Decimal.MaxValue
-                    .OverAllLossPerDay = Decimal.MinValue
+                                        .ExitOnOverAllFixedTargetStoploss = False
+                                        .OverAllProfitPerDay = Decimal.MaxValue
+                                        .OverAllLossPerDay = stockMaxSL * ovalTrlng
 
-                    .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
-                    .MTMSlab = Math.Abs(.OverAllLossPerDay)
-                    .MovementSlab = .MTMSlab / 2
-                    .RealtimeTrailingPercentage = 50
-                End With
+                                        .TypeOfMTMTrailing = ovalTrlng
+                                        .MTMSlab = Math.Abs(.OverAllLossPerDay)
+                                        .MovementSlab = .MTMSlab / 2
+                                        .RealtimeTrailingPercentage = 50
+                                    End With
 
-                Dim filename As String = String.Format("Low SL Slab Based")
+                                    Dim ruleData As LowStoplossSlabBasedStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                                    Dim filename As String = String.Format("Low SL Slab StkSlbTgt {0},StkSLbSL {1},StkMaxSL {2},OvralLsMul {3},TrlgTyp {4},Without Brkevn",
+                                                                           stockSlabTarget, stockSlabSL, stockMaxSL, ovralLossMul, backtestStrategy.TypeOfMTMTrailing)
 
-                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-            End Using
+                                    Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                                End Using
+
+                            Next
+                        Next
+                    Next
+                Next
+            Next
+
 #End Region
 
         Catch cex As TaskCanceledException

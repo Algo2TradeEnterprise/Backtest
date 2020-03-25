@@ -1095,52 +1095,54 @@ Namespace StrategyHelper
                                 End If
                             Next
                         Case 60
-                            Dim previousDay As Date = Cmn.GetPreviousTradingDay(Me.DatabaseTable, tradingDate)
-                            If previousDay <> Date.MinValue Then
-                                Dim stockList As Dictionary(Of String, StockDetails) = Nothing
-                                For i = 1 To dt.Rows.Count - 1
-                                    Dim rowDate As Date = dt.Rows(i)(0)
-                                    If rowDate.Date = previousDay.Date Then
-                                        Dim tradingSymbol As String = dt.Rows(i).Item(1)
-                                        Dim instrumentName As String = Nothing
-                                        If tradingSymbol.Contains("FUT") Then
-                                            instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
-                                        Else
-                                            instrumentName = tradingSymbol
-                                        End If
-
-                                        Dim detailsOfStock As StockDetails = New StockDetails With
-                                                    {.StockName = instrumentName,
-                                                    .LotSize = dt.Rows(i).Item(2),
-                                                    .EligibleToTakeTrade = True,
-                                                    .Supporting1 = dt.Rows(i).Item(16),
-                                                    .Supporting2 = dt.Rows(i).Item(12)}
-
-                                        If stockList Is Nothing Then stockList = New Dictionary(Of String, StockDetails)
-                                        stockList.Add(instrumentName, detailsOfStock)
+                            Dim slabList As List(Of Decimal) = New List(Of Decimal) From {0.5, 1, 2.5, 5, 10, 15}
+                            Dim counter As Integer = 0
+                            For i = 1 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i)(0)
+                                If rowDate.Date = tradingDate.Date Then
+                                    Dim tradingSymbol As String = dt.Rows(i).Item(1)
+                                    Dim instrumentName As String = Nothing
+                                    If tradingSymbol.Contains("FUT") Then
+                                        instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                                    Else
+                                        instrumentName = tradingSymbol
                                     End If
-                                Next
-                                If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
-                                    Dim counter As Integer = 0
-                                    For Each runningStock In stockList.OrderBy(Function(x)
-                                                                                   Return x.Value.Supporting2
-                                                                               End Function)
+
+                                    Dim lotSize As Integer = dt.Rows(i).Item(2)
+                                    Dim slab As Decimal = dt.Rows(i).Item(10)
+                                    Dim previousDayClose As Decimal = dt.Rows(i).Item(9)
+                                    Dim previousSlab As List(Of Decimal) = slabList.FindAll(Function(x)
+                                                                                                Return x < slab
+                                                                                            End Function)
+                                    If previousSlab IsNot Nothing AndAlso previousSlab.Count > 0 Then
+                                        Dim projectedSlab As Decimal = previousSlab.LastOrDefault
+                                        Dim buffer As Decimal = CalculateBuffer(previousDayClose, Utilities.Numbers.NumberManipulation.RoundOfType.Floor)
+                                        Dim slPoint As Decimal = projectedSlab + 2 * buffer
+                                        Dim pl As Decimal = CalculatePL(instrumentName, previousDayClose, previousDayClose - slPoint, lotSize, lotSize, Me.StockType)
+                                        If Math.Abs(pl) >= 600 AndAlso Math.Abs(pl) <= 1200 Then
+                                            slab = projectedSlab
+                                        Else
+                                            slab = Decimal.MinValue
+                                        End If
+                                    Else
+                                        slab = Decimal.MinValue
+                                    End If
+
+                                    If slab <> Decimal.MinValue Then
+                                        Dim detailsOfStock As StockDetails = New StockDetails With
+                                                {.StockName = instrumentName,
+                                                .LotSize = lotSize,
+                                                .EligibleToTakeTrade = True,
+                                                .Supporting1 = slab}
+
                                         If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                        ret.Add(runningStock.Key, runningStock.Value)
+                                        ret.Add(instrumentName, detailsOfStock)
+
                                         counter += 1
-                                        If counter = Me.NumberOfTradeableStockPerDay Then Exit For
-                                    Next
-                                    counter = 0
-                                    For Each runningStock In stockList.OrderByDescending(Function(x)
-                                                                                             Return x.Value.Supporting2
-                                                                                         End Function)
-                                        If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                        ret.Add(runningStock.Key, runningStock.Value)
-                                        counter += 1
-                                        If counter = Me.NumberOfTradeableStockPerDay Then Exit For
-                                    Next
+                                        If counter >= Me.NumberOfTradeableStockPerDay Then Exit For
+                                    End If
                                 End If
-                            End If
+                            Next
                         Case Else
                             Dim counter As Integer = 0
                             For i = 1 To dt.Rows.Count - 1
