@@ -2171,10 +2171,10 @@ Public Class frmMain
 #End Region
 
 #Region "Low Stoploss Slab"
-            For stockSlabSL As Integer = 1 To 4
-                For stockSlabTarget As Integer = 1 To 4
-                    For stockMaxSL As Decimal = -1000 To -4000 Step -1000
-                        For ovralLossMul As Integer = 1 To 4
+            For stockSlabSL As Integer = 3 To 4
+                For stockSlabTarget As Integer = 6 To 9
+                    For stockMaxSL As Decimal = -3000 To -5000 Step -1000
+                        For ovralLossMul As Integer = 3 To 4
                             For ovalTrlng As Integer = 2 To 4 Step 2
 
                                 Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
@@ -2227,7 +2227,7 @@ Public Class frmMain
 
                                         .ExitOnOverAllFixedTargetStoploss = False
                                         .OverAllProfitPerDay = Decimal.MaxValue
-                                        .OverAllLossPerDay = stockMaxSL * ovalTrlng
+                                        .OverAllLossPerDay = stockMaxSL * ovralLossMul
 
                                         .TypeOfMTMTrailing = ovalTrlng
                                         .MTMSlab = Math.Abs(.OverAllLossPerDay)
