@@ -2172,7 +2172,7 @@ Public Class frmMain
 
 #Region "Low Stoploss Slab"
             For stockSlabSL As Integer = 3 To 4
-                For stockSlabTarget As Integer = 6 To 9
+                For stockSlabTarget As Integer = 5 To 7
                     For stockMaxSL As Decimal = -3000 To -5000 Step -1000
                         For ovralLossMul As Integer = 3 To 4
                             For ovalTrlng As Integer = 2 To 4 Step 2
