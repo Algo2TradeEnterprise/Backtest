@@ -2171,10 +2171,10 @@ Public Class frmMain
 #End Region
 
 #Region "Low Stoploss Slab"
-            For stockSlabSL As Integer = 3 To 4
-                For stockSlabTarget As Integer = 5 To 7
-                    For stockMaxSL As Decimal = -3000 To -5000 Step -1000
-                        For ovralLossMul As Integer = 3 To 4
+            For stockSlabTarget As Integer = 6 To 8
+                For stockSlabSL As Integer = 3 To 4
+                    For stockMaxSL As Decimal = -3000 To -4000 Step -1000
+                        For ovralLossMul As Integer = 3 To 3
                             For ovalTrlng As Integer = 2 To 4 Step 2
 
                                 Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
@@ -2236,7 +2236,7 @@ Public Class frmMain
                                     End With
 
                                     Dim ruleData As LowStoplossSlabBasedStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                                    Dim filename As String = String.Format("Low SL Slab StkSlbTgt {0},StkSLbSL {1},StkMaxSL {2},OvralLsMul {3},TrlgTyp {4},Without Brkevn",
+                                    Dim filename As String = String.Format("Low SL Slab StkSlbTgt {0},StkSLbSL {1},StkMaxSL {2},OvralLsMul {3},TrlgTyp {4},With Brkevn",
                                                                            stockSlabTarget, stockSlabSL, stockMaxSL, ovralLossMul, backtestStrategy.TypeOfMTMTrailing)
 
                                     Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)

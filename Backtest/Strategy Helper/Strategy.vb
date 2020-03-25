@@ -199,29 +199,29 @@ Namespace StrategyHelper
             Get
                 Dim ret As Decimal = Nothing
                 If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentDate.Date) AndAlso TradesTaken(currentDate.Date).ContainsKey(stockTradingSymbol) Then
-                    'ret = TradesTaken(currentDate.Date)(stockTradingSymbol).Sum(Function(x)
-                    '                                                                If x.ExitCondition <> Trade.TradeExitCondition.Cancelled AndAlso x.TradeCurrentStatus <> Trade.TradeExecutionStatus.Open Then
-                    '                                                                    Return x.PLAfterBrokerage
-                    '                                                                Else
-                    '                                                                    Return 0
-                    '                                                                End If
-                    '                                                            End Function)
-
                     ret = TradesTaken(currentDate.Date)(stockTradingSymbol).Sum(Function(x)
                                                                                     If x.ExitCondition <> Trade.TradeExitCondition.Cancelled AndAlso x.TradeCurrentStatus <> Trade.TradeExecutionStatus.Open Then
-                                                                                        If x.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
-                                                                                            If Math.Round(x.PLPoint, 2) = Math.Round(x.EntryBuffer * -2, 2) Then
-                                                                                                Return 0
-                                                                                            Else
-                                                                                                Return x.PLAfterBrokerage
-                                                                                            End If
-                                                                                        Else
-                                                                                            Return x.PLAfterBrokerage
-                                                                                        End If
+                                                                                        Return x.PLAfterBrokerage
                                                                                     Else
                                                                                         Return 0
                                                                                     End If
                                                                                 End Function)
+
+                    'ret = TradesTaken(currentDate.Date)(stockTradingSymbol).Sum(Function(x)
+                    '                                                                If x.ExitCondition <> Trade.TradeExitCondition.Cancelled AndAlso x.TradeCurrentStatus <> Trade.TradeExecutionStatus.Open Then
+                    '                                                                    If x.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
+                    '                                                                        If Math.Round(x.PLPoint, 2) = Math.Round(x.EntryBuffer * -2, 2) Then
+                    '                                                                            Return 0
+                    '                                                                        Else
+                    '                                                                            Return x.PLAfterBrokerage
+                    '                                                                        End If
+                    '                                                                    Else
+                    '                                                                        Return x.PLAfterBrokerage
+                    '                                                                    End If
+                    '                                                                Else
+                    '                                                                    Return 0
+                    '                                                                End If
+                    '                                                            End Function)
                 End If
                 Return ret
             End Get
