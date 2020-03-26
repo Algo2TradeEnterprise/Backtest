@@ -2171,9 +2171,9 @@ Public Class frmMain
 #End Region
 
 #Region "Low Stoploss Slab"
-            For timeframe As Integer = 2 To 3
+            For timeframe As Integer = 1 To 1
                 For overallLoss As Decimal = -9000 To -15000 Step -3000
-                    For trlngType As Integer = 2 To 4
+                    For trlngType As Integer = 2 To 4 Step 2
                         Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                           exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                           exchangeEndTime:=TimeSpan.Parse("15:29:59"),
@@ -2198,7 +2198,7 @@ Public Class frmMain
 
                                 .AllowBothDirectionEntryAtSameTime = False
                                 .TrailingStoploss = False
-                                .TickBasedStrategy = True
+                                .TickBasedStrategy = False
                                 .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
                                 .RuleEntityData = New LowStoplossSlabBasedStrategyRule.StrategyRuleEntities With
@@ -2317,8 +2317,8 @@ Public Class frmMain
             'Next
 #End Region
 
-        Catch cex As TaskCanceledException
-            MsgBox(cex.Message, MsgBoxStyle.Critical)
+        Catch cex As OperationCanceledException
+            MsgBox(cex.Message, MsgBoxStyle.Exclamation)
         Catch ex As Exception
             MsgBox(ex.ToString, MsgBoxStyle.Critical)
         Finally
