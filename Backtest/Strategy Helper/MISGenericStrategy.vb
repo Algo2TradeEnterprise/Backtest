@@ -1129,6 +1129,21 @@ Namespace StrategyHelper
                                     Else
                                         slab = Decimal.MinValue
                                     End If
+                                    'If slab * lotSize > 1300 Then
+                                    '    Dim previousSlab As List(Of Decimal) = slabList.FindAll(Function(x)
+                                    '                                                                Return x < slab
+                                    '                                                            End Function)
+                                    '    If previousSlab IsNot Nothing AndAlso previousSlab.Count > 0 Then
+                                    '        Dim projectedSlab As Decimal = previousSlab.LastOrDefault
+                                    '        If lotSize * projectedSlab <= 1300 Then
+                                    '            slab = projectedSlab
+                                    '        Else
+                                    '            slab = Decimal.MinValue
+                                    '        End If
+                                    '    Else
+                                    '        slab = Decimal.MinValue
+                                    '    End If
+                                    'End If
 
                                     If slab <> Decimal.MinValue Then
                                         Dim detailsOfStock As StockDetails = New StockDetails With
