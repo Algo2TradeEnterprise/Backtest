@@ -133,6 +133,7 @@
     <Compile Include="Strategy Rule CNC\TrendLinePositionalStrategyRule.vb" />
     <Compile Include="Strategy Rule CNC\VijayCNCStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\CoinFlipAtResistanceStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\CoinFlipBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\CRUDEOIL_EODStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\DoubleTopDoubleBottomStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\EMABasedStrategyRule.vb" />
@@ -178,6 +179,7 @@
     <Compile Include="Strategy Rule MIS\SMIFractalStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\TIIOppositeBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\TopGainerLosserStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\TwoCandleHighLowBreakoutStrategyRule.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="frmMain.resx">
