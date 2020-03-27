@@ -2198,7 +2198,7 @@ Public Class frmMain
 
                                 .AllowBothDirectionEntryAtSameTime = False
                                 .TrailingStoploss = False
-                                .TickBasedStrategy = False
+                                .TickBasedStrategy = True
                                 .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
                                 .RuleEntityData = New LowStoplossSlabBasedStrategyRule.StrategyRuleEntities With
