@@ -17,6 +17,7 @@ Public Class CoinFlipBreakoutStrategyRule
 #End Region
 
     Private ReadOnly _userInputs As StrategyRuleEntities
+    Private _direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -52,36 +53,15 @@ Public Class CoinFlipBreakoutStrategyRule
             _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) > Math.Abs(Me.MaxLossOfThisStock) * -1 AndAlso
             currentMinuteCandlePayload.PayloadDate >= tradeStartTime AndAlso currentTick.PayloadDate <= lastTradeEntryTime AndAlso Me.EligibleToTakeTrade Then
 
-            Dim direction As Trade.TradeExecutionDirection = GetTradeDirectionForEntry()
-            If direction = Trade.TradeExecutionDirection.Buy Then
+            _direction = GetTradeDirectionForEntry()
+            If _direction = Trade.TradeExecutionDirection.Buy Then
                 Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentMinuteCandlePayload.PreviousCandlePayload.High, RoundOfType.Floor)
                 Dim entryPrice As Decimal = currentMinuteCandlePayload.PreviousCandlePayload.High + buffer
-                Dim slPoint As Decimal = ConvertFloorCeling(entryPrice * _userInputs.StoplossPercentage / 100, _parentStrategy.TickSize, RoundOfType.Floor)
-                Dim targetPoint As Decimal = ConvertFloorCeling(entryPrice * _userInputs.TargetPercentage / 100, _parentStrategy.TickSize, RoundOfType.Floor)
-                Dim quantity As Decimal = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, entryPrice - slPoint, _userInputs.MaxStoplossPerTrade, _parentStrategy.StockType)
+                If currentTick.Open >= entryPrice Then
+                    Dim slPoint As Decimal = ConvertFloorCeling(entryPrice * _userInputs.StoplossPercentage / 100, _parentStrategy.TickSize, RoundOfType.Floor)
+                    Dim targetPoint As Decimal = ConvertFloorCeling(entryPrice * _userInputs.TargetPercentage / 100, _parentStrategy.TickSize, RoundOfType.Floor)
+                    Dim quantity As Decimal = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, entryPrice - slPoint, _userInputs.MaxStoplossPerTrade, _parentStrategy.StockType)
 
-                If currentTick.Open < entryPrice Then
-                    parameter = New PlaceOrderParameters With {
-                                .EntryPrice = entryPrice,
-                                .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                .Quantity = quantity,
-                                .Stoploss = .EntryPrice - slPoint,
-                                .Target = .EntryPrice + targetPoint,
-                                .Buffer = buffer,
-                                .SignalCandle = currentMinuteCandlePayload.PreviousCandlePayload,
-                                .OrderType = Trade.TypeOfOrder.SL,
-                                .Supporting1 = currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate.ToString("HH:mm:ss"),
-                                .Supporting2 = slPoint
-                            }
-                End If
-            ElseIf direction = Trade.TradeExecutionDirection.Sell Then
-                Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentMinuteCandlePayload.PreviousCandlePayload.Low, RoundOfType.Floor)
-                Dim entryPrice As Decimal = currentMinuteCandlePayload.PreviousCandlePayload.Low - buffer
-                Dim slPoint As Decimal = ConvertFloorCeling(entryPrice * _userInputs.StoplossPercentage / 100, _parentStrategy.TickSize, RoundOfType.Floor)
-                Dim targetPoint As Decimal = ConvertFloorCeling(entryPrice * _userInputs.TargetPercentage / 100, _parentStrategy.TickSize, RoundOfType.Floor)
-                Dim quantity As Decimal = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, entryPrice - slPoint, _userInputs.MaxStoplossPerTrade, _parentStrategy.StockType)
-
-                If currentTick.Open > entryPrice Then
                     parameter = New PlaceOrderParameters With {
                                 .EntryPrice = entryPrice,
                                 .EntryDirection = Trade.TradeExecutionDirection.Sell,
@@ -90,10 +70,31 @@ Public Class CoinFlipBreakoutStrategyRule
                                 .Target = .EntryPrice - targetPoint,
                                 .Buffer = buffer,
                                 .SignalCandle = currentMinuteCandlePayload.PreviousCandlePayload,
-                                .OrderType = Trade.TypeOfOrder.SL,
+                                .OrderType = Trade.TypeOfOrder.Market,
                                 .Supporting1 = currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate.ToString("HH:mm:ss"),
-                                .Supporting2 = slPoint
+                                .Supporting2 = _direction.ToString
                             }
+                End If
+            ElseIf _direction = Trade.TradeExecutionDirection.Sell Then
+                Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentMinuteCandlePayload.PreviousCandlePayload.Low, RoundOfType.Floor)
+                Dim entryPrice As Decimal = currentMinuteCandlePayload.PreviousCandlePayload.Low - buffer
+                If currentTick.Open <= entryPrice Then
+                    Dim slPoint As Decimal = ConvertFloorCeling(entryPrice * _userInputs.StoplossPercentage / 100, _parentStrategy.TickSize, RoundOfType.Floor)
+                    Dim targetPoint As Decimal = ConvertFloorCeling(entryPrice * _userInputs.TargetPercentage / 100, _parentStrategy.TickSize, RoundOfType.Floor)
+                    Dim quantity As Decimal = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, entryPrice - slPoint, _userInputs.MaxStoplossPerTrade, _parentStrategy.StockType)
+
+                    parameter = New PlaceOrderParameters With {
+                            .EntryPrice = entryPrice,
+                            .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                            .Quantity = quantity,
+                            .Stoploss = .EntryPrice - slPoint,
+                            .Target = .EntryPrice + targetPoint,
+                            .Buffer = buffer,
+                            .SignalCandle = currentMinuteCandlePayload.PreviousCandlePayload,
+                            .OrderType = Trade.TypeOfOrder.Market,
+                            .Supporting1 = currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate.ToString("HH:mm:ss"),
+                            .Supporting2 = _direction.ToString
+                        }
                 End If
             End If
         End If

@@ -471,6 +471,8 @@ Namespace StrategyHelper
 
                                                                 If PlaceOrModifyOrder(runningTrade, Nothing) Then
                                                                     runningOrder.Used = True
+                                                                Else
+                                                                    stockList(stockName).EligibleToTakeTrade = False
                                                                 End If
                                                             Next
                                                         End If
