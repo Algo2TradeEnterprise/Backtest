@@ -471,8 +471,6 @@ Namespace StrategyHelper
 
                                                                 If PlaceOrModifyOrder(runningTrade, Nothing) Then
                                                                     runningOrder.Used = True
-                                                                Else
-                                                                    stockList(stockName).EligibleToTakeTrade = False
                                                                 End If
                                                             Next
                                                         End If
@@ -1106,9 +1104,9 @@ Namespace StrategyHelper
                             Dim slabList As List(Of Decimal) = New List(Of Decimal) From {0.5, 1, 2.5, 5, 10, 15}
                             Dim counter As Integer = 0
                             For i = 1 To dt.Rows.Count - 1
-                                Dim rowDate As Date = dt.Rows(i)(0)
+                                Dim rowDate As Date = dt.Rows(i).Item("Date")
                                 If rowDate.Date = tradingDate.Date Then
-                                    Dim tradingSymbol As String = dt.Rows(i).Item(1)
+                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
                                     Dim instrumentName As String = Nothing
                                     If tradingSymbol.Contains("FUT") Then
                                         instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
@@ -1116,9 +1114,9 @@ Namespace StrategyHelper
                                         instrumentName = tradingSymbol
                                     End If
 
-                                    Dim lotSize As Integer = dt.Rows(i).Item(2)
-                                    Dim slab As Decimal = dt.Rows(i).Item(10)
-                                    Dim previousDayClose As Decimal = dt.Rows(i).Item(9)
+                                    Dim lotSize As Integer = dt.Rows(i).Item("Lot Size")
+                                    Dim slab As Decimal = dt.Rows(i).Item("Slab")
+                                    Dim previousDayClose As Decimal = dt.Rows(i).Item("Previous Day Close")
                                     Dim previousSlab As List(Of Decimal) = slabList.FindAll(Function(x)
                                                                                                 Return x < slab
                                                                                             End Function)
