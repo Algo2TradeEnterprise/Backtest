@@ -1103,7 +1103,7 @@ Namespace StrategyHelper
                         Case 60
                             Dim slabList As List(Of Decimal) = New List(Of Decimal) From {0.5, 1, 2.5, 5, 10, 15}
                             Dim counter As Integer = 0
-                            For i = 1 To dt.Rows.Count - 1
+                            For i = 0 To dt.Rows.Count - 1
                                 Dim rowDate As Date = dt.Rows(i).Item("Date")
                                 If rowDate.Date = tradingDate.Date Then
                                     Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
@@ -1166,7 +1166,7 @@ Namespace StrategyHelper
                             Next
                         Case Else
                             Dim counter As Integer = 0
-                            For i = 1 To dt.Rows.Count - 1
+                            For i = 0 To dt.Rows.Count - 1
                                 Dim rowDate As Date = dt.Rows(i)(0)
                                 If rowDate.Date = tradingDate.Date Then
                                     If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
