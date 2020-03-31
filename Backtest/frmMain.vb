@@ -2457,7 +2457,7 @@ Public Class frmMain
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Graph Angle Stock.csv")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Graph Angle 90.csv")
 
                     .AllowBothDirectionEntryAtSameTime = False
                     .TrailingStoploss = False
