@@ -205,7 +205,7 @@ Namespace StrategyHelper
                                         Case 63
                                             stockRule = New CoinFlipBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 64
-                                            stockRule = New GraphAngleStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).SupportingDate, stockList(stock).Supporting1)
+                                            stockRule = New GraphAngleStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).SupportingDate, stockList(stock).Supporting1, stockList(stock).Supporting2)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -1181,6 +1181,7 @@ Namespace StrategyHelper
                                     End If
                                     Dim direction As String = dt.Rows(i).Item("Direction")
                                     Dim startTime As Date = dt.Rows(i).Item("Time")
+                                    Dim slab As Decimal = dt.Rows(i).Item("Slab")
 
                                     Dim currentTradingSymbol As String = Cmn.GetCurrentTradingSymbol(Common.DataBaseTable.EOD_Futures, tradingDate, instrumentName)
                                     If currentTradingSymbol IsNot Nothing Then
@@ -1190,7 +1191,8 @@ Namespace StrategyHelper
                                                 .LotSize = lotSize,
                                                 .EligibleToTakeTrade = True,
                                                 .SupportingDate = startTime,
-                                                .Supporting1 = If(direction.ToUpper = "BUY", 1, -1)}
+                                                .Supporting1 = If(direction.ToUpper = "BUY", 1, -1),
+                                                .Supporting2 = slab}
                                         ret.Add(instrumentName, detailsOfStock)
                                         counter += 1
                                         If counter = Me.NumberOfTradeableStockPerDay Then Exit For

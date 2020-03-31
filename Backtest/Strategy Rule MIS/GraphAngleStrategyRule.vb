@@ -8,6 +8,7 @@ Public Class GraphAngleStrategyRule
 
     Private ReadOnly _tradeStartTime As Date
     Private ReadOnly _direction As Trade.TradeExecutionDirection
+    Private ReadOnly _slab As Decimal
 
     Private _level As Decimal
     Private _fractalHighPayload As Dictionary(Of Date, Decimal)
@@ -21,7 +22,8 @@ Public Class GraphAngleStrategyRule
                    ByVal canceller As CancellationTokenSource,
                    ByVal entities As RuleEntities,
                    ByVal tradeStartTime As Date,
-                   ByVal direction As Integer)
+                   ByVal direction As Integer,
+                   ByVal slab As Decimal)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
 
         _tradeStartTime = tradeStartTime
@@ -30,6 +32,7 @@ Public Class GraphAngleStrategyRule
         ElseIf direction < 0 Then
             _direction = Trade.TradeExecutionDirection.Sell
         End If
+        _slab = slab
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -94,7 +97,8 @@ Public Class GraphAngleStrategyRule
                                 .SignalCandle = signalCandle,
                                 .OrderType = Trade.TypeOfOrder.SL,
                                 .Supporting1 = signal.Item3,
-                                .Supporting2 = _tradeStartTime.ToString("HH:mm:ss")
+                                .Supporting2 = _tradeStartTime.ToString("HH:mm:ss"),
+                                .Supporting3 = _slab
                             }
                 ElseIf _direction = Trade.TradeExecutionDirection.Sell Then
                     parameter = New PlaceOrderParameters With {
@@ -107,7 +111,8 @@ Public Class GraphAngleStrategyRule
                                 .SignalCandle = signalCandle,
                                 .OrderType = Trade.TypeOfOrder.SL,
                                 .Supporting1 = signal.Item3,
-                                .Supporting2 = _tradeStartTime.ToString("HH:mm:ss")
+                                .Supporting2 = _tradeStartTime.ToString("HH:mm:ss"),
+                                .Supporting3 = _slab
                             }
                 End If
             End If
@@ -121,7 +126,8 @@ Public Class GraphAngleStrategyRule
     Public Overrides Async Function IsTriggerReceivedForExitOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, String))
         Dim ret As Tuple(Of Boolean, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
-        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
+        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open AndAlso
+            currentTrade.Supporting1.ToUpper <> "FRACTAL" Then
             Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
             Dim signal As Tuple(Of Boolean, Decimal, String) = GetSignalForEntry(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
             If signal IsNot Nothing AndAlso signal.Item1 Then
