@@ -204,6 +204,8 @@ Namespace StrategyHelper
                                             stockRule = New TwoCandleHighLowBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 63
                                             stockRule = New CoinFlipBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case 64
+                                            stockRule = New GraphAngleStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).SupportingDate, stockList(stock).Supporting1)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -1161,6 +1163,37 @@ Namespace StrategyHelper
 
                                         counter += 1
                                         If counter >= Me.NumberOfTradeableStockPerDay Then Exit For
+                                    End If
+                                End If
+                            Next
+                        Case 64
+                            Dim counter As Integer = 0
+                            For i = 0 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i).Item("Date")
+                                If rowDate.Date = tradingDate.Date Then
+                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
+                                    Dim instrumentName As String = Nothing
+                                    If tradingSymbol.Contains("FUT") Then
+                                        instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                                    Else
+                                        instrumentName = tradingSymbol
+                                    End If
+                                    Dim direction As String = dt.Rows(i).Item("Direction")
+                                    Dim startTime As Date = dt.Rows(i).Item("Time")
+
+                                    Dim currentTradingSymbol As String = Cmn.GetCurrentTradingSymbol(Common.DataBaseTable.EOD_Futures, tradingDate, instrumentName)
+                                    If currentTradingSymbol IsNot Nothing Then
+                                        Dim lotSize As Integer = Cmn.GetLotSize(Common.DataBaseTable.EOD_Futures, currentTradingSymbol, tradingDate)
+                                        Dim detailsOfStock As StockDetails = New StockDetails With
+                                                {.StockName = instrumentName,
+                                                .LotSize = lotSize,
+                                                .EligibleToTakeTrade = True,
+                                                .SupportingDate = startTime,
+                                                .Supporting1 = If(direction.ToUpper = "BUY", 1, -1)}
+                                        ret.Add(instrumentName, detailsOfStock)
+                                        counter += 1
+                                        If counter = Me.NumberOfTradeableStockPerDay Then Exit For
                                     End If
                                 End If
                             Next
