@@ -647,7 +647,7 @@ Namespace StrategyHelper
                         Case 13
                             Dim counter As Integer = 0
                             Dim stockList As Dictionary(Of String, StockDetails) = Nothing
-                            For i = 1 To dt.Rows.Count - 1
+                            For i = 0 To dt.Rows.Count - 1
                                 Dim rowDate As Date = dt.Rows(i)(0)
                                 If rowDate.Date = tradingDate.Date Then
                                     If stockList Is Nothing Then stockList = New Dictionary(Of String, StockDetails)
@@ -766,7 +766,7 @@ Namespace StrategyHelper
                                 ret = stockList
                             End If
                         Case 14
-                            For i = 1 To dt.Rows.Count - 1
+                            For i = 0 To dt.Rows.Count - 1
                                 If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
                                 Dim instrumentName As String = dt.Rows(i)(0)
                                 Dim tradingSymbol As String = Cmn.GetCurrentTradingSymbol(Common.DataBaseTable.EOD_Futures, tradingDate, instrumentName)
@@ -783,7 +783,7 @@ Namespace StrategyHelper
                             Next
                         Case 17
                             Dim counter As Integer = 0
-                            For i = 1 To dt.Rows.Count - 1
+                            For i = 0 To dt.Rows.Count - 1
                                 Dim rowDate As Date = dt.Rows(i)(0)
                                 If rowDate.Date = tradingDate.Date Then
                                     If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
@@ -830,7 +830,7 @@ Namespace StrategyHelper
                             If tradingDay Then
                                 Dim previousTradingDay As Date = Cmn.GetPreviousTradingDay(Common.DataBaseTable.EOD_Cash, tradingDate)
                                 Dim stockList As Dictionary(Of String, Decimal()) = Nothing
-                                For i = 1 To dt.Rows.Count - 1
+                                For i = 0 To dt.Rows.Count - 1
                                     Dim rowDate As Date = dt.Rows(i)(0)
                                     If rowDate.Date = previousTradingDay.Date Then
                                         If stockList Is Nothing Then stockList = New Dictionary(Of String, Decimal())
@@ -883,7 +883,7 @@ Namespace StrategyHelper
                                 End If
                             End If
                         Case 36
-                            For i = 1 To dt.Rows.Count - 1
+                            For i = 0 To dt.Rows.Count - 1
                                 If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
                                 Dim tradingSymbol As String = dt.Rows(i).Item(0)
                                 Dim direction As String = dt.Rows(i).Item(1)
@@ -902,7 +902,7 @@ Namespace StrategyHelper
                             Next
                         Case 39
                             Dim stocksData As List(Of NiftyBankMarketPairTradingStrategyRule.StockData) = Nothing
-                            For i = 1 To dt.Rows.Count - 1
+                            For i = 0 To dt.Rows.Count - 1
                                 Dim rowDate As Date = dt.Rows(i)(0)
                                 If rowDate.Date = tradingDate.Date Then
                                     Dim tradingSymbol As String = dt.Rows(i).Item(1)
@@ -925,7 +925,7 @@ Namespace StrategyHelper
                         Case 40
                             Dim stocksData As List(Of FavourableFractalBreakoutStrategyRule.StockData) = Nothing
                             Dim previousTradingDay As Date = Cmn.GetPreviousTradingDay(Common.DataBaseTable.EOD_Cash, tradingDate)
-                            For i = 1 To dt.Rows.Count - 1
+                            For i = 0 To dt.Rows.Count - 1
                                 Dim rowDate As Date = dt.Rows(i)(0)
                                 If rowDate.Date = previousTradingDay.Date Then
                                     Dim tradingSymbol As String = dt.Rows(i).Item(1)
@@ -947,7 +947,7 @@ Namespace StrategyHelper
                             ret = FavourableFractalBreakoutStrategyRule.GetStockData(stocksData, Me.NumberOfTradeableStockPerDay)
                         Case 42
                             Dim counter As Integer = 0
-                            For i = 1 To dt.Rows.Count - 1
+                            For i = 0 To dt.Rows.Count - 1
                                 Dim rowDate As Date = dt.Rows(i)(0)
                                 If rowDate.Date = tradingDate.Date Then
                                     If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
@@ -970,7 +970,7 @@ Namespace StrategyHelper
                         Case 49
                             Dim stockList As List(Of StockDetails) = Nothing
                             Dim previousTradingDay As Date = Cmn.GetPreviousTradingDay(Me.DatabaseTable, tradingDate)
-                            For i = 1 To dt.Rows.Count - 1
+                            For i = 0 To dt.Rows.Count - 1
                                 Dim rowDate As Date = dt.Rows(i)(0)
                                 If rowDate.Date = previousTradingDay.Date Then
                                     Dim tradingSymbol As String = dt.Rows(i).Item(1)
@@ -1011,7 +1011,7 @@ Namespace StrategyHelper
                             End If
                         Case 52, 53
                             Dim counter As Integer = 0
-                            For i = 1 To dt.Rows.Count - 1
+                            For i = 0 To dt.Rows.Count - 1
                                 Dim rowDate As Date = dt.Rows(i)(0)
                                 If rowDate.Date = tradingDate.Date Then
                                     If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
@@ -1034,7 +1034,7 @@ Namespace StrategyHelper
                             Next
                         Case 56
                             Dim counter As Integer = 0
-                            For i = 1 To dt.Rows.Count - 1
+                            For i = 0 To dt.Rows.Count - 1
                                 Dim rowDate As Date = dt.Rows(i)(0)
                                 If rowDate.Date = tradingDate.Date Then
                                     If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
@@ -1059,7 +1059,7 @@ Namespace StrategyHelper
                             Next
                         Case 57
                             Dim counter As Integer = 0
-                            For i = 1 To dt.Rows.Count - 1
+                            For i = 0 To dt.Rows.Count - 1
                                 Dim instrumentName As String = dt.Rows(i).Item(0)
                                 Dim detailsOfStock As StockDetails = New StockDetails With
                                             {.StockName = instrumentName,
@@ -1074,7 +1074,7 @@ Namespace StrategyHelper
                             Next
                         Case 59
                             Dim counter As Integer = 0
-                            For i = 1 To dt.Rows.Count - 1
+                            For i = 0 To dt.Rows.Count - 1
                                 Dim rowDate As Date = dt.Rows(i)(0)
                                 If rowDate.Date = tradingDate.Date Then
                                     If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
