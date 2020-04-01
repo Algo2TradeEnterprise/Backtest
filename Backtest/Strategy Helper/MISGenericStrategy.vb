@@ -675,7 +675,7 @@ Namespace StrategyHelper
 
                             Dim detailsOfStock As StockDetails = New StockDetails With
                                         {.StockName = instrumentName,
-                                         .TradingSymbol = tradingSymbol,
+                                         .TradingSymbol = instrumentName,
                                          .LotSize = dt.Rows(i).Item("Lot Size"),
                                          .EligibleToTakeTrade = True}
 
@@ -707,6 +707,9 @@ Namespace StrategyHelper
                             Dim rowDate As Date = dt.Rows(i).Item("Date")
                             If rowDate.Date = tradingDate.Date Then
                                 Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
+                                If tradingSymbol.Contains("FUT") Then
+                                    tradingSymbol = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                                End If
 
                                 If ret Is Nothing Then ret = New List(Of String)
                                 If Not ret.Contains(tradingSymbol.ToUpper) Then ret.Add(tradingSymbol.ToUpper)
