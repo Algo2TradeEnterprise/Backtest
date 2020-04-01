@@ -2171,76 +2171,76 @@ Public Class frmMain
 #End Region
 
 #Region "Low Stoploss Slab"
-            'For timeframe As Integer = 1 To 1
-            '    For overallLoss As Decimal = -9000 To -15000 Step -3000
-            '        For trlngType As Integer = 2 To 4 Step 2
-            '            Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
-            '                                                              exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-            '                                                              exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-            '                                                              tradeStartTime:=TimeSpan.Parse("9:16:00"),
-            '                                                              lastTradeEntryTime:=TimeSpan.Parse("14:44:59"),
-            '                                                              eodExitTime:=TimeSpan.Parse("15:15:00"),
-            '                                                              tickSize:=tick,
-            '                                                              marginMultiplier:=margin,
-            '                                                              timeframe:=timeframe,
-            '                                                              heikenAshiCandle:=False,
-            '                                                              stockType:=stockType,
-            '                                                              databaseTable:=database,
-            '                                                              dataSource:=sourceData,
-            '                                                              initialCapital:=350000,
-            '                                                              usableCapital:=250000,
-            '                                                              minimumEarnedCapitalToWithdraw:=450000,
-            '                                                              amountToBeWithdrawn:=100000)
-            '                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+            For timeframe As Integer = 1 To 1
+                For overallLoss As Decimal = -9000 To -15000 Step -3000
+                    For trlngType As Integer = 2 To 4 Step 2
+                        Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+                                                                          exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                          exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                          tradeStartTime:=TimeSpan.Parse("9:16:00"),
+                                                                          lastTradeEntryTime:=TimeSpan.Parse("14:44:59"),
+                                                                          eodExitTime:=TimeSpan.Parse("15:15:00"),
+                                                                          tickSize:=tick,
+                                                                          marginMultiplier:=margin,
+                                                                          timeframe:=timeframe,
+                                                                          heikenAshiCandle:=False,
+                                                                          stockType:=stockType,
+                                                                          databaseTable:=database,
+                                                                          dataSource:=sourceData,
+                                                                          initialCapital:=350000,
+                                                                          usableCapital:=250000,
+                                                                          minimumEarnedCapitalToWithdraw:=450000,
+                                                                          amountToBeWithdrawn:=100000)
+                            AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-            '                With backtestStrategy
-            '                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pre Market Stock.csv")
+                            With backtestStrategy
+                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pre Market Stock.csv")
 
-            '                    .AllowBothDirectionEntryAtSameTime = False
-            '                    .TrailingStoploss = False
-            '                    .TickBasedStrategy = True
-            '                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+                                .AllowBothDirectionEntryAtSameTime = False
+                                .TrailingStoploss = False
+                                .TickBasedStrategy = True
+                                .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-            '                    .RuleEntityData = New LowStoplossSlabBasedStrategyRule.StrategyRuleEntities With
-            '                        {
-            '                         .TargetSlabMultiplier = 1000000000,
-            '                         .StoplossSlabMultiplier = 1,
-            '                         .ExitAtStockSlabMTM = False,
-            '                         .TypeOfSlabMTM = LowStoplossSlabBasedStrategyRule.SlabMTMType.Net,
-            '                         .SlabMTMStoploss = 3,
-            '                         .SlabMTMTarget = 5
-            '                        }
+                                .RuleEntityData = New LowStoplossSlabBasedStrategyRule.StrategyRuleEntities With
+                                    {
+                                     .TargetSlabMultiplier = 1000000000,
+                                     .StoplossSlabMultiplier = 1,
+                                     .ExitAtStockSlabMTM = False,
+                                     .TypeOfSlabMTM = LowStoplossSlabBasedStrategyRule.SlabMTMType.Net,
+                                     .SlabMTMStoploss = 3,
+                                     .SlabMTMTarget = 5
+                                    }
 
-            '                    .NumberOfTradeableStockPerDay = 5
+                                .NumberOfTradeableStockPerDay = 5
 
-            '                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
+                                .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
-            '                    .StockMaxProfitPercentagePerDay = Decimal.MaxValue
-            '                    .StockMaxLossPercentagePerDay = Decimal.MinValue
+                                .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                                .StockMaxLossPercentagePerDay = Decimal.MinValue
 
-            '                    .ExitOnStockFixedTargetStoploss = False
-            '                    .StockMaxProfitPerDay = Decimal.MaxValue
-            '                    .StockMaxLossPerDay = Decimal.MinValue
+                                .ExitOnStockFixedTargetStoploss = False
+                                .StockMaxProfitPerDay = Decimal.MaxValue
+                                .StockMaxLossPerDay = Decimal.MinValue
 
-            '                    .ExitOnOverAllFixedTargetStoploss = True
-            '                    .OverAllProfitPerDay = Decimal.MaxValue
-            '                    .OverAllLossPerDay = overallLoss
+                                .ExitOnOverAllFixedTargetStoploss = True
+                                .OverAllProfitPerDay = Decimal.MaxValue
+                                .OverAllLossPerDay = overallLoss
 
-            '                    .TypeOfMTMTrailing = trlngType
-            '                    .MTMSlab = Math.Abs(.OverAllLossPerDay)
-            '                    .MovementSlab = .MTMSlab / 2
-            '                    .RealtimeTrailingPercentage = 50
-            '                End With
+                                .TypeOfMTMTrailing = trlngType
+                                .MTMSlab = Math.Abs(.OverAllLossPerDay)
+                                .MovementSlab = .MTMSlab / 2
+                                .RealtimeTrailingPercentage = 50
+                            End With
 
-            '                Dim ruleData As LowStoplossSlabBasedStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-            '                Dim filename As String = String.Format("Low SL Slab,TF {0},OvrLs {1},TrlngTyp {2}",
-            '                                                       backtestStrategy.SignalTimeFrame, backtestStrategy.OverAllLossPerDay, backtestStrategy.TypeOfMTMTrailing)
+                            Dim ruleData As LowStoplossSlabBasedStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                            Dim filename As String = String.Format("Low SL Slab,TF {0},OvrLs {1},TrlngTyp {2}",
+                                                                   backtestStrategy.SignalTimeFrame, backtestStrategy.OverAllLossPerDay, backtestStrategy.TypeOfMTMTrailing)
 
-            '                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-            '            End Using
-            '        Next
-            '    Next
-            'Next
+                            Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                        End Using
+                    Next
+                Next
+            Next
 #End Region
 
 #Region "Low Stoploss Fractal"
@@ -2494,64 +2494,64 @@ Public Class frmMain
 #End Region
 
 #Region "Reversal HHLL Breakout"
-            Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
-                                                            exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                            exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                            tradeStartTime:=TimeSpan.Parse("9:18:00"),
-                                                            lastTradeEntryTime:=TimeSpan.Parse("14:29:59"),
-                                                            eodExitTime:=TimeSpan.Parse("15:15:00"),
-                                                            tickSize:=tick,
-                                                            marginMultiplier:=margin,
-                                                            timeframe:=1,
-                                                            heikenAshiCandle:=False,
-                                                            stockType:=stockType,
-                                                            databaseTable:=database,
-                                                            dataSource:=sourceData,
-                                                            initialCapital:=300000,
-                                                            usableCapital:=200000,
-                                                            minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
-                                                            amountToBeWithdrawn:=0)
-                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+            'Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+            '                                                exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+            '                                                exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+            '                                                tradeStartTime:=TimeSpan.Parse("9:18:00"),
+            '                                                lastTradeEntryTime:=TimeSpan.Parse("14:29:59"),
+            '                                                eodExitTime:=TimeSpan.Parse("15:15:00"),
+            '                                                tickSize:=tick,
+            '                                                marginMultiplier:=margin,
+            '                                                timeframe:=1,
+            '                                                heikenAshiCandle:=False,
+            '                                                stockType:=stockType,
+            '                                                databaseTable:=database,
+            '                                                dataSource:=sourceData,
+            '                                                initialCapital:=300000,
+            '                                                usableCapital:=200000,
+            '                                                minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+            '                                                amountToBeWithdrawn:=0)
+            '    AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                With backtestStrategy
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Stock.csv")
+            '    With backtestStrategy
+            '        .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Stock.csv")
 
-                    .AllowBothDirectionEntryAtSameTime = False
-                    .TrailingStoploss = False
-                    .TickBasedStrategy = False
-                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+            '        .AllowBothDirectionEntryAtSameTime = False
+            '        .TrailingStoploss = False
+            '        .TickBasedStrategy = False
+            '        .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                    .RuleEntityData = New ReversalHHLLBreakoutStrategyRule.StrategyRuleEntities With
-                        {
-                         .MaxLossPerTrade = -500,
-                         .MinimumTargetMultiplier = 2
-                        }
+            '        .RuleEntityData = New ReversalHHLLBreakoutStrategyRule.StrategyRuleEntities With
+            '            {
+            '             .MaxLossPerTrade = -500,
+            '             .MinimumTargetMultiplier = 2
+            '            }
 
-                    .NumberOfTradeableStockPerDay = Integer.MaxValue
+            '        .NumberOfTradeableStockPerDay = Integer.MaxValue
 
-                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
+            '        .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
-                    .StockMaxProfitPercentagePerDay = Decimal.MaxValue
-                    .StockMaxLossPercentagePerDay = Decimal.MinValue
+            '        .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+            '        .StockMaxLossPercentagePerDay = Decimal.MinValue
 
-                    .ExitOnStockFixedTargetStoploss = False
-                    .StockMaxProfitPerDay = Decimal.MaxValue
-                    .StockMaxLossPerDay = Decimal.MinValue
+            '        .ExitOnStockFixedTargetStoploss = False
+            '        .StockMaxProfitPerDay = Decimal.MaxValue
+            '        .StockMaxLossPerDay = Decimal.MinValue
 
-                    .ExitOnOverAllFixedTargetStoploss = True
-                    .OverAllProfitPerDay = 15000
-                    .OverAllLossPerDay = -10000
+            '        .ExitOnOverAllFixedTargetStoploss = True
+            '        .OverAllProfitPerDay = 15000
+            '        .OverAllLossPerDay = -10000
 
-                    .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
-                    .MTMSlab = Math.Abs(.OverAllLossPerDay)
-                    .MovementSlab = .MTMSlab / 2
-                    .RealtimeTrailingPercentage = 50
-                End With
+            '        .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+            '        .MTMSlab = Math.Abs(.OverAllLossPerDay)
+            '        .MovementSlab = .MTMSlab / 2
+            '        .RealtimeTrailingPercentage = 50
+            '    End With
 
-                Dim filename As String = String.Format("Reversal HHLL")
+            '    Dim filename As String = String.Format("Reversal HHLL")
 
-                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-            End Using
+            '    Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+            'End Using
 #End Region
 
         Catch cex As OperationCanceledException
