@@ -106,6 +106,7 @@
     <Compile Include="Strategy Helper\CNCCandleGenericStrategy.vb" />
     <Compile Include="Strategy Helper\CNCEODGenericStrategy.vb" />
     <Compile Include="Strategy Helper\CNCGenericStrategy.vb" />
+    <Compile Include="Strategy Helper\DataFetcher.vb" />
     <Compile Include="Strategy Helper\MISGenericStrategy.vb" />
     <Compile Include="Strategy Helper\PlaceOrderParameters.vb" />
     <Compile Include="Strategy Helper\RuleEntities.vb" />

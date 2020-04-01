@@ -220,18 +220,27 @@ Public Class frmMain
 
     Private Sub frmMain_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         cmbRule.SelectedIndex = My.Settings.Rule
-        rdbDatabase.Checked = My.Settings.Database
-        rdbLive.Checked = My.Settings.Live
-        rdbMIS.Checked = My.Settings.MIS
-        rdbCNCTick.Checked = My.Settings.CNCTick
-        rdbCNCCandle.Checked = My.Settings.CNCCandle
-        rdbCNCEOD.Checked = My.Settings.CNCEOD
+
         If My.Settings.StartDate <> Date.MinValue Then
             dtpckrStartDate.Value = My.Settings.StartDate
         End If
         If My.Settings.EndDate <> Date.MinValue Then
             dtpckrEndDate.Value = My.Settings.EndDate
         End If
+
+        rdbMIS.Checked = My.Settings.MIS
+        rdbCNCTick.Checked = My.Settings.CNCTick
+        rdbCNCCandle.Checked = My.Settings.CNCCandle
+        rdbCNCEOD.Checked = My.Settings.CNCEOD
+
+        rdbDatabase.Checked = My.Settings.Database
+        rdbLive.Checked = My.Settings.Live
+        rdbDatabase_CheckedChanged(sender, e)
+        rdbLive_CheckedChanged(sender, e)
+
+        rdbLocalDBConnection.Checked = My.Settings.LocalConnection
+        rdbRemoteDBConnection.Checked = My.Settings.RemoteConnection
+
         SetObjectEnableDisable_ThreadSafe(btnStop, False)
     End Sub
 
@@ -240,14 +249,25 @@ Public Class frmMain
         SetObjectEnableDisable_ThreadSafe(btnStart, False)
         SetObjectEnableDisable_ThreadSafe(btnStop, True)
         My.Settings.Rule = cmbRule.SelectedIndex
-        My.Settings.Database = rdbDatabase.Checked
-        My.Settings.Live = rdbLive.Checked
+
+        My.Settings.StartDate = dtpckrStartDate.Value
+        My.Settings.EndDate = dtpckrEndDate.Value
+
         My.Settings.MIS = rdbMIS.Checked
         My.Settings.CNCTick = rdbCNCTick.Checked
         My.Settings.CNCEOD = rdbCNCEOD.Checked
         My.Settings.CNCCandle = rdbCNCCandle.Checked
-        My.Settings.StartDate = dtpckrStartDate.Value
-        My.Settings.EndDate = dtpckrEndDate.Value
+
+        My.Settings.Database = rdbDatabase.Checked
+        My.Settings.Live = rdbLive.Checked
+
+        My.Settings.LocalConnection = rdbLocalDBConnection.Checked
+        My.Settings.RemoteConnection = rdbRemoteDBConnection.Checked
+        If My.Settings.LocalConnection Then
+            My.Settings.ServerName = "localhost"
+        Else
+            My.Settings.ServerName = "103.57.246.210"
+        End If
         My.Settings.Save()
 
         If rdbMIS.Checked Then
@@ -2514,7 +2534,7 @@ Public Class frmMain
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Stock.csv")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Stocklist.csv")
 
                     .AllowBothDirectionEntryAtSameTime = False
                     .TrailingStoploss = False
@@ -3383,5 +3403,17 @@ Public Class frmMain
 
     Private Sub btnStop_Click(sender As Object, e As EventArgs) Handles btnStop.Click
         _canceller.Cancel()
+    End Sub
+
+    Private Sub rdbDatabase_CheckedChanged(sender As Object, e As EventArgs) Handles rdbDatabase.CheckedChanged
+        If rdbDatabase.Checked Then
+            grpBxDBConnection.Visible = True
+        End If
+    End Sub
+
+    Private Sub rdbLive_CheckedChanged(sender As Object, e As EventArgs) Handles rdbLive.CheckedChanged
+        If rdbLive.Checked Then
+            grpBxDBConnection.Visible = False
+        End If
     End Sub
 End Class

@@ -342,6 +342,112 @@ Namespace DAL
             If Not allOKWithoutException Then Throw lastException
             Return ret
         End Function
+        Public Async Function RunSelectSetAsync(ByVal stmtSelect As String) As Task(Of DataSet)
+            logger.Debug("Running select statement asynchronously")
+            Dim ret As DataSet = Nothing
+            Dim allOKWithoutException As Boolean = False
+            Dim lastException As Exception = Nothing
+            Using waiter As New Waiter(_canceller)
+                AddHandler waiter.Heartbeat, AddressOf OnHeartbeat
+                AddHandler waiter.WaitingFor, AddressOf OnWaitingFor
+                For retryCtr = 1 To MaxReTries
+                    _canceller.Token.ThrowIfCancellationRequested()
+                    ret = Nothing
+                    lastException = Nothing
+                    allOKWithoutException = False
+                    Using dbConn As New MySqlConnection(_connectionString)
+                        Try
+                            _canceller.Token.ThrowIfCancellationRequested()
+                            OnHeartbeat(String.Format("Opening connection to DB (Connection string: {0})", dbConn.ConnectionString))
+                            OnDocumentRetryStatus(retryCtr, MaxReTries)
+                            dbConn.Open()
+                            _canceller.Token.ThrowIfCancellationRequested()
+                            OnHeartbeat("Selecting from DB")
+                            Using cmd As New MySqlCommand(stmtSelect, dbConn),
+                                adptSelect As New MySqlDataAdapter(cmd),
+                                tmpDs As New DataSet
+                                logger.Debug("Firing SELECT statement:{0}", cmd.CommandText)
+                                Await adptSelect.FillAsync(tmpDs).ConfigureAwait(False)
+                                _canceller.Token.ThrowIfCancellationRequested()
+                                If tmpDs.Tables.Count > 0 Then
+                                    ret = tmpDs
+                                Else
+                                    ret = Nothing
+                                    logger.Warn("{0} {1} {0} did not select any records XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", vbNewLine, cmd.CommandText)
+                                End If
+                                lastException = Nothing
+                                allOKWithoutException = True
+                                Exit For
+                            End Using
+                            _canceller.Token.ThrowIfCancellationRequested()
+                        Catch opx As OperationCanceledException
+                            logger.Error(opx)
+                            lastException = opx
+                            If Not _canceller.Token.IsCancellationRequested Then
+                                _canceller.Token.ThrowIfCancellationRequested()
+                                If Not waiter.WaitOnInternetFailure(Me.WaitDurationOnConnectionFailure) Then
+                                    'Provide required wait in case internet was already up
+                                    logger.Debug("DB->Task cancelled without internet problem:{0}",
+                                                 opx.Message)
+                                    _canceller.Token.ThrowIfCancellationRequested()
+                                    waiter.SleepRequiredDuration(WaitDurationOnAnyFailure.TotalSeconds, "Non-explicit cancellation")
+                                    _canceller.Token.ThrowIfCancellationRequested()
+                                Else
+                                    logger.Debug("DB->Task cancelled with internet problem:{0}",
+                                                 opx.Message)
+                                    'Since internet was down, no need to consume retries
+                                    retryCtr -= 1
+                                End If
+                            End If
+                        Catch ex As Exception
+                            logger.Error(ex)
+                            lastException = ex
+                            _canceller.Token.ThrowIfCancellationRequested()
+                            If Not waiter.WaitOnInternetFailure(Me.WaitDurationOnConnectionFailure) Then
+                                'Provide required wait in case internet was already up
+                                _canceller.Token.ThrowIfCancellationRequested()
+                                If ExceptionExtensions.IsExceptionConnectionBusyRelated(ex) Then
+                                    logger.Debug("DB->Exception without internet problem but of type connection busy detected:{0}",
+                                                 ex.Message)
+                                    _canceller.Token.ThrowIfCancellationRequested()
+                                    waiter.SleepRequiredDuration(WaitDurationOnConnectionFailure.TotalSeconds, ex.Message)
+                                    _canceller.Token.ThrowIfCancellationRequested()
+                                    'Since exception was internet related, no need to consume retries
+                                    retryCtr -= 1
+                                ElseIf ExceptionExtensions.IsExceptionConnectionRelated(ex) Then
+                                    logger.Debug("DB->Exception without internet problem but of type internet related detected:{0}", ex.Message)
+                                    _canceller.Token.ThrowIfCancellationRequested()
+                                    waiter.SleepRequiredDuration(WaitDurationOnConnectionFailure.TotalSeconds, "Connection Exception")
+                                    _canceller.Token.ThrowIfCancellationRequested()
+                                    'Since exception was internet related, no need to consume retries
+                                    retryCtr -= 1
+                                Else
+                                    logger.Debug("DB->Exception without internet problem of unknown type detected:{0}",
+                                                 ex.Message)
+                                    _canceller.Token.ThrowIfCancellationRequested()
+                                    waiter.SleepRequiredDuration(WaitDurationOnAnyFailure.TotalSeconds, "Unknown Exception")
+                                    _canceller.Token.ThrowIfCancellationRequested()
+                                End If
+                            Else
+                                logger.Debug("DB->Exception with internet problem:{0}",
+                                             ex.Message)
+                                'Since internet was down, no need to consume retries
+                                retryCtr -= 1
+                            End If
+                        Finally
+                            If dbConn IsNot Nothing Then dbConn.Close()
+                            OnDocumentDownloadComplete()
+                        End Try
+                    End Using
+                    _canceller.Token.ThrowIfCancellationRequested()
+                Next
+                _canceller.Token.ThrowIfCancellationRequested()
+                RemoveHandler waiter.Heartbeat, AddressOf OnHeartbeat
+                RemoveHandler waiter.WaitingFor, AddressOf OnWaitingFor
+            End Using
+            If Not allOKWithoutException Then Throw lastException
+            Return ret
+        End Function
         Public Overrides Async Function RunSelectAsync(ByVal stmtSelect As String) As Task(Of DataTable)
             logger.Debug("Running select statement asynchronously")
             Dim ret As DataTable = Nothing
