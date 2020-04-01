@@ -86,6 +86,7 @@ Namespace StrategyHelper
                         For Each stock In stockList.Keys
                             _canceller.Token.ThrowIfCancellationRequested()
                             stockCount += 1
+                            OnHeartbeat(String.Format("Getting data for {0} on {1}. Stock Counter: [ {2}/{3} ]", stock, tradeCheckingDate.ToShortDateString, stockCount, stockList.Count))
                             Dim XDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             Dim currentDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             If Me.DataSource = SourceOfData.Database Then

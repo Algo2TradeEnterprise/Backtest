@@ -142,6 +142,7 @@ Public Class DataFetcher
                 If ds IsNot Nothing AndAlso ds.Tables.Count > 0 Then
                     For tableNumber As Integer = 0 To ds.Tables.Count - 1
                         _cts.Token.ThrowIfCancellationRequested()
+                        OnHeartbeat(String.Format("Writing data to xml #{0}/{1}", tableName + 1, ds.Tables.Count))
                         Dim dt As DataTable = ds.Tables(tableNumber)
                         If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
                             Dim instrumentName As String = dt.Rows(0).Item("TradingSymbol")
