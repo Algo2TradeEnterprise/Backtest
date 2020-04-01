@@ -2507,8 +2507,8 @@ Public Class frmMain
                                                             stockType:=stockType,
                                                             databaseTable:=database,
                                                             dataSource:=sourceData,
-                                                            initialCapital:=400000,
-                                                            usableCapital:=300000,
+                                                            initialCapital:=300000,
+                                                            usableCapital:=200000,
                                                             minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
                                                             amountToBeWithdrawn:=0)
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
@@ -2521,7 +2521,11 @@ Public Class frmMain
                     .TickBasedStrategy = False
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                    .RuleEntityData = Nothing
+                    .RuleEntityData = New ReversalHHLLBreakoutStrategyRule.StrategyRuleEntities With
+                        {
+                         .MaxLossPerTrade = -500,
+                         .MinimumTargetMultiplier = 2
+                        }
 
                     .NumberOfTradeableStockPerDay = Integer.MaxValue
 

@@ -6,6 +6,16 @@ Imports Utilities.Numbers.NumberManipulation
 Public Class ReversalHHLLBreakoutStrategyRule
     Inherits StrategyRule
 
+#Region "Entity"
+    Public Class StrategyRuleEntities
+        Inherits RuleEntities
+
+        Public MinimumTargetMultiplier As Decimal
+        Public MaxLossPerTrade As Decimal
+    End Class
+#End Region
+
+    Private ReadOnly _userInputs As StrategyRuleEntities
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
                    ByVal parentStrategy As Strategy,
@@ -14,6 +24,7 @@ Public Class ReversalHHLLBreakoutStrategyRule
                    ByVal canceller As CancellationTokenSource,
                    ByVal entities As RuleEntities)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
+        _userInputs = _entities
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -49,13 +60,15 @@ Public Class ReversalHHLLBreakoutStrategyRule
                 If signal.Item4 = Trade.TradeExecutionDirection.Buy Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.High, RoundOfType.Floor)
                     Dim entryPrice As Decimal = signalCandle.High + buffer
+                    Dim stoploss As Decimal = signalCandle.Low - buffer
+                    Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, stoploss, _userInputs.MaxLossPerTrade, _parentStrategy.StockType)
 
                     If currentTick.Open < entryPrice Then
                         parameter = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
                                     .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                    .Quantity = Me.LotSize,
-                                    .Stoploss = signalCandle.Low - buffer,
+                                    .Quantity = quantity,
+                                    .Stoploss = stoploss,
                                     .Target = signal.Item2,
                                     .Buffer = buffer,
                                     .SignalCandle = signalCandle,
@@ -66,13 +79,15 @@ Public Class ReversalHHLLBreakoutStrategyRule
                 ElseIf signal.Item4 = Trade.TradeExecutionDirection.Sell Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Low, RoundOfType.Floor)
                     Dim entryPrice As Decimal = signalCandle.Low - buffer
+                    Dim stoploss As Decimal = signalCandle.High + buffer
+                    Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, stoploss, entryPrice, _userInputs.MaxLossPerTrade, _parentStrategy.StockType)
 
                     If currentTick.Open > entryPrice Then
                         parameter = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
                                     .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                                    .Quantity = Me.LotSize,
-                                    .Stoploss = signalCandle.High + buffer,
+                                    .Quantity = quantity,
+                                    .Stoploss = stoploss,
                                     .Target = signal.Item2,
                                     .Buffer = buffer,
                                     .SignalCandle = signalCandle,
@@ -131,8 +146,8 @@ Public Class ReversalHHLLBreakoutStrategyRule
                 Dim buffer As Decimal = _parentStrategy.CalculateBuffer(candle.Low, RoundOfType.Floor)
                 Dim entry As Decimal = candle.Low - buffer
                 Dim stoploss As Decimal = candle.High + buffer
-                Dim target As Decimal = candle.PreviousCandlePayload.PreviousCandlePayload.Low - buffer
-                If entry - target > stoploss - entry Then
+                Dim target As Decimal = candle.PreviousCandlePayload.PreviousCandlePayload.Low
+                If entry - target >= (stoploss - entry) * _userInputs.MinimumTargetMultiplier Then
                     ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection)(True, target, candle, Trade.TradeExecutionDirection.Sell)
                 Else
                     Console.WriteLine(String.Format("Sell ignored Instrument:{0},Signal Candle:{1},Target:{2},Stoploss:{3}",
@@ -145,8 +160,8 @@ Public Class ReversalHHLLBreakoutStrategyRule
                 Dim buffer As Decimal = _parentStrategy.CalculateBuffer(candle.High, RoundOfType.Floor)
                 Dim entry As Decimal = candle.High + buffer
                 Dim stoploss As Decimal = candle.Low - buffer
-                Dim target As Decimal = candle.PreviousCandlePayload.PreviousCandlePayload.High + buffer
-                If target - entry > entry - stoploss Then
+                Dim target As Decimal = candle.PreviousCandlePayload.PreviousCandlePayload.High
+                If target - entry >= (entry - stoploss) * _userInputs.MinimumTargetMultiplier Then
                     ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection)(True, target, candle, Trade.TradeExecutionDirection.Buy)
                 Else
                     Console.WriteLine(String.Format("Buy ignored Instrument:{0},Signal Candle:{1},Target:{2},Stoploss:{3}",
