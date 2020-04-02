@@ -265,98 +265,6 @@ Public Class frmMain
         End If
         My.Settings.Save()
 
-
-
-        'Dim stockList As List(Of String) = New List(Of String) From
-        '    {"IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN", "IBULHSGFIN"}
-
-        'Dim tempPayload As Payload = New Payload(Payload.CandleDataSource.Chart)
-        'tempPayload.Open = 233.8
-        'tempPayload.Low = 231.65
-        'tempPayload.High = 233.8
-        'tempPayload.Close = 233.65
-        'tempPayload.PayloadDate = New Date(2020, 3, 2, 9, 15, 0)
-        'tempPayload.TradingSymbol = "IBULHSGFIN"
-        'tempPayload.CumulativeVolume = 100
-
-        'Dim startMinute As TimeSpan = New TimeSpan(9, 15, 0)
-        'Dim endMinute As TimeSpan = New TimeSpan(15, 30, 0)
-        'Dim sw As Stopwatch = New Stopwatch
-        'sw.Start()
-        'Dim scndCtr As Integer = 0
-        'Dim tickCtr As Long = 0
-        'While startMinute < endMinute
-        '    _canceller.Token.ThrowIfCancellationRequested()
-        '    OnHeartbeat(String.Format("Checking Trade on {0}. Time:{0}", startMinute.ToString))
-        '    Dim startSecond As TimeSpan = startMinute
-        '    Dim endSecond As TimeSpan = startMinute.Add(TimeSpan.FromMinutes(1 - 1))
-        '    endSecond = endSecond.Add(TimeSpan.FromSeconds(59))
-        '    Dim potentialCandleSignalTime As Date = New Date(2020, 3, 2, startMinute.Hours, startMinute.Minutes, startMinute.Seconds)
-        '    Dim potentialTickSignalTime As Date = Nothing
-
-        '    _canceller.Token.ThrowIfCancellationRequested()
-        '    While startSecond <= endSecond
-        '        scndCtr += 1
-        '        potentialTickSignalTime = New Date(2020, 3, 2, 9, 15, startSecond.Seconds)
-        '        If potentialTickSignalTime.Second = 0 Then
-        '            potentialCandleSignalTime = potentialTickSignalTime
-        '        End If
-        '        Dim stkCtr As Integer = 0
-        '        For Each stockName In stockList
-        '            _canceller.Token.ThrowIfCancellationRequested()
-        '            stkCtr += 1
-        '            If Not stockList.Contains("IBULHSGFIN") Then
-        '                Continue For
-        '            End If
-
-        '            If stockList Is Nothing Then
-        '                Continue For
-        '            End If
-
-        '            If Not stockList.Contains("IBULHSGFIN") Then
-        '                Continue For
-        '            End If
-
-        '            'Get the current minute candle from the stock collection for this stock for that day
-        '            _canceller.Token.ThrowIfCancellationRequested()
-        '            Dim currentMinuteCandlePayload As Payload = Nothing
-        '            If stockList.Contains("IBULHSGFIN") AndAlso
-        '                                    stockList.Contains("IBULHSGFIN") Then
-        '                currentMinuteCandlePayload = tempPayload
-        '            End If
-
-        '            'Now get the ticks for this minute and second
-        '            _canceller.Token.ThrowIfCancellationRequested()
-        '            Dim currentSecondTickPayload As List(Of Payload) = Nothing
-        '            If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.Ticks IsNot Nothing Then
-        '                currentSecondTickPayload = currentMinuteCandlePayload.Ticks.FindAll(Function(x)
-        '                                                                                        Return x.PayloadDate = potentialTickSignalTime
-        '                                                                                    End Function)
-
-        '                _canceller.Token.ThrowIfCancellationRequested()
-        '                If currentSecondTickPayload IsNot Nothing AndAlso currentSecondTickPayload.Count > 0 Then
-        '                    'For Each runningTick In currentSecondTickPayload
-        '                    '    _canceller.Token.ThrowIfCancellationRequested()
-        '                    '    tickCtr += 1
-        '                    'Next
-        '                End If
-        '            End If
-        '        Next
-        '        Console.WriteLine("Stock Counter" & stkCtr)
-        '        startSecond = startSecond.Add(TimeSpan.FromSeconds(1))
-        '    End While   'Second Loop
-        '    startMinute = startMinute.Add(TimeSpan.FromMinutes(1))
-        'End While   'Minute Loop
-        'Console.WriteLine("Second Counter" & scndCtr)
-        'Console.WriteLine("Tick Counter" & tickCtr)
-        'sw.Stop()
-        'Console.WriteLine(String.Format("End of loop: {0}", sw.ElapsedMilliseconds))
-
-
-
-
-
-
         If rdbMIS.Checked Then
             Await Task.Run(AddressOf ViewDataMISAsync).ConfigureAwait(False)
         ElseIf rdbCNCTick.Checked Then
@@ -435,10 +343,10 @@ Public Class frmMain
                             .RuleNumber = ruleNumber
 
                             .RuleEntityData = New ReversalHHLLBreakoutStrategyRule.StrategyRuleEntities With
-                        {
-                         .MaxLossPerTrade = -500,
-                         .MinimumTargetMultiplier = 2
-                        }
+                                            {
+                                                .MaxLossPerTrade = -500,
+                                                .MinimumTargetMultiplier = 2
+                                            }
 
                             .NumberOfTradeableStockPerDay = Integer.MaxValue
 
@@ -453,7 +361,7 @@ Public Class frmMain
 
                             .ExitOnOverAllFixedTargetStoploss = True
                             .OverAllProfitPerDay = 15000
-                            .OverAllLossPerDay = -10000
+                            .OverAllLossPerDay = -5000
 
                             .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
                             .MTMSlab = Math.Abs(.OverAllLossPerDay)
@@ -470,6 +378,11 @@ Public Class frmMain
                     Throw New NotImplementedException
             End Select
 
+            'Delete directory
+            Dim directoryName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("STRATEGY{0} CANDLE DATA", ruleNumber))
+            If Directory.Exists(directoryName) Then
+                Directory.Delete(directoryName, True)
+            End If
         Catch cex As OperationCanceledException
             MsgBox(cex.Message, MsgBoxStyle.Exclamation)
         Catch ex As Exception
