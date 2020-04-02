@@ -15,6 +15,7 @@ Public Class ReversalHHLLBreakoutStrategyRule
     End Class
 #End Region
 
+    Private ReadOnly _tradeStartTime As Date
     Private ReadOnly _userInputs As StrategyRuleEntities
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -25,6 +26,7 @@ Public Class ReversalHHLLBreakoutStrategyRule
                    ByVal entities As RuleEntities)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _userInputs = _entities
+        _tradeStartTime = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, _parentStrategy.TradeStartTime.Hours, _parentStrategy.TradeStartTime.Minutes, _parentStrategy.TradeStartTime.Seconds)
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -35,18 +37,12 @@ Public Class ReversalHHLLBreakoutStrategyRule
         Dim ret As Tuple(Of Boolean, List(Of PlaceOrderParameters)) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
-        Dim tradeStartTime As Date = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, _parentStrategy.TradeStartTime.Hours, _parentStrategy.TradeStartTime.Minutes, _parentStrategy.TradeStartTime.Seconds)
         Dim parameter As PlaceOrderParameters = Nothing
+
         If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
             Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS) AndAlso Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS) AndAlso
-            _parentStrategy.StockNumberOfTrades(currentTick.PayloadDate, currentTick.TradingSymbol) < Me._parentStrategy.NumberOfTradesPerStockPerDay AndAlso
-            _parentStrategy.TotalPLAfterBrokerage(currentTick.PayloadDate) < _parentStrategy.OverAllProfitPerDay AndAlso
-            _parentStrategy.TotalPLAfterBrokerage(currentTick.PayloadDate) > _parentStrategy.OverAllLossPerDay AndAlso
-            _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) < _parentStrategy.StockMaxProfitPerDay AndAlso
-            _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) > Math.Abs(_parentStrategy.StockMaxLossPerDay) * -1 AndAlso
-            _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) < Me.MaxProfitOfThisStock AndAlso
-            _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) > Math.Abs(Me.MaxLossOfThisStock) * -1 AndAlso
-            currentMinuteCandlePayload.PayloadDate >= tradeStartTime AndAlso Me.EligibleToTakeTrade Then
+            currentMinuteCandlePayload.PayloadDate >= _tradeStartTime AndAlso Me.EligibleToTakeTrade Then
+
             Dim signalCandle As Payload = Nothing
             Dim signal As Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
             If signal IsNot Nothing AndAlso signal.Item1 Then
@@ -150,8 +146,8 @@ Public Class ReversalHHLLBreakoutStrategyRule
                 If entry - target >= (stoploss - entry) * _userInputs.MinimumTargetMultiplier Then
                     ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection)(True, target, candle, Trade.TradeExecutionDirection.Sell)
                 Else
-                    Console.WriteLine(String.Format("Sell ignored Instrument:{0},Signal Candle:{1},Target:{2},Stoploss:{3}",
-                                                    candle.TradingSymbol, candle.PayloadDate.ToString("dd-MM-yyyy HH:mm:ss"), entry - target, stoploss - entry))
+                    'Console.WriteLine(String.Format("Sell ignored Instrument:{0},Signal Candle:{1},Target:{2},Stoploss:{3}",
+                    '                                candle.TradingSymbol, candle.PayloadDate.ToString("dd-MM-yyyy HH:mm:ss"), entry - target, stoploss - entry))
                 End If
             ElseIf candle.High < candle.PreviousCandlePayload.High AndAlso
                 candle.PreviousCandlePayload.High < candle.PreviousCandlePayload.PreviousCandlePayload.High AndAlso
@@ -164,8 +160,8 @@ Public Class ReversalHHLLBreakoutStrategyRule
                 If target - entry >= (entry - stoploss) * _userInputs.MinimumTargetMultiplier Then
                     ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection)(True, target, candle, Trade.TradeExecutionDirection.Buy)
                 Else
-                    Console.WriteLine(String.Format("Buy ignored Instrument:{0},Signal Candle:{1},Target:{2},Stoploss:{3}",
-                                                    candle.TradingSymbol, candle.PayloadDate.ToString("dd-MM-yyyy HH:mm:ss"), target - entry, entry - stoploss))
+                    'Console.WriteLine(String.Format("Buy ignored Instrument:{0},Signal Candle:{1},Target:{2},Stoploss:{3}",
+                    '                                candle.TradingSymbol, candle.PayloadDate.ToString("dd-MM-yyyy HH:mm:ss"), target - entry, entry - stoploss))
                 End If
             End If
         End If

@@ -51,7 +51,7 @@ Partial Class frmMain
         'btnStart
         '
         Me.btnStart.Font = New System.Drawing.Font("Microsoft Sans Serif", 12.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.btnStart.Location = New System.Drawing.Point(151, 218)
+        Me.btnStart.Location = New System.Drawing.Point(486, 57)
         Me.btnStart.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
         Me.btnStart.Name = "btnStart"
         Me.btnStart.Size = New System.Drawing.Size(181, 57)
@@ -61,9 +61,9 @@ Partial Class frmMain
         '
         'lblProgress
         '
-        Me.lblProgress.Location = New System.Drawing.Point(7, 301)
+        Me.lblProgress.Location = New System.Drawing.Point(7, 210)
         Me.lblProgress.Name = "lblProgress"
-        Me.lblProgress.Size = New System.Drawing.Size(665, 66)
+        Me.lblProgress.Size = New System.Drawing.Size(665, 77)
         Me.lblProgress.TabIndex = 1
         Me.lblProgress.Text = "Progress Status ....."
         '
@@ -108,11 +108,11 @@ Partial Class frmMain
         '
         Me.cmbRule.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.cmbRule.FormattingEnabled = True
-        Me.cmbRule.Items.AddRange(New Object() {"Smallest Candle Breakout", "High Volume Pin Bar", "Momentum Reversal v2", "High Volume Pin Bar v2", "Donchian Fractal Breakout", "SMI Fractal Breakout", "Day Long SMI (BANKNIFTY)", "Day Start SMI", "Gap Fractal Breakout", "Forward Momentum", "Vijay CNC", "TII Opposite Breakout", "Fixed Level Based", "Low Stoploss", "Multi Target", "Reversal", "Pinbar Breakout", "Low SL Pinbar", "Investment CNC", "Low Stoploss Wick", "Low Stoploss Candle", "Pair Trading", "Coin Flip At Resistance", "HeikenAshi CNC", "HeikenAshi CNC-1", "SMI HeikenAshi CNC", "HeikenAshi Hourly CNC-1", "ATR CNC", "Price Drop CNC", "Trend Line CNC", "Pivot Point Direction Biased", "TII CNC", "Intraday Positional", "Double Top Double Bottom", "Hourly CNC", "Intraday Positional 2", "Intraday Positional 3", "Intraday Positional 4", "Price Drop Continues", "Nifty Bank Market Pair Trading", "Favourable Fractal Breakout", "Fractal Dip", "CRUDEOIL EOD", "Highest Price Drop Continues", "Outside Bollinger", "Favourable Fractal Breakout 2", "Average Price Drop Continues", "Swing CNC", "HK Positional Hourly Strategy 2", "HK ATR Trailling", "RSI Continues Strategy", "HK RSI Continues Strategy", "HK Slab Level Based", "High Low Slab Level Based", "Previous Day Factor", "High Low EMA", "Top Gainer Looser", "Nifty Banknifty Pair", "EMA Based Strategy", "Inside Bar Breakout", "Low Stoploss Slab", "Low Stoploss Fractal", "Two Candle High Low Breakout", "Coin Flip Breakout", "Graph Angle", "Reversal HHLL Breakout"})
+        Me.cmbRule.Items.AddRange(New Object() {"Reversal HHLL Breakout"})
         Me.cmbRule.Location = New System.Drawing.Point(123, 16)
         Me.cmbRule.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
         Me.cmbRule.Name = "cmbRule"
-        Me.cmbRule.Size = New System.Drawing.Size(446, 26)
+        Me.cmbRule.Size = New System.Drawing.Size(544, 26)
         Me.cmbRule.TabIndex = 22
         '
         'lblChooseRule
@@ -166,7 +166,7 @@ Partial Class frmMain
         'btnStop
         '
         Me.btnStop.Font = New System.Drawing.Font("Microsoft Sans Serif", 12.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.btnStop.Location = New System.Drawing.Point(340, 218)
+        Me.btnStop.Location = New System.Drawing.Point(486, 129)
         Me.btnStop.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
         Me.btnStop.Name = "btnStop"
         Me.btnStop.Size = New System.Drawing.Size(181, 57)
@@ -184,7 +184,7 @@ Partial Class frmMain
         Me.grpbxStrategyType.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
         Me.grpbxStrategyType.Name = "grpbxStrategyType"
         Me.grpbxStrategyType.Padding = New System.Windows.Forms.Padding(3, 2, 3, 2)
-        Me.grpbxStrategyType.Size = New System.Drawing.Size(648, 56)
+        Me.grpbxStrategyType.Size = New System.Drawing.Size(443, 56)
         Me.grpbxStrategyType.TabIndex = 29
         Me.grpbxStrategyType.TabStop = False
         Me.grpbxStrategyType.Text = "Strategy Type"
@@ -277,7 +277,7 @@ Partial Class frmMain
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(8.0!, 16.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(679, 373)
+        Me.ClientSize = New System.Drawing.Size(679, 291)
         Me.Controls.Add(Me.grpBxDBConnection)
         Me.Controls.Add(Me.grpbxStrategyType)
         Me.Controls.Add(Me.btnStop)

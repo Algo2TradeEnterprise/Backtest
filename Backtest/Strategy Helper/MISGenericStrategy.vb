@@ -113,115 +113,17 @@ Namespace StrategyHelper
                                     currentDayOneMinuteStocksPayload.Add(stock, currentDayOneMinutePayload)
                                     If XDayOneMinuteStocksPayload Is Nothing Then XDayOneMinuteStocksPayload = New Dictionary(Of String, Dictionary(Of Date, Payload))
                                     XDayOneMinuteStocksPayload.Add(stock, XDayOneMinutePayload)
-                                    If stocksRuleData Is Nothing Then stocksRuleData = New Dictionary(Of String, StrategyRule)
                                     Dim stockRule As StrategyRule = Nothing
 
                                     Dim tradingSymbol As String = currentDayOneMinutePayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
                                         Case 0
-                                            stockRule = New SmallestCandleBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 1
-                                            stockRule = New HighVolumePinBarStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 2
-                                            stockRule = New MomentumReversalv2StrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 3
-                                            stockRule = New HighVolumePinBarv2StrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 4
-                                            stockRule = New DonchianFractalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 5
-                                            stockRule = New SMIFractalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 6
-                                            stockRule = New BANKNIFTYDayLongSMIStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 7
-                                            stockRule = New DayStartSMIStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 8
-                                            stockRule = New GapFractalBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
-                                        Case 9
-                                            stockRule = New ForwardMomentumv2StrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 10
-                                            stockRule = New VijayCNCStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 11
-                                            stockRule = New TIIOppositeBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 12
-                                            stockRule = New FixedLevelBasedStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
-                                        Case 13
-                                            stockRule = New LowStoplossStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2, stockList(stock).Supporting3, stockList(stock).Supporting4)
-                                        Case 14
-                                            stockRule = New MultiTargetStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 15
-                                            stockRule = New ReversalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting2)
-                                        Case 16
-                                            stockRule = New PinbarBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting2)
-                                        Case 17
-                                            stockRule = New LowSLPinbarStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2, stockList(stock).Supporting3, stockList(stock).Supporting4)
-                                        Case 18
-                                            Throw New ApplicationException("Not a MIS strategy")
-                                        Case 19
-                                            stockRule = New LowStoplossWickStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 20
-                                            stockRule = New LowStoplossCandleStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 21
-                                            stockRule = New PairTradingStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 22
-                                            stockRule = New CoinFlipAtResistanceStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 30
-                                            stockRule = New PivotsPointsStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 32
-                                            stockRule = New IntradayPositionalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2)
-                                        Case 33
-                                            stockRule = New DoubleTopDoubleBottomStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 35
-                                            stockRule = New IntradayPositionalStrategyRule2(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 36
-                                            stockRule = New IntradayPositionalStrategyRule3(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
-                                        Case 37
-                                            stockRule = New IntradayPositionalStrategyRule4(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 39
-                                            stockRule = New NiftyBankMarketPairTradingStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
-                                        Case 40
-                                            stockRule = New FavourableFractalBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 41
-                                            stockRule = New FractalDipStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 42
-                                            stockRule = New CRUDEOIL_EODStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 44
-                                            stockRule = New OutsideBollingerStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 45
-                                            stockRule = New FavourableFractalBreakoutStrategyRule2(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 49
-                                            stockRule = New HKATRTraillingStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 52
-                                            stockRule = New HKSlabBasedStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
-                                        Case 53
-                                            stockRule = New HighLowSlabLevelBasedStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
-                                        Case 54
-                                            stockRule = New PreviousDayFactorStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 55
-                                            stockRule = New HighLowEMAStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 56
-                                            stockRule = New TopGainerLosserStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).SupportingDate)
-                                        Case 57
-                                            stockRule = New NiftyBankniftyPairTradingStrategy(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2, stockList(stock).Supporting3)
-                                        Case 58
-                                            stockRule = New EMABasedStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 59
-                                            stockRule = New InsideBarBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).SupportingDate, stockList(stock).Supporting1, stockList(stock).Supporting2, stockList(stock).Supporting3, stockList(stock).Supporting4)
-                                        Case 60
-                                            stockRule = New LowStoplossSlabBasedStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
-                                        Case 61
-                                            stockRule = New LowStoplossFractalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 62
-                                            stockRule = New TwoCandleHighLowBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 63
-                                            stockRule = New CoinFlipBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 64
-                                            stockRule = New GraphAngleStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).SupportingDate, stockList(stock).Supporting1, stockList(stock).Supporting2)
-                                        Case 65
                                             stockRule = New ReversalHHLLBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
                                     stockRule.CompletePreProcessing()
+                                    If stocksRuleData Is Nothing Then stocksRuleData = New Dictionary(Of String, StrategyRule)
                                     stocksRuleData.Add(stock, stockRule)
                                 End If
                             End If
@@ -231,6 +133,7 @@ Namespace StrategyHelper
                         If currentDayOneMinuteStocksPayload IsNot Nothing AndAlso currentDayOneMinuteStocksPayload.Count > 0 Then
                             OnHeartbeat(String.Format("Checking Trade on {0}", tradeCheckingDate.ToShortDateString))
                             _canceller.Token.ThrowIfCancellationRequested()
+                            Dim eodTime As Date = New Date(tradeCheckingDate.Year, tradeCheckingDate.Month, tradeCheckingDate.Day, Me.EODExitTime.Hours, Me.EODExitTime.Minutes, Me.EODExitTime.Seconds)
                             Dim startMinute As TimeSpan = Me.ExchangeStartTime
                             Dim endMinute As TimeSpan = ExchangeEndTime
                             While startMinute < endMinute
@@ -322,17 +225,17 @@ Namespace StrategyHelper
 
                                                     'Specific Stock MTM Check
                                                     _canceller.Token.ThrowIfCancellationRequested()
-                                                    If StockPLAfterBrokerage(tradeCheckingDate, runningTick.TradingSymbol) >= stockStrategyRule.MaxProfitOfThisStock Then
+                                                    Dim stockPL As Decimal = StockPLAfterBrokerage(tradeCheckingDate, runningTick.TradingSymbol)
+                                                    If stockPL >= stockStrategyRule.MaxProfitOfThisStock Then
                                                         ExitStockTradesByForce(runningTick, Trade.TypeOfTrade.MIS, "Max Stock Profit reached for the day")
                                                         stockList(stockName).EligibleToTakeTrade = False
-                                                    ElseIf StockPLAfterBrokerage(tradeCheckingDate, runningTick.TradingSymbol) <= stockStrategyRule.MaxLossOfThisStock Then
+                                                    ElseIf stockPL <= stockStrategyRule.MaxLossOfThisStock Then
                                                         ExitStockTradesByForce(runningTick, Trade.TypeOfTrade.MIS, "Max Stock Loss reached for the day")
                                                         stockList(stockName).EligibleToTakeTrade = False
                                                     End If
 
                                                     'Force exit at day end
                                                     _canceller.Token.ThrowIfCancellationRequested()
-                                                    Dim eodTime As Date = New Date(runningTick.PayloadDate.Year, runningTick.PayloadDate.Month, runningTick.PayloadDate.Day, Me.EODExitTime.Hours, Me.EODExitTime.Minutes, Me.EODExitTime.Seconds)
                                                     If runningTick.PayloadDate >= eodTime Then
                                                         ExitStockTradesByForce(runningTick, Trade.TypeOfTrade.MIS, "EOD Exit")
                                                         stockList(stockName).EligibleToTakeTrade = False
@@ -341,10 +244,11 @@ Namespace StrategyHelper
                                                     'Stock MTM Check
                                                     _canceller.Token.ThrowIfCancellationRequested()
                                                     If ExitOnStockFixedTargetStoploss Then
-                                                        If StockPLAfterBrokerage(tradeCheckingDate, runningTick.TradingSymbol) >= StockMaxProfitPerDay Then
+                                                        stockPL = StockPLAfterBrokerage(tradeCheckingDate, runningTick.TradingSymbol)
+                                                        If stockPL >= StockMaxProfitPerDay Then
                                                             ExitStockTradesByForce(runningTick, Trade.TypeOfTrade.MIS, "Max Stock Profit reached for the day")
                                                             stockList(stockName).EligibleToTakeTrade = False
-                                                        ElseIf StockPLAfterBrokerage(tradeCheckingDate, runningTick.TradingSymbol) <= Math.Abs(StockMaxLossPerDay) * -1 Then
+                                                        ElseIf stockPL <= Math.Abs(StockMaxLossPerDay) * -1 Then
                                                             ExitStockTradesByForce(runningTick, Trade.TypeOfTrade.MIS, "Max Stock Loss reached for the day")
                                                             stockList(stockName).EligibleToTakeTrade = False
                                                         End If
@@ -352,20 +256,22 @@ Namespace StrategyHelper
 
                                                     'OverAll MTM Check
                                                     _canceller.Token.ThrowIfCancellationRequested()
+                                                    Dim totalPLOftheDay As Decimal = Decimal.MinValue
                                                     If ExitOnOverAllFixedTargetStoploss Then
-                                                        If TotalPLAfterBrokerage(tradeCheckingDate) >= OverAllProfitPerDay Then
+                                                        totalPLOftheDay = TotalPLAfterBrokerage(tradeCheckingDate)
+                                                        If totalPLOftheDay >= OverAllProfitPerDay Then
                                                             ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Max Profit reached for the day")
                                                             stockList(stockName).EligibleToTakeTrade = False
-                                                        ElseIf TotalPLAfterBrokerage(tradeCheckingDate) <= Math.Abs(OverAllLossPerDay) * -1 Then
+                                                        ElseIf totalPLOftheDay <= Math.Abs(OverAllLossPerDay) * -1 Then
                                                             ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Max Loss reached for the day")
                                                             stockList(stockName).EligibleToTakeTrade = False
-                                                        ElseIf Me.TypeOfMTMTrailing = MTMTrailingType.FixedSlabTrailing AndAlso TotalPLAfterBrokerage(tradeCheckingDate) <= OverAllLossPerDay Then
+                                                        ElseIf Me.TypeOfMTMTrailing = MTMTrailingType.FixedSlabTrailing AndAlso totalPLOftheDay <= OverAllLossPerDay Then
                                                             ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Trailing MTM reached for the day")
                                                             stockList(stockName).EligibleToTakeTrade = False
-                                                        ElseIf Me.TypeOfMTMTrailing = MTMTrailingType.LogSlabTrailing AndAlso TotalPLAfterBrokerage(tradeCheckingDate) <= OverAllLossPerDay Then
+                                                        ElseIf Me.TypeOfMTMTrailing = MTMTrailingType.LogSlabTrailing AndAlso totalPLOftheDay <= OverAllLossPerDay Then
                                                             ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Log MTM reached for the day")
                                                             stockList(stockName).EligibleToTakeTrade = False
-                                                        ElseIf Me.TypeOfMTMTrailing = MTMTrailingType.RealtimeTrailing AndAlso TotalPLAfterBrokerage(tradeCheckingDate) <= OverAllLossPerDay Then
+                                                        ElseIf Me.TypeOfMTMTrailing = MTMTrailingType.RealtimeTrailing AndAlso totalPLOftheDay <= OverAllLossPerDay Then
                                                             ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Realtime Trailing MTM reached for the day")
                                                             stockList(stockName).EligibleToTakeTrade = False
                                                         End If
@@ -406,30 +312,34 @@ Namespace StrategyHelper
                                                     _canceller.Token.ThrowIfCancellationRequested()
                                                     Dim placeOrderDetails As Tuple(Of Boolean, List(Of PlaceOrderParameters)) = Nothing
                                                     If stockList(stockName).EligibleToTakeTrade Then
+                                                        stockPL = Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol)
+                                                        totalPLOftheDay = Me.TotalPLAfterBrokerage(runningTick.PayloadDate)
+                                                        Dim nmbrOfTrd As Integer = Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol)
                                                         If Me.TickBasedStrategy OrElse Not stockList(stockName).PlaceOrderDoneForTheMinute Then
-                                                            If Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.NumberOfTradesPerStockPerDay AndAlso
-                                                                Me.TotalPLAfterBrokerage(runningTick.PayloadDate) < Me.OverAllProfitPerDay AndAlso
-                                                                Me.TotalPLAfterBrokerage(runningTick.PayloadDate) > Me.OverAllLossPerDay AndAlso
-                                                                Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.StockMaxProfitPerDay AndAlso
-                                                                Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso
-                                                                Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < stockStrategyRule.MaxProfitOfThisStock AndAlso
-                                                                Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
+                                                            If nmbrOfTrd < Me.NumberOfTradesPerStockPerDay AndAlso
+                                                                totalPLOftheDay < Me.OverAllProfitPerDay AndAlso
+                                                                totalPLOftheDay > Me.OverAllLossPerDay AndAlso
+                                                                stockPL < Me.StockMaxProfitPerDay AndAlso
+                                                                stockPL > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso
+                                                                stockPL < stockStrategyRule.MaxProfitOfThisStock AndAlso
+                                                                stockPL > Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
                                                                 placeOrderDetails = Await stockStrategyRule.IsTriggerReceivedForPlaceOrderAsync(runningTick).ConfigureAwait(False)
                                                                 stockList(stockName).PlaceOrderTrigger = placeOrderDetails
                                                                 stockList(stockName).PlaceOrderDoneForTheMinute = True
                                                             End If
                                                         Else
-                                                            If Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.NumberOfTradesPerStockPerDay AndAlso
-                                                                Me.TotalPLAfterBrokerage(runningTick.PayloadDate) < Me.OverAllProfitPerDay AndAlso
-                                                                Me.TotalPLAfterBrokerage(runningTick.PayloadDate) > Me.OverAllLossPerDay AndAlso
-                                                                Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.StockMaxProfitPerDay AndAlso
-                                                                Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso
-                                                                Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < stockStrategyRule.MaxProfitOfThisStock AndAlso
-                                                                Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
+                                                            If nmbrOfTrd < Me.NumberOfTradesPerStockPerDay AndAlso
+                                                                totalPLOftheDay < Me.OverAllProfitPerDay AndAlso
+                                                                totalPLOftheDay > Me.OverAllLossPerDay AndAlso
+                                                                stockPL < Me.StockMaxProfitPerDay AndAlso
+                                                                stockPL > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso
+                                                                stockPL < stockStrategyRule.MaxProfitOfThisStock AndAlso
+                                                                stockPL > Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
                                                                 placeOrderDetails = stockList(stockName).PlaceOrderTrigger
                                                             End If
                                                         End If
                                                     End If
+
                                                     If placeOrderDetails IsNot Nothing AndAlso placeOrderDetails.Item1 Then
                                                         Dim placeOrders As List(Of PlaceOrderParameters) = placeOrderDetails.Item2
                                                         If placeOrders IsNot Nothing AndAlso placeOrders.Count > 0 Then
@@ -505,13 +415,16 @@ Namespace StrategyHelper
                                                     _canceller.Token.ThrowIfCancellationRequested()
                                                     Dim placeOrderTrigger As Tuple(Of Boolean, List(Of PlaceOrderParameters)) = Nothing
                                                     If exitOrderSuccessful Then
-                                                        If Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.NumberOfTradesPerStockPerDay AndAlso
-                                                            Me.TotalPLAfterBrokerage(runningTick.PayloadDate) < Me.OverAllProfitPerDay AndAlso
-                                                            Me.TotalPLAfterBrokerage(runningTick.PayloadDate) > Me.OverAllLossPerDay AndAlso
-                                                            Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.StockMaxProfitPerDay AndAlso
-                                                            Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso
-                                                            Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < stockStrategyRule.MaxProfitOfThisStock AndAlso
-                                                            Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
+                                                        totalPLOftheDay = Me.TotalPLAfterBrokerage(runningTick.PayloadDate)
+                                                        stockPL = Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol)
+                                                        Dim nmbrOfTrd As Integer = Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol)
+                                                        If nmbrOfTrd < Me.NumberOfTradesPerStockPerDay AndAlso
+                                                            totalPLOftheDay < Me.OverAllProfitPerDay AndAlso
+                                                            totalPLOftheDay > Me.OverAllLossPerDay AndAlso
+                                                            stockPL < Me.StockMaxProfitPerDay AndAlso
+                                                            stockPL > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso
+                                                            stockPL < stockStrategyRule.MaxProfitOfThisStock AndAlso
+                                                            stockPL > Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
                                                             placeOrderTrigger = Await stockStrategyRule.IsTriggerReceivedForPlaceOrderAsync(runningTick).ConfigureAwait(False)
                                                             stockList(stockName).PlaceOrderTrigger = placeOrderTrigger
                                                         End If
