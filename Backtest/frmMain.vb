@@ -376,7 +376,7 @@ Public Class frmMain
 #End Region
                 Case 1
 #Region "Fractal Trend Line"
-                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Futures
+                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
                     Dim database As Common.DataBaseTable = Common.DataBaseTable.None
                     Dim margin As Decimal = 0
                     Dim tick As Decimal = 0
@@ -399,7 +399,8 @@ Public Class frmMain
                             tick = 0.05
                     End Select
 
-                    Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+                    For trndLnTyp As Integer = 1 To 1
+                        Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                     exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                     exchangeEndTime:=TimeSpan.Parse("15:29:59"),
                                                                     tradeStartTime:=TimeSpan.Parse("9:16:00"),
@@ -416,43 +417,48 @@ Public Class frmMain
                                                                     usableCapital:=200000,
                                                                     minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
                                                                     amountToBeWithdrawn:=0)
-                        AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+                            AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                        With backtestStrategy
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "BANKNIFTY.csv")
+                            With backtestStrategy
+                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "BANKNIFTY.csv")
 
-                            .AllowBothDirectionEntryAtSameTime = False
-                            .TrailingStoploss = False
-                            .TickBasedStrategy = False
-                            .RuleNumber = ruleNumber
+                                .AllowBothDirectionEntryAtSameTime = False
+                                .TrailingStoploss = False
+                                .TickBasedStrategy = False
+                                .RuleNumber = ruleNumber
 
-                            .RuleEntityData = Nothing
+                                .RuleEntityData = New FractalTrendLineStrategyRule.StrategyRuleEntities With
+                                                {
+                                                    .TypeOfTrendLine = trndLnTyp
+                                                }
 
-                            .NumberOfTradeableStockPerDay = Integer.MaxValue
+                                .NumberOfTradeableStockPerDay = Integer.MaxValue
 
-                            .NumberOfTradesPerStockPerDay = Integer.MaxValue
+                                .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
-                            .StockMaxProfitPercentagePerDay = Decimal.MaxValue
-                            .StockMaxLossPercentagePerDay = Decimal.MinValue
+                                .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                                .StockMaxLossPercentagePerDay = Decimal.MinValue
 
-                            .ExitOnStockFixedTargetStoploss = False
-                            .StockMaxProfitPerDay = Decimal.MaxValue
-                            .StockMaxLossPerDay = Decimal.MinValue
+                                .ExitOnStockFixedTargetStoploss = False
+                                .StockMaxProfitPerDay = Decimal.MaxValue
+                                .StockMaxLossPerDay = Decimal.MinValue
 
-                            .ExitOnOverAllFixedTargetStoploss = False
-                            .OverAllProfitPerDay = Decimal.MaxValue
-                            .OverAllLossPerDay = Decimal.MinValue
+                                .ExitOnOverAllFixedTargetStoploss = False
+                                .OverAllProfitPerDay = Decimal.MaxValue
+                                .OverAllLossPerDay = Decimal.MinValue
 
-                            .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
-                            .MTMSlab = Math.Abs(.OverAllLossPerDay)
-                            .MovementSlab = .MTMSlab / 2
-                            .RealtimeTrailingPercentage = 50
-                        End With
+                                .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+                                .MTMSlab = Math.Abs(.OverAllLossPerDay)
+                                .MovementSlab = .MTMSlab / 2
+                                .RealtimeTrailingPercentage = 50
+                            End With
 
-                        Dim filename As String = String.Format("Fractal Trendline")
+                            Dim rule As FractalTrendLineStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                            Dim filename As String = String.Format("{0} Trendline", rule.TypeOfTrendLine)
 
-                        Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-                    End Using
+                            Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                        End Using
+                    Next
 #End Region
                 Case Else
                     Throw New NotImplementedException

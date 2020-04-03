@@ -9,11 +9,10 @@
 
                     Dim lastHighUCandle As Payload = GetFractalUFormingCandle(inputPayload, fractalHighPayload, runningPayload.Key, 1)
                     If lastHighUCandle IsNot Nothing Then
-                        Dim firstHighUCandle As Payload = lastHighUCandle
-                        While firstHighUCandle.High <= lastHighUCandle.High
-                            firstHighUCandle = GetFractalUFormingCandle(inputPayload, fractalHighPayload, firstHighUCandle.PayloadDate, 1)
-                            If firstHighUCandle Is Nothing Then Exit While
-                        End While
+                        Dim firstHighUCandle As Payload = GetFractalUFormingCandle(inputPayload, fractalHighPayload, lastHighUCandle.PayloadDate, 1)
+                        If firstHighUCandle IsNot Nothing AndAlso firstHighUCandle.High <= lastHighUCandle.High Then
+                            firstHighUCandle = Nothing
+                        End If
                         If firstHighUCandle IsNot Nothing Then
                             Dim x1 As Decimal = 0
                             Dim y1 As Decimal = firstHighUCandle.High
@@ -42,11 +41,10 @@
 
                     Dim lastLowUCandle As Payload = GetFractalUFormingCandle(inputPayload, fractalLowPayload, runningPayload.Key, -1)
                     If lastLowUCandle IsNot Nothing Then
-                        Dim firstLowUCandle As Payload = lastLowUCandle
-                        While firstLowUCandle.Low >= lastLowUCandle.Low
-                            firstLowUCandle = GetFractalUFormingCandle(inputPayload, fractalLowPayload, firstLowUCandle.PayloadDate, -1)
-                            If firstLowUCandle Is Nothing Then Exit While
-                        End While
+                        Dim firstLowUCandle As Payload = GetFractalUFormingCandle(inputPayload, fractalLowPayload, lastLowUCandle.PayloadDate, -1)
+                        If firstLowUCandle IsNot Nothing AndAlso firstLowUCandle.Low >= lastLowUCandle.Low Then
+                            firstLowUCandle = Nothing
+                        End If
                         If firstLowUCandle IsNot Nothing Then
                             Dim x1 As Decimal = 0
                             Dim y1 As Decimal = firstLowUCandle.Low

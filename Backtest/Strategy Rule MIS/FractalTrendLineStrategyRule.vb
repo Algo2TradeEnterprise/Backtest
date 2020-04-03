@@ -6,11 +6,24 @@ Imports Utilities.Numbers.NumberManipulation
 Public Class FractalTrendLineStrategyRule
     Inherits StrategyRule
 
+#Region "Entity"
+    Enum TrendLineType
+        FractalU = 1
+        FractalNormal
+    End Enum
+    Public Class StrategyRuleEntities
+        Inherits RuleEntities
+
+        Public TypeOfTrendLine As TrendLineType
+    End Class
+#End Region
+
     Private _fractalHighPayload As Dictionary(Of Date, Decimal)
     Private _fractalLowPayload As Dictionary(Of Date, Decimal)
     Private _fractalHighTrendLine As Dictionary(Of Date, TrendLineVeriables)
     Private _fractalLowTrendLine As Dictionary(Of Date, TrendLineVeriables)
 
+    Private ReadOnly _userInputs As StrategyRuleEntities
     Private ReadOnly _tradeStartTime As Date
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -21,12 +34,17 @@ Public Class FractalTrendLineStrategyRule
                    ByVal entities As RuleEntities)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _tradeStartTime = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, _parentStrategy.TradeStartTime.Hours, _parentStrategy.TradeStartTime.Minutes, _parentStrategy.TradeStartTime.Seconds)
+        _userInputs = _entities
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
         MyBase.CompletePreProcessing()
 
-        Indicator.FractalBandsTrendLine.CalculateFractalBandsTrendLine(_signalPayload, _fractalHighTrendLine, _fractalLowTrendLine, _fractalHighPayload, _fractalLowPayload)
+        If _userInputs.TypeOfTrendLine = TrendLineType.FractalNormal Then
+            Indicator.FractalBandsTrendLine.CalculateFractalBandsTrendLine(_signalPayload, _fractalHighTrendLine, _fractalLowTrendLine, _fractalHighPayload, _fractalLowPayload)
+        ElseIf _userInputs.TypeOfTrendLine = TrendLineType.FractalU Then
+            Indicator.FractalUTrendLive.CalculateFractalUTrendLine(_signalPayload, _fractalHighTrendLine, _fractalLowTrendLine, _fractalHighPayload, _fractalLowPayload)
+        End If
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
