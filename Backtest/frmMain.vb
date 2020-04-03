@@ -376,7 +376,7 @@ Public Class frmMain
 #End Region
                 Case 1
 #Region "Fractal Trend Line"
-                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Commodity
+                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Futures
                     Dim database As Common.DataBaseTable = Common.DataBaseTable.None
                     Dim margin As Decimal = 0
                     Dim tick As Decimal = 0
@@ -402,8 +402,8 @@ Public Class frmMain
                     Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                     exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                     exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                                    tradeStartTime:=TimeSpan.Parse("9:18:00"),
-                                                                    lastTradeEntryTime:=TimeSpan.Parse("14:29:59"),
+                                                                    tradeStartTime:=TimeSpan.Parse("9:16:00"),
+                                                                    lastTradeEntryTime:=TimeSpan.Parse("14:44:59"),
                                                                     eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                                     tickSize:=tick,
                                                                     marginMultiplier:=margin,

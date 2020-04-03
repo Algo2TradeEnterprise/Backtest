@@ -33,65 +33,31 @@ Public Class FractalTrendLineStrategyRule
         Dim ret As Tuple(Of Boolean, List(Of PlaceOrderParameters)) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
-        Dim parameter As PlaceOrderParameters = Nothing
-
+        Dim parameter1 As PlaceOrderParameters = Nothing
+        Dim parameter2 As PlaceOrderParameters = Nothing
         If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
-            Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS) AndAlso Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS) AndAlso
             currentMinuteCandlePayload.PayloadDate >= _tradeStartTime AndAlso Me.EligibleToTakeTrade Then
+            If Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) AndAlso
+                Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) Then
+                Dim signal As Tuple(Of Boolean, Decimal, String) = GetEntrySignal(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, Trade.TradeExecutionDirection.Buy)
 
-            Dim signalCandle As Payload = Nothing
-            Dim signal As Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
-            If signal IsNot Nothing AndAlso signal.Item1 Then
-                Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS)
-                If lastExecutedTrade Is Nothing OrElse lastExecutedTrade.SignalCandle.PayloadDate <> signal.Item3.PayloadDate Then
-                    signalCandle = signal.Item3
-                End If
             End If
+            If Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) AndAlso
+                Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) Then
 
-            If signalCandle IsNot Nothing Then
-                If signal.Item4 = Trade.TradeExecutionDirection.Buy Then
-                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.High, RoundOfType.Floor)
-                    Dim entryPrice As Decimal = signalCandle.High + buffer
-                    Dim stoploss As Decimal = signalCandle.Low - buffer
-                    Dim quantity As Integer = Me.LotSize
-
-                    If currentTick.Open < entryPrice Then
-                        parameter = New PlaceOrderParameters With {
-                                    .entryPrice = entryPrice,
-                                    .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                    .quantity = quantity,
-                                    .stoploss = stoploss,
-                                    .Target = signal.Item2,
-                                    .buffer = buffer,
-                                    .signalCandle = signalCandle,
-                                    .OrderType = Trade.TypeOfOrder.SL,
-                                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss")
-                                }
-                    End If
-                ElseIf signal.Item4 = Trade.TradeExecutionDirection.Sell Then
-                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Low, RoundOfType.Floor)
-                    Dim entryPrice As Decimal = signalCandle.Low - buffer
-                    Dim stoploss As Decimal = signalCandle.High + buffer
-                    Dim quantity As Integer = Me.LotSize
-
-                    If currentTick.Open > entryPrice Then
-                        parameter = New PlaceOrderParameters With {
-                                    .entryPrice = entryPrice,
-                                    .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                                    .quantity = quantity,
-                                    .stoploss = stoploss,
-                                    .Target = signal.Item2,
-                                    .buffer = buffer,
-                                    .signalCandle = signalCandle,
-                                    .OrderType = Trade.TypeOfOrder.SL,
-                                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss")
-                                }
-                    End If
-                End If
             End If
         End If
-        If parameter IsNot Nothing Then
-            ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
+        Dim parameterList As List(Of PlaceOrderParameters) = Nothing
+        If parameter1 IsNot Nothing Then
+            If parameterList Is Nothing Then parameterList = New List(Of PlaceOrderParameters)
+            parameterList.Add(parameter1)
+        End If
+        If parameter2 IsNot Nothing Then
+            If parameterList Is Nothing Then parameterList = New List(Of PlaceOrderParameters)
+            parameterList.Add(parameter2)
+        End If
+        If parameterList IsNot Nothing AndAlso parameterList.Count > 0 Then
+            ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, parameterList)
         End If
         Return ret
     End Function
@@ -128,10 +94,22 @@ Public Class FractalTrendLineStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
     End Function
 
-    Private Function GetSignalCandle(ByVal candle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection)
-        Dim ret As Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection) = Nothing
+    Private Function GetEntrySignal(ByVal candle As Payload, ByVal currentTick As Payload, ByVal direction As Trade.TradeExecutionDirection) As Tuple(Of Boolean, Decimal, String)
+        Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         If candle IsNot Nothing Then
-
+            If direction = Trade.TradeExecutionDirection.Buy Then
+                Dim trendline As TrendLineVeriables = _fractalHighTrendLine(candle.PayloadDate)
+                Dim fractalEntryPoint As Decimal = _fractalHighPayload(candle.PayloadDate)
+                Dim anchorCandle As Payload = Common.GetPayloadAt(_signalPayload, candle.PayloadDate, (trendline.X + 1) * -1).Value.Value
+                Dim trendlinePoint As Decimal = ConvertFloorCeling(trendline.M * trendline.X + trendline.C, _parentStrategy.TickSize, RoundOfType.Floor)
+                If fractalEntryPoint > trendlinePoint Then
+                    ret = New Tuple(Of Boolean, Decimal, String)(True, fractalEntryPoint, "Fractal")
+                ElseIf candle.High > trendlinePoint Then
+                    ret = New Tuple(Of Boolean, Decimal, String)(True, candle.High, "Candle close above trendline")
+                Else
+                    ret = New Tuple(Of Boolean, Decimal, String)(True, anchorCandle.High, "Anchor candle")
+                End If
+            End If
         End If
         Return ret
     End Function

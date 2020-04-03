@@ -57,7 +57,7 @@ Public Class DataFetcher
             Directory.CreateDirectory(_directoryName)
             _cts.Token.ThrowIfCancellationRequested()
             Dim success As Boolean = Await GetAllData().ConfigureAwait(False)
-            If Not success Then Throw New ApplicationException("Unable to any data from database")
+            If Not success Then Throw New ApplicationException("Unable to fetch any data from database")
         End If
         If Directory.Exists(_directoryName) Then
             Dim filename As String = Path.Combine(_directoryName, String.Format("{0}.xml", tradingSymbol))
