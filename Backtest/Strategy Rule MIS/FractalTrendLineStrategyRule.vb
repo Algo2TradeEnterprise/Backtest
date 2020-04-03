@@ -40,11 +40,40 @@ Public Class FractalTrendLineStrategyRule
             If Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) AndAlso
                 Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) Then
                 Dim signal As Tuple(Of Boolean, Decimal, String) = GetEntrySignal(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, Trade.TradeExecutionDirection.Buy)
+                If signal IsNot Nothing AndAlso signal.Item1 Then
+                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2, RoundOfType.Floor)
 
+                    parameter1 = New PlaceOrderParameters With {
+                                .EntryPrice = signal.Item2 + buffer,
+                                .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                                .Quantity = Me.LotSize,
+                                .Stoploss = .EntryPrice - 10000000000000,
+                                .Target = .EntryPrice + 10000000000000,
+                                .Buffer = buffer,
+                                .SignalCandle = currentMinuteCandlePayload.PreviousCandlePayload,
+                                .OrderType = Trade.TypeOfOrder.SL,
+                                .Supporting1 = signal.Item3
+                            }
+                End If
             End If
             If Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) AndAlso
                 Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) Then
+                Dim signal As Tuple(Of Boolean, Decimal, String) = GetEntrySignal(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, Trade.TradeExecutionDirection.Sell)
+                If signal IsNot Nothing AndAlso signal.Item1 Then
+                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2, RoundOfType.Floor)
 
+                    parameter2 = New PlaceOrderParameters With {
+                                .EntryPrice = signal.Item2 - buffer,
+                                .EntryDirection = Trade.TradeExecutionDirection.Sell,
+                                .Quantity = Me.LotSize,
+                                .Stoploss = .EntryPrice + 10000000000000,
+                                .Target = .EntryPrice - 10000000000000,
+                                .Buffer = buffer,
+                                .SignalCandle = currentMinuteCandlePayload.PreviousCandlePayload,
+                                .OrderType = Trade.TypeOfOrder.SL,
+                                .Supporting1 = signal.Item3
+                            }
+                End If
             End If
         End If
         Dim parameterList As List(Of PlaceOrderParameters) = Nothing
@@ -67,8 +96,11 @@ Public Class FractalTrendLineStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
             Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
-            If currentTrade.SignalCandle.PayloadDate < currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate Then
-                ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+            Dim signal As Tuple(Of Boolean, Decimal, String) = GetEntrySignal(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, currentTrade.EntryDirection)
+            If signal IsNot Nothing AndAlso signal.Item1 Then
+                If currentTrade.SignalCandle.PayloadDate <> currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate Then
+                    ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                End If
             End If
         End If
         Return ret
@@ -108,6 +140,18 @@ Public Class FractalTrendLineStrategyRule
                     ret = New Tuple(Of Boolean, Decimal, String)(True, candle.High, "Candle close above trendline")
                 Else
                     ret = New Tuple(Of Boolean, Decimal, String)(True, anchorCandle.High, "Anchor candle")
+                End If
+            ElseIf direction = Trade.TradeExecutionDirection.Sell Then
+                Dim trendline As TrendLineVeriables = _fractalLowTrendLine(candle.PayloadDate)
+                Dim fractalEntryPoint As Decimal = _fractalLowPayload(candle.PayloadDate)
+                Dim anchorCandle As Payload = Common.GetPayloadAt(_signalPayload, candle.PayloadDate, (trendline.X + 1) * -1).Value.Value
+                Dim trendlinePoint As Decimal = ConvertFloorCeling(trendline.M * trendline.X + trendline.C, _parentStrategy.TickSize, RoundOfType.Floor)
+                If fractalEntryPoint < trendlinePoint Then
+                    ret = New Tuple(Of Boolean, Decimal, String)(True, fractalEntryPoint, "Fractal")
+                ElseIf candle.Low < trendlinePoint Then
+                    ret = New Tuple(Of Boolean, Decimal, String)(True, candle.Low, "Candle close below trendline")
+                Else
+                    ret = New Tuple(Of Boolean, Decimal, String)(True, anchorCandle.Low, "Anchor candle")
                 End If
             End If
         End If
