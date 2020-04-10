@@ -115,7 +115,7 @@ Public Class LowStoplossLHHLStrategyRule
                 ElseIf signal.Item2 = Trade.TradeExecutionDirection.Sell Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Low, RoundOfType.Floor)
                     parameter = New PlaceOrderParameters With {
-                                    .EntryPrice = signalCandle.Low,
+                                    .EntryPrice = signalCandle.Low - buffer,
                                     .EntryDirection = Trade.TradeExecutionDirection.Sell,
                                     .Quantity = _quantity,
                                     .Stoploss = .EntryPrice + signal.Item4,
