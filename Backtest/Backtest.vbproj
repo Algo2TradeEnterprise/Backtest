@@ -128,7 +128,7 @@
     <Compile Include="Strategy Rule MIS\LowSLPinbarStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\LowStoplossCandleStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\LowStoplossStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\LowStoplossWickStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\LowStoplossLHHLStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\MomentumReversalv2StrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\LowStoplossPreviousDayHighLowStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\MultiTargetStrategyRule.vb" />
