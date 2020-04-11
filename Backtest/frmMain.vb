@@ -322,7 +322,7 @@ Public Class frmMain
                                  .MinStoplossPerTrade = 700,
                                  .MaxStoplossPerTrade = 1300,
                                  .MaxProfitPerTrade = 3000,
-                                 .TypeOfSLMakeup = LowStoplossLHHLStrategyRule.StoplossMakeupType.AllLossMakeup
+                                 .TypeOfSLMakeup = LowStoplossLHHLStrategyRule.StoplossMakeupType.OptimisticLossMakeup
                                 }
 
                     .NumberOfTradeableStockPerDay = 5
