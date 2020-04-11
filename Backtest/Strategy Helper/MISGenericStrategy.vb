@@ -248,18 +248,33 @@ Namespace StrategyHelper
                                                         If TotalPLAfterBrokerage(tradeCheckingDate) >= OverAllProfitPerDay Then
                                                             ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Max Profit reached for the day")
                                                             stockList(stockName).EligibleToTakeTrade = False
+                                                            For Each runningStock In stockList
+                                                                runningStock.Value.EligibleToTakeTrade = False
+                                                            Next
                                                         ElseIf TotalPLAfterBrokerage(tradeCheckingDate) <= Math.Abs(OverAllLossPerDay) * -1 Then
                                                             ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Max Loss reached for the day")
                                                             stockList(stockName).EligibleToTakeTrade = False
+                                                            For Each runningStock In stockList
+                                                                runningStock.Value.EligibleToTakeTrade = False
+                                                            Next
                                                         ElseIf Me.TypeOfMTMTrailing = MTMTrailingType.FixedSlabTrailing AndAlso TotalPLAfterBrokerage(tradeCheckingDate) <= OverAllLossPerDay Then
                                                             ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Trailing MTM reached for the day")
                                                             stockList(stockName).EligibleToTakeTrade = False
+                                                            For Each runningStock In stockList
+                                                                runningStock.Value.EligibleToTakeTrade = False
+                                                            Next
                                                         ElseIf Me.TypeOfMTMTrailing = MTMTrailingType.LogSlabTrailing AndAlso TotalPLAfterBrokerage(tradeCheckingDate) <= OverAllLossPerDay Then
                                                             ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Log MTM reached for the day")
                                                             stockList(stockName).EligibleToTakeTrade = False
+                                                            For Each runningStock In stockList
+                                                                runningStock.Value.EligibleToTakeTrade = False
+                                                            Next
                                                         ElseIf Me.TypeOfMTMTrailing = MTMTrailingType.RealtimeTrailing AndAlso TotalPLAfterBrokerage(tradeCheckingDate) <= OverAllLossPerDay Then
                                                             ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Realtime Trailing MTM reached for the day")
                                                             stockList(stockName).EligibleToTakeTrade = False
+                                                            For Each runningStock In stockList
+                                                                runningStock.Value.EligibleToTakeTrade = False
+                                                            Next
                                                         End If
                                                     End If
 
