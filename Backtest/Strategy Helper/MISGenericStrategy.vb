@@ -577,8 +577,8 @@ Namespace StrategyHelper
                             Dim price As Decimal = dt.Rows(i).Item("Previous Day Close")
                             Dim quantity As Integer = CalculateQuantityFromInvestment(lotSize, 1, price, Me.StockType, True)
                             Dim capitalRequiredWithMargin As Decimal = price * quantity / Me.MarginMultiplier
-                            If capitalRequiredWithMargin <= 700000 Then
-                                Dim detailsOfStock As StockDetails = New StockDetails With
+                            'If capitalRequiredWithMargin <= 700000 Then
+                            Dim detailsOfStock As StockDetails = New StockDetails With
                                                 {.StockName = instrumentName,
                                                  .LotSize = lotSize,
                                                  .EligibleToTakeTrade = True,
@@ -586,7 +586,7 @@ Namespace StrategyHelper
                                                  .Supporting2 = capitalRequiredWithMargin}
                                 If stockList Is Nothing Then stockList = New Dictionary(Of String, StockDetails)
                                 stockList.Add(instrumentName, detailsOfStock)
-                            End If
+                            'End If
                         End If
                     Next
                     If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
