@@ -562,11 +562,10 @@ Namespace StrategyHelper
                     dt = csvHelper.GetDataTableFromCSV(1)
                 End Using
                 If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
-                    Dim counter As Integer = 0
+                    Dim stockList As Dictionary(Of String, StockDetails) = Nothing
                     For i = 1 To dt.Rows.Count - 1
                         Dim rowDate As Date = dt.Rows(i).Item("Date")
                         If rowDate.Date = tradingDate.Date Then
-                            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
                             Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
                             Dim instrumentName As String = Nothing
                             If tradingSymbol.Contains("FUT") Then
@@ -583,13 +582,25 @@ Namespace StrategyHelper
                                                 {.StockName = instrumentName,
                                                  .LotSize = lotSize,
                                                  .EligibleToTakeTrade = True,
-                                                 .Supporting1 = quantity}
-                                ret.Add(instrumentName, detailsOfStock)
-                                counter += 1
-                                If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                                                 .Supporting1 = quantity,
+                                                 .Supporting2 = capitalRequiredWithMargin}
+                                If stockList Is Nothing Then stockList = New Dictionary(Of String, StockDetails)
+                                stockList.Add(instrumentName, detailsOfStock)
                             End If
                         End If
                     Next
+                    If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
+                        Dim counter As Integer = 0
+                        For Each runningStock In stockList.OrderBy(Function(x)
+                                                                       Return x.Value.Supporting2
+                                                                   End Function)
+                            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                            ret.Add(runningStock.Key, runningStock.Value)
+
+                            counter += 1
+                            If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                        Next
+                    End If
                 End If
             End If
             Return ret
