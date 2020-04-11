@@ -577,7 +577,7 @@ Namespace StrategyHelper
                             Dim price As Decimal = dt.Rows(i).Item("Previous Day Close")
                             Dim quantity As Integer = CalculateQuantityFromInvestment(lotSize, 1, price, Me.StockType, True)
                             Dim capitalRequiredWithMargin As Decimal = price * quantity / Me.MarginMultiplier
-                            If capitalRequiredWithMargin <= 70000 Then
+                            If capitalRequiredWithMargin <= 700000 Then
                                 Dim detailsOfStock As StockDetails = New StockDetails With
                                                 {.StockName = instrumentName,
                                                  .LotSize = lotSize,

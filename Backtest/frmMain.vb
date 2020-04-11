@@ -286,10 +286,10 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            For ovrAlLoss As Decimal = -10000 To -10000 Step 1000
-                For stkMaxLoss As Decimal = -3000 To -3000 Step 1000
+            For ovrAlLoss As Decimal = -12000 To -8000 Step 2000
+                For stkMaxLoss As Decimal = -4500 To -1500 Step 1500
                     For trlngMTM As Integer = 2 To 2
-                        For slMkupType As Integer = 2 To 2
+                        For slMkupType As Integer = 2 To 4
                             Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                             exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                             exchangeEndTime:=TimeSpan.Parse("15:29:59"),
@@ -303,9 +303,9 @@ Public Class frmMain
                                                             stockType:=stockType,
                                                             databaseTable:=database,
                                                             dataSource:=sourceData,
-                                                            initialCapital:=Decimal.MaxValue / 2,
-                                                            usableCapital:=Decimal.MaxValue / 2,
-                                                            minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                            initialCapital:=400000,
+                                                            usableCapital:=400000,
+                                                            minimumEarnedCapitalToWithdraw:=500000,
                                                             amountToBeWithdrawn:=100000)
                                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
