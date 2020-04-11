@@ -109,7 +109,7 @@ Namespace StrategyHelper
                                     Dim tradingSymbol As String = currentDayOneMinutePayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
                                         Case 0
-                                            stockRule = New LowStoplossLHHLStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                            stockRule = New LowStoplossLHHLStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -564,25 +564,30 @@ Namespace StrategyHelper
                 If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
                     Dim counter As Integer = 0
                     For i = 1 To dt.Rows.Count - 1
-                        Dim rowDate As Date = dt.Rows(i)(0)
+                        Dim rowDate As Date = dt.Rows(i).Item("Date")
                         If rowDate.Date = tradingDate.Date Then
                             If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                            Dim tradingSymbol As String = dt.Rows(i).Item(1)
+                            Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
                             Dim instrumentName As String = Nothing
                             If tradingSymbol.Contains("FUT") Then
                                 instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
                             Else
                                 instrumentName = tradingSymbol
                             End If
-                            Dim detailsOfStock As StockDetails = New StockDetails With
+                            Dim lotSize As Integer = dt.Rows(i).Item("Lot Size")
+                            Dim price As Decimal = dt.Rows(i).Item("Previous Day Close")
+                            Dim quantity As Integer = CalculateQuantityFromInvestment(lotSize, 1, price, Me.StockType, True)
+                            Dim capitalRequiredWithMargin As Decimal = price * quantity / Me.MarginMultiplier
+                            If capitalRequiredWithMargin <= 70000 Then
+                                Dim detailsOfStock As StockDetails = New StockDetails With
                                                 {.StockName = instrumentName,
-                                                .LotSize = dt.Rows(i).Item(2),
-                                                .EligibleToTakeTrade = True,
-                                                .Supporting1 = dt.Rows(i).Item(3),
-                                                .Supporting2 = dt.Rows(i).Item(5)}
-                            ret.Add(instrumentName, detailsOfStock)
-                            counter += 1
-                            If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                                                 .LotSize = lotSize,
+                                                 .EligibleToTakeTrade = True,
+                                                 .Supporting1 = quantity}
+                                ret.Add(instrumentName, detailsOfStock)
+                                counter += 1
+                                If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                            End If
                         End If
                     Next
                 End If

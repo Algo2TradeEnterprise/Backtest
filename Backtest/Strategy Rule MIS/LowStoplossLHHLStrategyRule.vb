@@ -35,10 +35,11 @@ Public Class LowStoplossLHHLStrategyRule
                    ByVal tradingDate As Date,
                    ByVal tradingSymbol As String,
                    ByVal canceller As CancellationTokenSource,
-                   ByVal entities As RuleEntities)
+                   ByVal entities As RuleEntities,
+                   ByVal quantity As Integer)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _userInputs = entities
-        _quantity = Integer.MinValue
+        _quantity = quantity
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -63,11 +64,6 @@ Public Class LowStoplossLHHLStrategyRule
             _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) < Me.MaxProfitOfThisStock AndAlso
             _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) > Math.Abs(Me.MaxLossOfThisStock) * -1 AndAlso
             currentMinuteCandlePayload.PayloadDate >= tradeStartTime AndAlso Me.EligibleToTakeTrade Then
-
-            If _quantity = Integer.MinValue Then
-                _quantity = _parentStrategy.CalculateQuantityFromInvestment(LotSize, _userInputs.MinimumInvestmentPerStock, currentMinuteCandlePayload.PreviousCandlePayload.Close, _parentStrategy.StockType, True)
-            End If
-
             Dim signalCandle As Payload = Nothing
             Dim signal As Tuple(Of Boolean, Trade.TradeExecutionDirection, Payload, Decimal) = GetEntrySignal(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
             Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandlePayload, _parentStrategy.TradeType)
