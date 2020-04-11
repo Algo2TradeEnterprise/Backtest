@@ -17,7 +17,6 @@ Public Class LowStoplossLHHLStrategyRule
     Public Class StrategyRuleEntities
         Inherits RuleEntities
 
-        Public MinimumInvestmentPerStock As Decimal
         Public MinStoplossPerTrade As Decimal
         Public MaxStoplossPerTrade As Decimal
         Public MaxProfitPerTrade As Decimal

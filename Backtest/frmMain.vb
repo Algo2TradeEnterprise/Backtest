@@ -286,11 +286,11 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            'For ovrAlLoss As Decimal = -10000 To -10000 Step 1000
-            '    For stkMaxLoss As Decimal = -3000 To -3000 Step 1000
-            '        For trlngMTM As Integer = 2 To 2
-            '            For slMkupType As Integer = 2 To 2
-            Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+            For ovrAlLoss As Decimal = -10000 To -10000 Step 1000
+                For stkMaxLoss As Decimal = -3000 To -3000 Step 1000
+                    For trlngMTM As Integer = 2 To 2
+                        For slMkupType As Integer = 2 To 2
+                            Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                             exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                             exchangeEndTime:=TimeSpan.Parse("15:29:59"),
                                                             tradeStartTime:=TimeSpan.Parse("9:17:00"),
@@ -307,64 +307,60 @@ Public Class frmMain
                                                             usableCapital:=Decimal.MaxValue / 2,
                                                             minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
                                                             amountToBeWithdrawn:=100000)
-                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+                                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                With backtestStrategy
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Test Stocks.csv")
+                                With backtestStrategy
+                                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Stock.csv")
 
-                    .AllowBothDirectionEntryAtSameTime = False
-                    .TrailingStoploss = False
-                    .TickBasedStrategy = True
-                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+                                    .AllowBothDirectionEntryAtSameTime = False
+                                    .TrailingStoploss = False
+                                    .TickBasedStrategy = True
+                                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                    .RuleEntityData = New LowStoplossLHHLStrategyRule.StrategyRuleEntities With
-                                {.MinimumInvestmentPerStock = 1000,
-                                 .MinStoplossPerTrade = 700,
-                                 .MaxStoplossPerTrade = 1300,
-                                 .MaxProfitPerTrade = 3000,
-                                 .TypeOfSLMakeup = LowStoplossLHHLStrategyRule.StoplossMakeupType.OptimisticLossMakeup
-                                }
+                                    .RuleEntityData = New LowStoplossLHHLStrategyRule.StrategyRuleEntities With
+                                                {.MinStoplossPerTrade = 700,
+                                                 .MaxStoplossPerTrade = 1300,
+                                                 .MaxProfitPerTrade = 3000,
+                                                 .TypeOfSLMakeup = slMkupType
+                                                }
 
-                    .NumberOfTradeableStockPerDay = 5
+                                    .NumberOfTradeableStockPerDay = 5
 
-                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
+                                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
-                    .StockMaxProfitPercentagePerDay = Decimal.MaxValue
-                    .StockMaxLossPercentagePerDay = Decimal.MinValue
+                                    .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                                    .StockMaxLossPercentagePerDay = Decimal.MinValue
 
-                    .ExitOnStockFixedTargetStoploss = True
-                    .StockMaxProfitPerDay = 6000
-                    '.StockMaxLossPerDay =stkMaxLoss
-                    .StockMaxLossPerDay = -3000
+                                    .ExitOnStockFixedTargetStoploss = True
+                                    .StockMaxProfitPerDay = 6000
+                                    .StockMaxLossPerDay = stkMaxLoss
 
-                    .ExitOnOverAllFixedTargetStoploss = True
-                    .OverAllProfitPerDay = Decimal.MaxValue
-                    '.OverAllLossPerDay = ovrAlLoss
-                    .OverAllLossPerDay = -10000
+                                    .ExitOnOverAllFixedTargetStoploss = True
+                                    .OverAllProfitPerDay = Decimal.MaxValue
+                                    .OverAllLossPerDay = ovrAlLoss
 
-                    '.TypeOfMTMTrailing = trlngMTM
-                    .TypeOfMTMTrailing = Strategy.MTMTrailingType.FixedSlabTrailing
-                    .MTMSlab = Math.Abs(.OverAllLossPerDay)
-                    .MovementSlab = .MTMSlab / 2
-                    .RealtimeTrailingPercentage = 50
-                End With
+                                    .TypeOfMTMTrailing = trlngMTM
+                                    .MTMSlab = Math.Abs(.OverAllLossPerDay)
+                                    .MovementSlab = .MTMSlab / 2
+                                    .RealtimeTrailingPercentage = 50
+                                End With
 
-                Dim ruleData As LowStoplossLHHLStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                Dim filename As String = String.Format("TF {0},StkMxPft {1},StkMxLs {2},OvrAlLs {3},TrlMTMTyp {4},SLMkupTyp {5}",
-                                                       backtestStrategy.SignalTimeFrame,
-                                                       If(backtestStrategy.StockMaxProfitPerDay <> Decimal.MaxValue, backtestStrategy.StockMaxProfitPerDay, "∞"),
-                                                       If(backtestStrategy.StockMaxLossPerDay <> Decimal.MinValue, backtestStrategy.StockMaxLossPerDay, "∞"),
-                                                       If(backtestStrategy.OverAllLossPerDay <> Decimal.MinValue, backtestStrategy.OverAllLossPerDay, "∞"),
-                                                       backtestStrategy.TypeOfMTMTrailing.ToString,
-                                                       ruleData.TypeOfSLMakeup.ToString)
+                                Dim ruleData As LowStoplossLHHLStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                                Dim filename As String = String.Format("TF {0},StkMxPft {1},StkMxLs {2},OvrAlLs {3},TrlMTMTyp {4},SLMkupTyp {5}",
+                                                                       backtestStrategy.SignalTimeFrame,
+                                                                       If(backtestStrategy.StockMaxProfitPerDay <> Decimal.MaxValue, backtestStrategy.StockMaxProfitPerDay, "∞"),
+                                                                       If(backtestStrategy.StockMaxLossPerDay <> Decimal.MinValue, backtestStrategy.StockMaxLossPerDay, "∞"),
+                                                                       If(backtestStrategy.OverAllLossPerDay <> Decimal.MinValue, backtestStrategy.OverAllLossPerDay, "∞"),
+                                                                       backtestStrategy.TypeOfMTMTrailing.ToString,
+                                                                       ruleData.TypeOfSLMakeup.ToString)
 
 
-                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-            End Using
-            '            Next
-            '        Next
-            '    Next
-            'Next
+                                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                            End Using
+                        Next
+                    Next
+                Next
+            Next
 
         Catch ex As Exception
             MsgBox(ex.StackTrace, MsgBoxStyle.Critical)
