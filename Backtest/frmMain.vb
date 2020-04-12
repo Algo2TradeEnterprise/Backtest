@@ -286,8 +286,9 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            For ovrAlLoss As Decimal = -12000 To -8000 Step 2000
-                For stkMaxLoss As Decimal = -4500 To -1500 Step 1500
+            'For ovrAlLoss As Decimal = -12000 To -8000 Step 2000
+            For stkMaxLoss As Decimal = -4500 To -1500 Step 1500
+                For stkMaxPrftMul As Decimal = 2 To 4 Step 1
                     For trlngMTM As Integer = 2 To 2
                         For slMkupType As Integer = 2 To 4
                             Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
@@ -303,10 +304,10 @@ Public Class frmMain
                                                             stockType:=stockType,
                                                             databaseTable:=database,
                                                             dataSource:=sourceData,
-                                                            initialCapital:=400000,
-                                                            usableCapital:=400000,
-                                                            minimumEarnedCapitalToWithdraw:=500000,
-                                                            amountToBeWithdrawn:=100000)
+                                                            initialCapital:=4000000,
+                                                            usableCapital:=4000000,
+                                                            minimumEarnedCapitalToWithdraw:=5000000,
+                                                            amountToBeWithdrawn:=1000000)
                                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                                 With backtestStrategy
@@ -320,7 +321,7 @@ Public Class frmMain
                                     .RuleEntityData = New LowStoplossLHHLStrategyRule.StrategyRuleEntities With
                                                 {.MinStoplossPerTrade = 700,
                                                  .MaxStoplossPerTrade = 1300,
-                                                 .MaxProfitPerTrade = 3000,
+                                                 .MaxProfitPerTrade = Math.Abs(stkMaxLoss) * stkMaxPrftMul / 2,
                                                  .TypeOfSLMakeup = slMkupType
                                                 }
 
@@ -332,12 +333,12 @@ Public Class frmMain
                                     .StockMaxLossPercentagePerDay = Decimal.MinValue
 
                                     .ExitOnStockFixedTargetStoploss = True
-                                    .StockMaxProfitPerDay = 6000
+                                    .StockMaxProfitPerDay = Math.Abs(stkMaxLoss) * stkMaxPrftMul
                                     .StockMaxLossPerDay = stkMaxLoss
 
                                     .ExitOnOverAllFixedTargetStoploss = True
                                     .OverAllProfitPerDay = Decimal.MaxValue
-                                    .OverAllLossPerDay = ovrAlLoss
+                                    .OverAllLossPerDay = stkMaxLoss * 3
 
                                     .TypeOfMTMTrailing = trlngMTM
                                     .MTMSlab = Math.Abs(.OverAllLossPerDay)
@@ -346,13 +347,13 @@ Public Class frmMain
                                 End With
 
                                 Dim ruleData As LowStoplossLHHLStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                                Dim filename As String = String.Format("TF {0},StkMxPft {1},StkMxLs {2},OvrAlLs {3},TrlMTMTyp {4},SLMkupTyp {5}",
-                                                                       backtestStrategy.SignalTimeFrame,
-                                                                       If(backtestStrategy.StockMaxProfitPerDay <> Decimal.MaxValue, backtestStrategy.StockMaxProfitPerDay, "∞"),
+                                Dim filename As String = String.Format("StkMxLs {0},StkMxPft {1},TrlMTMTyp {2},SLMkupTyp {3},PftPtrd {4},OvrAlLs {5}",
                                                                        If(backtestStrategy.StockMaxLossPerDay <> Decimal.MinValue, backtestStrategy.StockMaxLossPerDay, "∞"),
-                                                                       If(backtestStrategy.OverAllLossPerDay <> Decimal.MinValue, backtestStrategy.OverAllLossPerDay, "∞"),
+                                                                       If(backtestStrategy.StockMaxProfitPerDay <> Decimal.MaxValue, backtestStrategy.StockMaxProfitPerDay, "∞"),
                                                                        backtestStrategy.TypeOfMTMTrailing.ToString,
-                                                                       ruleData.TypeOfSLMakeup.ToString)
+                                                                       ruleData.TypeOfSLMakeup.ToString,
+                                                                       ruleData.MaxProfitPerTrade,
+                                                                       If(backtestStrategy.OverAllLossPerDay <> Decimal.MinValue, backtestStrategy.OverAllLossPerDay, "∞"))
 
 
                                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
@@ -361,6 +362,7 @@ Public Class frmMain
                     Next
                 Next
             Next
+            'Next
 
         Catch ex As Exception
             MsgBox(ex.StackTrace, MsgBoxStyle.Critical)
