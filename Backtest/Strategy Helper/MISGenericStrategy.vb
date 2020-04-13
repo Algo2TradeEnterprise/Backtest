@@ -72,7 +72,7 @@ Namespace StrategyHelper
                     Me.AvailableCapital = Me.UsableCapital
                     Me.OverAllLossPerDay = portfolioLossPerDay
                     TradesTaken = New Dictionary(Of Date, Dictionary(Of String, List(Of Trade)))
-                    Dim stockList As Dictionary(Of String, StockDetails) = Await GetStockData(tradeCheckingDate).ConfigureAwait(False)
+                    Dim stockList As Dictionary(Of String, StockDetails) = Await GetStockDataAsync(tradeCheckingDate).ConfigureAwait(False)
 
                     _canceller.Token.ThrowIfCancellationRequested()
                     If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
@@ -121,6 +121,8 @@ Namespace StrategyHelper
                                             stockRule = New ReversalHHLLBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 1
                                             stockRule = New FractalTrendLineStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case 2
+                                            stockRule = New MarketPlusMarketMinusStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -564,7 +566,7 @@ Namespace StrategyHelper
 
 
 #Region "Stock Selection"
-        Private Async Function GetStockData(tradingDate As Date) As Task(Of Dictionary(Of String, StockDetails))
+        Private Async Function GetStockDataAsync(tradingDate As Date) As Task(Of Dictionary(Of String, StockDetails))
             Dim ret As Dictionary(Of String, StockDetails) = Nothing
             Await Task.Delay(0).ConfigureAwait(False)
             If Me.StockFileName IsNot Nothing Then
@@ -573,36 +575,72 @@ Namespace StrategyHelper
                     dt = csvHelper.GetDataTableFromCSV(1)
                 End Using
                 If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
-                    'Select Case Me.RuleNumber
-                    '    Case 0
+                    Select Case Me.RuleNumber
+                        Case 2
+                            Dim nifty50Payload As Dictionary(Of Date, Payload) = Cmn.GetRawPayload(Common.DataBaseTable.Intraday_Cash, "NIFTY 50", tradingDate, tradingDate)
+                            If nifty50Payload IsNot Nothing AndAlso nifty50Payload.Count > 0 Then
+                                Dim nifty50XminPayload As Dictionary(Of Date, Payload) = Common.ConvertPayloadsToXMinutes(nifty50Payload, Me.SignalTimeFrame, New Date(tradingDate.Year, tradingDate.Month, tradingDate.Day, 9, 15, 0))
+                                If nifty50XminPayload IsNot Nothing AndAlso nifty50XminPayload.Count > 0 Then
+                                    Dim firstCandle As Payload = nifty50XminPayload.FirstOrDefault.Value
+                                    If firstCandle.CandleColor = Color.Green OrElse firstCandle.CandleColor = Color.Red Then
+                                        Dim counter As Integer = 0
+                                        For i = 0 To dt.Rows.Count - 1
+                                            Dim rowDate As Date = dt.Rows(i).Item("Date")
+                                            If rowDate.Date = tradingDate.Date Then
+                                                Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
+                                                Dim instrumentName As String = Nothing
+                                                If tradingSymbol.Contains("FUT") Then
+                                                    instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                                                Else
+                                                    instrumentName = tradingSymbol
+                                                End If
+                                                Dim changePer As Decimal = dt.Rows(i).Item("Change %")
 
-                    '    Case Else
-                    Dim counter As Integer = 0
-                    For i = 0 To dt.Rows.Count - 1
-                        Dim rowDate As Date = dt.Rows(i).Item("Date")
-                        If rowDate.Date = tradingDate.Date Then
-                            Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
-                            Dim instrumentName As String = Nothing
-                            If tradingSymbol.Contains("FUT") Then
-                                instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
-                            Else
-                                instrumentName = tradingSymbol
+                                                Dim detailsOfStock As StockDetails = New StockDetails With
+                                                {.StockName = instrumentName,
+                                                 .TradingSymbol = tradingSymbol,
+                                                 .LotSize = dt.Rows(i).Item("Lot Size"),
+                                                 .EligibleToTakeTrade = True,
+                                                 .Supporting1 = changePer,
+                                                 .Supporting2 = If(firstCandle.CandleColor = Color.Green, 1, -1)}
+
+                                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                                ret.Add(instrumentName, detailsOfStock)
+
+                                                counter += 1
+                                                If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                                            End If
+                                        Next
+                                    End If
+                                End If
                             End If
+                        Case Else
+                            Dim counter As Integer = 0
+                            For i = 0 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i).Item("Date")
+                                If rowDate.Date = tradingDate.Date Then
+                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
+                                    Dim instrumentName As String = Nothing
+                                    If tradingSymbol.Contains("FUT") Then
+                                        instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                                    Else
+                                        instrumentName = tradingSymbol
+                                    End If
 
-                            Dim detailsOfStock As StockDetails = New StockDetails With
-                                        {.StockName = instrumentName,
-                                         .TradingSymbol = tradingSymbol,
-                                         .LotSize = dt.Rows(i).Item("Lot Size"),
-                                         .EligibleToTakeTrade = True}
+                                    Dim detailsOfStock As StockDetails = New StockDetails With
+                                                {.StockName = instrumentName,
+                                                 .TradingSymbol = tradingSymbol,
+                                                 .LotSize = dt.Rows(i).Item("Lot Size"),
+                                                 .EligibleToTakeTrade = True}
 
-                            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                            ret.Add(instrumentName, detailsOfStock)
+                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                    ret.Add(instrumentName, detailsOfStock)
 
-                            counter += 1
-                            If counter = Me.NumberOfTradeableStockPerDay Then Exit For
-                        End If
-                    Next
-                    'End Select
+                                    counter += 1
+                                    If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                                End If
+                            Next
+                    End Select
                 End If
             End If
             Return ret
