@@ -109,7 +109,7 @@ Namespace StrategyHelper
                                     Dim tradingSymbol As String = currentDayOneMinutePayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
                                         Case 0
-                                            stockRule = New LowStoplossLHHLStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
+                                            stockRule = New LowStoplossLHHLStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -576,16 +576,16 @@ Namespace StrategyHelper
                             Dim lotSize As Integer = dt.Rows(i).Item("Lot Size")
                             Dim price As Decimal = dt.Rows(i).Item("Previous Day Close")
                             Dim quantity As Integer = CalculateQuantityFromInvestment(lotSize, 1, price, Me.StockType, True)
-                            Dim capitalRequiredWithMargin As Decimal = price * quantity / Me.MarginMultiplier
+                            Dim capitalRequired As Decimal = price * quantity
                             'If capitalRequiredWithMargin <= 700000 Then
                             Dim detailsOfStock As StockDetails = New StockDetails With
                                                 {.StockName = instrumentName,
                                                  .LotSize = lotSize,
                                                  .EligibleToTakeTrade = True,
                                                  .Supporting1 = quantity,
-                                                 .Supporting2 = capitalRequiredWithMargin}
-                                If stockList Is Nothing Then stockList = New Dictionary(Of String, StockDetails)
-                                stockList.Add(instrumentName, detailsOfStock)
+                                                 .Supporting2 = capitalRequired}
+                            If stockList Is Nothing Then stockList = New Dictionary(Of String, StockDetails)
+                            stockList.Add(instrumentName, detailsOfStock)
                             'End If
                         End If
                     Next
