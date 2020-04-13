@@ -17,19 +17,16 @@ Public Class LowStoplossLHHLStrategyRule
     Public Class StrategyRuleEntities
         Inherits RuleEntities
 
-        Public StockMaxProfitMul As Decimal
-        Public StockMaxLossMul As Decimal
+        Public MinStoplossPerTrade As Decimal
+        Public MaxStoplossPerTrade As Decimal
+        Public MaxProfitPerTrade As Decimal
         Public TypeOfSLMakeup As StoplossMakeupType
     End Class
 #End Region
 
     Private _atrPayload As Dictionary(Of Date, Decimal)
     Private _userInputs As StrategyRuleEntities
-    Private ReadOnly _quantity As Integer
-    Private ReadOnly _minStoplossPerTrade As Decimal
-    Private ReadOnly _maxStoplossPerTrade As Decimal
-    Private ReadOnly _maxProfitPerTrade As Decimal
-
+    Private _quantity As Integer
     Private _lastPrintedCandle As Payload
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
@@ -39,18 +36,10 @@ Public Class LowStoplossLHHLStrategyRule
                    ByVal tradingSymbol As String,
                    ByVal canceller As CancellationTokenSource,
                    ByVal entities As RuleEntities,
-                   ByVal quantity As Integer,
-                   ByVal requiredCapital As Decimal)
+                   ByVal quantity As Integer)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _userInputs = entities
         _quantity = quantity
-        _minStoplossPerTrade = Math.Floor(requiredCapital * 0.25 / 100)
-        _maxStoplossPerTrade = Math.Ceiling(requiredCapital * 0.5 / 100)
-
-        Me.MaxLossOfThisStock = _maxStoplossPerTrade * _userInputs.StockMaxLossMul
-        Me.MaxProfitOfThisStock = Me.MaxLossOfThisStock * _userInputs.StockMaxProfitMul
-
-        _maxProfitPerTrade = Me.MaxProfitOfThisStock / 2
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -87,7 +76,7 @@ Public Class LowStoplossLHHLStrategyRule
             End If
 
             If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
-                Dim originalTargetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, signalCandle.Open, _quantity, Math.Abs(_maxProfitPerTrade), Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
+                Dim originalTargetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, signalCandle.Open, _quantity, Math.Abs(_userInputs.MaxProfitPerTrade), Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
                 Dim targetPoint As Decimal = originalTargetPrice - signalCandle.Open
                 Dim targetRemark As String = "Original Target"
                 If _userInputs.TypeOfSLMakeup = StoplossMakeupType.SingleLossMakeup Then
@@ -98,7 +87,7 @@ Public Class LowStoplossLHHLStrategyRule
                     End If
                 ElseIf _userInputs.TypeOfSLMakeup = StoplossMakeupType.AllLossMakeup Then
                     If _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) < 0 Then
-                        Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, signalCandle.Open, _quantity, (_minStoplossPerTrade + _maxStoplossPerTrade) / 2, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
+                        Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, signalCandle.Open, _quantity, (_userInputs.MinStoplossPerTrade + _userInputs.MaxStoplossPerTrade) / 2, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
                         targetPoint = targetPrice - signalCandle.Open
                         targetRemark = "SL Makeup Trade"
                     End If
@@ -108,7 +97,7 @@ Public Class LowStoplossLHHLStrategyRule
                             targetPoint = originalTargetPrice - signalCandle.Open
                             targetRemark = "Optimistic Original Target"
                         Else
-                            Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, signalCandle.Open, _quantity, (_minStoplossPerTrade + _maxStoplossPerTrade) / 2, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
+                            Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, signalCandle.Open, _quantity, (_userInputs.MinStoplossPerTrade + _userInputs.MaxStoplossPerTrade) / 2, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
                             targetPoint = targetPrice - signalCandle.Open
                             targetRemark = "SL Makeup Trade"
                         End If
@@ -129,8 +118,7 @@ Public Class LowStoplossLHHLStrategyRule
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = targetRemark,
                                     .Supporting3 = targetPoint,
-                                    .Supporting4 = signal.Item4,
-                                    .Supporting5 = String.Format("{0} - {1}", _minStoplossPerTrade, _maxStoplossPerTrade)
+                                    .Supporting4 = signal.Item4
                                 }
                 ElseIf signal.Item2 = Trade.TradeExecutionDirection.Sell Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Low, RoundOfType.Floor)
@@ -146,8 +134,7 @@ Public Class LowStoplossLHHLStrategyRule
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = targetRemark,
                                     .Supporting3 = targetPoint,
-                                    .Supporting4 = signal.Item4,
-                                    .Supporting5 = String.Format("{0} - {1}", _minStoplossPerTrade, _maxStoplossPerTrade)
+                                    .Supporting4 = signal.Item4
                                 }
                 End If
             End If
@@ -201,11 +188,11 @@ Public Class LowStoplossLHHLStrategyRule
             Dim sellSLPriceAndPoint As Tuple(Of Decimal, Decimal) = GetStoplossPriceAndPoint(candle, Trade.TradeExecutionDirection.Sell)
             Dim atr As Decimal = ConvertFloorCeling(_atrPayload(candle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Floor)
             If candle.High < candle.PreviousCandlePayload.High AndAlso candle.Low > candle.PreviousCandlePayload.Low Then
-                If Math.Abs(buySLPriceAndPoint.Item1) >= Math.Abs(_minStoplossPerTrade) AndAlso
-                    Math.Abs(buySLPriceAndPoint.Item1) <= Math.Abs(_maxStoplossPerTrade) AndAlso
+                If Math.Abs(buySLPriceAndPoint.Item1) >= Math.Abs(_userInputs.MinStoplossPerTrade) AndAlso
+                    Math.Abs(buySLPriceAndPoint.Item1) <= Math.Abs(_userInputs.MaxStoplossPerTrade) AndAlso
                     buySLPriceAndPoint.Item2 <= atr AndAlso
-                    Math.Abs(sellSLPriceAndPoint.Item1) >= Math.Abs(_minStoplossPerTrade) AndAlso
-                    Math.Abs(sellSLPriceAndPoint.Item1) <= Math.Abs(_maxStoplossPerTrade) AndAlso
+                    Math.Abs(sellSLPriceAndPoint.Item1) >= Math.Abs(_userInputs.MinStoplossPerTrade) AndAlso
+                    Math.Abs(sellSLPriceAndPoint.Item1) <= Math.Abs(_userInputs.MaxStoplossPerTrade) AndAlso
                     sellSLPriceAndPoint.Item2 <= atr Then
                     Dim middlePoint As Decimal = (candle.High + candle.Low) / 2
                     Dim range As Decimal = candle.High - middlePoint
@@ -214,47 +201,47 @@ Public Class LowStoplossLHHLStrategyRule
                     ElseIf currentTick.Open < middlePoint - range * 50 / 100 Then
                         ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection, Payload, Decimal)(True, Trade.TradeExecutionDirection.Sell, candle, sellSLPriceAndPoint.Item2)
                     End If
-                ElseIf Math.Abs(buySLPriceAndPoint.Item1) >= Math.Abs(_MinStoplossPerTrade) AndAlso
-                    Math.Abs(buySLPriceAndPoint.Item1) <= Math.Abs(_MaxStoplossPerTrade) AndAlso
+                ElseIf Math.Abs(buySLPriceAndPoint.Item1) >= Math.Abs(_userInputs.MinStoplossPerTrade) AndAlso
+                    Math.Abs(buySLPriceAndPoint.Item1) <= Math.Abs(_userInputs.MaxStoplossPerTrade) AndAlso
                     buySLPriceAndPoint.Item2 <= atr Then
                     ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection, Payload, Decimal)(True, Trade.TradeExecutionDirection.Buy, candle, buySLPriceAndPoint.Item2)
-                ElseIf Math.Abs(sellSLPriceAndPoint.Item1) >= Math.Abs(_MinStoplossPerTrade) AndAlso
-                    Math.Abs(sellSLPriceAndPoint.Item1) <= Math.Abs(_MaxStoplossPerTrade) AndAlso
+                ElseIf Math.Abs(sellSLPriceAndPoint.Item1) >= Math.Abs(_userInputs.MinStoplossPerTrade) AndAlso
+                    Math.Abs(sellSLPriceAndPoint.Item1) <= Math.Abs(_userInputs.MaxStoplossPerTrade) AndAlso
                     sellSLPriceAndPoint.Item2 <= atr Then
                     ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection, Payload, Decimal)(True, Trade.TradeExecutionDirection.Sell, candle, sellSLPriceAndPoint.Item2)
-                Else
-                    If _lastPrintedCandle Is Nothing OrElse _lastPrintedCandle.PayloadDate <> candle.PayloadDate Then
-                        Console.WriteLine(String.Format("Trade neglected because of SL price. {0}, {1}, {2}, {3}",
-                                                        candle.PayloadDate.ToString("dd-MM-yyyy"), candle.PayloadDate.ToString("HH:mm:ss"),
-                                                        sellSLPriceAndPoint.Item1, candle.TradingSymbol))
-                        _lastPrintedCandle = candle
-                    End If
+                    'Else
+                    '    If _lastPrintedCandle Is Nothing OrElse _lastPrintedCandle.PayloadDate <> candle.PayloadDate Then
+                    '        Console.WriteLine(String.Format("Trade neglected because of SL price. {0}, {1}, {2}, {3}",
+                    '                                        candle.PayloadDate.ToString("dd-MM-yyyy"), candle.PayloadDate.ToString("HH:mm:ss"),
+                    '                                        sellSLPriceAndPoint.Item1, candle.TradingSymbol))
+                    '        _lastPrintedCandle = candle
+                    '    End If
                 End If
             ElseIf candle.High < candle.PreviousCandlePayload.High Then
-                If Math.Abs(buySLPriceAndPoint.Item1) >= Math.Abs(_minStoplossPerTrade) AndAlso
-                    Math.Abs(buySLPriceAndPoint.Item1) <= Math.Abs(_maxStoplossPerTrade) AndAlso
+                If Math.Abs(buySLPriceAndPoint.Item1) >= Math.Abs(_userInputs.MinStoplossPerTrade) AndAlso
+                    Math.Abs(buySLPriceAndPoint.Item1) <= Math.Abs(_userInputs.MaxStoplossPerTrade) AndAlso
                     buySLPriceAndPoint.Item2 <= atr Then
                     ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection, Payload, Decimal)(True, Trade.TradeExecutionDirection.Buy, candle, buySLPriceAndPoint.Item2)
-                Else
-                    If _lastPrintedCandle Is Nothing OrElse _lastPrintedCandle.PayloadDate <> candle.PayloadDate Then
-                        Console.WriteLine(String.Format("Trade neglected because of SL price. {0}, {1}, {2}, {3}",
-                                                        candle.PayloadDate.ToString("dd-MM-yyyy"), candle.PayloadDate.ToString("HH:mm:ss"),
-                                                        sellSLPriceAndPoint.Item1, candle.TradingSymbol))
-                        _lastPrintedCandle = candle
-                    End If
+                    'Else
+                    '    If _lastPrintedCandle Is Nothing OrElse _lastPrintedCandle.PayloadDate <> candle.PayloadDate Then
+                    '        Console.WriteLine(String.Format("Trade neglected because of SL price. {0}, {1}, {2}, {3}",
+                    '                                        candle.PayloadDate.ToString("dd-MM-yyyy"), candle.PayloadDate.ToString("HH:mm:ss"),
+                    '                                        sellSLPriceAndPoint.Item1, candle.TradingSymbol))
+                    '        _lastPrintedCandle = candle
+                    '    End If
                 End If
             ElseIf candle.Low > candle.PreviousCandlePayload.Low Then
-                If Math.Abs(sellSLPriceAndPoint.Item1) >= Math.Abs(_minStoplossPerTrade) AndAlso
-                    Math.Abs(sellSLPriceAndPoint.Item1) <= Math.Abs(_maxStoplossPerTrade) AndAlso
+                If Math.Abs(sellSLPriceAndPoint.Item1) >= Math.Abs(_userInputs.MinStoplossPerTrade) AndAlso
+                    Math.Abs(sellSLPriceAndPoint.Item1) <= Math.Abs(_userInputs.MaxStoplossPerTrade) AndAlso
                     sellSLPriceAndPoint.Item2 <= atr Then
                     ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection, Payload, Decimal)(True, Trade.TradeExecutionDirection.Sell, candle, sellSLPriceAndPoint.Item2)
-                Else
-                    If _lastPrintedCandle Is Nothing OrElse _lastPrintedCandle.PayloadDate <> candle.PayloadDate Then
-                        Console.WriteLine(String.Format("Trade neglected because of SL price. {0}, {1}, {2}, {3}",
-                                                        candle.PayloadDate.ToString("dd-MM-yyyy"), candle.PayloadDate.ToString("HH:mm:ss"),
-                                                        sellSLPriceAndPoint.Item1, candle.TradingSymbol))
-                        _lastPrintedCandle = candle
-                    End If
+                    'Else
+                    '    If _lastPrintedCandle Is Nothing OrElse _lastPrintedCandle.PayloadDate <> candle.PayloadDate Then
+                    '        Console.WriteLine(String.Format("Trade neglected because of SL price. {0}, {1}, {2}, {3}",
+                    '                                        candle.PayloadDate.ToString("dd-MM-yyyy"), candle.PayloadDate.ToString("HH:mm:ss"),
+                    '                                        sellSLPriceAndPoint.Item1, candle.TradingSymbol))
+                    '        _lastPrintedCandle = candle
+                    '    End If
                 End If
             End If
         End If
