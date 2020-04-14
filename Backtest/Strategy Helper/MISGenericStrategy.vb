@@ -584,8 +584,8 @@ Namespace StrategyHelper
                                                  .EligibleToTakeTrade = True,
                                                  .Supporting1 = quantity,
                                                  .Supporting2 = capitalRequiredWithMargin}
-                                If stockList Is Nothing Then stockList = New Dictionary(Of String, StockDetails)
-                                stockList.Add(instrumentName, detailsOfStock)
+                            If stockList Is Nothing Then stockList = New Dictionary(Of String, StockDetails)
+                            stockList.Add(instrumentName, detailsOfStock)
                             'End If
                         End If
                     Next
