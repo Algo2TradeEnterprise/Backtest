@@ -44,8 +44,8 @@ Public Class LowStoplossLHHLStrategyRule
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _userInputs = entities
         _quantity = quantity
-        _minStoplossPerTrade = Math.Floor(requiredCapital * 0.25 / 100)
-        _maxStoplossPerTrade = Math.Ceiling(requiredCapital * 0.5 / 100)
+        _minStoplossPerTrade = Math.Max(Math.Floor(requiredCapital * 0.25 / 100), 700)
+        _maxStoplossPerTrade = Math.Max(Math.Ceiling(requiredCapital * 0.5 / 100), 1300)
 
         Me.MaxLossOfThisStock = _maxStoplossPerTrade * _userInputs.StockMaxLossMul
         Me.MaxProfitOfThisStock = Me.MaxLossOfThisStock * _userInputs.StockMaxProfitMul
