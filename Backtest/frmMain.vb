@@ -295,8 +295,8 @@ Public Class frmMain
             End Select
 
             For timeframe As Integer = 1 To 1
-                For overallLoss As Decimal = -9000 To -15000 Step -3000
-                    For trlngType As Integer = 2 To 4 Step 2
+                For overallLoss As Decimal = -9000 To -9000 Step -3000
+                    For trlngType As Integer = 2 To 2 Step 2
                         Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                           exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                           exchangeEndTime:=TimeSpan.Parse("15:29:59"),
@@ -317,7 +317,7 @@ Public Class frmMain
                             AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                             With backtestStrategy
-                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pre Market Stock.csv")
+                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Stock.csv")
 
                                 .AllowBothDirectionEntryAtSameTime = False
                                 .TrailingStoploss = False
