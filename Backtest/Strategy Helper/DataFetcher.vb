@@ -132,8 +132,8 @@ Public Class DataFetcher
                 Dim queryString As String = Nothing
                 For Each runningStock In _uniqueInstrumentList
                     _cts.Token.ThrowIfCancellationRequested()
-                    queryString = String.Format("{0}SELECT `Open`,`Low`,`High`,`Close`,`Volume`,`SnapshotDateTime`,`TradingSymbol` FROM `{1}` WHERE `TradingSymbol`='{2}' AND `SnapshotDate`>='{3}' AND `SnapshotDate`<='{4}';",
-                                                queryString, tableName, runningStock, _startDate.ToString("yyyy-MM-dd"), _endDate.ToString("yyyy-MM-dd"))
+                    queryString = String.Format("{0}SELECT `Open`,`Low`,`High`,`Close`,`Volume`,`SnapshotDateTime`,`TradingSymbol` FROM `{1}` WHERE `TradingSymbol`='{2}' AND `SnapshotDate`>='{3}' AND `SnapshotDate`<='{4}';{5}",
+                                                queryString, tableName, runningStock, _startDate.ToString("yyyy-MM-dd"), _endDate.ToString("yyyy-MM-dd"), vbNewLine)
                 Next
 
                 _cts.Token.ThrowIfCancellationRequested()
