@@ -2437,67 +2437,10 @@ Public Class frmMain
 #End Region
 
 #Region "Graph Angle"
-            'Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
-            '                                                exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-            '                                                exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-            '                                                tradeStartTime:=TimeSpan.Parse("9:20:00"),
-            '                                                lastTradeEntryTime:=TimeSpan.Parse("14:29:59"),
-            '                                                eodExitTime:=TimeSpan.Parse("15:15:00"),
-            '                                                tickSize:=tick,
-            '                                                marginMultiplier:=margin,
-            '                                                timeframe:=1,
-            '                                                heikenAshiCandle:=False,
-            '                                                stockType:=stockType,
-            '                                                databaseTable:=database,
-            '                                                dataSource:=sourceData,
-            '                                                initialCapital:=Decimal.MaxValue / 2,
-            '                                                usableCapital:=Decimal.MaxValue / 2,
-            '                                                minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
-            '                                                amountToBeWithdrawn:=0)
-            '    AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
-
-            '    With backtestStrategy
-            '        .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Graph Angle 90.csv")
-
-            '        .AllowBothDirectionEntryAtSameTime = False
-            '        .TrailingStoploss = False
-            '        .TickBasedStrategy = False
-            '        .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
-
-            '        .RuleEntityData = Nothing
-
-            '        .NumberOfTradeableStockPerDay = Integer.MaxValue
-
-            '        .NumberOfTradesPerStockPerDay = 1
-
-            '        .StockMaxProfitPercentagePerDay = Decimal.MaxValue
-            '        .StockMaxLossPercentagePerDay = Decimal.MinValue
-
-            '        .ExitOnStockFixedTargetStoploss = False
-            '        .StockMaxProfitPerDay = Decimal.MaxValue
-            '        .StockMaxLossPerDay = Decimal.MinValue
-
-            '        .ExitOnOverAllFixedTargetStoploss = False
-            '        .OverAllProfitPerDay = Decimal.MaxValue
-            '        .OverAllLossPerDay = Decimal.MinValue
-
-            '        .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
-            '        .MTMSlab = Math.Abs(.OverAllLossPerDay)
-            '        .MovementSlab = .MTMSlab / 2
-            '        .RealtimeTrailingPercentage = 50
-            '    End With
-
-            '    Dim filename As String = String.Format("Graph Angle")
-
-            '    Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-            'End Using
-#End Region
-
-#Region "Reversal HHLL Breakout"
             Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                             exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                             exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                            tradeStartTime:=TimeSpan.Parse("9:18:00"),
+                                                            tradeStartTime:=TimeSpan.Parse("9:20:00"),
                                                             lastTradeEntryTime:=TimeSpan.Parse("14:29:59"),
                                                             eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                             tickSize:=tick,
@@ -2507,29 +2450,25 @@ Public Class frmMain
                                                             stockType:=stockType,
                                                             databaseTable:=database,
                                                             dataSource:=sourceData,
-                                                            initialCapital:=300000,
-                                                            usableCapital:=200000,
+                                                            initialCapital:=Decimal.MaxValue / 2,
+                                                            usableCapital:=Decimal.MaxValue / 2,
                                                             minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
                                                             amountToBeWithdrawn:=0)
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Stock.csv")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Graph Angle 90.csv")
 
                     .AllowBothDirectionEntryAtSameTime = False
                     .TrailingStoploss = False
                     .TickBasedStrategy = False
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                    .RuleEntityData = New ReversalHHLLBreakoutStrategyRule.StrategyRuleEntities With
-                        {
-                         .MaxLossPerTrade = -500,
-                         .MinimumTargetMultiplier = 2
-                        }
+                    .RuleEntityData = Nothing
 
                     .NumberOfTradeableStockPerDay = Integer.MaxValue
 
-                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
+                    .NumberOfTradesPerStockPerDay = 1
 
                     .StockMaxProfitPercentagePerDay = Decimal.MaxValue
                     .StockMaxLossPercentagePerDay = Decimal.MinValue
@@ -2538,9 +2477,9 @@ Public Class frmMain
                     .StockMaxProfitPerDay = Decimal.MaxValue
                     .StockMaxLossPerDay = Decimal.MinValue
 
-                    .ExitOnOverAllFixedTargetStoploss = True
-                    .OverAllProfitPerDay = 15000
-                    .OverAllLossPerDay = -10000
+                    .ExitOnOverAllFixedTargetStoploss = False
+                    .OverAllProfitPerDay = Decimal.MaxValue
+                    .OverAllLossPerDay = Decimal.MinValue
 
                     .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
                     .MTMSlab = Math.Abs(.OverAllLossPerDay)
@@ -2548,10 +2487,71 @@ Public Class frmMain
                     .RealtimeTrailingPercentage = 50
                 End With
 
-                Dim filename As String = String.Format("Reversal HHLL")
+                Dim filename As String = String.Format("Graph Angle")
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using
+#End Region
+
+#Region "Reversal HHLL Breakout"
+            'Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+            '                                                exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+            '                                                exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+            '                                                tradeStartTime:=TimeSpan.Parse("9:18:00"),
+            '                                                lastTradeEntryTime:=TimeSpan.Parse("14:29:59"),
+            '                                                eodExitTime:=TimeSpan.Parse("15:15:00"),
+            '                                                tickSize:=tick,
+            '                                                marginMultiplier:=margin,
+            '                                                timeframe:=1,
+            '                                                heikenAshiCandle:=False,
+            '                                                stockType:=stockType,
+            '                                                databaseTable:=database,
+            '                                                dataSource:=sourceData,
+            '                                                initialCapital:=300000,
+            '                                                usableCapital:=200000,
+            '                                                minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+            '                                                amountToBeWithdrawn:=0)
+            '    AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+
+            '    With backtestStrategy
+            '        .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Stock.csv")
+
+            '        .AllowBothDirectionEntryAtSameTime = False
+            '        .TrailingStoploss = False
+            '        .TickBasedStrategy = False
+            '        .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+
+            '        .RuleEntityData = New ReversalHHLLBreakoutStrategyRule.StrategyRuleEntities With
+            '            {
+            '             .MaxLossPerTrade = -500,
+            '             .MinimumTargetMultiplier = 2
+            '            }
+
+            '        .NumberOfTradeableStockPerDay = Integer.MaxValue
+
+            '        .NumberOfTradesPerStockPerDay = Integer.MaxValue
+
+            '        .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+            '        .StockMaxLossPercentagePerDay = Decimal.MinValue
+
+            '        .ExitOnStockFixedTargetStoploss = False
+            '        .StockMaxProfitPerDay = Decimal.MaxValue
+            '        .StockMaxLossPerDay = Decimal.MinValue
+
+            '        .ExitOnOverAllFixedTargetStoploss = True
+            '        .OverAllProfitPerDay = 15000
+            '        .OverAllLossPerDay = -10000
+
+            '        .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+            '        .MTMSlab = Math.Abs(.OverAllLossPerDay)
+            '        .MovementSlab = .MTMSlab / 2
+            '        .RealtimeTrailingPercentage = 50
+            '    End With
+
+            '    Dim filename As String = String.Format("Reversal HHLL")
+
+            '    Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+            'End Using
 #End Region
 
         Catch cex As OperationCanceledException

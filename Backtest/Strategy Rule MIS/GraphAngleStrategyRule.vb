@@ -126,14 +126,20 @@ Public Class GraphAngleStrategyRule
     Public Overrides Async Function IsTriggerReceivedForExitOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, String))
         Dim ret As Tuple(Of Boolean, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
-        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open AndAlso
-            currentTrade.Supporting1.ToUpper <> "FRACTAL" Then
+        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
             Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
             Dim signal As Tuple(Of Boolean, Decimal, String) = GetSignalForEntry(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
             If signal IsNot Nothing AndAlso signal.Item1 Then
-                If signal.Item2 <> currentTrade.EntryPrice Then
-                    ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                    If signal.Item2 < currentTrade.EntryPrice Then
+                        ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                    End If
+                ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                    If signal.Item2 > currentTrade.EntryPrice Then
+                        ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                    End If
                 End If
+
             End If
         End If
         Return ret
