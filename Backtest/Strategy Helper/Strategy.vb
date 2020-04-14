@@ -1264,7 +1264,8 @@ Namespace StrategyHelper
                             Dim stockData As Dictionary(Of String, List(Of Trade)) = Nothing
                             For Each stock In tempData(runningDate).Keys
                                 Dim tradeList As List(Of Trade) = tempData(runningDate)(stock).FindAll(Function(x)
-                                                                                                           Return x.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel
+                                                                                                           Return x.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel AndAlso
+                                                                                                           x.TradeCurrentStatus <> Trade.TradeExecutionStatus.Open
                                                                                                        End Function)
                                 If tradeList IsNot Nothing AndAlso tradeList.Count > 0 Then
                                     For Each runningTrade In tradeList

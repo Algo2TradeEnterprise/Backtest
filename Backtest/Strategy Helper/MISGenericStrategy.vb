@@ -534,6 +534,7 @@ Namespace StrategyHelper
                                 End While   'Second Loop
                                 startMinute = startMinute.Add(TimeSpan.FromMinutes(Me.SignalTimeFrame))
                             End While   'Minute Loop
+                            ExitAllTradeByForce(tradeCheckingDate, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Special Force Close")
                         End If
                     End If
                     SetOverallDrawUpDrawDownForTheDay(tradeCheckingDate)

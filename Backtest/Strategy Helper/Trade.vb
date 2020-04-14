@@ -258,13 +258,17 @@ Namespace StrategyHelper
         End Property
         Public ReadOnly Property MaximumDrawUpPL As Double
             Get
-                If EntryDirection = TradeExecutionDirection.Buy Then
-                    Return _OriginatingStrategy.CalculatePL(CoreTradingSymbol, EntryPrice, MaximumDrawUp, Quantity, LotSize, StockType)
-                ElseIf EntryDirection = TradeExecutionDirection.Sell Then
-                    Return _OriginatingStrategy.CalculatePL(CoreTradingSymbol, MaximumDrawUp, EntryPrice, Quantity, LotSize, StockType)
-                Else
-                    Return Double.MinValue
-                End If
+                Try
+                    If EntryDirection = TradeExecutionDirection.Buy Then
+                        Return _OriginatingStrategy.CalculatePL(CoreTradingSymbol, EntryPrice, MaximumDrawUp, Quantity, LotSize, StockType)
+                    ElseIf EntryDirection = TradeExecutionDirection.Sell Then
+                        Return _OriginatingStrategy.CalculatePL(CoreTradingSymbol, MaximumDrawUp, EntryPrice, Quantity, LotSize, StockType)
+                    Else
+                        Return Double.MinValue
+                    End If
+                Catch ex As Exception
+                    Throw ex
+                End Try
             End Get
         End Property
         Public ReadOnly Property MaximumDrawDownPL As Double
