@@ -110,7 +110,7 @@ Public Class DataFetcher
         If _uniqueInstrumentList IsNot Nothing AndAlso _uniqueInstrumentList.Count > 0 Then
             _cts.Token.ThrowIfCancellationRequested()
             Using sqlHlpr As New MySQLDBHelper(_serverName, "local_stock", "3306", "rio", "speech123", _cts)
-                AddHandler sqlHlpr.Heartbeat, AddressOf OnHeartbeat
+                'AddHandler sqlHlpr.Heartbeat, AddressOf OnHeartbeat
                 AddHandler sqlHlpr.DocumentDownloadComplete, AddressOf OnDocumentDownloadComplete
                 AddHandler sqlHlpr.DocumentRetryStatus, AddressOf OnDocumentRetryStatus
                 AddHandler sqlHlpr.WaitingFor, AddressOf OnWaitingFor
@@ -129,31 +129,27 @@ Public Class DataFetcher
                         Throw New NotImplementedException
                 End Select
 
-                Dim queryString As String = Nothing
+                Dim counter As Integer = 0
                 For Each runningStock In _uniqueInstrumentList
+                    counter += 1
                     _cts.Token.ThrowIfCancellationRequested()
-                    queryString = String.Format("{0}SELECT `Open`,`Low`,`High`,`Close`,`Volume`,`SnapshotDateTime`,`TradingSymbol` FROM `{1}` WHERE `TradingSymbol`='{2}' AND `SnapshotDate`>='{3}' AND `SnapshotDate`<='{4}';{5}",
-                                                queryString, tableName, runningStock, _startDate.ToString("yyyy-MM-dd"), _endDate.ToString("yyyy-MM-dd"), vbNewLine)
-                Next
+                    Dim queryString As String = String.Format("SELECT `Open`,`Low`,`High`,`Close`,`Volume`,`SnapshotDateTime`,`TradingSymbol` FROM `{0}` WHERE `TradingSymbol`='{1}' AND `SnapshotDate`>='{2}' AND `SnapshotDate`<='{3}';",
+                                                               tableName, runningStock, _startDate.ToString("yyyy-MM-dd"), _endDate.ToString("yyyy-MM-dd"))
 
-                _cts.Token.ThrowIfCancellationRequested()
-                Dim ds As DataSet = Await sqlHlpr.RunSelectSetAsync(queryString).ConfigureAwait(False)
-                _cts.Token.ThrowIfCancellationRequested()
-                If ds IsNot Nothing AndAlso ds.Tables.Count > 0 Then
-                    For tableNumber As Integer = 0 To ds.Tables.Count - 1
+                    _cts.Token.ThrowIfCancellationRequested()
+                    OnHeartbeat(String.Format("Fetching data from database #{0}/{1}", counter, _uniqueInstrumentList.Count))
+                    Dim dt As DataTable = Await sqlHlpr.RunSelectAsync(queryString).ConfigureAwait(False)
+                    _cts.Token.ThrowIfCancellationRequested()
+                    If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
+                        OnHeartbeat(String.Format("Writing data to xml #{0}/{1}", counter, _uniqueInstrumentList.Count))
+                        Dim instrumentName As String = dt.Rows(0).Item("TradingSymbol")
+                        Dim filename As String = Path.Combine(_directoryName, String.Format("{0}.xml", instrumentName))
                         _cts.Token.ThrowIfCancellationRequested()
-                        OnHeartbeat(String.Format("Writing data to xml #{0}/{1}", tableNumber + 1, ds.Tables.Count))
-                        Dim dt As DataTable = ds.Tables(tableNumber)
-                        If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
-                            Dim instrumentName As String = dt.Rows(0).Item("TradingSymbol")
-                            Dim filename As String = Path.Combine(_directoryName, String.Format("{0}.xml", instrumentName))
-                            _cts.Token.ThrowIfCancellationRequested()
-                            dt.WriteXml(filename)
-                            _cts.Token.ThrowIfCancellationRequested()
-                            ret = True
-                        End If
-                    Next
-                End If
+                        dt.WriteXml(filename)
+                        _cts.Token.ThrowIfCancellationRequested()
+                        ret = True
+                    End If
+                Next
             End Using
         End If
         Return ret

@@ -367,7 +367,7 @@ Namespace DAL
                                 adptSelect As New MySqlDataAdapter(cmd),
                                 tmpDs As New DataSet
                                 logger.Debug("Firing SELECT statement:{0}", cmd.CommandText)
-                                Await adptSelect.FillAsync(tmpDs).ConfigureAwait(False)
+                                Await adptSelect.FillAsync(tmpDs, _canceller.Token).ConfigureAwait(False)
                                 _canceller.Token.ThrowIfCancellationRequested()
                                 If tmpDs.Tables.Count > 0 Then
                                     ret = tmpDs
@@ -473,7 +473,7 @@ Namespace DAL
                                 adptSelect As New MySqlDataAdapter(cmd),
                                 tmpDs As New DataSet
                                 logger.Debug("Firing SELECT statement:{0}", cmd.CommandText)
-                                Await adptSelect.FillAsync(tmpDs).ConfigureAwait(False)
+                                Await adptSelect.FillAsync(tmpDs, _canceller.Token).ConfigureAwait(False)
                                 _canceller.Token.ThrowIfCancellationRequested()
                                 If tmpDs.Tables.Count > 0 Then
                                     ret = tmpDs.Tables(0)
