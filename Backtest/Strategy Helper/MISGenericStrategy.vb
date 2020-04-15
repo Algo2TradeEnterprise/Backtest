@@ -601,10 +601,13 @@ Namespace StrategyHelper
                                                 End If
                                                 Dim changePer As Decimal = dt.Rows(i).Item("Change %")
 
+                                                Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
+                                                Dim slab As Decimal = dt.Rows(i).Item("Slab")
                                                 Dim detailsOfStock As StockDetails = New StockDetails With
                                                 {.StockName = instrumentName,
                                                  .TradingSymbol = tradingSymbol,
-                                                 .LotSize = dt.Rows(i).Item("Lot Size"),
+                                                 .LotSize = lotsize,
+                                                 .Slab = slab,
                                                  .EligibleToTakeTrade = True,
                                                  .Supporting1 = changePer,
                                                  .Supporting2 = If(firstCandle.CandleColor = Color.Green, 1, -1)}
@@ -631,11 +634,13 @@ Namespace StrategyHelper
                                     Else
                                         instrumentName = tradingSymbol
                                     End If
-
+                                    Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
+                                    Dim slab As Decimal = dt.Rows(i).Item("Slab")
                                     Dim detailsOfStock As StockDetails = New StockDetails With
                                                 {.StockName = instrumentName,
                                                  .TradingSymbol = tradingSymbol,
-                                                 .LotSize = dt.Rows(i).Item("Lot Size"),
+                                                 .LotSize = lotsize,
+                                                 .Slab = slab,
                                                  .EligibleToTakeTrade = True}
 
                                     If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)

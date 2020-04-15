@@ -3,6 +3,7 @@
         Public TradingSymbol As String
         Public StockName As String
         Public LotSize As Integer
+        Public Slab As Decimal
         Public EligibleToTakeTrade As Boolean
         Public PlaceOrderTrigger As Tuple(Of Boolean, List(Of PlaceOrderParameters))
         'Public ExitOrderTrigger As Tuple(Of Boolean, String)
