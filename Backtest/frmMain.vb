@@ -630,7 +630,7 @@ Public Class frmMain
 #End Region
                 Case 4
 #Region "Heikenashi Reversal"
-                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
+                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Futures
                     Dim database As Common.DataBaseTable = Common.DataBaseTable.None
                     Dim margin As Decimal = 0
                     Dim tick As Decimal = 0
@@ -680,10 +680,7 @@ Public Class frmMain
                             .TickBasedStrategy = True
                             .RuleNumber = ruleNumber
 
-                            .RuleEntityData = New HeikenashiReversalStrategyRule.StrategyRuleEntities With
-                                            {
-                                                .MaxLossPerTrade = -500
-                                            }
+                            .RuleEntityData = Nothing
 
                             .NumberOfTradeableStockPerDay = 5
 
@@ -706,7 +703,7 @@ Public Class frmMain
                             .RealtimeTrailingPercentage = 50
                         End With
 
-                        Dim filename As String = String.Format("Heikenashi Reversal")
+                        Dim filename As String = String.Format("Heikenashi Reverse Slab")
 
                         Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
                     End Using

@@ -3,31 +3,24 @@ Imports System.Threading
 Imports Algo2TradeBLL
 Imports Utilities.Numbers.NumberManipulation
 
-Public Class HeikenashiReversalStrategyRule
+Public Class HeikenashiReverseSlabStrategyRule
     Inherits StrategyRule
 
-#Region "Entity"
-    Public Class StrategyRuleEntities
-        Inherits RuleEntities
-
-        Public MaxLossPerTrade As Decimal
-    End Class
-#End Region
-    Private ReadOnly _tradeStartTime As Date
-    Private ReadOnly _userInputs As StrategyRuleEntities
 
     Private _hkPayload As Dictionary(Of Date, Payload) = Nothing
-
+    Private ReadOnly _slab As Decimal
+    Private ReadOnly _tradeStartTime As Date
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
                    ByVal parentStrategy As Strategy,
                    ByVal tradingDate As Date,
                    ByVal tradingSymbol As String,
                    ByVal canceller As CancellationTokenSource,
-                   ByVal entities As RuleEntities)
+                   ByVal entities As RuleEntities,
+                   ByVal slab As Decimal)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
-        _userInputs = _entities
         _tradeStartTime = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, _parentStrategy.TradeStartTime.Hours, _parentStrategy.TradeStartTime.Minutes, _parentStrategy.TradeStartTime.Seconds)
+        _slab = slab
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -55,7 +48,7 @@ Public Class HeikenashiReversalStrategyRule
                         Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2.High, RoundOfType.Floor)
                         Dim entryPrice As Decimal = ConvertFloorCeling(signal.Item2.High + buffer, _parentStrategy.TickSize, RoundOfType.Celing)
                         Dim stoploss As Decimal = ConvertFloorCeling(signal.Item2.Low - buffer, _parentStrategy.TickSize, RoundOfType.Floor)
-                        Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, stoploss, _userInputs.MaxLossPerTrade, _parentStrategy.StockType)
+                        Dim quantity As Integer = Me.LotSize
                         Dim targetPoint As Decimal = 100000000000
                         Dim targetRemark As String = "Anchor"
                         If anchorTrade IsNot Nothing Then
@@ -91,7 +84,7 @@ Public Class HeikenashiReversalStrategyRule
                         Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2.Low, RoundOfType.Floor)
                         Dim entryPrice As Decimal = ConvertFloorCeling(signal.Item2.Low - buffer, _parentStrategy.TickSize, RoundOfType.Floor)
                         Dim stoploss As Decimal = ConvertFloorCeling(signal.Item2.High + buffer, _parentStrategy.TickSize, RoundOfType.Celing)
-                        Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, stoploss, entryPrice, _userInputs.MaxLossPerTrade, _parentStrategy.StockType)
+                        Dim quantity As Integer = Me.LotSize
                         Dim targetPoint As Decimal = 100000000000
                         Dim targetRemark As String = "Anchor"
                         If anchorTrade IsNot Nothing Then
