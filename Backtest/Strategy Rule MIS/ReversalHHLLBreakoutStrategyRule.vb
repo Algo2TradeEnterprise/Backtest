@@ -15,7 +15,6 @@ Public Class ReversalHHLLBreakoutStrategyRule
     End Class
 #End Region
 
-    Private ReadOnly _tradeStartTime As Date
     Private ReadOnly _userInputs As StrategyRuleEntities
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -26,7 +25,6 @@ Public Class ReversalHHLLBreakoutStrategyRule
                    ByVal entities As RuleEntities)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _userInputs = _entities
-        _tradeStartTime = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, _parentStrategy.TradeStartTime.Hours, _parentStrategy.TradeStartTime.Minutes, _parentStrategy.TradeStartTime.Seconds)
     End Sub
 
     Public Overrides Sub CompletePreProcessing()

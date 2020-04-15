@@ -14,7 +14,6 @@ Public Class HighestLowestPointStrategyRule
         Public MaxLossPerTrade As Decimal
     End Class
 #End Region
-    Private ReadOnly _tradeStartTime As Date
     Private ReadOnly _userInputs As StrategyRuleEntities
 
     Private _atrPayload As Dictionary(Of Date, Decimal) = Nothing
@@ -29,7 +28,6 @@ Public Class HighestLowestPointStrategyRule
                    ByVal entities As RuleEntities)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _userInputs = _entities
-        _tradeStartTime = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, _parentStrategy.TradeStartTime.Hours, _parentStrategy.TradeStartTime.Minutes, _parentStrategy.TradeStartTime.Seconds)
     End Sub
 
     Public Overrides Sub CompletePreProcessing()

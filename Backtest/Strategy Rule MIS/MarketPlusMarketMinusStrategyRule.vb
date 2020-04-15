@@ -14,7 +14,6 @@ Public Class MarketPlusMarketMinusStrategyRule
         Public MaxLossPerTrade As Decimal
     End Class
 #End Region
-    Private ReadOnly _tradeStartTime As Date
     Private ReadOnly _userInputs As StrategyRuleEntities
 
     Private ReadOnly _changePercentage As Decimal
@@ -31,7 +30,6 @@ Public Class MarketPlusMarketMinusStrategyRule
                    ByVal direction As Integer)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _userInputs = _entities
-        _tradeStartTime = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, _parentStrategy.TradeStartTime.Hours, _parentStrategy.TradeStartTime.Minutes, _parentStrategy.TradeStartTime.Seconds)
 
         _changePercentage = changePercentage
         If direction > 0 Then

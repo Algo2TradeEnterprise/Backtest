@@ -38,6 +38,7 @@ Namespace StrategyHelper
 
         Protected ReadOnly _parentStrategy As Strategy
         Protected ReadOnly _tradingDate As Date
+        Protected ReadOnly _tradeStartTime As Date
         Protected ReadOnly _tradingSymbol As String
         Protected ReadOnly _inputPayload As Dictionary(Of Date, Payload)
         Protected ReadOnly _cts As CancellationTokenSource
@@ -57,6 +58,8 @@ Namespace StrategyHelper
             _tradingSymbol = tradingSymbol
             _cts = canceller
             _entities = entities
+
+            _tradeStartTime = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, _parentStrategy.TradeStartTime.Hours, _parentStrategy.TradeStartTime.Minutes, _parentStrategy.TradeStartTime.Seconds)
 
             EligibleToTakeTrade = True
         End Sub

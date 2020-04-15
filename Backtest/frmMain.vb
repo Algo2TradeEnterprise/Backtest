@@ -276,7 +276,6 @@ Public Class frmMain
         End If
     End Sub
 
-#Region "MIS"
     Private Async Function ViewDataMISAsync() As Task
         Try
             Dim startDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrStartDate)
@@ -680,7 +679,10 @@ Public Class frmMain
                             .TickBasedStrategy = True
                             .RuleNumber = ruleNumber
 
-                            .RuleEntityData = Nothing
+                            .RuleEntityData = New HeikenashiReverseSlabStrategyRule.StrategyRuleEntities With
+                                                {
+                                                 .SatelliteTradeTargetMultiplier = 2
+                                                }
 
                             .NumberOfTradeableStockPerDay = 5
 
@@ -727,7 +729,6 @@ Public Class frmMain
             SetObjectEnableDisable_ThreadSafe(btnStop, False)
         End Try
     End Function
-#End Region
 
     Private Sub btnStop_Click(sender As Object, e As EventArgs) Handles btnStop.Click
         _canceller.Cancel()

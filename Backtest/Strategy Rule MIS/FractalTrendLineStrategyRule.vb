@@ -24,7 +24,6 @@ Public Class FractalTrendLineStrategyRule
     Private _fractalLowTrendLine As Dictionary(Of Date, TrendLineVeriables)
 
     Private ReadOnly _userInputs As StrategyRuleEntities
-    Private ReadOnly _tradeStartTime As Date
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
                    ByVal parentStrategy As Strategy,
@@ -33,7 +32,6 @@ Public Class FractalTrendLineStrategyRule
                    ByVal canceller As CancellationTokenSource,
                    ByVal entities As RuleEntities)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
-        _tradeStartTime = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, _parentStrategy.TradeStartTime.Hours, _parentStrategy.TradeStartTime.Minutes, _parentStrategy.TradeStartTime.Seconds)
         _userInputs = _entities
     End Sub
 
