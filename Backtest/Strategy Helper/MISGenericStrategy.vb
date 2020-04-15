@@ -715,7 +715,6 @@ Namespace StrategyHelper
                 If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
                     Dim tradingDate As Date = startDate
                     While tradingDate <= endDate
-                        Dim counter As Integer = 0
                         For i = 0 To dt.Rows.Count - 1
                             Dim rowDate As Date = dt.Rows(i).Item("Date")
                             If rowDate.Date = tradingDate.Date Then
@@ -726,9 +725,6 @@ Namespace StrategyHelper
 
                                 If ret Is Nothing Then ret = New List(Of String)
                                 If Not ret.Contains(tradingSymbol.ToUpper) Then ret.Add(tradingSymbol.ToUpper)
-
-                                counter += 1
-                                If counter = Me.NumberOfTradeableStockPerDay Then Exit For
                             End If
                         Next
 
