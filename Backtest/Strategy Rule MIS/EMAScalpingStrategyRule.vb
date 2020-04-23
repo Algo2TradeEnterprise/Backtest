@@ -19,8 +19,8 @@ Public Class EMAScalpingStrategyRule
     Private _ema50Payload As Dictionary(Of Date, Decimal) = Nothing
     Private _ema100Payload As Dictionary(Of Date, Decimal) = Nothing
     Private _ema150Payload As Dictionary(Of Date, Decimal) = Nothing
-    Private _swingHighPayload As Dictionary(Of Date, Decimal) = Nothing
-    Private _swingLowPayload As Dictionary(Of Date, Decimal) = Nothing
+    'Private _swingHighPayload As Dictionary(Of Date, Decimal) = Nothing
+    'Private _swingLowPayload As Dictionary(Of Date, Decimal) = Nothing
 
     Private ReadOnly _userInputs As StrategyRuleEntities
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
@@ -40,7 +40,7 @@ Public Class EMAScalpingStrategyRule
         Indicator.EMA.CalculateEMA(50, Payload.PayloadFields.Close, _signalPayload, _ema50Payload)
         Indicator.EMA.CalculateEMA(100, Payload.PayloadFields.Close, _signalPayload, _ema100Payload)
         Indicator.EMA.CalculateEMA(150, Payload.PayloadFields.Close, _signalPayload, _ema150Payload)
-        Indicator.SwingHighLow.CalculateSwingHighLow(_signalPayload, False, _swingHighPayload, _swingLowPayload)
+        'Indicator.SwingHighLow.CalculateSwingHighLow(_signalPayload, False, _swingHighPayload, _swingLowPayload)
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -56,52 +56,63 @@ Public Class EMAScalpingStrategyRule
             Dim signalCandle As Payload = Nothing
             Dim signal As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection, Payload) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
             If signal IsNot Nothing AndAlso signal.Item1 Then
-                Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandlePayload, _parentStrategy.TradeType, Trade.TradeExecutionDirection.Buy)
-                If lastExecutedOrder Is Nothing OrElse lastExecutedOrder.SignalCandle.PayloadDate <> signal.Item2.PayloadDate Then
+                Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandlePayload, _parentStrategy.TradeType)
+                If lastExecutedOrder Is Nothing Then
                     signalCandle = signal.Item4
+                ElseIf lastExecutedOrder IsNot Nothing Then
+                    Dim lastOrderExitTime As Date = _parentStrategy.GetCurrentXMinuteCandleTime(lastExecutedOrder.ExitTime, _signalPayload)
+                    If signal.Item2.PayloadDate >= lastOrderExitTime Then
+                        signalCandle = signal.Item4
+                    End If
                 End If
             End If
 
             If signalCandle IsNot Nothing Then
                 If signal.Item3 = Trade.TradeExecutionDirection.Buy Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.High, RoundOfType.Floor)
-                    Dim entryPrice As Decimal = _swingHighPayload(signalCandle.PayloadDate) + buffer
-                    Dim stoploss As Decimal = _swingLowPayload(signalCandle.PayloadDate) - buffer
-                    Dim target As Decimal = entryPrice + ConvertFloorCeling((entryPrice - stoploss) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
-                    Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, stoploss, _userInputs.MaxLossPerTrade, Trade.TypeOfStock.Cash)
+                    Dim entryPrice As Decimal = currentTick.Open
+                    Dim stoploss As Decimal = Math.Min(signalCandle.Low, signalCandle.PreviousCandlePayload.Low) - buffer
+                    If stoploss < entryPrice Then
+                        Dim target As Decimal = entryPrice + ConvertFloorCeling((entryPrice - stoploss) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
+                        Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, stoploss, _userInputs.MaxLossPerTrade, Trade.TypeOfStock.Cash)
 
-                    If currentTick.Open < entryPrice Then
-                        parameter = New PlaceOrderParameters With {
-                                    .EntryPrice = entryPrice,
-                                    .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                    .Quantity = quantity,
-                                    .Stoploss = stoploss,
-                                    .Target = target,
-                                    .Buffer = buffer,
-                                    .SignalCandle = signal.Item2,
-                                    .OrderType = Trade.TypeOfOrder.SL,
-                                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss")
-                                }
+                        If currentTick.Open > _ema50Payload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) Then
+                            parameter = New PlaceOrderParameters With {
+                                        .EntryPrice = entryPrice,
+                                        .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                                        .Quantity = quantity,
+                                        .Stoploss = stoploss,
+                                        .Target = target,
+                                        .Buffer = buffer,
+                                        .SignalCandle = signal.Item2,
+                                        .OrderType = Trade.TypeOfOrder.Market,
+                                        .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                                        .Supporting2 = signal.Item2.PayloadDate.ToString("HH:mm:ss")
+                                    }
+                        End If
                     End If
                 ElseIf signal.Item3 = Trade.TradeExecutionDirection.Sell Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Low, RoundOfType.Floor)
-                    Dim entryPrice As Decimal = _swingLowPayload(signalCandle.PayloadDate) - buffer
-                    Dim stoploss As Decimal = _swingHighPayload(signalCandle.PayloadDate) + buffer
-                    Dim target As Decimal = entryPrice - ConvertFloorCeling((stoploss - entryPrice) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
-                    Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, stoploss, entryPrice, _userInputs.MaxLossPerTrade, Trade.TypeOfStock.Cash)
+                    Dim entryPrice As Decimal = currentTick.Open
+                    Dim stoploss As Decimal = Math.Max(signalCandle.High, signalCandle.PreviousCandlePayload.High) + buffer
+                    If stoploss > entryPrice Then
+                        Dim target As Decimal = entryPrice - ConvertFloorCeling((stoploss - entryPrice) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
+                        Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, stoploss, entryPrice, _userInputs.MaxLossPerTrade, Trade.TypeOfStock.Cash)
 
-                    If currentTick.Open > entryPrice Then
-                        parameter = New PlaceOrderParameters With {
-                                    .EntryPrice = entryPrice,
-                                    .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                                    .Quantity = quantity,
-                                    .Stoploss = stoploss,
-                                    .Target = target,
-                                    .Buffer = buffer,
-                                    .SignalCandle = signal.Item2,
-                                    .OrderType = Trade.TypeOfOrder.SL,
-                                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss")
-                                }
+                        If currentTick.Open < _ema50Payload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) Then
+                            parameter = New PlaceOrderParameters With {
+                                        .EntryPrice = entryPrice,
+                                        .EntryDirection = Trade.TradeExecutionDirection.Sell,
+                                        .Quantity = quantity,
+                                        .Stoploss = stoploss,
+                                        .Target = target,
+                                        .Buffer = buffer,
+                                        .SignalCandle = signal.Item2,
+                                        .OrderType = Trade.TypeOfOrder.Market,
+                                        .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                                        .Supporting2 = signal.Item2.PayloadDate.ToString("HH:mm:ss")
+                                    }
+                        End If
                     End If
                 End If
             End If
@@ -115,42 +126,42 @@ Public Class EMAScalpingStrategyRule
     Public Overrides Async Function IsTriggerReceivedForExitOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, String))
         Dim ret As Tuple(Of Boolean, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
-        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
-            Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
-            Dim signal As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection, Payload) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
-            If signal IsNot Nothing AndAlso signal.Item1 Then
-                If currentTrade.SignalCandle.PayloadDate <> signal.Item2.PayloadDate Then
-                    ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
-                Else
-                    If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                        Dim entryPrice As Decimal = _swingHighPayload(signal.Item4.PayloadDate) + currentTrade.EntryBuffer
-                        Dim stoploss As Decimal = _swingLowPayload(signal.Item4.PayloadDate) - currentTrade.StoplossBuffer
-                        If currentTrade.EntryPrice <> entryPrice OrElse currentTrade.PotentialStopLoss <> stoploss Then
-                            ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
-                        End If
-                    ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                        Dim entryPrice As Decimal = _swingLowPayload(signal.Item4.PayloadDate) - currentTrade.EntryBuffer
-                        Dim stoploss As Decimal = _swingHighPayload(signal.Item4.PayloadDate) + currentTrade.StoplossBuffer
-                        If currentTrade.EntryPrice <> entryPrice OrElse currentTrade.PotentialStopLoss <> stoploss Then
-                            ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
-                        End If
-                    End If
-                End If
-            End If
-            If ret Is Nothing Then
-                If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                    If Not (_ema50Payload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) > _ema100Payload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) AndAlso
-                        _ema100Payload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) > _ema150Payload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate)) Then
-                        ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
-                    End If
-                ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                    If Not (_ema50Payload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) < _ema100Payload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) AndAlso
-                        _ema100Payload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) < _ema150Payload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate)) Then
-                        ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
-                    End If
-                End If
-            End If
-        End If
+        'If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
+        '    Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
+        '    Dim signal As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection, Payload) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
+        '    If signal IsNot Nothing AndAlso signal.Item1 Then
+        '        If currentTrade.SignalCandle.PayloadDate <> signal.Item2.PayloadDate Then
+        '            ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+        '        Else
+        '            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+        '                Dim entryPrice As Decimal = _swingHighPayload(signal.Item4.PayloadDate) + currentTrade.EntryBuffer
+        '                Dim stoploss As Decimal = _swingLowPayload(signal.Item4.PayloadDate) - currentTrade.StoplossBuffer
+        '                If currentTrade.EntryPrice <> entryPrice OrElse currentTrade.PotentialStopLoss <> stoploss Then
+        '                    ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+        '                End If
+        '            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+        '                Dim entryPrice As Decimal = _swingLowPayload(signal.Item4.PayloadDate) - currentTrade.EntryBuffer
+        '                Dim stoploss As Decimal = _swingHighPayload(signal.Item4.PayloadDate) + currentTrade.StoplossBuffer
+        '                If currentTrade.EntryPrice <> entryPrice OrElse currentTrade.PotentialStopLoss <> stoploss Then
+        '                    ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+        '                End If
+        '            End If
+        '        End If
+        '    End If
+        '    If ret Is Nothing Then
+        '        If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+        '            If Not (_ema50Payload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) > _ema100Payload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) AndAlso
+        '                _ema100Payload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) > _ema150Payload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate)) Then
+        '                ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+        '            End If
+        '        ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+        '            If Not (_ema50Payload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) < _ema100Payload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) AndAlso
+        '                _ema100Payload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) < _ema150Payload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate)) Then
+        '                ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+        '            End If
+        '        End If
+        '    End If
+        'End If
         Return ret
     End Function
 
@@ -220,7 +231,8 @@ Public Class EMAScalpingStrategyRule
         For Each runningPayload In _signalPayload.OrderByDescending(Function(x)
                                                                         Return x.Key
                                                                     End Function)
-            If runningPayload.Key < beforeThisTime Then
+            _cts.Token.ThrowIfCancellationRequested()
+            If runningPayload.Key < beforeThisTime AndAlso runningPayload.Key.Date = _tradingDate.Date Then
                 If direction = Trade.TradeExecutionDirection.Buy Then
                     If _ema50Payload(runningPayload.Key) > _ema100Payload(runningPayload.Key) AndAlso
                         _ema100Payload(runningPayload.Key) > _ema150Payload(runningPayload.Key) Then
@@ -230,7 +242,7 @@ Public Class EMAScalpingStrategyRule
                             End If
                             If middleSignal IsNot Nothing Then
                                 If runningPayload.Value.Close > _ema50Payload(runningPayload.Value.PayloadDate) Then
-                                    ret = New Tuple(Of Boolean, Payload)(True, middleSignal)
+                                    ret = New Tuple(Of Boolean, Payload)(True, runningPayload.Value)
                                     Exit For
                                 End If
                             End If
@@ -249,7 +261,7 @@ Public Class EMAScalpingStrategyRule
                             End If
                             If middleSignal IsNot Nothing Then
                                 If runningPayload.Value.Close < _ema50Payload(runningPayload.Value.PayloadDate) Then
-                                    ret = New Tuple(Of Boolean, Payload)(True, middleSignal)
+                                    ret = New Tuple(Of Boolean, Payload)(True, runningPayload.Value)
                                     Exit For
                                 End If
                             End If
