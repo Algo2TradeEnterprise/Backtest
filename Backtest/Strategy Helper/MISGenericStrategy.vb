@@ -128,6 +128,8 @@ Namespace StrategyHelper
                                             stockRule = New HighestLowestPointStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 4
                                             stockRule = New HeikenashiReverseSlabStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Slab)
+                                        Case 5
+                                            stockRule = New EMAScalpingStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -512,17 +514,17 @@ Namespace StrategyHelper
                                                     _canceller.Token.ThrowIfCancellationRequested()
                                                     Dim potentialModifySLTrades As List(Of Trade) = GetSpecificTrades(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Inprogress)
                                                     If potentialModifySLTrades IsNot Nothing AndAlso potentialModifySLTrades.Count > 0 Then
-                                                        If Me.TickBasedStrategy OrElse Not stockList(stockName).ModifyStoplossOrderDoneForTheMinute OrElse Me.TrailingStoploss Then
-                                                            For Each runningModifyTrade In potentialModifySLTrades
+                                                        'If Me.TickBasedStrategy OrElse Not stockList(stockName).ModifyStoplossOrderDoneForTheMinute OrElse Me.TrailingStoploss Then
+                                                        For Each runningModifyTrade In potentialModifySLTrades
+                                                            _canceller.Token.ThrowIfCancellationRequested()
+                                                            Dim modifyOrderDetails As Tuple(Of Boolean, Decimal, String) = Await stockStrategyRule.IsTriggerReceivedForModifyStoplossOrderAsync(runningTick, runningModifyTrade).ConfigureAwait(False)
+                                                            If modifyOrderDetails IsNot Nothing AndAlso modifyOrderDetails.Item1 Then
                                                                 _canceller.Token.ThrowIfCancellationRequested()
-                                                                Dim modifyOrderDetails As Tuple(Of Boolean, Decimal, String) = Await stockStrategyRule.IsTriggerReceivedForModifyStoplossOrderAsync(runningTick, runningModifyTrade).ConfigureAwait(False)
-                                                                If modifyOrderDetails IsNot Nothing AndAlso modifyOrderDetails.Item1 Then
-                                                                    _canceller.Token.ThrowIfCancellationRequested()
-                                                                    runningModifyTrade.UpdateTrade(PotentialStopLoss:=modifyOrderDetails.Item2, SLRemark:=modifyOrderDetails.Item3)
-                                                                End If
-                                                            Next
-                                                            stockList(stockName).ModifyStoplossOrderDoneForTheMinute = True
-                                                        End If
+                                                                runningModifyTrade.UpdateTrade(PotentialStopLoss:=modifyOrderDetails.Item2, SLRemark:=modifyOrderDetails.Item3)
+                                                            End If
+                                                        Next
+                                                        stockList(stockName).ModifyStoplossOrderDoneForTheMinute = True
+                                                        'End If
                                                     End If
 
                                                     'Modify Target Trade
