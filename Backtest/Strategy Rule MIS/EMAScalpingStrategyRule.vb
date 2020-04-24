@@ -126,49 +126,13 @@ Public Class EMAScalpingStrategyRule
     Public Overrides Async Function IsTriggerReceivedForExitOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, String))
         Dim ret As Tuple(Of Boolean, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
-        'If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
-        '    Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
-        '    Dim signal As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection, Payload) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
-        '    If signal IsNot Nothing AndAlso signal.Item1 Then
-        '        If currentTrade.SignalCandle.PayloadDate <> signal.Item2.PayloadDate Then
-        '            ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
-        '        Else
-        '            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-        '                Dim entryPrice As Decimal = _swingHighPayload(signal.Item4.PayloadDate) + currentTrade.EntryBuffer
-        '                Dim stoploss As Decimal = _swingLowPayload(signal.Item4.PayloadDate) - currentTrade.StoplossBuffer
-        '                If currentTrade.EntryPrice <> entryPrice OrElse currentTrade.PotentialStopLoss <> stoploss Then
-        '                    ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
-        '                End If
-        '            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-        '                Dim entryPrice As Decimal = _swingLowPayload(signal.Item4.PayloadDate) - currentTrade.EntryBuffer
-        '                Dim stoploss As Decimal = _swingHighPayload(signal.Item4.PayloadDate) + currentTrade.StoplossBuffer
-        '                If currentTrade.EntryPrice <> entryPrice OrElse currentTrade.PotentialStopLoss <> stoploss Then
-        '                    ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
-        '                End If
-        '            End If
-        '        End If
-        '    End If
-        '    If ret Is Nothing Then
-        '        If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-        '            If Not (_ema50Payload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) > _ema100Payload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) AndAlso
-        '                _ema100Payload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) > _ema150Payload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate)) Then
-        '                ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
-        '            End If
-        '        ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-        '            If Not (_ema50Payload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) < _ema100Payload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) AndAlso
-        '                _ema100Payload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) < _ema150Payload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate)) Then
-        '                ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
-        '            End If
-        '        End If
-        '    End If
-        'End If
         Return ret
     End Function
 
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
-        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+        If _userInputs.BreakevenMovement AndAlso currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
             Dim slPoint As Decimal = Math.Round(Math.Abs(currentTrade.EntryPrice - currentTrade.PotentialStopLoss), 2)
             Dim triggerPrice As Decimal = Decimal.MinValue
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
