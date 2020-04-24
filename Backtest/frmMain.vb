@@ -853,7 +853,7 @@ Public Class frmMain
 
                                             .RuleEntityData = New SupertrendCutReversalStrategyRule.StrategyRuleEntities With
                                                             {
-                                                                .TargetMultiplier = tgtAtrMul,
+                                                                .TargetMultiplier = tgtMul,
                                                                 .BreakevenMovement = brkEvn,
                                                                 .StoplossATRMultiplier = slAtrMul,
                                                                 .TargetATRMultiplier = tgtAtrMul
