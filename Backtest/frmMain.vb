@@ -850,7 +850,8 @@ Public Class frmMain
                             .RuleEntityData = New SupertrendCutReversalStrategyRule.StrategyRuleEntities With
                                             {
                                                 .TargetMultiplier = 2.1,
-                                                .BreakevenMovement = True
+                                                .BreakevenMovement = True,
+                                                .ATRMultiplier = 2
                                             }
 
                             .NumberOfTradeableStockPerDay = 5

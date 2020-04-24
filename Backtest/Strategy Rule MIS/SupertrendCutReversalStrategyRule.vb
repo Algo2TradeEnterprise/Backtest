@@ -12,9 +12,11 @@ Public Class SupertrendCutReversalStrategyRule
 
         Public TargetMultiplier As Decimal
         Public BreakevenMovement As Boolean
+        Public ATRMultiplier As Decimal
     End Class
 #End Region
 
+    Private _atrPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _supertrendPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _supertrendColorPayload As Dictionary(Of Date, Color) = Nothing
 
@@ -34,6 +36,7 @@ Public Class SupertrendCutReversalStrategyRule
         MyBase.CompletePreProcessing()
 
         Indicator.Supertrend.CalculateSupertrend(7, 3, _signalPayload, _supertrendPayload, _supertrendColorPayload)
+        Indicator.ATR.CalculateATR(14, _signalPayload, _atrPayload)
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -66,10 +69,18 @@ Public Class SupertrendCutReversalStrategyRule
                     Dim entryPrice As Decimal = currentTick.Open
                     Dim stoploss As Decimal = Math.Min(signalCandle.Low, signalCandle.PreviousCandlePayload.Low) - buffer
                     If stoploss < entryPrice Then
-                        Dim target As Decimal = entryPrice + ConvertFloorCeling((entryPrice - stoploss) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
-                        Dim quantity As Integer = Me.LotSize
+                        Dim slPoint As Decimal = entryPrice - stoploss
+                        If slPoint <= _atrPayload(signalCandle.PayloadDate) * _userInputs.ATRMultiplier Then
+                            Dim targetPoint As Decimal = ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
+                            Dim targetRemark As String = "Normal"
+                            If targetPoint < _atrPayload(signalCandle.PayloadDate) Then
+                                targetPoint = ConvertFloorCeling(_atrPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
+                                targetRemark = "ATR"
+                            End If
+                            Dim target As Decimal = entryPrice + targetPoint
+                            Dim quantity As Integer = Me.LotSize
 
-                        parameter = New PlaceOrderParameters With {
+                            parameter = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
                                     .EntryDirection = Trade.TradeExecutionDirection.Buy,
                                     .Quantity = quantity,
@@ -78,18 +89,31 @@ Public Class SupertrendCutReversalStrategyRule
                                     .Buffer = buffer,
                                     .SignalCandle = signalCandle,
                                     .OrderType = Trade.TypeOfOrder.Market,
-                                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss")
+                                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                                    .Supporting2 = _atrPayload(signalCandle.PayloadDate),
+                                    .Supporting3 = targetRemark
                                 }
+                        Else
+                            Console.WriteLine(String.Format("Trade neglected for sl. Signal candle:{0}", signalCandle.PayloadDate.ToString("dd-MM-yyyy HH:mm:ss")))
+                        End If
                     End If
                 ElseIf signal.Item3 = Trade.TradeExecutionDirection.Sell Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.High, RoundOfType.Floor)
                     Dim entryPrice As Decimal = currentTick.Open
                     Dim stoploss As Decimal = Math.Max(signalCandle.High, signalCandle.PreviousCandlePayload.High) + buffer
                     If stoploss > entryPrice Then
-                        Dim target As Decimal = entryPrice - ConvertFloorCeling((stoploss - entryPrice) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
-                        Dim quantity As Integer = Me.LotSize
+                        Dim slPoint As Decimal = stoploss - entryPrice
+                        If slPoint <= _atrPayload(signalCandle.PayloadDate) * _userInputs.ATRMultiplier Then
+                            Dim targetPoint As Decimal = ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
+                            Dim targetRemark As String = "Normal"
+                            If targetPoint < _atrPayload(signalCandle.PayloadDate) Then
+                                targetPoint = ConvertFloorCeling(_atrPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Floor)
+                                targetRemark = "ATR"
+                            End If
+                            Dim target As Decimal = entryPrice - targetPoint
+                            Dim quantity As Integer = Me.LotSize
 
-                        parameter = New PlaceOrderParameters With {
+                            parameter = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
                                     .EntryDirection = Trade.TradeExecutionDirection.Sell,
                                     .Quantity = quantity,
@@ -98,8 +122,13 @@ Public Class SupertrendCutReversalStrategyRule
                                     .Buffer = buffer,
                                     .SignalCandle = signalCandle,
                                     .OrderType = Trade.TypeOfOrder.Market,
-                                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss")
+                                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                                    .Supporting2 = _atrPayload(signalCandle.PayloadDate),
+                                    .Supporting3 = targetRemark
                                 }
+                        Else
+                            Console.WriteLine(String.Format("Trade neglected for sl. Signal candle:{0}", signalCandle.PayloadDate.ToString("dd-MM-yyyy HH:mm:ss")))
+                        End If
                     End If
                 End If
             End If
@@ -158,14 +187,12 @@ Public Class SupertrendCutReversalStrategyRule
             Not candle.DeadCandle AndAlso Not candle.PreviousCandlePayload.DeadCandle Then
             If candle.CandleColor = Color.Green Then
                 If _supertrendColorPayload(candle.PayloadDate) = Color.Green AndAlso
-                    candle.Low > _supertrendPayload(candle.PayloadDate) AndAlso
                     _supertrendColorPayload(candle.PreviousCandlePayload.PayloadDate) = Color.Green AndAlso
                     candle.PreviousCandlePayload.Low < _supertrendPayload(candle.PreviousCandlePayload.PayloadDate) Then
                     ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, candle, Trade.TradeExecutionDirection.Buy)
                 End If
             ElseIf candle.CandleColor = Color.Red Then
                 If _supertrendColorPayload(candle.PayloadDate) = Color.Red AndAlso
-                    candle.High < _supertrendPayload(candle.PayloadDate) AndAlso
                     _supertrendColorPayload(candle.PreviousCandlePayload.PayloadDate) = Color.Red AndAlso
                     candle.PreviousCandlePayload.High > _supertrendPayload(candle.PreviousCandlePayload.PayloadDate) Then
                     ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, candle, Trade.TradeExecutionDirection.Sell)
