@@ -12,7 +12,8 @@ Public Class SupertrendCutReversalStrategyRule
 
         Public TargetMultiplier As Decimal
         Public BreakevenMovement As Boolean
-        Public ATRMultiplier As Decimal
+        Public StoplossATRMultiplier As Decimal
+        Public TargetATRMultiplier As Decimal
     End Class
 #End Region
 
@@ -70,11 +71,11 @@ Public Class SupertrendCutReversalStrategyRule
                     Dim stoploss As Decimal = Math.Min(signalCandle.Low, signalCandle.PreviousCandlePayload.Low) - buffer
                     If stoploss < entryPrice Then
                         Dim slPoint As Decimal = entryPrice - stoploss
-                        If slPoint <= _atrPayload(signalCandle.PayloadDate) * _userInputs.ATRMultiplier Then
+                        If slPoint <= _atrPayload(signalCandle.PayloadDate) * _userInputs.StoplossATRMultiplier Then
                             Dim targetPoint As Decimal = ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
                             Dim targetRemark As String = "Normal"
-                            If targetPoint < _atrPayload(signalCandle.PayloadDate) Then
-                                targetPoint = ConvertFloorCeling(_atrPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
+                            If targetPoint < ConvertFloorCeling(_atrPayload(signalCandle.PayloadDate) * _userInputs.TargetATRMultiplier, _parentStrategy.TickSize, RoundOfType.Celing) Then
+                                targetPoint = ConvertFloorCeling(_atrPayload(signalCandle.PayloadDate) * _userInputs.TargetATRMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
                                 targetRemark = "ATR"
                             End If
                             Dim target As Decimal = entryPrice + targetPoint
@@ -103,11 +104,11 @@ Public Class SupertrendCutReversalStrategyRule
                     Dim stoploss As Decimal = Math.Max(signalCandle.High, signalCandle.PreviousCandlePayload.High) + buffer
                     If stoploss > entryPrice Then
                         Dim slPoint As Decimal = stoploss - entryPrice
-                        If slPoint <= _atrPayload(signalCandle.PayloadDate) * _userInputs.ATRMultiplier Then
+                        If slPoint <= _atrPayload(signalCandle.PayloadDate) * _userInputs.StoplossATRMultiplier Then
                             Dim targetPoint As Decimal = ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
                             Dim targetRemark As String = "Normal"
-                            If targetPoint < _atrPayload(signalCandle.PayloadDate) Then
-                                targetPoint = ConvertFloorCeling(_atrPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Floor)
+                            If targetPoint < ConvertFloorCeling(_atrPayload(signalCandle.PayloadDate) * _userInputs.TargetATRMultiplier, _parentStrategy.TickSize, RoundOfType.Floor) Then
+                                targetPoint = ConvertFloorCeling(_atrPayload(signalCandle.PayloadDate) * _userInputs.TargetATRMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
                                 targetRemark = "ATR"
                             End If
                             Dim target As Decimal = entryPrice - targetPoint
