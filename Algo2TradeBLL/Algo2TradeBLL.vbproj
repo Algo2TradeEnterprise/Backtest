@@ -82,6 +82,7 @@
     <Compile Include="Entities\TrendLineVeriables.vb" />
     <Compile Include="Indicators\ADX.vb" />
     <Compile Include="Indicators\Algo2TradeRenko.vb" />
+    <Compile Include="Indicators\AROON.vb" />
     <Compile Include="Indicators\ATR.vb" />
     <Compile Include="Indicators\ATRBands.vb" />
     <Compile Include="Indicators\ATRTrailingStop.vb" />
