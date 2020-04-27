@@ -95,11 +95,14 @@ Public Class MartingaleStrategyRule
                                     .OrderType = Trade.TypeOfOrder.Market,
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = _firstCandleATR,
-                                    .Supporting3 = targetRemark
+                                    .Supporting3 = targetRemark,
+                                    .Supporting4 = 1
                                 }
 
                     quantity = GetQuantity(currentMinuteCandlePayload)
                     If quantity < 0 Then
+                        Dim totalQuantity As Integer = Math.Abs(quantity) + Me.LotSize
+                        Dim iteration As Integer = Math.Log(totalQuantity / Me.LotSize, 2) + 1
                         Dim pl As Decimal = _parentStrategy.StockPLAfterBrokerage(currentMinuteCandlePayload.PayloadDate, currentMinuteCandlePayload.TradingSymbol)
                         Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, Math.Abs(quantity), Math.Abs(pl), Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
                         parameter2 = New PlaceOrderParameters With {
@@ -113,8 +116,11 @@ Public Class MartingaleStrategyRule
                                     .OrderType = Trade.TypeOfOrder.Market,
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = _firstCandleATR,
-                                    .Supporting3 = "SL Makeup"
+                                    .Supporting3 = "SL Makeup",
+                                    .Supporting4 = iteration
                                 }
+
+                        parameter1.Supporting4 = iteration
                     End If
                 ElseIf signal.Item3 = Trade.TradeExecutionDirection.Sell Then
                     Dim entryPrice As Decimal = currentTick.Open
@@ -137,11 +143,14 @@ Public Class MartingaleStrategyRule
                                     .OrderType = Trade.TypeOfOrder.Market,
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = _firstCandleATR,
-                                    .Supporting3 = targetRemark
+                                    .Supporting3 = targetRemark,
+                                    .Supporting4 = 1
                                 }
 
                     quantity = GetQuantity(currentMinuteCandlePayload)
                     If quantity < 0 Then
+                        Dim totalQuantity As Integer = Math.Abs(quantity) + Me.LotSize
+                        Dim iteration As Integer = Math.Log(totalQuantity / Me.LotSize, 2) + 1
                         Dim pl As Decimal = _parentStrategy.StockPLAfterBrokerage(currentMinuteCandlePayload.PayloadDate, currentMinuteCandlePayload.TradingSymbol)
                         Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, Math.Abs(quantity), Math.Abs(pl), Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
                         parameter2 = New PlaceOrderParameters With {
@@ -155,8 +164,11 @@ Public Class MartingaleStrategyRule
                                     .OrderType = Trade.TypeOfOrder.Market,
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = _firstCandleATR,
-                                    .Supporting3 = "SL Makeup"
+                                    .Supporting3 = "SL Makeup",
+                                    .Supporting4 = iteration
                                 }
+
+                        parameter1.Supporting4 = iteration
                     End If
                 End If
             End If
@@ -206,11 +218,13 @@ Public Class MartingaleStrategyRule
         Dim ret As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection) = Nothing
         If candle IsNot Nothing AndAlso Not candle.DeadCandle Then
             If candle.CandleColor = Color.Green Then
-                If candle.CandleWicks.Top <= candle.CandleRange * 20 / 100 Then
+                Dim buffer As Decimal = ConvertFloorCeling(candle.CandleWicks.Top * 10 / 100, _parentStrategy.TickSize, RoundOfType.Floor)
+                If candle.CandleWicks.Top - buffer <= candle.CandleRange * 20 / 100 Then
                     ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, candle, Trade.TradeExecutionDirection.Buy)
                 End If
             ElseIf candle.CandleColor = Color.Red Then
-                If candle.CandleWicks.Bottom <= candle.CandleRange * 20 / 100 Then
+                Dim buffer As Decimal = ConvertFloorCeling(candle.CandleWicks.Bottom * 10 / 100, _parentStrategy.TickSize, RoundOfType.Floor)
+                If candle.CandleWicks.Bottom - buffer <= candle.CandleRange * 20 / 100 Then
                     ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, candle, Trade.TradeExecutionDirection.Sell)
                 End If
             End If
