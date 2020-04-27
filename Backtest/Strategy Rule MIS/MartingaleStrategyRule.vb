@@ -33,18 +33,25 @@ Public Class MartingaleStrategyRule
     Public Overrides Sub CompletePreProcessing()
         MyBase.CompletePreProcessing()
 
-        Indicator.ATR.CalculateATR(14, _signalPayload, _atrPayload)
-
-        If _atrPayload IsNot Nothing AndAlso _atrPayload.Count > 0 Then
-            For Each runningPayload In _signalPayload
-                If runningPayload.Key.Date = _tradingDate.Date Then
-                    If runningPayload.Value.PreviousCandlePayload.PayloadDate.Date <> _tradingDate.Date Then
-                        _firstCandleATR = _atrPayload(runningPayload.Key)
-                        Exit For
-                    End If
-                End If
-            Next
+        Dim eodCandle As Dictionary(Of Date, Payload) = _parentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.EOD_Futures, _tradingSymbol, _tradingDate.AddDays(-200), _tradingDate.AddDays(-1))
+        If eodCandle IsNot Nothing AndAlso eodCandle.Count > 0 Then
+            Indicator.ATR.CalculateATR(14, eodCandle, _atrPayload, True)
+            _firstCandleATR = (_atrPayload.LastOrDefault.Value / 8) / 2
         End If
+
+
+        'Indicator.ATR.CalculateATR(14, _signalPayload, _atrPayload)
+
+        'If _atrPayload IsNot Nothing AndAlso _atrPayload.Count > 0 Then
+        '    For Each runningPayload In _signalPayload
+        '        If runningPayload.Key.Date = _tradingDate.Date Then
+        '            If runningPayload.Value.PreviousCandlePayload.PayloadDate.Date <> _tradingDate.Date Then
+        '                _firstCandleATR = _atrPayload(runningPayload.Key)
+        '                Exit For
+        '            End If
+        '        End If
+        '    Next
+        'End If
         If _firstCandleATR = Decimal.MinValue Then Throw New ApplicationException("Unable to fetch first candle ATR")
     End Sub
 
