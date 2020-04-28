@@ -291,7 +291,7 @@ Public Class frmMain
             Select Case ruleNumber
                 Case 0
 #Region "6 Indicator Test"
-                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Futures
+                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
                     Dim database As Common.DataBaseTable = Common.DataBaseTable.None
                     Dim margin As Decimal = 0
                     Dim tick As Decimal = 0

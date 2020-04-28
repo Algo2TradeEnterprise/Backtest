@@ -10,9 +10,11 @@ Public Class MultiIndicatorStrategyRule
     Public Class StrategyRuleEntities
         Inherits RuleEntities
 
+        Public MaxLossPerTrade As Decimal
         Public TargetMultiplier As Decimal
         Public RSIOverBought As Decimal
         Public RSIOverSold As Decimal
+        Public BreakevenMovement As Boolean
     End Class
 #End Region
 
@@ -75,19 +77,22 @@ Public Class MultiIndicatorStrategyRule
 
             If signalCandle IsNot Nothing Then
                 If signal.Item3 = Trade.TradeExecutionDirection.Buy Then
-                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.High, RoundOfType.Floor)
-                    Dim entryPrice As Decimal = signalCandle.High + buffer
-                    Dim stoploss As Decimal = signalCandle.Low - buffer
+                    Dim entryBuffer As Decimal = CalculateEntryBuffer(signalCandle.High)
+                    Dim entryPrice As Decimal = signalCandle.High + entryBuffer
+                    Dim stoplossBuffer As Decimal = CalculateStoplossBuffer(signalCandle.Low)
+                    Dim stoploss As Decimal = signalCandle.Low
                     Dim slRemark As String = "Candle Low"
                     Dim sma As Decimal = ConvertFloorCeling(_smaPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Floor)
                     If sma < stoploss Then
                         stoploss = sma
                         slRemark = "SMA"
                     End If
+                    stoploss = stoploss - stoplossBuffer
                     Dim slPoint As Decimal = entryPrice - stoploss
                     Dim targetPoint As Decimal = ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
                     Dim target As Decimal = entryPrice + targetPoint
-                    Dim quantity As Integer = Me.LotSize
+                    Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_instrumentName, entryPrice, stoploss, Math.Abs(_userInputs.MaxLossPerTrade) * -1, Trade.TypeOfStock.Cash)
+                    If _parentStrategy.StockType = Trade.TypeOfStock.Commodity Then quantity = Me.LotSize
 
                     parameter = New PlaceOrderParameters With {
                                         .EntryPrice = entryPrice,
@@ -95,7 +100,8 @@ Public Class MultiIndicatorStrategyRule
                                         .Quantity = quantity,
                                         .Stoploss = stoploss,
                                         .Target = target,
-                                        .Buffer = buffer,
+                                        .EntryBuffer = entryBuffer,
+                                        .StoplossBuffer = stoplossBuffer,
                                         .SignalCandle = signalCandle,
                                         .OrderType = Trade.TypeOfOrder.SL,
                                         .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
@@ -104,19 +110,22 @@ Public Class MultiIndicatorStrategyRule
                                         .Supporting4 = GetIndicatorString(signalCandle)
                                     }
                 ElseIf signal.Item3 = Trade.TradeExecutionDirection.Sell Then
-                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Low, RoundOfType.Floor)
-                    Dim entryPrice As Decimal = signalCandle.Low - buffer
-                    Dim stoploss As Decimal = signalCandle.High + buffer
+                    Dim entryBuffer As Decimal = CalculateEntryBuffer(signalCandle.Low)
+                    Dim entryPrice As Decimal = signalCandle.Low - entryBuffer
+                    Dim stoplossBuffer As Decimal = CalculateStoplossBuffer(signalCandle.High)
+                    Dim stoploss As Decimal = signalCandle.High
                     Dim slRemark As String = "Candle High"
                     Dim sma As Decimal = ConvertFloorCeling(_smaPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Floor)
                     If sma > stoploss Then
                         stoploss = sma
                         slRemark = "SMA"
                     End If
+                    stoploss = stoploss + stoplossBuffer
                     Dim slPoint As Decimal = stoploss - entryPrice
                     Dim targetPoint As Decimal = ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
                     Dim target As Decimal = entryPrice - targetPoint
-                    Dim quantity As Integer = Me.LotSize
+                    Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_instrumentName, stoploss, entryPrice, Math.Abs(_userInputs.MaxLossPerTrade) * -1, Trade.TypeOfStock.Cash)
+                    If _parentStrategy.StockType = Trade.TypeOfStock.Commodity Then quantity = Me.LotSize
 
                     parameter = New PlaceOrderParameters With {
                                         .EntryPrice = entryPrice,
@@ -124,7 +133,8 @@ Public Class MultiIndicatorStrategyRule
                                         .Quantity = quantity,
                                         .Stoploss = stoploss,
                                         .Target = target,
-                                        .Buffer = buffer,
+                                        .EntryBuffer = entryBuffer,
+                                        .StoplossBuffer = stoplossBuffer,
                                         .SignalCandle = signalCandle,
                                         .OrderType = Trade.TypeOfOrder.SL,
                                         .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
@@ -167,6 +177,9 @@ Public Class MultiIndicatorStrategyRule
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
+        If _userInputs.BreakevenMovement AndAlso currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+
+        End If
         Return ret
     End Function
 
@@ -229,6 +242,82 @@ Public Class MultiIndicatorStrategyRule
                             Math.Round(_macdPayload(signalCandle.PayloadDate), 4),
                             Math.Round(_macdSignalPayload(signalCandle.PayloadDate), 4),
                             Math.Round(_macdHistogramPayload(signalCandle.PayloadDate), 4))
+        Return ret
+    End Function
+
+    Private Function CalculateEntryBuffer(ByVal price As Decimal) As Decimal
+        Dim ret As Decimal = 0
+        If _parentStrategy.StockType = Trade.TypeOfStock.Commodity Then
+            If _tradingSymbol.Contains("CRUDE") Then
+                ret = 2
+            ElseIf _tradingSymbol.Contains("SILVER") Then
+                ret = 5
+            ElseIf _tradingSymbol.Contains("NATURALGAS") Then
+                ret = 0.1
+            ElseIf _tradingSymbol.Contains("COPPER") Then
+                ret = 0.1
+            ElseIf _tradingSymbol.Contains("NICKEL") Then
+                ret = 0.2
+            ElseIf _tradingSymbol.Contains("ZINC") Then
+                ret = 0.1
+            ElseIf _tradingSymbol.Contains("LEAD") Then
+                ret = 0.1
+            End If
+        Else
+            If price <= 400 Then
+                ret = 0.1
+            ElseIf price <= 800 Then
+                ret = 0.2
+            ElseIf price <= 1200 Then
+                ret = 0.3
+            ElseIf price <= 1600 Then
+                ret = 0.4
+            ElseIf price <= 2000 Then
+                ret = 0.5
+            ElseIf price <= 2400 Then
+                ret = 0.6
+            Else
+                ret = 0.7
+            End If
+        End If
+        Return ret
+    End Function
+
+    Private Function CalculateStoplossBuffer(ByVal price As Decimal) As Decimal
+        Dim ret As Decimal = 0
+        If _parentStrategy.StockType = Trade.TypeOfStock.Commodity Then
+            If _tradingSymbol.Contains("CRUDE") Then
+                ret = 2
+            ElseIf _tradingSymbol.Contains("SILVER") Then
+                ret = 5
+            ElseIf _tradingSymbol.Contains("NATURALGAS") Then
+                ret = 0.2
+            ElseIf _tradingSymbol.Contains("COPPER") Then
+                ret = 0.2
+            ElseIf _tradingSymbol.Contains("NICKEL") Then
+                ret = 0.2
+            ElseIf _tradingSymbol.Contains("ZINC") Then
+                ret = 0.2
+            ElseIf _tradingSymbol.Contains("LEAD") Then
+                ret = 0.2
+            End If
+        Else
+            If price <= 400 Then
+                ret = 0.1
+            ElseIf price <= 800 Then
+                ret = 0.2
+            ElseIf price <= 1200 Then
+                ret = 0.3
+            ElseIf price <= 1600 Then
+                ret = 0.4
+            ElseIf price <= 2000 Then
+                ret = 0.5
+            ElseIf price <= 2400 Then
+                ret = 0.6
+            Else
+                ret = 0.7
+            End If
+        End If
         Return ret
     End Function
 End Class

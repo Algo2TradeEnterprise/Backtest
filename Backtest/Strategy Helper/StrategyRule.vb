@@ -40,6 +40,7 @@ Namespace StrategyHelper
         Protected ReadOnly _tradingDate As Date
         Protected ReadOnly _tradeStartTime As Date
         Protected ReadOnly _tradingSymbol As String
+        Protected ReadOnly _instrumentName As String
         Protected ReadOnly _inputPayload As Dictionary(Of Date, Payload)
         Protected ReadOnly _cts As CancellationTokenSource
         Protected ReadOnly _entities As RuleEntities
@@ -59,6 +60,11 @@ Namespace StrategyHelper
             _cts = canceller
             _entities = entities
 
+            If _tradingSymbol.Contains("FUT") Then
+                _instrumentName = _tradingSymbol.Remove(_tradingSymbol.Count - 8)
+            Else
+                _instrumentName = _tradingSymbol
+            End If
             _tradeStartTime = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, _parentStrategy.TradeStartTime.Hours, _parentStrategy.TradeStartTime.Minutes, _parentStrategy.TradeStartTime.Seconds)
 
             EligibleToTakeTrade = True

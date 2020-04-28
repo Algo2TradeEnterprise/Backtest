@@ -373,7 +373,7 @@ Namespace StrategyHelper
                                                                                                       tradingDate:=runningTick.PayloadDate,
                                                                                                       entryDirection:=runningOrder.EntryDirection,
                                                                                                       entryPrice:=runningOrder.EntryPrice,
-                                                                                                      entryBuffer:=runningOrder.Buffer,
+                                                                                                      entryBuffer:=runningOrder.EntryBuffer,
                                                                                                       squareOffType:=Trade.TypeOfTrade.MIS,
                                                                                                       entryCondition:=Trade.TradeEntryCondition.Original,
                                                                                                       entryRemark:="Original Entry",
@@ -382,7 +382,7 @@ Namespace StrategyHelper
                                                                                                       potentialTarget:=runningOrder.Target,
                                                                                                       targetRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Target),
                                                                                                       potentialStopLoss:=runningOrder.Stoploss,
-                                                                                                      stoplossBuffer:=runningOrder.Buffer,
+                                                                                                      stoplossBuffer:=runningOrder.StoplossBuffer,
                                                                                                       slRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Stoploss),
                                                                                                       signalCandle:=runningOrder.SignalCandle)
 
@@ -462,7 +462,7 @@ Namespace StrategyHelper
                                                                                                       tradingDate:=runningTick.PayloadDate,
                                                                                                       entryDirection:=runningOrder.EntryDirection,
                                                                                                       entryPrice:=runningOrder.EntryPrice,
-                                                                                                      entryBuffer:=runningOrder.Buffer,
+                                                                                                      entryBuffer:=runningOrder.EntryBuffer,
                                                                                                       squareOffType:=Trade.TypeOfTrade.MIS,
                                                                                                       entryCondition:=Trade.TradeEntryCondition.Original,
                                                                                                       entryRemark:="Original Entry",
@@ -471,7 +471,7 @@ Namespace StrategyHelper
                                                                                                       potentialTarget:=runningOrder.Target,
                                                                                                       targetRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Target),
                                                                                                       potentialStopLoss:=runningOrder.Stoploss,
-                                                                                                      stoplossBuffer:=runningOrder.Buffer,
+                                                                                                      stoplossBuffer:=runningOrder.StoplossBuffer,
                                                                                                       slRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Stoploss),
                                                                                                       signalCandle:=runningOrder.SignalCandle)
 

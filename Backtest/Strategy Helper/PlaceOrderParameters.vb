@@ -6,7 +6,8 @@ Namespace StrategyHelper
         Public Target As Decimal
         Public Stoploss As Decimal
         Public Quantity As Integer
-        Public Buffer As Decimal
+        Public EntryBuffer As Decimal
+        Public StoplossBuffer As Decimal
         Public SignalCandle As Payload
         Public OrderType As Trade.TypeOfOrder
         Public Supporting1 As String
