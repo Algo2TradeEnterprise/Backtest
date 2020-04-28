@@ -158,16 +158,14 @@ Public Class MultiIndicatorStrategyRule
             Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
             If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing Then
                 Dim signal As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
-                If signal IsNot Nothing Then
-                    If signal.Item1 Then
-                        If currentTrade.EntryDirection <> signal.Item3 OrElse currentTrade.SignalCandle.PayloadDate <> signal.Item2.PayloadDate Then
-                            ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
-                        End If
-                    Else
+                If signal IsNot Nothing AndAlso signal.Item1 Then
+                    If currentTrade.EntryDirection <> signal.Item3 OrElse currentTrade.SignalCandle.PayloadDate <> signal.Item2.PayloadDate Then
                         ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                     End If
                 Else
-                    ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                    If Not IsSignalStillValid(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, currentTrade.EntryDirection) Then
+                        ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                    End If
                 End If
             End If
         End If
@@ -232,6 +230,42 @@ Public Class MultiIndicatorStrategyRule
                             If candle.Close < _vwapPayload(candle.PayloadDate) Then
                                 If candle.Close < _smaPayload(candle.PayloadDate) Then
                                     ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, candle, Trade.TradeExecutionDirection.Sell)
+                                End If
+                            End If
+                        End If
+                    End If
+                End If
+            End If
+        End If
+        Return ret
+    End Function
+
+    Private Function IsSignalStillValid(ByVal candle As Payload, ByVal currentTick As Payload, ByVal direction As Trade.TradeExecutionDirection) As Boolean
+        Dim ret As Boolean = False
+        If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then
+            If direction = Trade.TradeExecutionDirection.Buy Then
+                If _rsiPayload(candle.PayloadDate) > _userInputs.RSIOverBought Then
+                    If _macdPayload(candle.PayloadDate) > _macdSignalPayload(candle.PayloadDate) Then
+                        If _aroonHighPayload(candle.PayloadDate) > _aroonLowPayload(candle.PayloadDate) Then
+                            If _psarTrendPayload(candle.PayloadDate) = Color.Green Then
+                                If candle.Close > _vwapPayload(candle.PayloadDate) Then
+                                    If candle.Close > _smaPayload(candle.PayloadDate) Then
+                                        ret = True
+                                    End If
+                                End If
+                            End If
+                        End If
+                    End If
+                End If
+            ElseIf direction = Trade.TradeExecutionDirection.Sell Then
+                If _rsiPayload(candle.PayloadDate) < _userInputs.RSIOverSold Then
+                    If _macdPayload(candle.PayloadDate) < _macdSignalPayload(candle.PayloadDate) Then
+                        If _aroonHighPayload(candle.PayloadDate) < _aroonLowPayload(candle.PayloadDate) Then
+                            If _psarTrendPayload(candle.PayloadDate) = Color.Red Then
+                                If candle.Close < _vwapPayload(candle.PayloadDate) Then
+                                    If candle.Close < _smaPayload(candle.PayloadDate) Then
+                                        ret = True
+                                    End If
                                 End If
                             End If
                         End If
