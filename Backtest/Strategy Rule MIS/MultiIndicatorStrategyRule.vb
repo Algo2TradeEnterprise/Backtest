@@ -333,7 +333,7 @@ Public Class MultiIndicatorStrategyRule
     Private Function CalculateStoplossBuffer(ByVal price As Decimal) As Decimal
         Dim ret As Decimal = 0
         If _parentStrategy.StockType = Trade.TypeOfStock.Commodity Then
-            If _tradingSymbol.Contains("CRUDE") Then
+            If _tradingSymbol.Contains("CRUDEOIL") Then
                 ret = 2
             ElseIf _tradingSymbol.Contains("SILVER") Then
                 ret = 5
