@@ -178,7 +178,20 @@ Public Class MultiIndicatorStrategyRule
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         If _userInputs.BreakevenMovement AndAlso currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-
+            Dim slPoint As Decimal = Math.Round(Math.Abs(currentTrade.EntryPrice - currentTrade.PotentialStopLoss), 2)
+            Dim triggerPrice As Decimal = Decimal.MinValue
+            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                If currentTick.Open >= currentTrade.EntryPrice + slPoint Then
+                    triggerPrice = currentTrade.EntryPrice + _parentStrategy.GetBreakevenPoint(_instrumentName, currentTrade.EntryPrice, currentTrade.Quantity, Trade.TradeExecutionDirection.Buy, Me.LotSize, _parentStrategy.StockType)
+                End If
+            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                If currentTick.Open <= currentTrade.EntryPrice - slPoint Then
+                    triggerPrice = currentTrade.EntryPrice - _parentStrategy.GetBreakevenPoint(_instrumentName, currentTrade.EntryPrice, currentTrade.Quantity, Trade.TradeExecutionDirection.Sell, Me.LotSize, _parentStrategy.StockType)
+                End If
+            End If
+            If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
+                ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, String.Format("({0})Breakeven at {1}", slPoint, currentTick.PayloadDate.ToString("HH:mm:ss")))
+            End If
         End If
         Return ret
     End Function
