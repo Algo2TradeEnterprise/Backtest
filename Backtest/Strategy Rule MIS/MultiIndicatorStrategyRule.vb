@@ -212,8 +212,8 @@ Public Class MultiIndicatorStrategyRule
 
     Private Function GetSignalCandle(ByVal candle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)
         Dim ret As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection) = Nothing
-        If candle IsNot Nothing AndAlso Not candle.DeadCandle Then
-            If _rsiPayload(candle.PayloadDate) > _userInputs.RSIOverBought Then
+        If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then
+            If _rsiPayload(candle.PayloadDate) > _userInputs.RSIOverBought AndAlso _rsiPayload(candle.PreviousCandlePayload.PayloadDate) < _userInputs.RSIOverBought Then
                 If _macdPayload(candle.PayloadDate) > _macdSignalPayload(candle.PayloadDate) Then
                     If _aroonHighPayload(candle.PayloadDate) > _aroonLowPayload(candle.PayloadDate) Then
                         If _psarTrendPayload(candle.PayloadDate) = Color.Green Then
@@ -225,7 +225,7 @@ Public Class MultiIndicatorStrategyRule
                         End If
                     End If
                 End If
-            ElseIf _rsiPayload(candle.PayloadDate) < _userInputs.RSIOverSold Then
+            ElseIf _rsiPayload(candle.PayloadDate) < _userInputs.RSIOverSold AndAlso _rsiPayload(candle.PayloadDate) > _userInputs.RSIOverSold Then
                 If _macdPayload(candle.PayloadDate) < _macdSignalPayload(candle.PayloadDate) Then
                     If _aroonHighPayload(candle.PayloadDate) < _aroonLowPayload(candle.PayloadDate) Then
                         If _psarTrendPayload(candle.PayloadDate) = Color.Red Then
