@@ -343,9 +343,11 @@ Public Class frmMain
 
                             .RuleEntityData = New MultiIndicatorStrategyRule.StrategyRuleEntities With
                                             {
+                                                .MaxLossPerTrade = -500,
                                                 .TargetMultiplier = 2,
                                                 .RSIOverBought = 50,
-                                                .RSIOverSold = 50
+                                                .RSIOverSold = 50,
+                                                .BreakevenMovement = True
                                             }
 
                             .NumberOfTradeableStockPerDay = Integer.MaxValue
@@ -359,9 +361,9 @@ Public Class frmMain
                             .StockMaxProfitPerDay = Decimal.MaxValue
                             .StockMaxLossPerDay = Decimal.MinValue
 
-                            .ExitOnOverAllFixedTargetStoploss = False
+                            .ExitOnOverAllFixedTargetStoploss = True
                             .OverAllProfitPerDay = Decimal.MaxValue
-                            .OverAllLossPerDay = Decimal.MinValue
+                            .OverAllLossPerDay = -10000
 
                             .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
                             .MTMSlab = Math.Abs(.OverAllLossPerDay)
