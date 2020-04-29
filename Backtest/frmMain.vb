@@ -291,7 +291,7 @@ Public Class frmMain
             Select Case ruleNumber
                 Case 0
 #Region "6 Indicator Test"
-                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Commodity
+                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
                     Dim database As Common.DataBaseTable = Common.DataBaseTable.None
                     Dim margin As Decimal = 0
                     Dim tick As Dictionary(Of String, Decimal) = Nothing
@@ -341,8 +341,8 @@ Public Class frmMain
                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                         With backtestStrategy
-                            '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Cash Stock.csv")
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Rohit Commodity.csv")
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Cash Stock.csv")
+                            '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Rohit Commodity.csv")
 
                             .AllowBothDirectionEntryAtSameTime = False
                             .TrailingStoploss = False
