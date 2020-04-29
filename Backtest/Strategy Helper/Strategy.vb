@@ -39,7 +39,7 @@ Namespace StrategyHelper
                        ByVal tradeStartTime As TimeSpan,
                        ByVal lastTradeEntryTime As TimeSpan,
                        ByVal eodExitTime As TimeSpan,
-                       ByVal tickSize As Decimal,
+                       ByVal tickSize As Dictionary(Of String, Decimal),
                        ByVal marginMultiplier As Decimal,
                        ByVal timeframe As Integer,
                        ByVal heikenAshiCandle As Boolean,
@@ -117,7 +117,7 @@ Namespace StrategyHelper
         Public ReadOnly TradeStartTime As TimeSpan = TimeSpan.Parse(TRADE_START_TIME)
         Public ReadOnly LastTradeEntryTime As TimeSpan = TimeSpan.Parse(LAST_TRADE_ENTRY_TIME)
         Public ReadOnly EODExitTime As TimeSpan = TimeSpan.Parse(EOD_EXIT_TIME)
-        Public ReadOnly TickSize As Decimal = DEFAULT_TICK_SIZE
+        Public ReadOnly TickSize As Dictionary(Of String, Decimal) = Nothing
         Public ReadOnly MarginMultiplier As Decimal = MARGIN_MULTIPLIER
         Public ReadOnly SignalTimeFrame As Integer = 1
         Public ReadOnly UseHeikenAshi As Boolean = False
@@ -501,10 +501,10 @@ Namespace StrategyHelper
             Return ret
         End Function
 
-        Public Function CalculateBuffer(ByVal price As Decimal, ByVal floorOrCeiling As RoundOfType) As Decimal
+        Public Function CalculateBuffer(ByVal price As Decimal, ByVal floorOrCeiling As RoundOfType, ByVal tickSize As Decimal) As Decimal
             Dim bufferPrice As Decimal = Nothing
             'Assuming 1% target, we can afford to have buffer as 2.5% of that 1% target
-            bufferPrice = NumberManipulation.ConvertFloorCeling(price * 0.01 * 0.025, TickSize, floorOrCeiling)
+            bufferPrice = NumberManipulation.ConvertFloorCeling(price * 0.01 * 0.025, tickSize, floorOrCeiling)
             Return bufferPrice
         End Function
 
@@ -966,7 +966,7 @@ Namespace StrategyHelper
                                 calculator.FO_Futures(entryPrice, exitPrice, quantity, potentialBrokerage)
                         End Select
                         If potentialBrokerage.NetProfitLoss > desiredProfitLossOfTrade Then Exit While
-                        exitPrice += TickSize
+                        exitPrice += GetTickSize(coreStockName)
                     ElseIf tradeDirection = Trade.TradeExecutionDirection.Sell Then
                         Select Case typeOfStock
                             Case Trade.TypeOfStock.Cash
@@ -979,7 +979,7 @@ Namespace StrategyHelper
                                 calculator.FO_Futures(exitPrice, entryPrice, quantity, potentialBrokerage)
                         End Select
                         If potentialBrokerage.NetProfitLoss > desiredProfitLossOfTrade Then Exit While
-                        exitPrice -= TickSize
+                        exitPrice -= GetTickSize(coreStockName)
                     End If
                 End While
             ElseIf desiredProfitLossOfTrade < 0 Then 'To check SL
@@ -996,7 +996,7 @@ Namespace StrategyHelper
                                 calculator.FO_Futures(entryPrice, exitPrice, quantity, potentialBrokerage)
                         End Select
                         If potentialBrokerage.NetProfitLoss < desiredProfitLossOfTrade Then Exit While
-                        exitPrice -= TickSize
+                        exitPrice -= GetTickSize(coreStockName)
                     ElseIf tradeDirection = Trade.TradeExecutionDirection.Sell Then
                         Select Case typeOfStock
                             Case Trade.TypeOfStock.Cash
@@ -1009,7 +1009,7 @@ Namespace StrategyHelper
                                 calculator.FO_Futures(exitPrice, entryPrice, quantity, potentialBrokerage)
                         End Select
                         If potentialBrokerage.NetProfitLoss < desiredProfitLossOfTrade Then Exit While
-                        exitPrice += TickSize
+                        exitPrice += GetTickSize(coreStockName)
                     End If
                 End While
             End If
@@ -1292,12 +1292,12 @@ Namespace StrategyHelper
         End Function
 
         Public Function GetBreakevenPoint(ByVal tradingSymbol As String, ByVal entryPrice As Decimal, ByVal quantity As Integer, ByVal direction As Trade.TradeExecutionDirection, ByVal lotsize As Integer, ByVal stockType As Trade.TypeOfStock) As Decimal
-            Dim ret As Decimal = Me.TickSize
+            Dim ret As Decimal = GetTickSize(tradingSymbol)
             If direction = Trade.TradeExecutionDirection.Buy Then
                 For exitPrice As Decimal = entryPrice To Decimal.MaxValue Step ret
                     Dim pl As Decimal = CalculatePL(tradingSymbol, entryPrice, exitPrice, quantity, lotsize, stockType)
                     If pl >= 0 Then
-                        ret = ConvertFloorCeling(exitPrice - entryPrice, Me.TickSize, RoundOfType.Celing)
+                        ret = ConvertFloorCeling(exitPrice - entryPrice, GetTickSize(tradingSymbol), RoundOfType.Celing)
                         Exit For
                     End If
                 Next
@@ -1305,7 +1305,7 @@ Namespace StrategyHelper
                 For exitPrice As Decimal = entryPrice To Decimal.MinValue Step ret * -1
                     Dim pl As Decimal = CalculatePL(tradingSymbol, exitPrice, entryPrice, quantity, lotsize, stockType)
                     If pl >= 0 Then
-                        ret = ConvertFloorCeling(entryPrice - exitPrice, Me.TickSize, RoundOfType.Celing)
+                        ret = ConvertFloorCeling(entryPrice - exitPrice, GetTickSize(tradingSymbol), RoundOfType.Celing)
                         Exit For
                     End If
                 Next
@@ -1329,6 +1329,32 @@ Namespace StrategyHelper
                 Dim multiplier As Decimal = Math.Log(mtmSlab * plmultiplier, mtmSlab)
                 ret = Math.Round((mtmSlab * (plmultiplier - 1)) * multiplier, 4)
                 If ret = 0 Then ret = mtmSlab / 2
+            End If
+            Return ret
+        End Function
+
+        Public Function GetTickSize(ByVal instrumentName As String) As Decimal
+            Dim ret As Decimal = Decimal.MinValue
+            If Me.TickSize IsNot Nothing AndAlso Me.TickSize.Count > 0 Then
+                Dim stockName As String = instrumentName
+                If instrumentName.Contains("FUT") Then
+                    stockName = instrumentName.Remove(instrumentName.Count - 8)
+                End If
+                If Me.TickSize.ContainsKey(stockName) Then
+                    ret = Me.TickSize(stockName)
+                End If
+            End If
+            If ret = Decimal.MinValue Then
+                Select Case Me.StockType
+                    Case Trade.TypeOfStock.Cash, Trade.TypeOfStock.Futures
+                        ret = 0.05
+                    Case Trade.TypeOfStock.Commodity
+                        ret = 1
+                    Case Trade.TypeOfStock.Currency
+                        ret = 0.0025
+                    Case Else
+                        Throw New NotImplementedException
+                End Select
             End If
             Return ret
         End Function

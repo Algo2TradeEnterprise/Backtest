@@ -387,7 +387,24 @@ Public Class Payload
     Private _Ticks As List(Of Payload)
     Public ReadOnly Property Ticks As List(Of Payload)
         Get
-            Dim tickSize As Decimal = NumberManipulation.ConvertFloorCeling(Me.Close * 0.01 * 0.025, 0.05, RoundOfType.Floor)
+            Dim tick As Decimal = 0.05
+            If Me.TradingSymbol.Contains("CRUDEOIL") Then
+                tick = 1
+            ElseIf Me.TradingSymbol.Contains("SILVER") Then
+                tick = 1
+            ElseIf Me.TradingSymbol.Contains("NATURALGAS") Then
+                tick = 0.1
+            ElseIf Me.TradingSymbol.Contains("COPPER") Then
+                tick = 0.05
+            ElseIf Me.TradingSymbol.Contains("NICKEL") Then
+                tick = 0.1
+            ElseIf Me.TradingSymbol.Contains("ZINC") Then
+                tick = 0.05
+            ElseIf Me.TradingSymbol.Contains("LEAD") Then
+                tick = 0.05
+            End If
+
+            Dim tickSize As Decimal = NumberManipulation.ConvertFloorCeling(Me.Close * 0.01 * 0.025, tick, RoundOfType.Floor)
             'Dim tickSize As Decimal = 0.05
             'TO DO: Change the vaue of tickSize to take the actual tick as per Exchange
             If _Ticks Is Nothing OrElse _Ticks.Count = 0 Then

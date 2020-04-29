@@ -291,35 +291,42 @@ Public Class frmMain
             Select Case ruleNumber
                 Case 0
 #Region "6 Indicator Test"
-                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
+                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Commodity
                     Dim database As Common.DataBaseTable = Common.DataBaseTable.None
                     Dim margin As Decimal = 0
-                    Dim tick As Decimal = 0
+                    Dim tick As Dictionary(Of String, Decimal) = Nothing
                     Select Case stockType
                         Case Trade.TypeOfStock.Cash
                             database = Common.DataBaseTable.Intraday_Cash
                             margin = 10
-                            tick = 0.05
+                            tick = Nothing
                         Case Trade.TypeOfStock.Commodity
                             database = Common.DataBaseTable.Intraday_Commodity
                             margin = 70
-                            tick = 1
+                            tick = New Dictionary(Of String, Decimal)
+                            tick.Add("CRUDEOIL", 1)
+                            tick.Add("SILVER", 1)
+                            tick.Add("NATURALGAS", 0.1)
+                            tick.Add("COPPER", 0.05)
+                            tick.Add("NICKEL", 0.1)
+                            tick.Add("ZINC", 0.05)
+                            tick.Add("LEAD", 0.05)
                         Case Trade.TypeOfStock.Currency
                             database = Common.DataBaseTable.Intraday_Currency
                             margin = 98
-                            tick = 0.0025
+                            tick = Nothing
                         Case Trade.TypeOfStock.Futures
                             database = Common.DataBaseTable.Intraday_Futures
                             margin = 30
-                            tick = 0.05
+                            tick = Nothing
                     End Select
 
                     Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
-                                                                    exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                                    exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                                    tradeStartTime:=TimeSpan.Parse("9:16:00"),
-                                                                    lastTradeEntryTime:=TimeSpan.Parse("14:29:59"),
-                                                                    eodExitTime:=TimeSpan.Parse("15:15:00"),
+                                                                    exchangeStartTime:=TimeSpan.Parse("09:00:00"),
+                                                                    exchangeEndTime:=TimeSpan.Parse("23:29:59"),
+                                                                    tradeStartTime:=TimeSpan.Parse("9:01:00"),
+                                                                    lastTradeEntryTime:=TimeSpan.Parse("23:00:00"),
+                                                                    eodExitTime:=TimeSpan.Parse("23:15:00"),
                                                                     tickSize:=tick,
                                                                     marginMultiplier:=margin,
                                                                     timeframe:=5,
@@ -334,7 +341,8 @@ Public Class frmMain
                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                         With backtestStrategy
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Cash Stock.csv")
+                            '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Cash Stock.csv")
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Rohit Commodity.csv")
 
                             .AllowBothDirectionEntryAtSameTime = False
                             .TrailingStoploss = False

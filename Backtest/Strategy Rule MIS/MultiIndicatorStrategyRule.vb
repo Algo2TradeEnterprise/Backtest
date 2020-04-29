@@ -82,14 +82,14 @@ Public Class MultiIndicatorStrategyRule
                     Dim stoplossBuffer As Decimal = CalculateStoplossBuffer(signalCandle.Low)
                     Dim stoploss As Decimal = signalCandle.Low
                     Dim slRemark As String = "Candle Low"
-                    Dim sma As Decimal = ConvertFloorCeling(_smaPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Floor)
+                    Dim sma As Decimal = ConvertFloorCeling(_smaPayload(signalCandle.PayloadDate), _parentStrategy.GetTickSize(_tradingSymbol), RoundOfType.Floor)
                     If sma < stoploss Then
                         stoploss = sma
                         slRemark = "SMA"
                     End If
                     stoploss = stoploss - stoplossBuffer
                     Dim slPoint As Decimal = entryPrice - stoploss
-                    Dim targetPoint As Decimal = ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
+                    Dim targetPoint As Decimal = ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.GetTickSize(_tradingSymbol), RoundOfType.Celing)
                     Dim target As Decimal = entryPrice + targetPoint
                     Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_instrumentName, entryPrice, stoploss, Math.Abs(_userInputs.MaxLossPerTrade) * -1, Trade.TypeOfStock.Cash)
                     If _parentStrategy.StockType = Trade.TypeOfStock.Commodity Then quantity = Me.LotSize
@@ -115,14 +115,14 @@ Public Class MultiIndicatorStrategyRule
                     Dim stoplossBuffer As Decimal = CalculateStoplossBuffer(signalCandle.High)
                     Dim stoploss As Decimal = signalCandle.High
                     Dim slRemark As String = "Candle High"
-                    Dim sma As Decimal = ConvertFloorCeling(_smaPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Floor)
+                    Dim sma As Decimal = ConvertFloorCeling(_smaPayload(signalCandle.PayloadDate), _parentStrategy.GetTickSize(_tradingSymbol), RoundOfType.Floor)
                     If sma > stoploss Then
                         stoploss = sma
                         slRemark = "SMA"
                     End If
                     stoploss = stoploss + stoplossBuffer
                     Dim slPoint As Decimal = stoploss - entryPrice
-                    Dim targetPoint As Decimal = ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
+                    Dim targetPoint As Decimal = ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.GetTickSize(_tradingSymbol), RoundOfType.Celing)
                     Dim target As Decimal = entryPrice - targetPoint
                     Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_instrumentName, stoploss, entryPrice, Math.Abs(_userInputs.MaxLossPerTrade) * -1, Trade.TypeOfStock.Cash)
                     If _parentStrategy.StockType = Trade.TypeOfStock.Commodity Then quantity = Me.LotSize
@@ -295,7 +295,7 @@ Public Class MultiIndicatorStrategyRule
     Private Function CalculateEntryBuffer(ByVal price As Decimal) As Decimal
         Dim ret As Decimal = 0
         If _parentStrategy.StockType = Trade.TypeOfStock.Commodity Then
-            If _tradingSymbol.Contains("CRUDE") Then
+            If _tradingSymbol.Contains("CRUDEOIL") Then
                 ret = 2
             ElseIf _tradingSymbol.Contains("SILVER") Then
                 ret = 5
