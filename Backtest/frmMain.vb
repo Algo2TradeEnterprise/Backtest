@@ -355,7 +355,8 @@ Public Class frmMain
                                                 .TargetMultiplier = 2,
                                                 .RSIOverBought = 50,
                                                 .RSIOverSold = 50,
-                                                .BreakevenMovement = True
+                                                .BreakevenMovement = True,
+                                                .CheckZeroLine = True
                                             }
 
                             .NumberOfTradeableStockPerDay = Integer.MaxValue
@@ -379,7 +380,8 @@ Public Class frmMain
                             .RealtimeTrailingPercentage = 50
                         End With
 
-                        Dim filename As String = String.Format("Multi Indicator Output")
+                        Dim ruleData As MultiIndicatorStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                        Dim filename As String = String.Format("Multi Indicator Output,Zero Line {0}", ruleData.CheckZeroLine)
 
                         Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
                     End Using

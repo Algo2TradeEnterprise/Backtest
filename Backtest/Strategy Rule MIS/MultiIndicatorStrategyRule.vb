@@ -15,6 +15,7 @@ Public Class MultiIndicatorStrategyRule
         Public RSIOverBought As Decimal
         Public RSIOverSold As Decimal
         Public BreakevenMovement As Boolean
+        Public CheckZeroLine As Boolean
     End Class
 #End Region
 
@@ -212,7 +213,8 @@ Public Class MultiIndicatorStrategyRule
         Dim ret As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection) = Nothing
         If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then
             If _rsiPayload(candle.PayloadDate) > _userInputs.RSIOverBought AndAlso _rsiPayload(candle.PreviousCandlePayload.PayloadDate) < _userInputs.RSIOverBought Then
-                If _macdPayload(candle.PayloadDate) > _macdSignalPayload(candle.PayloadDate) AndAlso _macdPayload(candle.PayloadDate) > 0 AndAlso _macdSignalPayload(candle.PayloadDate) > 0 Then
+                If _macdPayload(candle.PayloadDate) > _macdSignalPayload(candle.PayloadDate) AndAlso
+                    (Not _userInputs.CheckZeroLine OrElse (_macdPayload(candle.PayloadDate) > 0 AndAlso _macdSignalPayload(candle.PayloadDate) > 0)) Then
                     If _aroonHighPayload(candle.PayloadDate) > _aroonLowPayload(candle.PayloadDate) Then
                         If _psarTrendPayload(candle.PayloadDate) = Color.Green Then
                             If candle.Close > _vwapPayload(candle.PayloadDate) Then
@@ -223,8 +225,9 @@ Public Class MultiIndicatorStrategyRule
                         End If
                     End If
                 End If
-            ElseIf _rsiPayload(candle.PayloadDate) < _userInputs.RSIOverSold AndAlso _rsiPayload(candle.PayloadDate) > _userInputs.RSIOverSold Then
-                If _macdPayload(candle.PayloadDate) < _macdSignalPayload(candle.PayloadDate) AndAlso _macdPayload(candle.PayloadDate) < 0 AndAlso _macdSignalPayload(candle.PayloadDate) < 0 Then
+            ElseIf _rsiPayload(candle.PayloadDate) < _userInputs.RSIOverSold AndAlso _rsiPayload(candle.PreviousCandlePayload.PayloadDate) > _userInputs.RSIOverSold Then
+                If _macdPayload(candle.PayloadDate) < _macdSignalPayload(candle.PayloadDate) AndAlso
+                    (Not _userInputs.CheckZeroLine OrElse (_macdPayload(candle.PayloadDate) < 0 AndAlso _macdSignalPayload(candle.PayloadDate) < 0)) Then
                     If _aroonHighPayload(candle.PayloadDate) < _aroonLowPayload(candle.PayloadDate) Then
                         If _psarTrendPayload(candle.PayloadDate) = Color.Red Then
                             If candle.Close < _vwapPayload(candle.PayloadDate) Then
@@ -245,7 +248,8 @@ Public Class MultiIndicatorStrategyRule
         If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then
             If direction = Trade.TradeExecutionDirection.Buy Then
                 If _rsiPayload(candle.PayloadDate) > _userInputs.RSIOverBought Then
-                    If _macdPayload(candle.PayloadDate) > _macdSignalPayload(candle.PayloadDate) AndAlso _macdPayload(candle.PayloadDate) > 0 AndAlso _macdSignalPayload(candle.PayloadDate) > 0 Then
+                    If _macdPayload(candle.PayloadDate) > _macdSignalPayload(candle.PayloadDate) AndAlso
+                    (Not _userInputs.CheckZeroLine OrElse (_macdPayload(candle.PayloadDate) > 0 AndAlso _macdSignalPayload(candle.PayloadDate) > 0)) Then
                         If _aroonHighPayload(candle.PayloadDate) > _aroonLowPayload(candle.PayloadDate) Then
                             If _psarTrendPayload(candle.PayloadDate) = Color.Green Then
                                 If candle.Close > _vwapPayload(candle.PayloadDate) Then
@@ -259,7 +263,8 @@ Public Class MultiIndicatorStrategyRule
                 End If
             ElseIf direction = Trade.TradeExecutionDirection.Sell Then
                 If _rsiPayload(candle.PayloadDate) < _userInputs.RSIOverSold Then
-                    If _macdPayload(candle.PayloadDate) < _macdSignalPayload(candle.PayloadDate) AndAlso _macdPayload(candle.PayloadDate) < 0 AndAlso _macdSignalPayload(candle.PayloadDate) < 0 Then
+                    If _macdPayload(candle.PayloadDate) < _macdSignalPayload(candle.PayloadDate) AndAlso
+                    (Not _userInputs.CheckZeroLine OrElse (_macdPayload(candle.PayloadDate) < 0 AndAlso _macdSignalPayload(candle.PayloadDate) < 0)) Then
                         If _aroonHighPayload(candle.PayloadDate) < _aroonLowPayload(candle.PayloadDate) Then
                             If _psarTrendPayload(candle.PayloadDate) = Color.Red Then
                                 If candle.Close < _vwapPayload(candle.PayloadDate) Then
