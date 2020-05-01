@@ -108,7 +108,7 @@ Partial Class frmMain
         '
         Me.cmbRule.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.cmbRule.FormattingEnabled = True
-        Me.cmbRule.Items.AddRange(New Object() {"Reversal HHLL Breakout", "Fractal Trend Line", "Market Plus Market Minus", "Highest Lowest Point", "Heikenashi Reverse Slab", "EMA Scalping", "Supertrend Cut Reversal", "Martingale"})
+        Me.cmbRule.Items.AddRange(New Object() {"Reversal HHLL Breakout", "Fractal Trend Line", "Market Plus Market Minus", "Highest Lowest Point", "Heikenashi Reverse Slab", "EMA Scalping", "Supertrend Cut Reversal", "Martingale", "HigherLow LowerHigh Breakout"})
         Me.cmbRule.Location = New System.Drawing.Point(123, 16)
         Me.cmbRule.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
         Me.cmbRule.Name = "cmbRule"
@@ -292,6 +292,7 @@ Partial Class frmMain
         Me.Controls.Add(Me.btnStart)
         Me.Icon = CType(resources.GetObject("$this.Icon"), System.Drawing.Icon)
         Me.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
+        Me.MaximizeBox = False
         Me.Name = "frmMain"
         Me.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen
         Me.Text = "Algo2Trade Backtest"
