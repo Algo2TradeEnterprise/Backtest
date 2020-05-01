@@ -1037,7 +1037,7 @@ Public Class frmMain
 
                                                 .AllowBothDirectionEntryAtSameTime = False
                                                 .TrailingStoploss = False
-                                                .TickBasedStrategy = False
+                                                .TickBasedStrategy = True
                                                 .RuleNumber = ruleNumber
 
                                                 .RuleEntityData = New HL_LHBreakoutStrategyRule.StrategyRuleEntities With

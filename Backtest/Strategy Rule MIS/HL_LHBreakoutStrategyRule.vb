@@ -63,19 +63,19 @@ Public Class HL_LHBreakoutStrategyRule
                 If signal.Item3 = Trade.TradeExecutionDirection.Buy Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.High, RoundOfType.Floor)
                     Dim entryPrice As Decimal = signalCandle.High + buffer
-                    Dim stoploss As Decimal = signalCandle.Low - buffer
-                    Dim slRemark As String = "Candle Low"
-                    If _userInputs.TypeOfSignal = SignalType.TwoCandle Then
-                        stoploss = Math.Min(signalCandle.Low, signalCandle.PreviousCandlePayload.Low) - buffer
-                        slRemark = "Lowest Low"
-                    End If
-                    Dim slPoint As Decimal = entryPrice - stoploss
+                    'Dim stoploss As Decimal = signalCandle.Low - buffer
+                    'Dim slRemark As String = "Candle Low"
+                    'If _userInputs.TypeOfSignal = SignalType.TwoCandle Then
+                    '    stoploss = Math.Min(signalCandle.Low, signalCandle.PreviousCandlePayload.Low) - buffer
+                    '    slRemark = "Lowest Low"
+                    'End If
+                    'Dim slPoint As Decimal = entryPrice - stoploss
                     Dim atrSLPoint As Decimal = ConvertFloorCeling(_atrPayload(signalCandle.PayloadDate) * _userInputs.ATRMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
-                    If slPoint > atrSLPoint Then
-                        stoploss = entryPrice - atrSLPoint
-                        slRemark = "ATR"
-                    End If
-                    slPoint = entryPrice - stoploss
+                    'If slPoint > atrSLPoint Then
+                    Dim stoploss As Decimal = entryPrice - atrSLPoint
+                    Dim slRemark As String = "ATR"
+                    'End If
+                    Dim slPoint As Decimal = entryPrice - stoploss
                     Dim target As Decimal = entryPrice + ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
                     Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, stoploss, _userInputs.MaxLossPerTrade, _parentStrategy.StockType)
 
@@ -97,19 +97,19 @@ Public Class HL_LHBreakoutStrategyRule
                 ElseIf signal.Item3 = Trade.TradeExecutionDirection.Sell Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Low, RoundOfType.Floor)
                     Dim entryPrice As Decimal = signalCandle.Low - buffer
-                    Dim stoploss As Decimal = signalCandle.High + buffer
-                    Dim slRemark As String = "Candle High"
-                    If _userInputs.TypeOfSignal = SignalType.TwoCandle Then
-                        stoploss = Math.Max(signalCandle.High, signalCandle.PreviousCandlePayload.High) + buffer
-                        slRemark = "Highest High"
-                    End If
-                    Dim slPoint As Decimal = stoploss - entryPrice
+                    'Dim stoploss As Decimal = signalCandle.High + buffer
+                    'Dim slRemark As String = "Candle High"
+                    'If _userInputs.TypeOfSignal = SignalType.TwoCandle Then
+                    '    stoploss = Math.Max(signalCandle.High, signalCandle.PreviousCandlePayload.High) + buffer
+                    '    slRemark = "Highest High"
+                    'End If
+                    'Dim slPoint As Decimal = stoploss - entryPrice
                     Dim atrSLPoint As Decimal = ConvertFloorCeling(_atrPayload(signalCandle.PayloadDate) * _userInputs.ATRMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
-                    If slPoint > atrSLPoint Then
-                        stoploss = entryPrice + atrSLPoint
-                        slRemark = "ATR"
-                    End If
-                    slPoint = stoploss - entryPrice
+                    'If slPoint > atrSLPoint Then
+                    Dim stoploss As Decimal = entryPrice + atrSLPoint
+                    Dim slRemark As String = "ATR"
+                    'End If
+                    Dim slPoint As Decimal = stoploss - entryPrice
                     Dim target As Decimal = entryPrice - ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
                     Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, stoploss, entryPrice, _userInputs.MaxLossPerTrade, _parentStrategy.StockType)
 
