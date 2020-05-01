@@ -1009,7 +1009,7 @@ Public Class frmMain
                     End Select
 
                     For tf As Integer = 1 To 1
-                        For atrMul As Decimal = 1 To 1
+                        For signalTyp As Decimal = 0 To 1           'Signal Type:0(for Two candle), Signal Type:1(for Three Candle)
                             For tgtMul As Decimal = 4 To 4
                                 For brkevnMvmnt As Integer = 0 To 0
                                     For imdtBrkout As Integer = 0 To 0
@@ -1040,9 +1040,10 @@ Public Class frmMain
                                                 .TickBasedStrategy = False
                                                 .RuleNumber = ruleNumber
 
-                                                .RuleEntityData = New HL_LHStrategyRule.StrategyRuleEntities With
+                                                .RuleEntityData = New HL_LHBreakoutStrategyRule.StrategyRuleEntities With
                                                                 {
-                                                                    .ATRMultiplier = atrMul,
+                                                                    .ATRMultiplier = 1,
+                                                                    .TypeOfSignal = signalTyp,
                                                                     .TargetMultiplier = tgtMul,
                                                                     .MaxLossPerTrade = -500,
                                                                     .BreakevenMovement = brkevnMvmnt,
@@ -1070,10 +1071,10 @@ Public Class frmMain
                                                 .RealtimeTrailingPercentage = 50
                                             End With
 
-                                            Dim ruleData As HL_LHStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                                            Dim filename As String = String.Format("HLLH Output,TF {0},ATRMul {1},TgtMul {2},BrkevnMvmnt {3},ImdtBrkout {4}",
+                                            Dim ruleData As HL_LHBreakoutStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                                            Dim filename As String = String.Format("HLLH Output,TF {0},SgnlTyp {1},TgtMul {2},BrkevnMvmnt {3},ImdtBrkout {4}",
                                                                                    backtestStrategy.SignalTimeFrame,
-                                                                                   ruleData.ATRMultiplier,
+                                                                                   ruleData.TypeOfSignal,
                                                                                    ruleData.TargetMultiplier,
                                                                                    ruleData.BreakevenMovement,
                                                                                    ruleData.ImmediateBreakout)

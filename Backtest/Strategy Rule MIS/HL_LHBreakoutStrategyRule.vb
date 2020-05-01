@@ -3,10 +3,14 @@ Imports System.Threading
 Imports Algo2TradeBLL
 Imports Utilities.Numbers.NumberManipulation
 
-Public Class HL_LHStrategyRule
+Public Class HL_LHBreakoutStrategyRule
     Inherits StrategyRule
 
 #Region "Entity"
+    Enum SignalType
+        TwoCandle = 0
+        ThreeCandle
+    End Enum
     Public Class StrategyRuleEntities
         Inherits RuleEntities
 
@@ -15,6 +19,7 @@ Public Class HL_LHStrategyRule
         Public MaxLossPerTrade As Decimal
         Public ImmediateBreakout As Boolean
         Public BreakevenMovement As Boolean
+        Public TypeOfSignal As SignalType
     End Class
 #End Region
 
@@ -60,6 +65,10 @@ Public Class HL_LHStrategyRule
                     Dim entryPrice As Decimal = signalCandle.High + buffer
                     Dim stoploss As Decimal = signalCandle.Low - buffer
                     Dim slRemark As String = "Candle Low"
+                    If _userInputs.TypeOfSignal = SignalType.TwoCandle Then
+                        stoploss = Math.Min(signalCandle.Low, signalCandle.PreviousCandlePayload.Low) - buffer
+                        slRemark = "Lowest Low"
+                    End If
                     Dim slPoint As Decimal = entryPrice - stoploss
                     Dim atrSLPoint As Decimal = ConvertFloorCeling(_atrPayload(signalCandle.PayloadDate) * _userInputs.ATRMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
                     If slPoint > atrSLPoint Then
@@ -90,6 +99,10 @@ Public Class HL_LHStrategyRule
                     Dim entryPrice As Decimal = signalCandle.Low - buffer
                     Dim stoploss As Decimal = signalCandle.High + buffer
                     Dim slRemark As String = "Candle High"
+                    If _userInputs.TypeOfSignal = SignalType.TwoCandle Then
+                        stoploss = Math.Max(signalCandle.High, signalCandle.PreviousCandlePayload.High) + buffer
+                        slRemark = "Highest High"
+                    End If
                     Dim slPoint As Decimal = stoploss - entryPrice
                     Dim atrSLPoint As Decimal = ConvertFloorCeling(_atrPayload(signalCandle.PayloadDate) * _userInputs.ATRMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
                     If slPoint > atrSLPoint Then
@@ -181,19 +194,29 @@ Public Class HL_LHStrategyRule
 
     Private Function GetSignalCandle(ByVal candle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)
         Dim ret As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection) = Nothing
-        If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing AndAlso
-            candle.PreviousCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
-            candle.PreviousCandlePayload.PreviousCandlePayload.PayloadDate.Date = _tradingDate.Date Then
-            If candle.High > candle.PreviousCandlePayload.High AndAlso
-                candle.PreviousCandlePayload.High > candle.PreviousCandlePayload.PreviousCandlePayload.High AndAlso
-                candle.Low > candle.PreviousCandlePayload.Low AndAlso
-                candle.PreviousCandlePayload.Low > candle.PreviousCandlePayload.PreviousCandlePayload.Low Then
-                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, candle, Trade.TradeExecutionDirection.Sell)
-            ElseIf candle.High < candle.PreviousCandlePayload.High AndAlso
-                candle.PreviousCandlePayload.High < candle.PreviousCandlePayload.PreviousCandlePayload.High AndAlso
-                candle.Low < candle.PreviousCandlePayload.Low AndAlso
-                candle.PreviousCandlePayload.Low < candle.PreviousCandlePayload.PreviousCandlePayload.Low Then
-                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, candle, Trade.TradeExecutionDirection.Buy)
+        If _userInputs.TypeOfSignal = SignalType.ThreeCandle Then
+            If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing AndAlso
+                candle.PreviousCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
+                candle.PreviousCandlePayload.PreviousCandlePayload.PayloadDate.Date = _tradingDate.Date Then
+                If candle.High > candle.PreviousCandlePayload.High AndAlso
+                    candle.PreviousCandlePayload.High > candle.PreviousCandlePayload.PreviousCandlePayload.High AndAlso
+                    candle.Low > candle.PreviousCandlePayload.Low AndAlso
+                    candle.PreviousCandlePayload.Low > candle.PreviousCandlePayload.PreviousCandlePayload.Low Then
+                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, candle, Trade.TradeExecutionDirection.Sell)
+                ElseIf candle.High < candle.PreviousCandlePayload.High AndAlso
+                    candle.PreviousCandlePayload.High < candle.PreviousCandlePayload.PreviousCandlePayload.High AndAlso
+                    candle.Low < candle.PreviousCandlePayload.Low AndAlso
+                    candle.PreviousCandlePayload.Low < candle.PreviousCandlePayload.PreviousCandlePayload.Low Then
+                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, candle, Trade.TradeExecutionDirection.Buy)
+                End If
+            End If
+        ElseIf _userInputs.TypeOfSignal = SignalType.TwoCandle Then
+            If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing AndAlso candle.PayloadDate.Date = _tradingDate.Date Then
+                If candle.Low > candle.PreviousCandlePayload.Low Then
+                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, candle, Trade.TradeExecutionDirection.Sell)
+                ElseIf candle.High < candle.PreviousCandlePayload.High Then
+                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, candle, Trade.TradeExecutionDirection.Buy)
+                End If
             End If
         End If
         Return ret
