@@ -338,7 +338,7 @@ Public Class frmMain
                 End With
 
                 Dim ruleData As NikhilPositionalStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                Dim filename As String = String.Format("Nikil Output,Tgt {0},PrcIntrvl {1},SrtQn {2},QtyMul {3},MaxNmbrItrtn {4},MaxTmGp {5}",
+                Dim filename As String = String.Format("Nikhil Output,Tgt {0},PrcIntrvl {1},SrtQn {2},QtyMul {3},MaxNmbrItrtn {4},MaxTmGp {5}",
                                                        ruleData.TargetPoint,
                                                        ruleData.PriceInterval,
                                                        ruleData.StartingQuantity,

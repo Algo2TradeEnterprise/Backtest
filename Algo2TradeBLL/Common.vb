@@ -371,32 +371,34 @@ Public Class Common
     End Function
 
     Public Shared Function ConvertDataTableToPayload(ByVal dt As DataTable,
-                                              ByVal openColumnIndex As Integer,
-                                              ByVal lowColumnIndex As Integer,
-                                              ByVal highColumnIndex As Integer,
-                                              ByVal closeColumnIndex As Integer,
-                                              ByVal volumeColumnIndex As Integer,
-                                              ByVal dateColumnIndex As Integer,
-                                              ByVal tradingSymbolColumnIndex As Integer) As Dictionary(Of Date, Payload)
-
-        Dim inputpayload As Dictionary(Of Date, Payload) = Nothing
-
+                                                      ByVal openColumnIndex As Integer,
+                                                      ByVal lowColumnIndex As Integer,
+                                                      ByVal highColumnIndex As Integer,
+                                                      ByVal closeColumnIndex As Integer,
+                                                      ByVal volumeColumnIndex As Integer,
+                                                      ByVal dateColumnIndex As Integer,
+                                                      ByVal tradingSymbolColumnIndex As Integer) As Dictionary(Of Date, Payload)
+        Dim ret As Dictionary(Of Date, Payload) = Nothing
         If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
+            Dim dateToCheck As Date = New Date(2019, 11, 22)
             Dim i As Integer = 0
             Dim cur_cum_vol As Long = Nothing
-            inputpayload = New Dictionary(Of Date, Payload)
             Dim tempPreCandle As Payload = Nothing
             While Not i = dt.Rows.Count()
-
-                Dim tempPayload As Payload
-                tempPayload = New Payload(Payload.CandleDataSource.Chart)
-                tempPayload.PreviousCandlePayload = tempPreCandle
-                tempPayload.Open = dt.Rows(i).Item(openColumnIndex)
-                tempPayload.Low = dt.Rows(i).Item(lowColumnIndex)
-                tempPayload.High = dt.Rows(i).Item(highColumnIndex)
-                tempPayload.Close = dt.Rows(i).Item(closeColumnIndex)
+                Dim tempPayload As Payload = New Payload(Payload.CandleDataSource.Chart)
                 tempPayload.PayloadDate = dt.Rows(i).Item(dateColumnIndex)
                 tempPayload.TradingSymbol = dt.Rows(i).Item(tradingSymbolColumnIndex)
+                tempPayload.PreviousCandlePayload = tempPreCandle
+
+                Dim multiplier As Integer = 1
+                If tempPayload.TradingSymbol = "NIFTYBEES" AndAlso tempPayload.PayloadDate.Date <= dateToCheck.Date Then
+                    multiplier = 10
+                End If
+
+                tempPayload.Open = dt.Rows(i).Item(openColumnIndex) / multiplier
+                tempPayload.Low = dt.Rows(i).Item(lowColumnIndex) / multiplier
+                tempPayload.High = dt.Rows(i).Item(highColumnIndex) / multiplier
+                tempPayload.Close = dt.Rows(i).Item(closeColumnIndex) / multiplier
                 If tempPayload.PreviousCandlePayload IsNot Nothing Then
                     If tempPayload.PayloadDate.Date = tempPayload.PreviousCandlePayload.PayloadDate.Date Then
                         tempPayload.CumulativeVolume = tempPayload.PreviousCandlePayload.CumulativeVolume + dt.Rows(i).Item(volumeColumnIndex)
@@ -407,11 +409,12 @@ Public Class Common
                     tempPayload.CumulativeVolume = dt.Rows(i).Item(volumeColumnIndex)
                 End If
                 tempPreCandle = tempPayload
-                inputpayload.Add(dt.Rows(i).Item(dateColumnIndex), tempPayload)
+                If ret Is Nothing Then ret = New Dictionary(Of Date, Payload)
+                ret.Add(dt.Rows(i).Item(dateColumnIndex), tempPayload)
                 i += 1
             End While
         End If
-        Return inputpayload
+        Return ret
     End Function
 
     Public Shared Function CalculateStandardDeviation(ByVal inputPayload As Dictionary(Of Date, Decimal)) As Double
