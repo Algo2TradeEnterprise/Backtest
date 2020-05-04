@@ -105,59 +105,7 @@ Namespace StrategyHelper
                                     Dim tradingSymbol As String = currentDayOneMinutePayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
                                         Case 0
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 1
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 2
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 3
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 4
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 5
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 6
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 7
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 8
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 9
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 10
-                                            stockRule = New VijayCNCStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 11
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 12
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 13
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 14
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 15
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 16
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 17
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 18
-                                            stockRule = New InvestmentCNCStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
-                                        Case 19
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 20
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 21
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 22
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 23
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 24
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 25
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 26
-                                            stockRule = New HKPositionalHourlyStrategyRule1(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
+
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -514,60 +462,15 @@ Namespace StrategyHelper
 #Region "Stock Selection"
         Private Function GetStockData(tradingDate As Date) As Dictionary(Of String, StockDetails)
             Dim ret As Dictionary(Of String, StockDetails) = Nothing
-            If Me.StockFileName IsNot Nothing Then
-                Dim dt As DataTable = Nothing
-                Using csvHelper As New Utilities.DAL.CSVHelper(Me.StockFileName, ",", _canceller)
-                    dt = csvHelper.GetDataTableFromCSV(1)
-                End Using
-                If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
-                    Select Case Me.RuleNumber
-                        Case 10
-                            Dim counter As Integer = 0
-                            For i = 1 To dt.Rows.Count - 1
-                                Dim rowDate As Date = dt.Rows(i)(0)
-                                'If rowDate.Date = tradingDate.Date Then
-                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                Dim tradingSymbol As String = dt.Rows(i).Item(1)
-                                Dim instrumentName As String = Nothing
-                                If tradingSymbol.Contains("FUT") Then
-                                    instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
-                                Else
-                                    instrumentName = tradingSymbol
-                                End If
-                                Dim detailsOfStock As StockDetails = New StockDetails With
-                                    {.StockName = instrumentName,
-                                    .LotSize = dt.Rows(i).Item(2),
-                                    .EligibleToTakeTrade = True,
-                                    .Supporting1 = dt.Rows(i).Item(5)}
-                                ret.Add(instrumentName, detailsOfStock)
-                                counter += 1
-                                If counter = Me.NumberOfTradeableStockPerDay Then Exit For
-                                'End If
-                            Next
-                        Case Else
-                            For i = 1 To dt.Rows.Count - 1
-                                Dim rowDate As Date = dt.Rows(i)(0)
-                                'If rowDate.Date = tradingDate.Date Then
-                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                Dim tradingSymbol As String = dt.Rows(i).Item(1)
-                                Dim instrumentName As String = Nothing
-                                If tradingSymbol.Contains("FUT") Then
-                                    instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
-                                Else
-                                    instrumentName = tradingSymbol
-                                End If
-                                Dim detailsOfStock As StockDetails = New StockDetails With
-                                    {.StockName = instrumentName,
+
+            Dim detailsOfStock As StockDetails = New StockDetails With
+                                    {.StockName = "NIFTYBEES",
                                     .LotSize = 1,
-                                    .EligibleToTakeTrade = True,
-                                    .Supporting1 = dt.Rows(i).Item(2)}
-                                ret.Add(instrumentName, detailsOfStock)
-                                Exit For
-                                'End If
-                            Next
-                    End Select
-                End If
-            End If
+                                    .EligibleToTakeTrade = True}
+
+            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+            ret.Add(detailsOfStock.StockName, detailsOfStock)
+
             Return ret
         End Function
 #End Region

@@ -361,6 +361,7 @@ Public Class Payload
 
     Public Property Supporting As String
 
+    <NonSerialized>
     Private _Ticks As List(Of Payload)
     Public ReadOnly Property Ticks As List(Of Payload)
         Get

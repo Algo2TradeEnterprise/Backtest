@@ -110,62 +110,6 @@ Namespace StrategyHelper
                                     Select Case RuleNumber
                                         Case 0
                                             Throw New ApplicationException("Not a CNC strategy")
-                                        Case 1
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 2
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 3
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 4
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 5
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 6
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 7
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 8
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 9
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 10
-                                            stockRule = New VijayCNCStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 11
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 12
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 13
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 14
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 15
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 16
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 17
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 18
-                                            stockRule = New InvestmentCNCStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
-                                        Case 19
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 20
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 21
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 22
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 23
-                                            stockRule = New HKPositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
-                                        Case 24
-                                            stockRule = New HKPositionalStrategyRule1(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
-                                        Case 25
-                                            stockRule = New SMIHKPositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
-                                        Case 26
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 27
-                                            stockRule = New ATRPositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2)
-                                        Case 28
-                                            stockRule = New PriceDropPositionalStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -437,115 +381,26 @@ Namespace StrategyHelper
                     dt = csvHelper.GetDataTableFromCSV(1)
                 End Using
                 If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
-                    Select Case Me.RuleNumber
-                        Case 10
-                            Dim counter As Integer = 0
-                            For i = 1 To dt.Rows.Count - 1
-                                Dim rowDate As Date = dt.Rows(i)(0)
-                                'If rowDate.Date = tradingDate.Date Then
-                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                Dim tradingSymbol As String = dt.Rows(i).Item(1)
-                                Dim instrumentName As String = Nothing
-                                If tradingSymbol.Contains("FUT") Then
-                                    instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
-                                Else
-                                    instrumentName = tradingSymbol
-                                End If
-                                Dim detailsOfStock As StockDetails = New StockDetails With
-                                    {.StockName = instrumentName,
-                                    .LotSize = dt.Rows(i).Item(2),
-                                    .EligibleToTakeTrade = True,
-                                    .Supporting1 = dt.Rows(i).Item(5)}
-                                ret.Add(instrumentName, detailsOfStock)
-                                counter += 1
-                                If counter = Me.NumberOfTradeableStockPerDay Then Exit For
-                                'End If
-                            Next
-                        Case 27, 28
-                            For i = 1 To dt.Rows.Count - 1
-                                Dim rowDate As Date = dt.Rows(i)(0)
-                                'If rowDate.Date = tradingDate.Date Then
-                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                Dim tradingSymbol As String = dt.Rows(i).Item(1)
-                                Dim instrumentName As String = Nothing
-                                If tradingSymbol.Contains("FUT") Then
-                                    instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
-                                Else
-                                    instrumentName = tradingSymbol
-                                End If
-                                Dim detailsOfStock As StockDetails = New StockDetails With
-                                    {.StockName = instrumentName,
-                                    .LotSize = 1,
-                                    .EligibleToTakeTrade = True,
-                                    .Supporting1 = dt.Rows(i).Item(2)}
-                                ret.Add(instrumentName, detailsOfStock)
-                                If i = Me.NumberOfTradeableStockPerDay Then Exit For
-                                'End If
-                            Next
-                            If ret IsNot Nothing AndAlso ret.Count > 0 Then
-                                For Each stock In ret.Keys
-                                    If tradeStartingDate.Date = tradingDate.Date Then
-                                        Dim eodPayload As Dictionary(Of Date, Payload) = Cmn.GetRawPayload(Common.DataBaseTable.EOD_POSITIONAL, stock, tradingDate, tradingDate)
-                                        If eodPayload IsNot Nothing AndAlso eodPayload.Count > 0 Then
-                                            ret(stock).Supporting1 = eodPayload.LastOrDefault.Value.Open
-                                        End If
-                                    Else
-                                        Dim eodPayload As Dictionary(Of Date, Payload) = Cmn.GetRawPayload(Common.DataBaseTable.EOD_POSITIONAL, stock, tradeStartingDate, tradingDate.AddDays(-1))
-                                        If eodPayload IsNot Nothing AndAlso eodPayload.Count > 0 Then
-                                            ret(stock).Supporting1 = eodPayload.Values.Max(Function(x)
-                                                                                               Return x.High
-                                                                                           End Function)
-                                        End If
-                                    End If
-                                Next
-                                Dim highestStockPrice As Decimal = Decimal.MinValue
-                                Dim higestStockName As String = Nothing
-                                For Each stock In ret.Keys
-                                    Dim eodPayload As Dictionary(Of Date, Payload) = Cmn.GetRawPayload(Common.DataBaseTable.EOD_POSITIONAL, stock, tradingDate, tradingDate)
-                                    If eodPayload IsNot Nothing AndAlso eodPayload.Count > 0 Then
-                                        If eodPayload.Values.FirstOrDefault.Open > highestStockPrice Then
-                                            highestStockPrice = eodPayload.Values.FirstOrDefault.Open
-                                            higestStockName = stock
-                                        End If
-                                    End If
-                                Next
-                                If highestStockPrice >= _highestInvestment Then
-                                    Dim eodPayload As Dictionary(Of Date, Payload) = Cmn.GetRawPayload(Common.DataBaseTable.EOD_POSITIONAL, higestStockName, tradingDate.AddYears(-10), tradingDate)
-                                    If eodPayload IsNot Nothing AndAlso eodPayload.Count > 0 Then
-                                        Dim monthlyPayload As Dictionary(Of Date, Payload) = Common.ConvertDayPayloadsToMonth(eodPayload)
-                                        Dim atrPayload As Dictionary(Of Date, Decimal) = Nothing
-                                        Indicator.ATR.CalculateATR(14, monthlyPayload, atrPayload)
-                                        Dim previousMonth As Date = New Date(tradingDate.Year, tradingDate.Month, 1).AddMonths(-1)
-                                        Dim atr As Decimal = atrPayload(previousMonth)
-                                        _highestInvestment = (highestStockPrice * 2) + (atr * 1.1)
-                                    End If
-                                End If
-                                For Each stock In ret.Keys
-                                    ret(stock).Supporting2 = _highestInvestment
-                                Next
-                            End If
-                        Case Else
-                            For i = 1 To dt.Rows.Count - 1
-                                Dim rowDate As Date = dt.Rows(i)(0)
-                                'If rowDate.Date = tradingDate.Date Then
-                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                Dim tradingSymbol As String = dt.Rows(i).Item(1)
-                                Dim instrumentName As String = Nothing
-                                If tradingSymbol.Contains("FUT") Then
-                                    instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
-                                Else
-                                    instrumentName = tradingSymbol
-                                End If
-                                Dim detailsOfStock As StockDetails = New StockDetails With
-                                    {.StockName = instrumentName,
-                                    .LotSize = 1,
-                                    .EligibleToTakeTrade = True,
-                                    .Supporting1 = dt.Rows(i).Item(2)}
-                                ret.Add(instrumentName, detailsOfStock)
-                                If i = Me.NumberOfTradeableStockPerDay Then Exit For
-                                'End If
-                            Next
-                    End Select
+                    For i = 1 To dt.Rows.Count - 1
+                        Dim rowDate As Date = dt.Rows(i)(0)
+                        'If rowDate.Date = tradingDate.Date Then
+                        If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                        Dim tradingSymbol As String = dt.Rows(i).Item(1)
+                        Dim instrumentName As String = Nothing
+                        If tradingSymbol.Contains("FUT") Then
+                            instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                        Else
+                            instrumentName = tradingSymbol
+                        End If
+                        Dim detailsOfStock As StockDetails = New StockDetails With
+                            {.StockName = instrumentName,
+                            .LotSize = 1,
+                            .EligibleToTakeTrade = True,
+                            .Supporting1 = dt.Rows(i).Item(2)}
+                        ret.Add(instrumentName, detailsOfStock)
+                        If i = Me.NumberOfTradeableStockPerDay Then Exit For
+                        'End If
+                    Next
                 End If
             End If
             Return ret
