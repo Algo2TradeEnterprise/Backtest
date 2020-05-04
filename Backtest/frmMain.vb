@@ -303,7 +303,7 @@ Public Class frmMain
                                                             eodExitTime:=TimeSpan.Parse("15:29:59"),
                                                             tickSize:=tick,
                                                             marginMultiplier:=margin,
-                                                            timeframe:=180,
+                                                            timeframe:=1,
                                                             heikenAshiCandle:=False,
                                                             stockType:=stockType,
                                                             databaseTable:=database,
@@ -319,7 +319,15 @@ Public Class frmMain
 
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                    .RuleEntityData = Nothing
+                    .RuleEntityData = New NikhilPositionalStrategyRule.StrategyRuleEntities With
+                                        {
+                                         .TargetPoint = 7,
+                                         .PriceInterval = 5,
+                                         .StartingQuantity = 1,
+                                         .QuantityMultiplier = 2,
+                                         .MaxNumberOfIteration = 5,
+                                         .MinTimeGapInMinutes = 1
+                                        }
 
                     .NumberOfTradeableStockPerDay = 1
 
@@ -329,8 +337,14 @@ Public Class frmMain
                     .TickBasedStrategy = True
                 End With
 
-                Dim filename As String = String.Format("Nikil Output {0}_{1}_{2}", Now.Hour, Now.Minute, Now.Second,
-                                                   If(backtestStrategy.UsableCapital = Decimal.MaxValue / 2, "∞", backtestStrategy.UsableCapital))
+                Dim ruleData As NikhilPositionalStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                Dim filename As String = String.Format("Nikil Output,Tgt {0},PrcIntrvl {1},SrtQn {2},QtyMul {3},MaxNmbrItrtn {4},MaxTmGp {5}",
+                                                       ruleData.TargetPoint,
+                                                       ruleData.PriceInterval,
+                                                       ruleData.StartingQuantity,
+                                                       ruleData.QuantityMultiplier,
+                                                       ruleData.MaxNumberOfIteration,
+                                                       ruleData.MinTimeGapInMinutes)
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using

@@ -125,11 +125,13 @@ Public Class NikhilPositionalStrategyRule
             ret = New Tuple(Of Boolean, Integer)(True, 0)
         Else
             If lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
-                ret = New Tuple(Of Boolean, Integer)(True, 0)
+                If currentTick.PayloadDate >= lastExecutedTrade.EntryTime.AddMinutes(_userInputs.MinTimeGapInMinutes) Then
+                    ret = New Tuple(Of Boolean, Integer)(True, 0)
+                End If
             ElseIf lastExecutedTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
                 Dim lastTradeEntryPrice As Decimal = lastExecutedTrade.EntryPrice
                 Dim lastTradeIteration As Integer = lastExecutedTrade.Supporting1
-                If lastTradeIteration < _userInputs.MaxNumberOfIteration Then
+                If lastTradeIteration + 1 < _userInputs.MaxNumberOfIteration Then
                     If currentTick.Open <= lastTradeEntryPrice - _userInputs.PriceInterval Then
                         If currentTick.PayloadDate >= lastExecutedTrade.EntryTime.AddMinutes(_userInputs.MinTimeGapInMinutes) Then
                             ret = New Tuple(Of Boolean, Integer)(True, lastTradeIteration + 1)
@@ -147,7 +149,7 @@ Public Class NikhilPositionalStrategyRule
             Dim lastEntryOrder As Trade = Me._parentStrategy.GetLastEntryTradeOfTheStock(currentPayload, Me._parentStrategy.TradeType)
             Dim lastClosedOrder As Trade = Me._parentStrategy.GetLastExitTradeOfTheStock(currentPayload, Me._parentStrategy.TradeType)
             If lastEntryOrder IsNot Nothing Then ret = lastEntryOrder
-            If lastClosedOrder IsNot Nothing AndAlso lastClosedOrder.ExitTime >= lastEntryOrder.EntryTime Then
+            If lastClosedOrder IsNot Nothing AndAlso lastClosedOrder.ExitTime > lastEntryOrder.EntryTime Then
                 ret = lastClosedOrder
             End If
         End If
