@@ -158,7 +158,7 @@ Public Class XMinVWAPStrategy
                     If candle.Volume > _smaPayload(candle.PayloadDate) * 2 Then
                         If candle.Close < _vwapPayload(candle.PayloadDate) AndAlso
                             candle.PreviousCandlePayload.Close > _vwapPayload(candle.PreviousCandlePayload.PayloadDate) Then
-                            If candle.PayloadDate >= _firstSignalCandleTime AndAlso candle.PayloadDate <= _lastSignalCandleTime Then
+                            If candle.PayloadDate >= _firstSignalCandleTime AndAlso candle.PayloadDate < _lastSignalCandleTime Then
                                 _direction = Trade.TradeExecutionDirection.Sell
                             End If
                         End If
@@ -169,7 +169,7 @@ Public Class XMinVWAPStrategy
                     If candle.Volume > _smaPayload(candle.PayloadDate) * 2 Then
                         If candle.Close > _vwapPayload(candle.PayloadDate) AndAlso
                             candle.PreviousCandlePayload.Close < _vwapPayload(candle.PreviousCandlePayload.PayloadDate) Then
-                            If candle.PayloadDate >= _firstSignalCandleTime AndAlso candle.PayloadDate <= _lastSignalCandleTime Then
+                            If candle.PayloadDate >= _firstSignalCandleTime AndAlso candle.PayloadDate < _lastSignalCandleTime Then
                                 _direction = Trade.TradeExecutionDirection.Buy
                             End If
                         End If
