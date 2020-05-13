@@ -319,7 +319,7 @@ Public Class frmMain
 
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                    .RuleEntityData = New NikhilPositionalStrategyRule.StrategyRuleEntities With
+                    .RuleEntityData = New VijayPositionalStrategyRule.StrategyRuleEntities With
                                         {
                                          .TargetPoint = 7,
                                          .PriceInterval = 5,
@@ -337,7 +337,7 @@ Public Class frmMain
                     .TickBasedStrategy = True
                 End With
 
-                Dim ruleData As NikhilPositionalStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                Dim ruleData As VijayPositionalStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
                 Dim filename As String = String.Format("Vijay Output,Tgt {0},PrcIntrvl {1},SrtQn {2},QtyMul {3},MaxNmbrItrtn {4},MaxTmGp {5}",
                                                        ruleData.TargetPoint,
                                                        ruleData.PriceInterval,

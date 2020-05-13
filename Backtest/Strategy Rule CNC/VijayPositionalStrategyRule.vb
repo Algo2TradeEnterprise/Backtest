@@ -3,7 +3,7 @@ Imports System.Threading
 Imports Algo2TradeBLL
 Imports Utilities.Numbers.NumberManipulation
 
-Public Class NikhilPositionalStrategyRule
+Public Class VijayPositionalStrategyRule
     Inherits StrategyRule
 
 #Region "Entity"
