@@ -56,12 +56,12 @@ Namespace StrategyHelper
             Else
                 Dim strategyName As String = String.Format("Strategy{0}", Me.RuleNumber)
                 OnHeartbeat("Getting unique instrument list")
-                Dim allInstrumentList As List(Of String) = GetUniqueInstrumentList(startDate, endDate)
-                Dim dataFtchr As DataFetcher = New DataFetcher(_canceller, My.Settings.ServerName, allInstrumentList, startDate.AddDays(-15), endDate, Me.StockType, strategyName)
-                AddHandler dataFtchr.Heartbeat, AddressOf OnHeartbeat
-                AddHandler dataFtchr.WaitingFor, AddressOf OnWaitingFor
-                AddHandler dataFtchr.DocumentRetryStatus, AddressOf OnDocumentRetryStatus
-                AddHandler dataFtchr.DocumentDownloadComplete, AddressOf OnDocumentDownloadComplete
+                'Dim allInstrumentList As List(Of String) = GetUniqueInstrumentList(startDate, endDate)
+                'Dim dataFtchr As DataFetcher = New DataFetcher(_canceller, My.Settings.ServerName, allInstrumentList, startDate.AddDays(-15), endDate, Me.StockType, strategyName)
+                'AddHandler dataFtchr.Heartbeat, AddressOf OnHeartbeat
+                'AddHandler dataFtchr.WaitingFor, AddressOf OnWaitingFor
+                'AddHandler dataFtchr.DocumentRetryStatus, AddressOf OnDocumentRetryStatus
+                'AddHandler dataFtchr.DocumentDownloadComplete, AddressOf OnDocumentDownloadComplete
 
                 If File.Exists(tradesFileName) Then File.Delete(tradesFileName)
                 If File.Exists(capitalFileName) Then File.Delete(capitalFileName)
@@ -91,8 +91,8 @@ Namespace StrategyHelper
                             Dim XDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             Dim currentDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             If Me.DataSource = SourceOfData.Database Then
-                                'XDayOneMinutePayload = Cmn.GetRawPayload(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate)
-                                XDayOneMinutePayload = Await dataFtchr.GetCandleData(stockList(stock).TradingSymbol, tradeCheckingDate.AddDays(-7), tradeCheckingDate).ConfigureAwait(False)
+                                XDayOneMinutePayload = Cmn.GetRawPayload(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate)
+                                'XDayOneMinutePayload = Await dataFtchr.GetCandleData(stockList(stock).TradingSymbol, tradeCheckingDate.AddDays(-7), tradeCheckingDate).ConfigureAwait(False)
                             ElseIf Me.DataSource = SourceOfData.Live Then
                                 XDayOneMinutePayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate).ConfigureAwait(False)
                             End If
