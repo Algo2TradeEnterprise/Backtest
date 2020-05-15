@@ -47,7 +47,7 @@ Public Class HKPositionalStrategyRule
             Dim signal As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection) = GetSignalForEntry(currentMinutePayload.PreviousCandlePayload, currentTick)
             If signal IsNot Nothing AndAlso signal.Item1 Then
                 Dim quantity As Integer = Me.LotSize
-                Dim slPoint As Decimal = ConvertFloorCeling(signal.Item2, _parentStrategy.GetTickSize(_tradingSymbol), RoundOfType.Floor)
+                Dim slPoint As Decimal = ConvertFloorCeling(signal.Item2 * _userInputs.StoplossPercentage / 100, _parentStrategy.GetTickSize(_tradingSymbol), RoundOfType.Floor)
                 Dim tgtPoint As Decimal = 100000000000000
 
                 If signal.Item3 = Trade.TradeExecutionDirection.Buy AndAlso Not _parentStrategy.IsTradeActive(currentTick, _parentStrategy.TradeType, Trade.TradeExecutionDirection.Buy) Then
@@ -55,6 +55,7 @@ Public Class HKPositionalStrategyRule
                     Dim orderType As Trade.TypeOfOrder = Trade.TypeOfOrder.SL
                     If currentTick.Open >= enrtyPrice Then
                         orderType = Trade.TypeOfOrder.Market
+                        enrtyPrice = currentTick.Open
                     End If
 
                     parameter = New PlaceOrderParameters With {
@@ -74,6 +75,7 @@ Public Class HKPositionalStrategyRule
                     Dim orderType As Trade.TypeOfOrder = Trade.TypeOfOrder.SL
                     If currentTick.Open <= enrtyPrice Then
                         orderType = Trade.TypeOfOrder.Market
+                        enrtyPrice = currentTick.Open
                     End If
 
                     parameter = New PlaceOrderParameters With {

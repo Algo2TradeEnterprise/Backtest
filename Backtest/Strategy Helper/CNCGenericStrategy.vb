@@ -71,7 +71,6 @@ Namespace StrategyHelper
                         'First lets build the payload for all the stocks
                         Dim stockCount As Integer = 0
                         Dim eligibleStockCount As Integer = 0
-                        Dim contractRolloverList As List(Of String) = Nothing
                         Dim nextTradingDay As Date = Cmn.GetNexTradingDay(Me.DatabaseTable, tradeCheckingDate)
                         For Each stock In stockList.Keys
                             _canceller.Token.ThrowIfCancellationRequested()
@@ -117,8 +116,7 @@ Namespace StrategyHelper
                                     If nextTradingDay <> Date.MinValue Then
                                         Dim nextDayTradingSymbol As String = Cmn.GetCurrentTradingSymbol(Me.DatabaseTable, nextTradingDay, stock)
                                         If nextDayTradingSymbol IsNot Nothing AndAlso nextDayTradingSymbol <> tradingSymbol Then
-                                            If contractRolloverList Is Nothing Then contractRolloverList = New List(Of String)
-                                            contractRolloverList.Add(nextDayTradingSymbol)
+                                            stockList(stock).ContractRolloverSymbol = nextDayTradingSymbol
                                         End If
                                     End If
                                 End If
@@ -485,6 +483,7 @@ Namespace StrategyHelper
                                     {.StockName = instrumentName,
                                     .LotSize = lotSize,
                                     .Supporting1 = buffer,
+                                    .ContractRolloverSymbol = Nothing,
                                     .EligibleToTakeTrade = True}
 
                         If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)

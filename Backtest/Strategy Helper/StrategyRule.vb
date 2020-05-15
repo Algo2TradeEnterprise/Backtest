@@ -38,8 +38,8 @@ Namespace StrategyHelper
 
         Protected ReadOnly _parentStrategy As Strategy
         Protected ReadOnly _tradingDate As Date
-        Protected ReadOnly _tradingSymbol As String
-        Protected ReadOnly _inputPayload As Dictionary(Of Date, Payload)
+        Protected _tradingSymbol As String
+        Protected _inputPayload As Dictionary(Of Date, Payload)
         Protected ReadOnly _cts As CancellationTokenSource
         Protected ReadOnly _entities As RuleEntities
 
@@ -59,6 +59,11 @@ Namespace StrategyHelper
             _entities = entities
 
             EligibleToTakeTrade = True
+        End Sub
+
+        Public Sub UpdateInputPayloadAndTradingSymbol(ByVal inputPayload As Dictionary(Of Date, Payload), ByVal tradingSymbol As String)
+            _inputPayload = inputPayload
+            _tradingSymbol = tradingSymbol
         End Sub
 
         Public Overridable Sub CompletePreProcessing()
