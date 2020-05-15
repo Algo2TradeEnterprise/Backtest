@@ -767,6 +767,7 @@ Namespace StrategyHelper
                         Next
                     End If
                     Dim targetPoint As Decimal = currentTrade.PotentialTarget - currentTrade.EntryPrice
+                    Dim slPoint As Decimal = currentTrade.EntryPrice - currentTrade.PotentialStopLoss
                     If reverseSignalExitOnly Then
                         If reverseSignalExit OrElse StockNumberOfTrades(currentPayload.PayloadDate, currentPayload.TradingSymbol) >= 1 Then
                             ExitTradeByForce(currentTrade, currentPayload, "Opposite direction trade exited")
@@ -781,7 +782,7 @@ Namespace StrategyHelper
                     Else
                         currentTrade.UpdateTrade(EntryPrice:=currentPayload.Open, EntryTime:=currentPayload.PayloadDate, TradeCurrentStatus:=Trade.TradeExecutionStatus.Inprogress)
                     End If
-                    currentTrade.UpdateTrade(PotentialTarget:=currentTrade.EntryPrice + targetPoint)
+                    currentTrade.UpdateTrade(PotentialTarget:=currentTrade.EntryPrice + targetPoint, PotentialStopLoss:=currentTrade.EntryPrice - slPoint)
                     ret = True
                 End If
             ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
@@ -795,6 +796,7 @@ Namespace StrategyHelper
                         Next
                     End If
                     Dim targetPoint As Decimal = currentTrade.EntryPrice - currentTrade.PotentialTarget
+                    Dim slPoint As Decimal = currentTrade.PotentialStopLoss - currentTrade.EntryPrice
                     If reverseSignalExitOnly Then
                         If reverseSignalExit OrElse StockNumberOfTrades(currentPayload.PayloadDate, currentPayload.TradingSymbol) >= 1 Then
                             ExitTradeByForce(currentTrade, currentPayload, "Opposite direction trade exited")
@@ -809,7 +811,7 @@ Namespace StrategyHelper
                     Else
                         currentTrade.UpdateTrade(EntryPrice:=currentPayload.Open, EntryTime:=currentPayload.PayloadDate, TradeCurrentStatus:=Trade.TradeExecutionStatus.Inprogress)
                     End If
-                    currentTrade.UpdateTrade(PotentialTarget:=currentTrade.EntryPrice - targetPoint)
+                    currentTrade.UpdateTrade(PotentialTarget:=currentTrade.EntryPrice - targetPoint, PotentialStopLoss:=currentTrade.EntryPrice + slPoint)
                     ret = True
                 End If
             End If
