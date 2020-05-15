@@ -272,38 +272,44 @@ Public Class frmMain
             Else
                 sourceData = Strategy.SourceOfData.Database
             End If
-            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
+            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Commodity
             Dim database As Common.DataBaseTable = Common.DataBaseTable.None
             Dim margin As Decimal = 0
-            Dim tick As Decimal = 0
+            Dim tick As Dictionary(Of String, Decimal) = Nothing
             Select Case stockType
                 Case Trade.TypeOfStock.Cash
                     database = Common.DataBaseTable.Intraday_Cash
-                    margin = 1
-                    tick = 0.05
+                    margin = 10
+                    tick = Nothing
                 Case Trade.TypeOfStock.Commodity
                     database = Common.DataBaseTable.Intraday_Commodity
-                    margin = 1
-                    tick = 1
+                    margin = 70
+                    tick = New Dictionary(Of String, Decimal) From {
+                        {"CRUDEOIL", 1},
+                        {"ALUMINIUM", 0.05},
+                        {"NATURALGAS", 0.1},
+                        {"SILVERMIC", 1},
+                        {"GOLDGUINEA", 1}
+                    }
                 Case Trade.TypeOfStock.Currency
                     database = Common.DataBaseTable.Intraday_Currency
-                    margin = 1
-                    tick = 0.0025
+                    margin = 98
+                    tick = Nothing
                 Case Trade.TypeOfStock.Futures
                     database = Common.DataBaseTable.Intraday_Futures
-                    margin = 1
-                    tick = 0.05
+                    margin = 30
+                    tick = Nothing
             End Select
 
             Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
-                                                            exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                            exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                            tradeStartTime:=TimeSpan.Parse("09:31:00"),
-                                                            lastTradeEntryTime:=TimeSpan.Parse("15:14:59"),
-                                                            eodExitTime:=TimeSpan.Parse("15:29:59"),
+                                                            exchangeStartTime:=TimeSpan.Parse("09:00:00"),
+                                                            exchangeEndTime:=TimeSpan.Parse("23:29:59"),
+                                                            tradeStartTime:=TimeSpan.Parse("09:00:00"),
+                                                            lastTradeEntryTime:=TimeSpan.Parse("23:29:59"),
+                                                            eodExitTime:=TimeSpan.Parse("23:29:59"),
                                                             tickSize:=tick,
                                                             marginMultiplier:=margin,
-                                                            timeframe:=1,
+                                                            timeframe:=30,
                                                             heikenAshiCandle:=False,
                                                             stockType:=stockType,
                                                             databaseTable:=database,
@@ -315,18 +321,13 @@ Public Class frmMain
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Subhodip Stock List.csv")
 
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                    .RuleEntityData = New VijayPositionalStrategyRule.StrategyRuleEntities With
+                    .RuleEntityData = New HKPositionalStrategyRule.StrategyRuleEntities With
                                         {
-                                         .TargetPoint = 7,
-                                         .PriceInterval = 5,
-                                         .StartingQuantity = 1,
-                                         .QuantityMultiplier = 2,
-                                         .MaxNumberOfIteration = 5,
-                                         .MinTimeGapInMinutes = 1
+                                         .StoplossPercentage = 0.7
                                         }
 
                     .NumberOfTradeableStockPerDay = 1
@@ -337,17 +338,13 @@ Public Class frmMain
                     .TickBasedStrategy = True
                 End With
 
-                Dim ruleData As VijayPositionalStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                Dim filename As String = String.Format("Vijay Output,Tgt {0},PrcIntrvl {1},SrtQn {2},QtyMul {3},MaxNmbrItrtn {4},MaxTmGp {5}",
-                                                       ruleData.TargetPoint,
-                                                       ruleData.PriceInterval,
-                                                       ruleData.StartingQuantity,
-                                                       ruleData.QuantityMultiplier,
-                                                       ruleData.MaxNumberOfIteration,
-                                                       ruleData.MinTimeGapInMinutes)
+                Dim ruleData As HKPositionalStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                Dim filename As String = String.Format("Subhodip Output")
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using
+        Catch oex As OperationCanceledException
+            MsgBox(oex.Message, MsgBoxStyle.Exclamation)
         Catch ex As Exception
             MsgBox(ex.ToString, MsgBoxStyle.Critical)
         Finally

@@ -16,7 +16,7 @@ Namespace StrategyHelper
                        ByVal tradeStartTime As TimeSpan,
                        ByVal lastTradeEntryTime As TimeSpan,
                        ByVal eodExitTime As TimeSpan,
-                       ByVal tickSize As Decimal,
+                       ByVal tickSize As Dictionary(Of String, Decimal),
                        ByVal marginMultiplier As Decimal,
                        ByVal timeframe As Integer,
                        ByVal heikenAshiCandle As Boolean,
@@ -105,7 +105,7 @@ Namespace StrategyHelper
                                     Dim tradingSymbol As String = currentDayOneMinutePayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
                                         Case 0
-                                            stockRule = New VijayPositionalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                            stockRule = New HKPositionalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -463,15 +463,25 @@ Namespace StrategyHelper
 #Region "Stock Selection"
         Private Function GetStockData(tradingDate As Date) As Dictionary(Of String, StockDetails)
             Dim ret As Dictionary(Of String, StockDetails) = Nothing
+            Using csvHlpr As New Utilities.DAL.CSVHelper(Me.StockFileName, ",", _canceller)
+                Dim dt As DataTable = csvHlpr.GetDataTableFromCSV(1)
+                If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
+                    For row As Integer = 0 To dt.Rows.Count - 1
+                        Dim instrumentName As String = dt.Rows(row).Item("Instrument Name")
+                        Dim lotSize As String = dt.Rows(row).Item("Lot Size")
+                        Dim buffer As String = dt.Rows(row).Item("Buffer")
 
-            Dim detailsOfStock As StockDetails = New StockDetails With
-                                    {.StockName = "NIFTYBEES",
-                                    .LotSize = 1,
+                        Dim detailsOfStock As StockDetails = New StockDetails With
+                                    {.StockName = instrumentName,
+                                    .LotSize = lotSize,
+                                    .Supporting1 = buffer,
                                     .EligibleToTakeTrade = True}
 
-            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-            ret.Add(detailsOfStock.StockName, detailsOfStock)
-
+                        If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                        ret.Add(detailsOfStock.StockName, detailsOfStock)
+                    Next
+                End If
+            End Using
             Return ret
         End Function
 #End Region

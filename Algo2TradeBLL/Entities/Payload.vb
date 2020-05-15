@@ -366,7 +366,19 @@ Public Class Payload
     Public ReadOnly Property Ticks As List(Of Payload)
         Get
             'Dim tickSize As Decimal = NumberManipulation.ConvertFloorCeling(Me.Close * 0.01 * 0.025, 0.05, RoundOfType.Floor)
-            Dim tickSize As Decimal = 0.05
+            Dim tickSize As Decimal = 1
+            Select Case Me.RawInstrumentName
+                Case "CRUDEOIL"
+                    tickSize = 1
+                Case "ALUMINIUM"
+                    tickSize = 0.05
+                Case "NATURALGAS"
+                    tickSize = 0.1
+                Case "SILVERMIC"
+                    tickSize = 1
+                Case "GOLDGUINEA"
+                    tickSize = 1
+            End Select
             'TO DO: Change the vaue of tickSize to take the actual tick as per Exchange
             If _Ticks Is Nothing OrElse _Ticks.Count = 0 Then
                 Dim multiplier As Short = 0

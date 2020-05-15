@@ -16,7 +16,7 @@ Namespace StrategyHelper
                        ByVal tradeStartTime As TimeSpan,
                        ByVal lastTradeEntryTime As TimeSpan,
                        ByVal eodExitTime As TimeSpan,
-                       ByVal tickSize As Decimal,
+                       ByVal tickSize As Dictionary(Of String, Decimal),
                        ByVal marginMultiplier As Decimal,
                        ByVal timeframe As Integer,
                        ByVal heikenAshiCandle As Boolean,
