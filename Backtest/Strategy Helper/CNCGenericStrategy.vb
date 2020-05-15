@@ -71,6 +71,8 @@ Namespace StrategyHelper
                         'First lets build the payload for all the stocks
                         Dim stockCount As Integer = 0
                         Dim eligibleStockCount As Integer = 0
+                        Dim contractRolloverList As List(Of String) = Nothing
+                        Dim nextTradingDay As Date = Cmn.GetNexTradingDay(Me.DatabaseTable, tradeCheckingDate)
                         For Each stock In stockList.Keys
                             _canceller.Token.ThrowIfCancellationRequested()
                             stockCount += 1
@@ -111,6 +113,14 @@ Namespace StrategyHelper
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
                                     stockRule.CompletePreProcessing()
                                     stocksRuleData.Add(stock, stockRule)
+
+                                    If nextTradingDay <> Date.MinValue Then
+                                        Dim nextDayTradingSymbol As String = Cmn.GetCurrentTradingSymbol(Me.DatabaseTable, nextTradingDay, stock)
+                                        If nextDayTradingSymbol IsNot Nothing AndAlso nextDayTradingSymbol <> tradingSymbol Then
+                                            If contractRolloverList Is Nothing Then contractRolloverList = New List(Of String)
+                                            contractRolloverList.Add(nextDayTradingSymbol)
+                                        End If
+                                    End If
                                 End If
                             End If
                         Next
