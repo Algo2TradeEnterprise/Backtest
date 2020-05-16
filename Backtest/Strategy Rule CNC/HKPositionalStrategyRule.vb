@@ -15,6 +15,8 @@ Public Class HKPositionalStrategyRule
 #End Region
 
     Private _hkPayload As Dictionary(Of Date, Payload)
+    Private _lastSignal As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection) = Nothing
+    Private _lastTrade As Trade = Nothing
 
     Private ReadOnly _buffer As Decimal
     Private ReadOnly _userInputs As StrategyRuleEntities
@@ -34,6 +36,7 @@ Public Class HKPositionalStrategyRule
     Public Overrides Sub CompletePreProcessing()
         MyBase.CompletePreProcessing()
 
+        _hkPayload = Nothing
         Indicator.HeikenAshi.ConvertToHeikenAshi(_signalPayload, _hkPayload)
     End Sub
 
@@ -43,11 +46,12 @@ Public Class HKPositionalStrategyRule
         Dim currentMinutePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         Dim parameter As PlaceOrderParameters = Nothing
         If currentMinutePayload IsNot Nothing AndAlso currentMinutePayload.PreviousCandlePayload IsNot Nothing AndAlso
-            Not _parentStrategy.IsTradeOpen(currentTick, _parentStrategy.TradeType) Then
+            Not _parentStrategy.IsTradeOpen(currentTick, _parentStrategy.TradeType) AndAlso Not ForceCancellationDone Then
             Dim signal As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection) = GetSignalForEntry(currentMinutePayload.PreviousCandlePayload, currentTick)
             If signal IsNot Nothing AndAlso signal.Item1 Then
                 Dim quantity As Integer = Me.LotSize
-                Dim slPoint As Decimal = ConvertFloorCeling(signal.Item2 * _userInputs.StoplossPercentage / 100, _parentStrategy.GetTickSize(_tradingSymbol), RoundOfType.Floor)
+                'Dim slPoint As Decimal = ConvertFloorCeling(signal.Item2 * _userInputs.StoplossPercentage / 100, _parentStrategy.GetTickSize(_tradingSymbol), RoundOfType.Floor)
+                Dim slPoint As Decimal = 100000000000000
                 Dim tgtPoint As Decimal = 100000000000000
 
                 If signal.Item3 = Trade.TradeExecutionDirection.Buy AndAlso Not _parentStrategy.IsTradeActive(currentTick, _parentStrategy.TradeType, Trade.TradeExecutionDirection.Buy) Then
@@ -94,6 +98,7 @@ Public Class HKPositionalStrategyRule
             End If
         End If
         If parameter IsNot Nothing Then
+            Me.ContractRolloverForceEntry = False
             ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
         End If
         Return ret
@@ -108,6 +113,16 @@ Public Class HKPositionalStrategyRule
             If signal IsNot Nothing AndAlso signal.Item1 Then
                 If currentTrade.SignalCandle.PayloadDate <> currentMinutePayload.PreviousCandlePayload.PayloadDate Then
                     ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                End If
+            End If
+        ElseIf currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            If Me.ContractRollover OrElse Me.BlankDayExit Then
+                Dim currentMinutePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
+                If currentMinutePayload.PayloadDate = _signalPayload.LastOrDefault.Key Then
+                    ret = New Tuple(Of Boolean, String)(True, If(Me.ContractRollover, "Contract Rollover Exit", "Blank Day Exit"))
+                    ForceCancellationDone = True
+                    _lastTrade = currentTrade
+                    _lastSignal = GetSignalForEntry(currentMinutePayload.PreviousCandlePayload, currentTick)
                 End If
             End If
         End If
@@ -132,16 +147,42 @@ Public Class HKPositionalStrategyRule
 
     Private Function GetSignalForEntry(ByVal candle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)
         Dim ret As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection) = Nothing
-        If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then
-            Dim hkCandle As Payload = _hkPayload(candle.PayloadDate)
-            If hkCandle IsNot Nothing AndAlso hkCandle.PreviousCandlePayload IsNot Nothing Then
-                If hkCandle.CandleColor <> hkCandle.PreviousCandlePayload.CandleColor Then
-                    If hkCandle.CandleColor = Color.Green Then
-                        Dim price As Decimal = ConvertFloorCeling(hkCandle.Close, _parentStrategy.GetTickSize(_tradingSymbol), RoundOfType.Celing)
-                        ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, price, Trade.TradeExecutionDirection.Buy)
-                    ElseIf hkCandle.CandleColor = Color.Red Then
-                        Dim price As Decimal = ConvertFloorCeling(hkCandle.Close, _parentStrategy.GetTickSize(_tradingSymbol), RoundOfType.Floor)
-                        ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, price, Trade.TradeExecutionDirection.Sell)
+        If Not Me.ContractRolloverForceEntry Then
+            If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then
+                Dim hkCandle As Payload = _hkPayload(candle.PayloadDate)
+                If hkCandle IsNot Nothing AndAlso hkCandle.PreviousCandlePayload IsNot Nothing Then
+                    If hkCandle.CandleColor <> hkCandle.PreviousCandlePayload.CandleColor Then
+                        If hkCandle.CandleColor = Color.Green Then
+                            Dim price As Decimal = ConvertFloorCeling(hkCandle.Close, _parentStrategy.GetTickSize(_tradingSymbol), RoundOfType.Celing)
+                            ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, price, Trade.TradeExecutionDirection.Buy)
+                        ElseIf hkCandle.CandleColor = Color.Red Then
+                            Dim price As Decimal = ConvertFloorCeling(hkCandle.Close, _parentStrategy.GetTickSize(_tradingSymbol), RoundOfType.Floor)
+                            ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, price, Trade.TradeExecutionDirection.Sell)
+                        End If
+                    End If
+                End If
+            End If
+        Else
+            If _lastSignal IsNot Nothing AndAlso _lastSignal.Item1 Then
+                If _lastSignal.Item3 = Trade.TradeExecutionDirection.Buy Then
+                    If currentTick.Open > _lastSignal.Item2 Then
+                        ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, currentTick.Open - _buffer, Trade.TradeExecutionDirection.Buy)
+                    Else
+                        ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, currentTick.Open + _buffer, Trade.TradeExecutionDirection.Sell)
+                    End If
+                ElseIf _lastSignal.Item3 = Trade.TradeExecutionDirection.Sell Then
+                    If currentTick.Open < _lastSignal.Item2 Then
+                        ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, currentTick.Open + _buffer, Trade.TradeExecutionDirection.Sell)
+                    Else
+                        ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, currentTick.Open - _buffer, Trade.TradeExecutionDirection.Buy)
+                    End If
+                End If
+            Else
+                If _lastTrade IsNot Nothing Then
+                    If _lastTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                        ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, currentTick.Open - _buffer, Trade.TradeExecutionDirection.Buy)
+                    ElseIf _lastTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                        ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, currentTick.Open + _buffer, Trade.TradeExecutionDirection.Sell)
                     End If
                 End If
             End If

@@ -32,6 +32,10 @@ Namespace StrategyHelper
         Public MaxProfitOfThisStock As Decimal = Decimal.MaxValue
         Public MaxLossOfThisStock As Decimal = Decimal.MinValue
         Public LotSize As Integer
+        Public ContractRollover As Boolean = False
+        Public BlankDayExit As Boolean = False
+        Public ForceCancellationDone As Boolean = False
+        Public ContractRolloverForceEntry As Boolean = False
 
         Public EligibleToTakeTrade As Boolean = True
         Protected _signalPayload As Dictionary(Of Date, Payload)
@@ -68,6 +72,7 @@ Namespace StrategyHelper
 
         Public Overridable Sub CompletePreProcessing()
             If _parentStrategy IsNot Nothing AndAlso _inputPayload IsNot Nothing AndAlso _inputPayload.Count > 0 Then
+                _signalPayload = Nothing
                 Dim xMinutePayload As Dictionary(Of Date, Payload) = Nothing
                 If _parentStrategy.SignalTimeFrame > 1 Then
                     Dim exchangeStartTime As Date = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day,

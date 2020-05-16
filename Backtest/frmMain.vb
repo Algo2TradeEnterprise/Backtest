@@ -261,7 +261,6 @@ Public Class frmMain
         End If
     End Sub
 
-#Region "CNC Tick"
     Private Async Function ViewDataCNCAsync() As Task
         Try
             Dim startDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrStartDate)
@@ -339,7 +338,7 @@ Public Class frmMain
                 End With
 
                 Dim ruleData As HKPositionalStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                Dim filename As String = String.Format("Subhodip Output")
+                Dim filename As String = String.Format("HK Color Change CNC Output")
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using
@@ -353,7 +352,6 @@ Public Class frmMain
             SetObjectEnableDisable_ThreadSafe(btnStop, False)
         End Try
     End Function
-#End Region
 
     Private Sub btnStop_Click(sender As Object, e As EventArgs) Handles btnStop.Click
         _canceller.Cancel()
