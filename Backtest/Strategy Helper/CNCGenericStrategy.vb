@@ -226,6 +226,7 @@ Namespace StrategyHelper
                                             _canceller.Token.ThrowIfCancellationRequested()
                                             If currentSecondTickPayload IsNot Nothing AndAlso currentSecondTickPayload.Count > 0 Then
                                                 For Each runningTick In currentSecondTickPayload
+                                                    If runningTick.Open = 0 Then Continue For
                                                     _canceller.Token.ThrowIfCancellationRequested()
                                                     SetCurrentLTPForStock(currentMinuteCandlePayload, runningTick, Trade.TypeOfTrade.CNC)
 

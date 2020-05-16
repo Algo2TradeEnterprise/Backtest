@@ -369,15 +369,20 @@ Public Class Payload
             Dim tickSize As Decimal = 1
             Select Case Me.RawInstrumentName
                 Case "CRUDEOIL"
-                    tickSize = 1
+                    'tickSize = 1
+                    tickSize = NumberManipulation.ConvertFloorCeling(Me.Close * 0.01 * 0.025, 1, RoundOfType.Floor)
                 Case "ALUMINIUM"
-                    tickSize = 0.05
+                    'tickSize = 0.05
+                    tickSize = NumberManipulation.ConvertFloorCeling(Me.Close * 0.01 * 0.025, 0.05, RoundOfType.Floor)
                 Case "NATURALGAS"
-                    tickSize = 0.1
+                    'tickSize = 0.1
+                    tickSize = NumberManipulation.ConvertFloorCeling(Me.Close * 0.01 * 0.025, 0.1, RoundOfType.Floor)
                 Case "SILVERMIC"
-                    tickSize = 1
+                    'tickSize = 1
+                    tickSize = NumberManipulation.ConvertFloorCeling(Me.Close * 0.01 * 0.025, 1, RoundOfType.Floor)
                 Case "GOLDGUINEA"
-                    tickSize = 1
+                    'tickSize = 1
+                    tickSize = NumberManipulation.ConvertFloorCeling(Me.Close * 0.01 * 0.025, 1, RoundOfType.Floor)
             End Select
             'TO DO: Change the vaue of tickSize to take the actual tick as per Exchange
             If _Ticks Is Nothing OrElse _Ticks.Count = 0 Then
