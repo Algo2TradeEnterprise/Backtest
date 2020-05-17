@@ -59,7 +59,25 @@ Namespace StrategyHelper
                 Dim tradeCheckingDate As Date = startDate.Date
                 TradesTaken = New Dictionary(Of Date, Dictionary(Of String, List(Of Trade)))
                 Me.AvailableCapital = Me.UsableCapital
+                Dim dateToSkipList As List(Of Date) = New List(Of Date) From {
+                    New Date(2017, 10, 19),
+                    New Date(2018, 3, 19),
+                    New Date(2018, 9, 24),
+                    New Date(2018, 11, 7),
+                    New Date(2019, 1, 1),
+                    New Date(2019, 4, 23),
+                    New Date(2019, 5, 28),
+                    New Date(2019, 10, 27),
+                    New Date(2019, 11, 25),
+                    New Date(2020, 1, 1),
+                    New Date(2020, 2, 1),
+                    New Date(2020, 2, 18)
+                }
                 While tradeCheckingDate <= endDate.Date
+                    If dateToSkipList.Contains(tradeCheckingDate.Date) Then
+                        tradeCheckingDate = tradeCheckingDate.AddDays(1)
+                        Continue While
+                    End If
                     _canceller.Token.ThrowIfCancellationRequested()
                     Dim stockList As Dictionary(Of String, StockDetails) = GetStockData(tradeCheckingDate)
                     _canceller.Token.ThrowIfCancellationRequested()
