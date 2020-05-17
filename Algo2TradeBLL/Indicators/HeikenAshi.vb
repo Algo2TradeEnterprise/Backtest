@@ -3,7 +3,10 @@
         Public Sub ConvertToHeikenAshi(ByVal inputPayload As Dictionary(Of Date, Payload), ByRef outputPayload As Dictionary(Of Date, Payload))
             If inputPayload IsNot Nothing AndAlso inputPayload.Count > 0 Then
                 If inputPayload.Count < 30 Then
-                    Throw New ApplicationException("Can't Calculate Heikenshi Properly")
+                    Dim candle As Payload = inputPayload.LastOrDefault.Value
+                    If candle.RawInstrumentName <> "ALUMINIUM" Then
+                        Throw New ApplicationException("Can't Calculate Heikenshi Properly")
+                    End If
                 End If
 
                 Dim tempHAPayload As Payload = Nothing
