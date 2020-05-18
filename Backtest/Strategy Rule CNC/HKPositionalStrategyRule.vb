@@ -55,7 +55,8 @@ Public Class HKPositionalStrategyRule
                 Dim tgtPoint As Decimal = 100000000000000
 
                 If signal.Item3 = Trade.TradeExecutionDirection.Buy AndAlso Not _parentStrategy.IsTradeActive(currentTick, _parentStrategy.TradeType, Trade.TradeExecutionDirection.Buy) Then
-                    Dim enrtyPrice As Decimal = signal.Item2 + _buffer
+                    'Dim enrtyPrice As Decimal = signal.Item2 + _buffer
+                    Dim enrtyPrice As Decimal = signal.Item2
                     Dim orderType As Trade.TypeOfOrder = Trade.TypeOfOrder.SL
                     If currentTick.Open >= enrtyPrice Then
                         orderType = Trade.TypeOfOrder.Market
@@ -75,7 +76,8 @@ Public Class HKPositionalStrategyRule
                                 .Supporting2 = orderType.ToString
                             }
                 ElseIf signal.Item3 = Trade.TradeExecutionDirection.Sell AndAlso Not _parentStrategy.IsTradeActive(currentTick, _parentStrategy.TradeType, Trade.TradeExecutionDirection.Sell) Then
-                    Dim enrtyPrice As Decimal = signal.Item2 - _buffer
+                    'Dim enrtyPrice As Decimal = signal.Item2 - _buffer
+                    Dim enrtyPrice As Decimal = signal.Item2
                     Dim orderType As Trade.TypeOfOrder = Trade.TypeOfOrder.SL
                     If currentTick.Open <= enrtyPrice Then
                         orderType = Trade.TypeOfOrder.Market
@@ -153,36 +155,42 @@ Public Class HKPositionalStrategyRule
                 If hkCandle IsNot Nothing AndAlso hkCandle.PreviousCandlePayload IsNot Nothing Then
                     If hkCandle.CandleColor <> hkCandle.PreviousCandlePayload.CandleColor Then
                         If hkCandle.CandleColor = Color.Green Then
-                            Dim price As Decimal = ConvertFloorCeling(hkCandle.Close, _parentStrategy.GetTickSize(_tradingSymbol), RoundOfType.Celing)
+                            Dim price As Decimal = ConvertFloorCeling(hkCandle.High, _parentStrategy.GetTickSize(_tradingSymbol), RoundOfType.Celing)
                             ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, price, Trade.TradeExecutionDirection.Buy)
                         ElseIf hkCandle.CandleColor = Color.Red Then
-                            Dim price As Decimal = ConvertFloorCeling(hkCandle.Close, _parentStrategy.GetTickSize(_tradingSymbol), RoundOfType.Floor)
+                            Dim price As Decimal = ConvertFloorCeling(hkCandle.Low, _parentStrategy.GetTickSize(_tradingSymbol), RoundOfType.Floor)
                             ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, price, Trade.TradeExecutionDirection.Sell)
                         End If
                     End If
                 End If
             End If
-        Else
+        Else        'Rollover entry
             If _lastSignal IsNot Nothing AndAlso _lastSignal.Item1 Then
                 If _lastSignal.Item3 = Trade.TradeExecutionDirection.Buy Then
                     If currentTick.Open > _lastSignal.Item2 Then
-                        ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, currentTick.Open - _buffer, Trade.TradeExecutionDirection.Buy)
+                        'ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, currentTick.Open - _buffer, Trade.TradeExecutionDirection.Buy)
+                        ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, currentTick.Open, Trade.TradeExecutionDirection.Buy)
                     Else
-                        ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, currentTick.Open + _buffer, Trade.TradeExecutionDirection.Sell)
+                        'ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, currentTick.Open + _buffer, Trade.TradeExecutionDirection.Sell)
+                        ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, currentTick.Open, Trade.TradeExecutionDirection.Sell)
                     End If
                 ElseIf _lastSignal.Item3 = Trade.TradeExecutionDirection.Sell Then
                     If currentTick.Open < _lastSignal.Item2 Then
-                        ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, currentTick.Open + _buffer, Trade.TradeExecutionDirection.Sell)
+                        'ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, currentTick.Open + _buffer, Trade.TradeExecutionDirection.Sell)
+                        ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, currentTick.Open, Trade.TradeExecutionDirection.Sell)
                     Else
-                        ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, currentTick.Open - _buffer, Trade.TradeExecutionDirection.Buy)
+                        'ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, currentTick.Open - _buffer, Trade.TradeExecutionDirection.Buy)
+                        ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, currentTick.Open, Trade.TradeExecutionDirection.Buy)
                     End If
                 End If
             Else
                 If _lastTrade IsNot Nothing Then
                     If _lastTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                        ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, currentTick.Open - _buffer, Trade.TradeExecutionDirection.Buy)
+                        'ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, currentTick.Open - _buffer, Trade.TradeExecutionDirection.Buy)
+                        ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, currentTick.Open, Trade.TradeExecutionDirection.Buy)
                     ElseIf _lastTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                        ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, currentTick.Open + _buffer, Trade.TradeExecutionDirection.Sell)
+                        'ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, currentTick.Open + _buffer, Trade.TradeExecutionDirection.Sell)
+                        ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection)(True, currentTick.Open, Trade.TradeExecutionDirection.Sell)
                     End If
                 End If
             End If

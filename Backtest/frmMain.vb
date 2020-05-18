@@ -302,7 +302,7 @@ Public Class frmMain
 
             Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
                                                             exchangeStartTime:=TimeSpan.Parse("09:00:00"),
-                                                            exchangeEndTime:=TimeSpan.Parse("23:29:59"),
+                                                            exchangeEndTime:=TimeSpan.Parse("23:59:59"),
                                                             tradeStartTime:=TimeSpan.Parse("09:00:00"),
                                                             lastTradeEntryTime:=TimeSpan.Parse("23:29:59"),
                                                             eodExitTime:=TimeSpan.Parse("23:29:59"),
