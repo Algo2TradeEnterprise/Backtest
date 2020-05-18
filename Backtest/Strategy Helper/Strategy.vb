@@ -1757,63 +1757,66 @@ Namespace StrategyHelper
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                                     mainRawData(rowCtr, colCtr) = If(tradeTaken.EntryDirection = Trade.TradeExecutionDirection.Buy, tradeTaken.MaximumDrawDown - tradeTaken.EntryPrice, tradeTaken.EntryPrice - tradeTaken.MaximumDrawDown)
                                                     colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.MaximumDrawUpPL
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.MaximumDrawDownPL
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.MaximumDrawUpTime.ToString("HH:mm:ss")
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.MaximumDrawDownTime.ToString("HH:mm:ss")
-                                                    colCtr += 1
-                                                    'If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    'mainRawData(rowCtr, colCtr) = tradeTaken.SignalCandle.PayloadDate.ToString("HH:mm:ss")
-                                                    'colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = String.Format("{0}-{1}", tradeTaken.TradingDate.ToString("yyyy"), tradeTaken.TradingDate.ToString("MM"))
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.EntryBuffer
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.StoplossBuffer
-                                                    colCtr += 1
-                                                    'If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    'mainRawData(rowCtr, colCtr) = tradeTaken.SquareOffValue
-                                                    'colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = If(Math.Round(tradeTaken.PLPoint, 4) = Math.Round(tradeTaken.WarningPLPoint, 4), "FALSE", "TRUE")
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.OverAllMaxDrawUpPL
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.OverAllMaxDrawDownPL
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.OverAllMaxDrawUpTime.ToString("HH:mm:ss")
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.OverAllMaxDrawDownTime.ToString("HH:mm:ss")
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.Supporting1
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.Supporting2
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.Supporting3
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.Supporting4
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.Supporting5
-
+                                                    Try
+                                                        If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                                        mainRawData(rowCtr, colCtr) = tradeTaken.MaximumDrawUpPL
+                                                        colCtr += 1
+                                                        If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                                        mainRawData(rowCtr, colCtr) = tradeTaken.MaximumDrawDownPL
+                                                        colCtr += 1
+                                                        If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                                        mainRawData(rowCtr, colCtr) = tradeTaken.MaximumDrawUpTime.ToString("HH:mm:ss")
+                                                        colCtr += 1
+                                                        If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                                        mainRawData(rowCtr, colCtr) = tradeTaken.MaximumDrawDownTime.ToString("HH:mm:ss")
+                                                        colCtr += 1
+                                                        'If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                                        'mainRawData(rowCtr, colCtr) = tradeTaken.SignalCandle.PayloadDate.ToString("HH:mm:ss")
+                                                        'colCtr += 1
+                                                        If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                                        mainRawData(rowCtr, colCtr) = String.Format("{0}-{1}", tradeTaken.TradingDate.ToString("yyyy"), tradeTaken.TradingDate.ToString("MM"))
+                                                        colCtr += 1
+                                                        If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                                        mainRawData(rowCtr, colCtr) = tradeTaken.EntryBuffer
+                                                        colCtr += 1
+                                                        If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                                        mainRawData(rowCtr, colCtr) = tradeTaken.StoplossBuffer
+                                                        colCtr += 1
+                                                        'If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                                        'mainRawData(rowCtr, colCtr) = tradeTaken.SquareOffValue
+                                                        'colCtr += 1
+                                                        If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                                        mainRawData(rowCtr, colCtr) = If(Math.Round(tradeTaken.PLPoint, 4) = Math.Round(tradeTaken.WarningPLPoint, 4), "FALSE", "TRUE")
+                                                        colCtr += 1
+                                                        If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                                        mainRawData(rowCtr, colCtr) = tradeTaken.OverAllMaxDrawUpPL
+                                                        colCtr += 1
+                                                        If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                                        mainRawData(rowCtr, colCtr) = tradeTaken.OverAllMaxDrawDownPL
+                                                        colCtr += 1
+                                                        If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                                        mainRawData(rowCtr, colCtr) = tradeTaken.OverAllMaxDrawUpTime.ToString("HH:mm:ss")
+                                                        colCtr += 1
+                                                        If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                                        mainRawData(rowCtr, colCtr) = tradeTaken.OverAllMaxDrawDownTime.ToString("HH:mm:ss")
+                                                        colCtr += 1
+                                                        If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                                        mainRawData(rowCtr, colCtr) = tradeTaken.Supporting1
+                                                        colCtr += 1
+                                                        If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                                        mainRawData(rowCtr, colCtr) = tradeTaken.Supporting2
+                                                        colCtr += 1
+                                                        If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                                        mainRawData(rowCtr, colCtr) = tradeTaken.Supporting3
+                                                        colCtr += 1
+                                                        If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                                        mainRawData(rowCtr, colCtr) = tradeTaken.Supporting4
+                                                        colCtr += 1
+                                                        If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                                        mainRawData(rowCtr, colCtr) = tradeTaken.Supporting5
+                                                    Catch ex As Exception
+                                                        Throw ex
+                                                    End Try
                                                     rowCtr += 1
                                                 Next
                                             End If
@@ -1968,6 +1971,8 @@ Namespace StrategyHelper
                 Catch ex As System.OutOfMemoryException
                     retryCounter += 1
                     GC.Collect()
+                Catch aex As Exception
+                    Throw aex
                 End Try
                 Thread.Sleep(30000)
             Next
