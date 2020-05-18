@@ -278,11 +278,11 @@ Public Class frmMain
             Select Case stockType
                 Case Trade.TypeOfStock.Cash
                     database = Common.DataBaseTable.Intraday_Cash
-                    margin = 10
+                    margin = 1
                     tick = Nothing
                 Case Trade.TypeOfStock.Commodity
                     database = Common.DataBaseTable.Intraday_Commodity
-                    margin = 70
+                    margin = 1
                     tick = New Dictionary(Of String, Decimal) From {
                         {"CRUDEOIL", 1},
                         {"ALUMINIUM", 0.05},
@@ -292,11 +292,11 @@ Public Class frmMain
                     }
                 Case Trade.TypeOfStock.Currency
                     database = Common.DataBaseTable.Intraday_Currency
-                    margin = 98
+                    margin = 1
                     tick = Nothing
                 Case Trade.TypeOfStock.Futures
                     database = Common.DataBaseTable.Intraday_Futures
-                    margin = 30
+                    margin = 1
                     tick = Nothing
             End Select
 
@@ -313,10 +313,10 @@ Public Class frmMain
                                                             stockType:=stockType,
                                                             databaseTable:=database,
                                                             dataSource:=sourceData,
-                                                            initialCapital:=Decimal.MaxValue / 2,
+                                                            initialCapital:=Decimal.MaxValue / 2 + 200000,
                                                             usableCapital:=Decimal.MaxValue / 2,
-                                                            minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
-                                                            amountToBeWithdrawn:=5000)
+                                                            minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                            amountToBeWithdrawn:=0)
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
