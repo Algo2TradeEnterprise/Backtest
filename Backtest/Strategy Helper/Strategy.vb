@@ -1758,10 +1758,18 @@ Namespace StrategyHelper
                                                     mainRawData(rowCtr, colCtr) = If(tradeTaken.EntryDirection = Trade.TradeExecutionDirection.Buy, tradeTaken.MaximumDrawDown - tradeTaken.EntryPrice, tradeTaken.EntryPrice - tradeTaken.MaximumDrawDown)
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.MaximumDrawUpPL
+                                                    Try
+                                                        mainRawData(rowCtr, colCtr) = tradeTaken.MaximumDrawUpPL
+                                                    Catch ex As Exception
+                                                        Throw ex
+                                                    End Try
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.MaximumDrawDownPL
+                                                    Try
+                                                        mainRawData(rowCtr, colCtr) = tradeTaken.MaximumDrawDownPL
+                                                    Catch ex As Exception
+                                                        Throw ex
+                                                    End Try
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                                     mainRawData(rowCtr, colCtr) = tradeTaken.MaximumDrawUpTime.ToString("HH:mm:ss")

@@ -111,10 +111,15 @@ Public Class HKPositionalStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
             Dim currentMinutePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
-            Dim signal As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection) = GetSignalForEntry(currentMinutePayload.PreviousCandlePayload, currentTick)
-            If signal IsNot Nothing AndAlso signal.Item1 Then
-                If currentTrade.SignalCandle.PayloadDate <> currentMinutePayload.PreviousCandlePayload.PayloadDate Then
-                    ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+            If currentMinutePayload.PayloadDate = _signalPayload.LastOrDefault.Key AndAlso (Me.ContractRollover OrElse Me.BlankDayExit) Then
+                ret = New Tuple(Of Boolean, String)(True, If(Me.ContractRollover, "Contract Rollover Exit", "Blank Day Exit"))
+                ForceCancellationDone = True
+            Else
+                Dim signal As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection) = GetSignalForEntry(currentMinutePayload.PreviousCandlePayload, currentTick)
+                If signal IsNot Nothing AndAlso signal.Item1 Then
+                    If currentTrade.SignalCandle.PayloadDate <> currentMinutePayload.PreviousCandlePayload.PayloadDate Then
+                        ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                    End If
                 End If
             End If
         ElseIf currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
