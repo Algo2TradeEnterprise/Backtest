@@ -819,27 +819,51 @@ Public Class Common
         Return ret
     End Function
 
-    Public Async Function GetHistoricalDataAsync(ByVal tableName As DataBaseTable, ByVal rawInstrumentName As String, ByVal startDate As Date, ByVal endDate As Date) As Task(Of Dictionary(Of Date, Payload))
+    Public Async Function GetHistoricalDataAsync(ByVal tableName As DataBaseTable, ByVal rawInstrumentName As String, ByVal startDate As Date, ByVal endDate As Date, Optional ByVal instrumentIdentifier As String = Nothing) As Task(Of Dictionary(Of Date, Payload))
         Dim ret As Dictionary(Of Date, Payload) = Nothing
         Dim instrumentToken As String = Nothing
         Dim tradingSymbol As String = Nothing
-        Dim ZerodhaEODHistoricalURL As String = "https://kitecharts-aws.zerodha.com/api/chart/{0}/day?api_key=kitefront&access_token=K&from={1}&to={2}"
-        Dim ZerodhaIntradayHistoricalURL As String = "https://kitecharts-aws.zerodha.com/api/chart/{0}/minute?api_key=kitefront&access_token=K&from={1}&to={2}"
-        Dim ZerodhaHistoricalURL As String = Nothing
+        Dim eodLiveURL As String = "https://ant.aliceblueonline.com/api/v1/charts?exchange={0}&token={1}&candletype=3&starttime={2}&endtime={3}&type=live"
+        Dim eodHistoricalURL As String = "https://ant.aliceblueonline.com/api/v1/charts?exchange={0}&token={1}&candletype=3&starttime={2}&endtime={3}&type=historical"
+        Dim intradayLiveURL As String = "https://ant.aliceblueonline.com/api/v1/charts?exchange={0}&token={1}&candletype=1&starttime={2}&endtime={3}&type=live"
+        Dim intradayHistoricalURL As String = "https://ant.aliceblueonline.com/api/v1/charts?exchange={0}&token={1}&candletype=1&starttime={2}&endtime={3}&type=historical"
+        Dim liveURL As String = Nothing
+        Dim historicalURL As String = Nothing
         Select Case tableName
             Case DataBaseTable.EOD_Cash, DataBaseTable.EOD_Commodity, DataBaseTable.EOD_Currency, DataBaseTable.EOD_Futures
-                ZerodhaHistoricalURL = ZerodhaEODHistoricalURL
+                liveURL = eodLiveURL
+                historicalURL = eodHistoricalURL
             Case DataBaseTable.Intraday_Cash, DataBaseTable.Intraday_Commodity, DataBaseTable.Intraday_Currency, DataBaseTable.Intraday_Futures
-                ZerodhaHistoricalURL = ZerodhaIntradayHistoricalURL
+                liveURL = intradayLiveURL
+                historicalURL = intradayHistoricalURL
         End Select
         Dim instrument As Tuple(Of String, String) = GetCurrentTradingSymbolWithInstrumentToken(tableName, endDate, rawInstrumentName)
         If instrument IsNot Nothing Then
             tradingSymbol = instrument.Item1
             instrumentToken = instrument.Item2
         End If
+        instrumentToken = instrumentIdentifier          'Alice
         If instrumentToken IsNot Nothing AndAlso instrumentToken <> "" Then
-            Dim historicalDataURL As String = String.Format(ZerodhaHistoricalURL, instrumentToken, startDate.ToString("yyyy-MM-dd"), endDate.ToString("yyyy-MM-dd"))
-            OnHeartbeat(String.Format("Fetching historical Data: {0}", historicalDataURL))
+            Dim exchange As String = Nothing
+            Dim multiplier As Integer = 1
+            Select Case tableName
+                Case DataBaseTable.EOD_Cash, DataBaseTable.Intraday_Cash, DataBaseTable.EOD_POSITIONAL
+                    exchange = "NSE"
+                    multiplier = 100
+                Case DataBaseTable.EOD_Futures, DataBaseTable.Intraday_Futures
+                    exchange = "NFO"
+                    multiplier = 100
+                Case DataBaseTable.EOD_Commodity, DataBaseTable.Intraday_Commodity
+                    exchange = "MCX"
+                    multiplier = 100
+                Case DataBaseTable.EOD_Currency, DataBaseTable.Intraday_Currency
+                    exchange = "CDS"
+                    multiplier = 10000000
+            End Select
+            Dim liveDataURL As String = String.Format(liveURL, exchange, instrumentToken, Utilities.Time.DateTimeToUnix(Now.Date), Utilities.Time.DateTimeToUnix(Now.Date.AddDays(1)))
+            Dim historicalDataURL As String = String.Format(historicalURL, exchange, instrumentToken, Utilities.Time.DateTimeToUnix(startDate.Date), Utilities.Time.DateTimeToUnix(endDate.Date.AddDays(1)))
+            OnHeartbeat(String.Format("Fetching historical Data: {0}", liveDataURL))
+            Dim liveCandlesJSONDict As Dictionary(Of String, Object) = Nothing
             Dim historicalCandlesJSONDict As Dictionary(Of String, Object) = Nothing
             Dim proxyToBeUsed As HttpProxy = Nothing
             Using browser As New HttpBrowser(proxyToBeUsed, Net.DecompressionMethods.GZip, New TimeSpan(0, 1, 0), _cts)
@@ -847,17 +871,21 @@ Public Class Common
                 AddHandler browser.Heartbeat, AddressOf OnHeartbeat
                 AddHandler browser.WaitingFor, AddressOf OnWaitingFor
                 AddHandler browser.DocumentRetryStatus, AddressOf OnDocumentRetryStatus
-                'Get to the landing page first
-                Dim l As Tuple(Of Uri, Object) = Await browser.NonPOSTRequestAsync(historicalDataURL,
-                                                                                    HttpMethod.Get,
-                                                                                    Nothing,
-                                                                                    True,
-                                                                                    Nothing,
-                                                                                    True,
-                                                                                    "application/json").ConfigureAwait(False)
-                If l IsNot Nothing AndAlso l.Item2 IsNot Nothing Then
-                    historicalCandlesJSONDict = l.Item2
+
+                Dim headers As Dictionary(Of String, String) = New Dictionary(Of String, String)
+                headers.Add("X-Authorization-Token", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJibGFja2xpc3Rfa2V5IjoiSFlESjM5OnVxKzR4WW1PSmpnVlYyenJQczNQcWciLCJjbGllbnRfaWQiOiJIWURKMzkiLCJjbGllbnRfdG9rZW4iOiJCbkIrUlVDb1VLRmFZcDJmZXhweThBIiwiZGV2aWNlIjoid2ViIiwiZXhwIjoxNTg5OTQ2ODI1NjU0fQ.koGO9C5D0qwg_O_H4DlOB6trPpiAv-7LX2nDwTV-WGY")
+
+                If endDate.Date = Now.Date Then
+                    Dim l As Tuple(Of Uri, Object) = Await browser.NonPOSTRequestAsync(liveDataURL, HttpMethod.Get, Nothing, False, headers, True, "application/json").ConfigureAwait(False)
+                    If l IsNot Nothing AndAlso l.Item2 IsNot Nothing Then
+                        liveCandlesJSONDict = l.Item2
+                    End If
                 End If
+                Dim k As Tuple(Of Uri, Object) = Await browser.NonPOSTRequestAsync(historicalDataURL, HttpMethod.Get, Nothing, False, headers, True, "application/json").ConfigureAwait(False)
+                If k IsNot Nothing AndAlso k.Item2 IsNot Nothing Then
+                    historicalCandlesJSONDict = k.Item2
+                End If
+
                 RemoveHandler browser.DocumentDownloadComplete, AddressOf OnDocumentDownloadComplete
                 RemoveHandler browser.Heartbeat, AddressOf OnHeartbeat
                 RemoveHandler browser.WaitingFor, AddressOf OnWaitingFor
@@ -866,30 +894,51 @@ Public Class Common
 
             If historicalCandlesJSONDict IsNot Nothing AndAlso historicalCandlesJSONDict.Count > 0 AndAlso
                 historicalCandlesJSONDict.ContainsKey("data") Then
-                Dim historicalCandlesDict As Dictionary(Of String, Object) = historicalCandlesJSONDict("data")
-                If historicalCandlesDict.ContainsKey("candles") AndAlso historicalCandlesDict("candles").count > 0 Then
-                    Dim historicalCandles As ArrayList = historicalCandlesDict("candles")
-                    If ret Is Nothing Then ret = New Dictionary(Of Date, Payload)
-                    OnHeartbeat(String.Format("Generating Payload for {0}", tradingSymbol))
-                    Dim previousPayload As Payload = Nothing
-                    For Each historicalCandle In historicalCandles
-                        Dim runningSnapshotTime As Date = Utilities.Time.GetDateTimeTillMinutes(historicalCandle(0))
+                Dim historicalCandles As ArrayList = historicalCandlesJSONDict("data")
+                If ret Is Nothing Then ret = New Dictionary(Of Date, Payload)
+                OnHeartbeat(String.Format("Generating Historical Payload for {0}", tradingSymbol))
+                Dim previousPayload As Payload = Nothing
+                For Each historicalCandle In historicalCandles
+                    Dim runningSnapshotTime As Date = Utilities.Time.UnixToDateTime(historicalCandle(0))
 
-                        Dim runningPayload As Payload = New Payload(Payload.CandleDataSource.Chart)
-                        With runningPayload
-                            .PayloadDate = Utilities.Time.GetDateTimeTillMinutes(historicalCandle(0))
-                            .TradingSymbol = tradingSymbol
-                            .Open = historicalCandle(1)
-                            .High = historicalCandle(2)
-                            .Low = historicalCandle(3)
-                            .Close = historicalCandle(4)
-                            .Volume = historicalCandle(5)
-                            .PreviousCandlePayload = previousPayload
-                        End With
-                        previousPayload = runningPayload
-                        ret.Add(runningSnapshotTime, runningPayload)
-                    Next
-                End If
+                    Dim runningPayload As Payload = New Payload(Payload.CandleDataSource.Chart)
+                    With runningPayload
+                        .PayloadDate = runningSnapshotTime
+                        .TradingSymbol = tradingSymbol
+                        .Open = historicalCandle(1) / multiplier
+                        .High = historicalCandle(2) / multiplier
+                        .Low = historicalCandle(3) / multiplier
+                        .Close = historicalCandle(4) / multiplier
+                        .Volume = historicalCandle(5)
+                        .PreviousCandlePayload = previousPayload
+                    End With
+                    previousPayload = runningPayload
+                    ret.Add(runningSnapshotTime, runningPayload)
+                Next
+            End If
+            If liveCandlesJSONDict IsNot Nothing AndAlso liveCandlesJSONDict.Count > 0 AndAlso
+                liveCandlesJSONDict.ContainsKey("data") Then
+                Dim liveCandles As ArrayList = liveCandlesJSONDict("data")
+                If ret Is Nothing Then ret = New Dictionary(Of Date, Payload)
+                OnHeartbeat(String.Format("Generating Live Payload for {0}", tradingSymbol))
+                Dim previousPayload As Payload = Nothing
+                For Each liveCandle In liveCandles
+                    Dim runningSnapshotTime As Date = Utilities.Time.UnixToDateTime(liveCandle(0))
+
+                    Dim runningPayload As Payload = New Payload(Payload.CandleDataSource.Chart)
+                    With runningPayload
+                        .PayloadDate = runningSnapshotTime
+                        .TradingSymbol = tradingSymbol
+                        .Open = liveCandle(1) / multiplier
+                        .High = liveCandle(2) / multiplier
+                        .Low = liveCandle(3) / multiplier
+                        .Close = liveCandle(4) / multiplier
+                        .Volume = liveCandle(5)
+                        .PreviousCandlePayload = previousPayload
+                    End With
+                    previousPayload = runningPayload
+                    ret.Add(runningSnapshotTime, runningPayload)
+                Next
             End If
         End If
         Return ret

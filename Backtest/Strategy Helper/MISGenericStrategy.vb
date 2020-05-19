@@ -64,7 +64,7 @@ Namespace StrategyHelper
                     Me.AvailableCapital = Me.UsableCapital
                     Me.OverAllLossPerDay = portfolioLossPerDay
                     TradesTaken = New Dictionary(Of Date, Dictionary(Of String, List(Of Trade)))
-                    Dim stockList As Dictionary(Of String, StockDetails) = Await GetStockData(tradeCheckingDate).ConfigureAwait(False)
+                    Dim stockList As Dictionary(Of String, StockDetails) = GetStockData(tradeCheckingDate)
 
                     _canceller.Token.ThrowIfCancellationRequested()
                     If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
@@ -83,7 +83,7 @@ Namespace StrategyHelper
                             If Me.DataSource = SourceOfData.Database Then
                                 XDayOneMinutePayload = Cmn.GetRawPayload(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate)
                             ElseIf Me.DataSource = SourceOfData.Live Then
-                                XDayOneMinutePayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate).ConfigureAwait(False)
+                                XDayOneMinutePayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate, stockList(stock).Supporting6).ConfigureAwait(False)
                             End If
 
                             _canceller.Token.ThrowIfCancellationRequested()
@@ -541,7 +541,7 @@ Namespace StrategyHelper
 
 
 #Region "Stock Selection"
-        Private Async Function GetStockData(tradingDate As Date) As Task(Of Dictionary(Of String, StockDetails))
+        Private Function GetStockData(tradingDate As Date) As Dictionary(Of String, StockDetails)
             Dim ret As Dictionary(Of String, StockDetails) = Nothing
             If Me.StockFileName IsNot Nothing Then
                 Dim dt As DataTable = Nothing
@@ -560,6 +560,10 @@ Namespace StrategyHelper
                                 instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
                             Else
                                 instrumentName = tradingSymbol
+                            End If
+                            Dim token As String = ""
+                            If Me.DataSource = SourceOfData.Live Then
+                                token = dt.Rows(i).Item("Token")
                             End If
 
                             Dim lotSize As Integer = dt.Rows(i).Item("Lot Size")
@@ -581,28 +585,14 @@ Namespace StrategyHelper
                             Else
                                 slab = Decimal.MinValue
                             End If
-                            'If slab * lotSize > 1300 Then
-                            '    Dim previousSlab As List(Of Decimal) = slabList.FindAll(Function(x)
-                            '                                                                Return x < slab
-                            '                                                            End Function)
-                            '    If previousSlab IsNot Nothing AndAlso previousSlab.Count > 0 Then
-                            '        Dim projectedSlab As Decimal = previousSlab.LastOrDefault
-                            '        If lotSize * projectedSlab <= 1300 Then
-                            '            slab = projectedSlab
-                            '        Else
-                            '            slab = Decimal.MinValue
-                            '        End If
-                            '    Else
-                            '        slab = Decimal.MinValue
-                            '    End If
-                            'End If
 
                             If slab <> Decimal.MinValue Then
                                 Dim detailsOfStock As StockDetails = New StockDetails With
                                         {.StockName = instrumentName,
                                         .LotSize = lotSize,
                                         .EligibleToTakeTrade = True,
-                                        .Supporting1 = slab}
+                                        .Supporting1 = slab,
+                                        .Supporting6 = token}
 
                                 If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
                                 ret.Add(instrumentName, detailsOfStock)
