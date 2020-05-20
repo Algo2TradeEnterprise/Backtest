@@ -1139,12 +1139,9 @@ Public Class frmMain
                             .TickBasedStrategy = False
                             .RuleNumber = ruleNumber
 
-                            .RuleEntityData = New AlwaysInTradeMartingaleStrategyRule.StrategyRuleEntities With
-                                            {
-                                                .TargetMultiplier = 2.5
-                                            }
+                            .RuleEntityData = Nothing
 
-                            .NumberOfTradeableStockPerDay = 5
+                            .NumberOfTradeableStockPerDay = 1
 
                             .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
@@ -1165,7 +1162,6 @@ Public Class frmMain
                             .RealtimeTrailingPercentage = 50
                         End With
 
-                        Dim ruleData As AlwaysInTradeMartingaleStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
                         Dim filename As String = String.Format("Always in trade Martingale")
 
                         Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
