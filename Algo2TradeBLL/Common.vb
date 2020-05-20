@@ -873,7 +873,7 @@ Public Class Common
                 AddHandler browser.DocumentRetryStatus, AddressOf OnDocumentRetryStatus
 
                 Dim headers As Dictionary(Of String, String) = New Dictionary(Of String, String)
-                headers.Add("X-Authorization-Token", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJibGFja2xpc3Rfa2V5IjoiSFlESjM5OnVxKzR4WW1PSmpnVlYyenJQczNQcWciLCJjbGllbnRfaWQiOiJIWURKMzkiLCJjbGllbnRfdG9rZW4iOiJCbkIrUlVDb1VLRmFZcDJmZXhweThBIiwiZGV2aWNlIjoid2ViIiwiZXhwIjoxNTg5OTQ2ODI1NjU0fQ.koGO9C5D0qwg_O_H4DlOB6trPpiAv-7LX2nDwTV-WGY")
+                headers.Add("X-Authorization-Token", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJibGFja2xpc3Rfa2V5IjoiSFlESjM5OnhRUVlRUExWcmtkYXZLL1UvVGFzTlEiLCJjbGllbnRfaWQiOiJIWURKMzkiLCJjbGllbnRfdG9rZW4iOiJCbkIrUlVDb1VLRmFZcDJmZXhweThBIiwiZGV2aWNlIjoid2ViIiwiZXhwIjoxNTkwMDMzNzg4MTMyfQ._B5eH7MM3g42WmY5npqCWNPClf2IYM7VYa74KQCtJyY")
 
                 If endDate.Date = Now.Date Then
                     Dim l As Tuple(Of Uri, Object) = Await browser.NonPOSTRequestAsync(liveDataURL, HttpMethod.Get, Nothing, False, headers, True, "application/json").ConfigureAwait(False)
