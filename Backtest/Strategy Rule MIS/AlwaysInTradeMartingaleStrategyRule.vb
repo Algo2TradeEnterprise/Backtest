@@ -14,6 +14,8 @@ Public Class AlwaysInTradeMartingaleStrategyRule
     End Class
 #End Region
 
+    Private _oneSlabProfit As Decimal
+
     Private ReadOnly _slab As Decimal
     Private ReadOnly _userInputs As StrategyRuleEntities
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
@@ -43,6 +45,16 @@ Public Class AlwaysInTradeMartingaleStrategyRule
         Dim parameter4 As PlaceOrderParameters = Nothing
         If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
             currentMinuteCandlePayload.PayloadDate >= _tradeStartTime AndAlso Me.EligibleToTakeTrade Then
+            If Me.MaxProfitOfThisStock = Decimal.MaxValue Then
+                Dim price As Decimal = currentTick.Open
+                Dim targetPrice As Decimal = price + _slab * _userInputs.TargetMultiplier
+                Dim pl As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, price, targetPrice, Me.LotSize, Me.LotSize, _parentStrategy.StockType)
+                Me.MaxProfitOfThisStock = pl
+                _oneSlabProfit = _parentStrategy.CalculatePL(_tradingSymbol, price, price + _slab, Me.LotSize, Me.LotSize, _parentStrategy.StockType)
+                If _oneSlabProfit <= 0 Then
+                    Throw New ApplicationException(String.Format("One Slab Profit PL:{0}", _oneSlabProfit))
+                End If
+            End If
             If Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) AndAlso
                 Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) Then
                 Dim signal As Tuple(Of Boolean, Decimal) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, Trade.TradeExecutionDirection.Buy)
@@ -50,7 +62,7 @@ Public Class AlwaysInTradeMartingaleStrategyRule
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2, RoundOfType.Floor)
                     Dim entryPrice As Decimal = signal.Item2 + buffer
                     Dim slPoint As Decimal = _slab + 2 * buffer
-                    Dim targetPoint As Decimal = ConvertFloorCeling(slPoint * 100, _parentStrategy.TickSize, RoundOfType.Celing)
+                    Dim targetPoint As Decimal = ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
                     Dim targetRemark As String = "Normal"
                     Dim quantity As Integer = Me.LotSize
 
@@ -64,16 +76,13 @@ Public Class AlwaysInTradeMartingaleStrategyRule
                                 .SignalCandle = currentMinuteCandlePayload,
                                 .OrderType = Trade.TypeOfOrder.SL,
                                 .Supporting1 = currentTick.PayloadDate.ToString("HH:mm:ss"),
-                                .Supporting2 = targetRemark,
-                                .Supporting3 = 1
+                                .Supporting2 = targetRemark
                             }
 
-                    quantity = GetQuantity(currentMinuteCandlePayload)
-                    If quantity > 0 Then
-                        Dim totalQuantity As Integer = Math.Abs(quantity) + Me.LotSize
-                        Dim iteration As Integer = Math.Log(totalQuantity / Me.LotSize, 2) + 1
-                        Dim pl As Decimal = _parentStrategy.StockPLAfterBrokerage(currentMinuteCandlePayload.PayloadDate, currentMinuteCandlePayload.TradingSymbol)
-                        Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, Math.Abs(quantity), Math.Abs(pl), Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
+                    Dim pl As Decimal = _parentStrategy.StockPLAfterBrokerage(currentMinuteCandlePayload.PayloadDate, currentMinuteCandlePayload.TradingSymbol)
+                    If pl < 0 Then
+                        quantity = Math.Ceiling(Math.Abs(pl) / (_oneSlabProfit * 1.5)) * Me.LotSize
+                        Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, quantity, Math.Abs(pl), Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
                         parameter3 = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
                                     .EntryDirection = Trade.TradeExecutionDirection.Buy,
@@ -84,11 +93,8 @@ Public Class AlwaysInTradeMartingaleStrategyRule
                                     .SignalCandle = currentMinuteCandlePayload,
                                     .OrderType = Trade.TypeOfOrder.SL,
                                     .Supporting1 = currentTick.PayloadDate.ToString("HH:mm:ss"),
-                                    .Supporting2 = "SL Makeup",
-                                    .Supporting3 = iteration
+                                    .Supporting2 = "SL Makeup"
                                 }
-
-                        parameter1.Supporting3 = iteration
                     End If
                 End If
             End If
@@ -99,7 +105,7 @@ Public Class AlwaysInTradeMartingaleStrategyRule
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2, RoundOfType.Floor)
                     Dim entryPrice As Decimal = signal.Item2 - buffer
                     Dim slPoint As Decimal = _slab + 2 * buffer
-                    Dim targetPoint As Decimal = ConvertFloorCeling(slPoint * 100, _parentStrategy.TickSize, RoundOfType.Celing)
+                    Dim targetPoint As Decimal = ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
                     Dim targetRemark As String = "Normal"
                     Dim quantity As Integer = Me.LotSize
 
@@ -113,16 +119,13 @@ Public Class AlwaysInTradeMartingaleStrategyRule
                                     .SignalCandle = currentMinuteCandlePayload,
                                     .OrderType = Trade.TypeOfOrder.SL,
                                     .Supporting1 = currentTick.PayloadDate.ToString("HH:mm:ss"),
-                                    .Supporting2 = targetRemark,
-                                    .Supporting3 = 1
+                                    .Supporting2 = targetRemark
                                 }
 
-                    quantity = GetQuantity(currentMinuteCandlePayload)
-                    If quantity > 0 Then
-                        Dim totalQuantity As Integer = Math.Abs(quantity) + Me.LotSize
-                        Dim iteration As Integer = Math.Log(totalQuantity / Me.LotSize, 2) + 1
-                        Dim pl As Decimal = _parentStrategy.StockPLAfterBrokerage(currentMinuteCandlePayload.PayloadDate, currentMinuteCandlePayload.TradingSymbol)
-                        Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, Math.Abs(quantity), Math.Abs(pl), Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
+                    Dim pl As Decimal = _parentStrategy.StockPLAfterBrokerage(currentMinuteCandlePayload.PayloadDate, currentMinuteCandlePayload.TradingSymbol)
+                    If pl < 0 Then
+                        quantity = Math.Ceiling(Math.Abs(pl) / (_oneSlabProfit * 1.5)) * Me.LotSize
+                        Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, quantity, Math.Abs(pl), Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
                         parameter4 = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
                                     .EntryDirection = Trade.TradeExecutionDirection.Sell,
@@ -133,11 +136,8 @@ Public Class AlwaysInTradeMartingaleStrategyRule
                                     .SignalCandle = currentMinuteCandlePayload,
                                     .OrderType = Trade.TypeOfOrder.SL,
                                     .Supporting1 = currentTick.PayloadDate.ToString("HH:mm:ss"),
-                                    .Supporting2 = "SL Makeup",
-                                    .Supporting3 = iteration
+                                    .Supporting2 = "SL Makeup"
                                 }
-
-                        parameter2.Supporting3 = iteration
                     End If
                 End If
             End If
@@ -161,13 +161,6 @@ Public Class AlwaysInTradeMartingaleStrategyRule
         End If
         If parameters IsNot Nothing AndAlso parameters.Count > 0 Then
             ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, parameters)
-
-            If Me.MaxProfitOfThisStock = Decimal.MaxValue Then
-                Dim price As Decimal = parameters.FirstOrDefault.EntryPrice
-                Dim targetPrice As Decimal = price + _slab * _userInputs.TargetMultiplier
-                Dim pl As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, price, targetPrice, Me.LotSize, Me.LotSize, _parentStrategy.StockType)
-                Me.MaxProfitOfThisStock = pl
-            End If
         End If
         Return ret
     End Function
@@ -265,33 +258,6 @@ Public Class AlwaysInTradeMartingaleStrategyRule
                         ret = New Tuple(Of Boolean, Decimal)(True, lastExecutedOrder.PotentialStopLoss - lastExecutedOrder.StoplossBuffer)
                     End If
                 End If
-            End If
-        End If
-        Return ret
-    End Function
-
-    Private Function GetQuantity(ByVal currentMinuteCandle As Payload) As Integer
-        Dim ret As Integer = 0
-        Dim inprogressTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentMinuteCandle, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Inprogress)
-        If inprogressTrades IsNot Nothing AndAlso inprogressTrades.Count > 0 Then
-            Dim brkEvnMoved As Boolean = False
-            For Each runningTrade In inprogressTrades
-                If runningTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                    If runningTrade.PotentialStopLoss > runningTrade.EntryPrice Then
-                        brkEvnMoved = True
-                    End If
-                ElseIf runningTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                    If runningTrade.PotentialStopLoss < runningTrade.EntryPrice Then
-                        brkEvnMoved = True
-                    End If
-                End If
-            Next
-            If brkEvnMoved Then
-                ret = 0
-            Else
-                ret = inprogressTrades.Sum(Function(x)
-                                               Return x.Quantity
-                                           End Function) * 2 - Me.LotSize
             End If
         End If
         Return ret

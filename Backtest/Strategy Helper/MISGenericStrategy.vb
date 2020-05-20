@@ -300,13 +300,14 @@ Namespace StrategyHelper
                                                     _canceller.Token.ThrowIfCancellationRequested()
                                                     Dim potentialRuleCancelTrades As List(Of Trade) = GetSpecificTrades(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Open)
                                                     If potentialRuleCancelTrades IsNot Nothing AndAlso potentialRuleCancelTrades.Count > 0 Then
-                                                        If Me.TickBasedStrategy OrElse Not stockList(stockName).CancelOrderDoneForTheMinute Then
+                                                        If Me.TickBasedStrategy OrElse Not stockList(stockName).CancelOrderDoneForTheMinute OrElse stockList(stockName).StoplossOrderModified Then
                                                             For Each runningCancelTrade In potentialRuleCancelTrades
                                                                 _canceller.Token.ThrowIfCancellationRequested()
                                                                 Dim exitOrderDetails As Tuple(Of Boolean, String) = Await stockStrategyRule.IsTriggerReceivedForExitOrderAsync(runningTick, runningCancelTrade).ConfigureAwait(False)
                                                                 If exitOrderDetails IsNot Nothing AndAlso exitOrderDetails.Item1 Then
                                                                     _canceller.Token.ThrowIfCancellationRequested()
                                                                     ExitTradeByForce(runningCancelTrade, runningTick, exitOrderDetails.Item2)
+                                                                    If stockList(stockName).StoplossOrderModified Then stockList(stockName).StoplossOrderModified = False
                                                                 End If
                                                             Next
                                                             stockList(stockName).CancelOrderDoneForTheMinute = True
@@ -529,6 +530,7 @@ Namespace StrategyHelper
                                                             If modifyOrderDetails IsNot Nothing AndAlso modifyOrderDetails.Item1 Then
                                                                 _canceller.Token.ThrowIfCancellationRequested()
                                                                 runningModifyTrade.UpdateTrade(PotentialStopLoss:=modifyOrderDetails.Item2, SLRemark:=modifyOrderDetails.Item3)
+                                                                stockList(stockName).StoplossOrderModified = True
                                                             End If
                                                         Next
                                                         stockList(stockName).ModifyStoplossOrderDoneForTheMinute = True

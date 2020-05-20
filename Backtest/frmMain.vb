@@ -1136,7 +1136,7 @@ Public Class frmMain
 
                             .AllowBothDirectionEntryAtSameTime = False
                             .TrailingStoploss = False
-                            .TickBasedStrategy = True
+                            .TickBasedStrategy = False
                             .RuleNumber = ruleNumber
 
                             .RuleEntityData = New AlwaysInTradeMartingaleStrategyRule.StrategyRuleEntities With
@@ -1144,7 +1144,7 @@ Public Class frmMain
                                                 .TargetMultiplier = 2.5
                                             }
 
-                            .NumberOfTradeableStockPerDay = 1
+                            .NumberOfTradeableStockPerDay = 5
 
                             .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
