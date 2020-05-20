@@ -682,12 +682,12 @@ Namespace StrategyHelper
                             If allOneMinutePayload.ContainsKey(stock) AndAlso allOneMinutePayload(stock).ContainsKey(candleTime) Then
                                 currentPayload = allOneMinutePayload(stock)(candleTime).Ticks.FindAll(Function(x)
                                                                                                           Return x.PayloadDate >= currentTimeOfExit
-                                                                                                      End Function).FirstOrDefault
+                                                                                                      End Function).LastOrDefault
                             End If
                             If currentPayload Is Nothing Then           'If the current time is more than last available Tick then move to the next available minute
                                 currentPayload = allOneMinutePayload(stock).Where(Function(x)
                                                                                       Return x.Key >= currentTimeOfExit
-                                                                                  End Function).FirstOrDefault.Value
+                                                                                  End Function).LastOrDefault.Value
                             End If
                             If currentPayload Is Nothing Then           'If current time payload is not available then pick last available payload
                                 Dim lastPayloadTime As Date = allOneMinutePayload(stock).Keys.LastOrDefault
