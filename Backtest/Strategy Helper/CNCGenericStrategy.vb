@@ -138,6 +138,9 @@ Namespace StrategyHelper
                                             stockList(stock).ContractRolloverSymbol = nextDayTradingSymbol
                                             stocksRuleData(stock).ContractRollover = True
                                             stocksRuleData(stock).BlankDayExit = False
+                                        ElseIf nextDayTradingSymbol Is Nothing Then
+                                            stocksRuleData(stock).ContractRollover = False
+                                            stocksRuleData(stock).BlankDayExit = True
                                         End If
                                     Else
                                         If commonNextTradingDay <> Date.MinValue Then

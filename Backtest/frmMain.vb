@@ -271,7 +271,7 @@ Public Class frmMain
             Else
                 sourceData = Strategy.SourceOfData.Database
             End If
-            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Commodity
+            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Futures
             Dim database As Common.DataBaseTable = Common.DataBaseTable.None
             Dim margin As Decimal = 0
             Dim tick As Dictionary(Of String, Decimal) = Nothing
@@ -301,11 +301,11 @@ Public Class frmMain
             End Select
 
             Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
-                                                            exchangeStartTime:=TimeSpan.Parse("09:00:00"),
-                                                            exchangeEndTime:=TimeSpan.Parse("23:59:59"),
-                                                            tradeStartTime:=TimeSpan.Parse("09:00:00"),
-                                                            lastTradeEntryTime:=TimeSpan.Parse("23:29:59"),
-                                                            eodExitTime:=TimeSpan.Parse("23:29:59"),
+                                                            exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                            exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                            tradeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                            lastTradeEntryTime:=TimeSpan.Parse("15:29:59"),
+                                                            eodExitTime:=TimeSpan.Parse("15:29:59"),
                                                             tickSize:=tick,
                                                             marginMultiplier:=margin,
                                                             timeframe:=30,
