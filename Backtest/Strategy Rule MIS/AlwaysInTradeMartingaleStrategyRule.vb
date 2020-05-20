@@ -6,9 +6,9 @@ Imports Utilities.Numbers.NumberManipulation
 Public Class AlwaysInTradeMartingaleStrategyRule
     Inherits StrategyRule
 
-    Private _oneSlabProfit As Decimal
-    Private _25SlabProfit As Decimal
-    Private _2SlabProfit As Decimal
+    Private _oneSlabProfit As Decimal = Decimal.MinValue
+    Private _25SlabProfit As Decimal = Decimal.MinValue
+    Private _2SlabProfit As Decimal = Decimal.MinValue
 
     Private ReadOnly _slab As Decimal
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
@@ -66,15 +66,17 @@ Public Class AlwaysInTradeMartingaleStrategyRule
                                 .SignalCandle = currentMinuteCandlePayload,
                                 .OrderType = Trade.TypeOfOrder.SL,
                                 .Supporting1 = currentTick.PayloadDate.ToString("HH:mm:ss"),
-                                .Supporting2 = "Normal"
+                                .Supporting2 = "Normal",
+                                .Supporting3 = _slab
                             }
 
                     Dim pl As Decimal = GetStockPotentialPL(currentMinuteCandlePayload)
-                    If pl <= 0 Then
+                    If pl < 0 Then
                         quantity = Math.Ceiling((_2SlabProfit + Math.Abs(pl) - _25SlabProfit) / _oneSlabProfit) * Me.LotSize
-                        Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, quantity, Math.Abs(pl), Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
-                        targetPoint = Math.Min(_slab, targetPrice - entryPrice)
-                        parameter3 = New PlaceOrderParameters With {
+                        If quantity <> 0 Then
+                            Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, quantity, Math.Abs(pl), Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
+                            targetPoint = Math.Min(_slab, targetPrice - entryPrice)
+                            parameter3 = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
                                     .EntryDirection = Trade.TradeExecutionDirection.Buy,
                                     .Quantity = Math.Abs(quantity),
@@ -84,8 +86,10 @@ Public Class AlwaysInTradeMartingaleStrategyRule
                                     .SignalCandle = currentMinuteCandlePayload,
                                     .OrderType = Trade.TypeOfOrder.SL,
                                     .Supporting1 = currentTick.PayloadDate.ToString("HH:mm:ss"),
-                                    .Supporting2 = "SL Makeup"
+                                    .Supporting2 = "SL Makeup",
+                                    .Supporting3 = _slab
                                 }
+                        End If
                     End If
                 End If
             End If
@@ -109,15 +113,17 @@ Public Class AlwaysInTradeMartingaleStrategyRule
                                     .SignalCandle = currentMinuteCandlePayload,
                                     .OrderType = Trade.TypeOfOrder.SL,
                                     .Supporting1 = currentTick.PayloadDate.ToString("HH:mm:ss"),
-                                    .Supporting2 = "Normal"
+                                    .Supporting2 = "Normal",
+                                    .Supporting3 = _slab
                                 }
 
                     Dim pl As Decimal = GetStockPotentialPL(currentMinuteCandlePayload)
-                    If pl <= 0 Then
+                    If pl < 0 Then
                         quantity = Math.Ceiling((_2SlabProfit + Math.Abs(pl) - _25SlabProfit) / _oneSlabProfit) * Me.LotSize
-                        Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, quantity, Math.Abs(pl), Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
-                        targetPoint = Math.Min(_slab, entryPrice - targetPrice)
-                        parameter4 = New PlaceOrderParameters With {
+                        If quantity <> 0 Then
+                            Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, quantity, Math.Abs(pl), Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
+                            targetPoint = Math.Min(_slab, entryPrice - targetPrice)
+                            parameter4 = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
                                     .EntryDirection = Trade.TradeExecutionDirection.Sell,
                                     .Quantity = Math.Abs(quantity),
@@ -127,8 +133,10 @@ Public Class AlwaysInTradeMartingaleStrategyRule
                                     .SignalCandle = currentMinuteCandlePayload,
                                     .OrderType = Trade.TypeOfOrder.SL,
                                     .Supporting1 = currentTick.PayloadDate.ToString("HH:mm:ss"),
-                                    .Supporting2 = "SL Makeup"
+                                    .Supporting2 = "SL Makeup",
+                                    .Supporting3 = _slab
                                 }
+                        End If
                     End If
                 End If
             End If

@@ -297,6 +297,7 @@ Namespace StrategyHelper
                                                     End If
 
                                                     'Exit Trade From Rule
+                                                    Dim exitOrderRuleSuccessful As Boolean = False
                                                     _canceller.Token.ThrowIfCancellationRequested()
                                                     Dim potentialRuleCancelTrades As List(Of Trade) = GetSpecificTrades(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Open)
                                                     If potentialRuleCancelTrades IsNot Nothing AndAlso potentialRuleCancelTrades.Count > 0 Then
@@ -307,6 +308,7 @@ Namespace StrategyHelper
                                                                 If exitOrderDetails IsNot Nothing AndAlso exitOrderDetails.Item1 Then
                                                                     _canceller.Token.ThrowIfCancellationRequested()
                                                                     ExitTradeByForce(runningCancelTrade, runningTick, exitOrderDetails.Item2)
+                                                                    exitOrderRuleSuccessful = True
                                                                     If stockList(stockName).StoplossOrderModified Then stockList(stockName).StoplossOrderModified = False
                                                                 End If
                                                             Next
@@ -322,6 +324,7 @@ Namespace StrategyHelper
                                                                 Dim exitOrderDetails As Tuple(Of Boolean, String) = Await stockStrategyRule.IsTriggerReceivedForExitOrderAsync(runningTick, runningExitTrade).ConfigureAwait(False)
                                                                 If exitOrderDetails IsNot Nothing AndAlso exitOrderDetails.Item1 Then
                                                                     ExitTradeByForce(runningExitTrade, runningTick, exitOrderDetails.Item2)
+                                                                    exitOrderRuleSuccessful = True
                                                                 End If
                                                             Next
                                                             stockList(stockName).ExitOrderDoneForTheMinute = True
@@ -335,7 +338,7 @@ Namespace StrategyHelper
                                                         stockPL = Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol)
                                                         totalPLOftheDay = Me.TotalPLAfterBrokerage(runningTick.PayloadDate)
                                                         Dim nmbrOfTrd As Integer = Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol)
-                                                        If Me.TickBasedStrategy OrElse Not stockList(stockName).PlaceOrderDoneForTheMinute Then
+                                                        If Me.TickBasedStrategy OrElse Not stockList(stockName).PlaceOrderDoneForTheMinute OrElse exitOrderRuleSuccessful Then
                                                             If nmbrOfTrd < Me.NumberOfTradesPerStockPerDay AndAlso
                                                                 totalPLOftheDay < Me.OverAllProfitPerDay AndAlso
                                                                 totalPLOftheDay > Me.OverAllLossPerDay AndAlso
