@@ -10,6 +10,9 @@ Public Class AlwaysInTradeMartingaleStrategyRule
     Private _25SlabProfit As Decimal = Decimal.MinValue
     Private _2SlabProfit As Decimal = Decimal.MinValue
 
+    Private ReadOnly _25Slab As Decimal = 2.5
+    Private ReadOnly _2Slab As Decimal = 2
+
     Private ReadOnly _slab As Decimal
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -39,12 +42,14 @@ Public Class AlwaysInTradeMartingaleStrategyRule
             currentMinuteCandlePayload.PayloadDate >= _tradeStartTime AndAlso Me.EligibleToTakeTrade AndAlso Not IsAnyTradeOfTheStockTargetReached(currentMinuteCandlePayload) Then
             If _25SlabProfit = Decimal.MinValue Then
                 Dim price As Decimal = currentTick.Open
-                _25SlabProfit = _parentStrategy.CalculatePL(_tradingSymbol, price, price + _slab * 2.5, Me.LotSize, Me.LotSize, _parentStrategy.StockType)
-                _2SlabProfit = _parentStrategy.CalculatePL(_tradingSymbol, price, price + _slab * 2, Me.LotSize, Me.LotSize, _parentStrategy.StockType)
+                _25SlabProfit = _parentStrategy.CalculatePL(_tradingSymbol, price, price + _slab * _25Slab, Me.LotSize, Me.LotSize, _parentStrategy.StockType)
+                _2SlabProfit = _parentStrategy.CalculatePL(_tradingSymbol, price, price + _slab * _2Slab, Me.LotSize, Me.LotSize, _parentStrategy.StockType)
                 _oneSlabProfit = _parentStrategy.CalculatePL(_tradingSymbol, price, price + _slab, Me.LotSize, Me.LotSize, _parentStrategy.StockType)
                 If _oneSlabProfit <= 0 Then
                     Throw New ApplicationException(String.Format("One Slab Profit PL:{0}", _oneSlabProfit))
                 End If
+
+                If Me.MaxProfitOfThisStock = Decimal.MaxValue Then Me.MaxProfitOfThisStock = _25SlabProfit
             End If
             If Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) AndAlso
                 Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) Then
@@ -53,8 +58,8 @@ Public Class AlwaysInTradeMartingaleStrategyRule
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2, RoundOfType.Floor)
                     Dim entryPrice As Decimal = signal.Item2 + buffer
                     Dim slPoint As Decimal = _slab + 2 * buffer
-                    Dim targetPoint As Decimal = ConvertFloorCeling(_slab * 2.5, _parentStrategy.TickSize, RoundOfType.Celing)
                     Dim quantity As Integer = Me.LotSize
+                    Dim targetPoint As Decimal = ConvertFloorCeling(_slab * _25Slab, _parentStrategy.TickSize, RoundOfType.Celing)
 
                     parameter1 = New PlaceOrderParameters With {
                                 .EntryPrice = entryPrice,
@@ -65,9 +70,9 @@ Public Class AlwaysInTradeMartingaleStrategyRule
                                 .Buffer = buffer,
                                 .SignalCandle = currentMinuteCandlePayload,
                                 .OrderType = Trade.TypeOfOrder.SL,
-                                .Supporting1 = currentTick.PayloadDate.ToString("HH:mm:ss"),
+                                .Supporting1 = _slab,
                                 .Supporting2 = "Normal",
-                                .Supporting3 = _slab
+                                .Supporting3 = 1
                             }
 
                     Dim pl As Decimal = GetStockPotentialPL(currentMinuteCandlePayload)
@@ -85,9 +90,11 @@ Public Class AlwaysInTradeMartingaleStrategyRule
                                     .Buffer = 0,
                                     .SignalCandle = currentMinuteCandlePayload,
                                     .OrderType = Trade.TypeOfOrder.SL,
-                                    .Supporting1 = currentTick.PayloadDate.ToString("HH:mm:ss"),
+                                    .Supporting1 = _slab,
                                     .Supporting2 = "SL Makeup",
-                                    .Supporting3 = _slab
+                                    .Supporting3 = quantity / Me.LotSize,
+                                    .Supporting4 = pl,
+                                    .Supporting5 = String.Format("({0}+{1}-{2})/{3}", _2SlabProfit, Math.Abs(pl), _25SlabProfit, _oneSlabProfit)
                                 }
                         End If
                     End If
@@ -100,8 +107,8 @@ Public Class AlwaysInTradeMartingaleStrategyRule
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2, RoundOfType.Floor)
                     Dim entryPrice As Decimal = signal.Item2 - buffer
                     Dim slPoint As Decimal = _slab + 2 * buffer
-                    Dim targetPoint As Decimal = ConvertFloorCeling(_slab * 2.5, _parentStrategy.TickSize, RoundOfType.Celing)
                     Dim quantity As Integer = Me.LotSize
+                    Dim targetPoint As Decimal = ConvertFloorCeling(_slab * _25Slab, _parentStrategy.TickSize, RoundOfType.Celing)
 
                     parameter2 = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
@@ -112,9 +119,9 @@ Public Class AlwaysInTradeMartingaleStrategyRule
                                     .Buffer = buffer,
                                     .SignalCandle = currentMinuteCandlePayload,
                                     .OrderType = Trade.TypeOfOrder.SL,
-                                    .Supporting1 = currentTick.PayloadDate.ToString("HH:mm:ss"),
+                                    .Supporting1 = _slab,
                                     .Supporting2 = "Normal",
-                                    .Supporting3 = _slab
+                                    .Supporting3 = 1
                                 }
 
                     Dim pl As Decimal = GetStockPotentialPL(currentMinuteCandlePayload)
@@ -132,9 +139,11 @@ Public Class AlwaysInTradeMartingaleStrategyRule
                                     .Buffer = 0,
                                     .SignalCandle = currentMinuteCandlePayload,
                                     .OrderType = Trade.TypeOfOrder.SL,
-                                    .Supporting1 = currentTick.PayloadDate.ToString("HH:mm:ss"),
+                                    .Supporting1 = _slab,
                                     .Supporting2 = "SL Makeup",
-                                    .Supporting3 = _slab
+                                    .Supporting3 = quantity / Me.LotSize,
+                                    .Supporting4 = pl,
+                                    .Supporting5 = String.Format("({0}+{1}-{2})/{3}", _2SlabProfit, Math.Abs(pl), _25SlabProfit, _oneSlabProfit)
                                 }
                         End If
                     End If
