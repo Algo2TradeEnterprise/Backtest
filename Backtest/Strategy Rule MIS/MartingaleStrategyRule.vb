@@ -263,7 +263,7 @@ Public Class MartingaleStrategyRule
             If firstCandle IsNot Nothing AndAlso firstCandle.PreviousCandlePayload IsNot Nothing Then
                 ret = _atrPayload.Max(Function(x)
                                           If x.Key.Date >= firstCandle.PreviousCandlePayload.PayloadDate.Date AndAlso
-                                          x.Key <= signalCandle.PayloadDate Then
+                                            x.Key <= signalCandle.PayloadDate Then
                                               Return x.Value
                                           Else
                                               Return Decimal.MinValue

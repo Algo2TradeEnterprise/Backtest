@@ -1169,7 +1169,7 @@ Public Class frmMain
 #End Region
                 Case 10
 #Region "Martingale"
-                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Futures
+                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
                     Dim database As Common.DataBaseTable = Common.DataBaseTable.None
                     Dim margin As Decimal = 0
                     Dim tick As Decimal = 0
@@ -1212,7 +1212,11 @@ Public Class frmMain
                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                         With backtestStrategy
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Stock.csv")
+                            If .StockType = Trade.TypeOfStock.Cash Then
+                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Cash Stock.csv")
+                            Else
+                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Stock.csv")
+                            End If
 
                             .AllowBothDirectionEntryAtSameTime = False
                             .TrailingStoploss = False

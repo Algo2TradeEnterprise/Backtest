@@ -702,24 +702,24 @@ Namespace StrategyHelper
                                     End If
                                     Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
                                     Dim slab As Decimal = dt.Rows(i).Item("Slab")
-                                    Dim price As Decimal = dt.Rows(i).Item("Previous Day Close")
-                                    Dim turnover As Decimal = (price * lotsize) / Me.MarginMultiplier
+                                    'Dim price As Decimal = dt.Rows(i).Item("Previous Day Close")
+                                    'Dim turnover As Decimal = (price * lotsize) / Me.MarginMultiplier
 
-                                    Console.WriteLine(String.Format("{0}, {1}", tradingSymbol, turnover))
-                                    If turnover < 7000 Then
-                                        Dim detailsOfStock As StockDetails = New StockDetails With
+                                    'Console.WriteLine(String.Format("{0}, {1}", tradingSymbol, turnover))
+                                    'If turnover < 7000 Then
+                                    Dim detailsOfStock As StockDetails = New StockDetails With
                                                 {.StockName = instrumentName,
                                                  .TradingSymbol = tradingSymbol,
                                                  .LotSize = lotsize,
                                                  .Slab = slab,
                                                  .EligibleToTakeTrade = True}
 
-                                        If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                        ret.Add(instrumentName, detailsOfStock)
+                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                    ret.Add(instrumentName, detailsOfStock)
 
-                                        counter += 1
-                                        If counter = Me.NumberOfTradeableStockPerDay Then Exit For
-                                    End If
+                                    counter += 1
+                                    If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                                    'End If
                                 End If
                             Next
                         Case Else
