@@ -66,8 +66,7 @@ Public Class MartingaleStrategyRule
                         Me.MaxProfitOfThisStock = _parentStrategy.CalculatePL(_tradingSymbol, currentTick.Open, currentTick.Open + _targetPoint, _quantity, Me.LotSize, _parentStrategy.StockType)
                     End If
                 ElseIf lastExecutedOrder IsNot Nothing Then
-                    Dim lastOrderExitTime As Date = _parentStrategy.GetCurrentXMinuteCandleTime(lastExecutedOrder.ExitTime, _signalPayload)
-                    If signal.Item2.PayloadDate >= lastOrderExitTime Then
+                    If signal.Item2.PayloadDate <> lastExecutedOrder.SignalCandle.PayloadDate Then
                         signalCandle = signal.Item2
                     End If
                 End If
