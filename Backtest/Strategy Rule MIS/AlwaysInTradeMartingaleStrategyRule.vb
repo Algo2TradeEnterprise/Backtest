@@ -10,8 +10,8 @@ Public Class AlwaysInTradeMartingaleStrategyRule
     Private _25SlabProfit As Decimal = Decimal.MinValue
     Private _2SlabProfit As Decimal = Decimal.MinValue
 
-    Private ReadOnly _25Slab As Decimal = 2.5
-    Private ReadOnly _2Slab As Decimal = 2
+    Private ReadOnly _25Slab As Decimal = 1
+    Private ReadOnly _2Slab As Decimal = 1
 
     Private ReadOnly _slab As Decimal
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
@@ -249,9 +249,21 @@ Public Class AlwaysInTradeMartingaleStrategyRule
             Dim sellLevel As Decimal = GetSlabBasedLevel(currentTick.Open, Trade.TradeExecutionDirection.Sell)
             If candle.High >= buyLevel AndAlso candle.Low <= sellLevel Then
                 If direction = Trade.TradeExecutionDirection.Buy Then
-                    ret = New Tuple(Of Boolean, Decimal)(True, buyLevel)
+                    If buyLevel = sellLevel Then
+                        If candle.Low <= sellLevel - _slab Then
+                            ret = New Tuple(Of Boolean, Decimal)(True, buyLevel)
+                        End If
+                    Else
+                        ret = New Tuple(Of Boolean, Decimal)(True, buyLevel)
+                    End If
                 ElseIf direction = Trade.TradeExecutionDirection.Sell Then
-                    ret = New Tuple(Of Boolean, Decimal)(True, sellLevel)
+                    If buyLevel = sellLevel Then
+                        If candle.High >= buyLevel + _slab Then
+                            ret = New Tuple(Of Boolean, Decimal)(True, sellLevel)
+                        End If
+                    Else
+                        ret = New Tuple(Of Boolean, Decimal)(True, sellLevel)
+                    End If
                 End If
             ElseIf candle.High >= buyLevel Then
                 If direction = Trade.TradeExecutionDirection.Sell Then
