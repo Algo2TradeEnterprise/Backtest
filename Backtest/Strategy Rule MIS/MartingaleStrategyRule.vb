@@ -102,7 +102,7 @@ Public Class MartingaleStrategyRule
                             quantity = Math.Ceiling(quantity / Me.LotSize) * Me.LotSize
                         End If
                         Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, quantity, Math.Abs(pl), Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
-                        targetPoint = targetPrice - entryPrice
+                        targetPoint = Math.Min(_targetPoint, targetPrice - entryPrice)
                         targetRemark = "SL Makeup"
 
                         parameter2 = New PlaceOrderParameters With {
@@ -149,7 +149,7 @@ Public Class MartingaleStrategyRule
                             quantity = Math.Ceiling(quantity / Me.LotSize) * Me.LotSize
                         End If
                         Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, quantity, Math.Abs(pl), Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
-                        targetPoint = entryPrice - targetPrice
+                        targetPoint = Math.Min(_targetPoint, entryPrice - targetPrice)
                         targetRemark = "SL Makeup"
 
                         parameter2 = New PlaceOrderParameters With {
