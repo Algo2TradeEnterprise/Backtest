@@ -120,6 +120,7 @@
     <Compile Include="Strategy Rule MIS\HL_LHBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\MarketPlusMarketMinusStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\BNFMartingaleStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\MartingaleStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\ReversalHHLLBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\SupertrendCutReversalStrategyRule.vb" />
   </ItemGroup>
