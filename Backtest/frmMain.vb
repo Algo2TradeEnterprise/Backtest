@@ -1132,7 +1132,7 @@ Public Class frmMain
                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                         With backtestStrategy
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Test.csv")
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Stock.csv")
 
                             .AllowBothDirectionEntryAtSameTime = False
                             .TrailingStoploss = False
@@ -1173,9 +1173,9 @@ Public Class frmMain
 
             'Delete Directory
             Dim directoryName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("STRATEGY{0} CANDLE DATA", ruleNumber))
-            'If Directory.Exists(directoryName) Then
-            '    Directory.Delete(directoryName, True)
-            'End If
+            If Directory.Exists(directoryName) Then
+                Directory.Delete(directoryName, True)
+            End If
         Catch cex As OperationCanceledException
             MsgBox(cex.Message, MsgBoxStyle.Exclamation)
         Catch ex As Exception
