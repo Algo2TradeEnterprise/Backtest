@@ -946,7 +946,7 @@ Public Class frmMain
                             .TickBasedStrategy = False
                             .RuleNumber = ruleNumber
 
-                            .RuleEntityData = New MartingaleStrategyRule.StrategyRuleEntities With
+                            .RuleEntityData = New BNFMartingaleStrategyRule.StrategyRuleEntities With
                                             {
                                                 .StoplossATRMultiplier = 1 / 2,
                                                 .TargetMultiplier = 4,
@@ -974,7 +974,7 @@ Public Class frmMain
                             .RealtimeTrailingPercentage = 50
                         End With
 
-                        Dim ruleData As MartingaleStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                        Dim ruleData As BNFMartingaleStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
                         Dim filename As String = String.Format("Martingale,SlAtrMul {0},TgtMul {1},MinSL {2}",
                                                                ruleData.StoplossATRMultiplier,
                                                                ruleData.TargetMultiplier,
