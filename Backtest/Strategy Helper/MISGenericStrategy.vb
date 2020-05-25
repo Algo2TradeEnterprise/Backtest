@@ -561,7 +561,7 @@ Namespace StrategyHelper
                             Else
                                 instrumentName = tradingSymbol
                             End If
-                            Dim token As String = ""
+                            Dim token As Integer = Integer.MinValue
                             If Me.DataSource = SourceOfData.Live Then
                                 token = dt.Rows(i).Item("Token")
                             End If
