@@ -92,7 +92,7 @@ Public Class MartingaleStrategyRule
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = _slPoint,
                                     .Supporting3 = targetRemark,
-                                    .Supporting4 = 1
+                                    .Supporting4 = GetTradeNumber(currentMinuteCandlePayload) + 1
                                 }
 
                     Dim pl As Decimal = _parentStrategy.StockPLAfterBrokerage(_tradingDate, _tradingSymbol)
@@ -116,7 +116,8 @@ Public Class MartingaleStrategyRule
                                     .OrderType = Trade.TypeOfOrder.Market,
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = _slPoint,
-                                    .Supporting3 = targetRemark
+                                    .Supporting3 = targetRemark,
+                                    .Supporting4 = GetTradeNumber(currentMinuteCandlePayload) + 1
                                 }
                     End If
                 ElseIf signal.Item3 = Trade.TradeExecutionDirection.Sell Then
@@ -137,7 +138,8 @@ Public Class MartingaleStrategyRule
                                     .OrderType = Trade.TypeOfOrder.Market,
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = _slPoint,
-                                    .Supporting3 = targetRemark
+                                    .Supporting3 = targetRemark,
+                                    .Supporting4 = GetTradeNumber(currentMinuteCandlePayload) + 1
                                 }
 
                     Dim pl As Decimal = _parentStrategy.StockPLAfterBrokerage(_tradingDate, _tradingSymbol)
@@ -161,7 +163,8 @@ Public Class MartingaleStrategyRule
                                     .OrderType = Trade.TypeOfOrder.Market,
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = _slPoint,
-                                    .Supporting3 = targetRemark
+                                    .Supporting3 = targetRemark,
+                                    .Supporting4 = GetTradeNumber(currentMinuteCandlePayload) + 1
                                 }
                     End If
                 End If
@@ -236,7 +239,7 @@ Public Class MartingaleStrategyRule
         If completeTrades IsNot Nothing AndAlso completeTrades.Count > 0 Then
             Dim targetTrades As List(Of Trade) = completeTrades.FindAll(Function(x)
                                                                             Return x.ExitCondition = Trade.TradeExitCondition.Target AndAlso
-                                                                            x.AdditionalTrade = False AndAlso x.Supporting2 = "Normal"
+                                                                            x.AdditionalTrade = False AndAlso x.Supporting3 = "Normal"
                                                                         End Function)
             If targetTrades IsNot Nothing AndAlso targetTrades.Count > 0 Then
                 ret = True
@@ -267,6 +270,18 @@ Public Class MartingaleStrategyRule
                                           End If
                                       End Function)
             End If
+        End If
+        Return ret
+    End Function
+
+    Private Function GetTradeNumber(ByVal currentMinutePayload As Payload) As Integer
+        Dim ret As Integer = 0
+        Dim completeTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentMinutePayload, _parentStrategy.TradeType, Trade.TradeExecutionStatus.Close)
+        If completeTrades IsNot Nothing AndAlso completeTrades.Count > 0 Then
+            Dim mainTrades As List(Of Trade) = completeTrades.FindAll(Function(x)
+                                                                          Return x.Supporting3 = "Normal"
+                                                                      End Function)
+            ret = mainTrades.Count
         End If
         Return ret
     End Function

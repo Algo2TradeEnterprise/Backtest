@@ -688,6 +688,40 @@ Namespace StrategyHelper
                                     End If
                                 End If
                             Next
+                        Case 10
+                            Dim counter As Integer = 0
+                            For i = 0 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i).Item("Date")
+                                If rowDate.Date = tradingDate.Date Then
+                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
+                                    Dim instrumentName As String = Nothing
+                                    If tradingSymbol.Contains("FUT") Then
+                                        instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                                    Else
+                                        instrumentName = tradingSymbol
+                                    End If
+                                    Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
+                                    Dim slab As Decimal = dt.Rows(i).Item("Slab")
+                                    Dim price As Decimal = dt.Rows(i).Item("Previous Day Close")
+                                    Dim turnover As Decimal = (price * lotsize) / Me.MarginMultiplier
+
+                                    Console.WriteLine(String.Format("{0}, {1}", tradingSymbol, turnover))
+                                    If turnover < 7000 Then
+                                        Dim detailsOfStock As StockDetails = New StockDetails With
+                                                {.StockName = instrumentName,
+                                                 .TradingSymbol = tradingSymbol,
+                                                 .LotSize = lotsize,
+                                                 .Slab = slab,
+                                                 .EligibleToTakeTrade = True}
+
+                                        If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                        ret.Add(instrumentName, detailsOfStock)
+
+                                        counter += 1
+                                        If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                                    End If
+                                End If
+                            Next
                         Case Else
                             Dim counter As Integer = 0
                             For i = 0 To dt.Rows.Count - 1

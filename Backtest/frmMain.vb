@@ -1176,7 +1176,7 @@ Public Class frmMain
                     Select Case stockType
                         Case Trade.TypeOfStock.Cash
                             database = Common.DataBaseTable.Intraday_Cash
-                            margin = 10
+                            margin = 15
                             tick = 0.05
                         Case Trade.TypeOfStock.Commodity
                             database = Common.DataBaseTable.Intraday_Commodity
@@ -1188,7 +1188,7 @@ Public Class frmMain
                             tick = 0.0025
                         Case Trade.TypeOfStock.Futures
                             database = Common.DataBaseTable.Intraday_Futures
-                            margin = 30
+                            margin = 50
                             tick = 0.05
                     End Select
 
