@@ -6,6 +6,8 @@ Imports Utilities.Numbers.NumberManipulation
 Public Class AnchorSatelliteHKStrategyRule
     Inherits StrategyRule
 
+    Private _swingHighPayload As Dictionary(Of Date, Decimal)
+    Private _swingLowPayload As Dictionary(Of Date, Decimal)
     Private _atrPayload As Dictionary(Of Date, Decimal)
     Private _hkPayload As Dictionary(Of Date, Payload)
     Private _quantity As Integer = Integer.MinValue
@@ -25,6 +27,7 @@ Public Class AnchorSatelliteHKStrategyRule
 
         Indicator.HeikenAshi.ConvertToHeikenAshi(_signalPayload, _hkPayload)
         Indicator.ATR.CalculateATR(14, _hkPayload, _atrPayload)
+        Indicator.SwingHighLow.CalculateSwingHighLow(_hkPayload, True, _swingHighPayload, _swingLowPayload)
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -133,11 +136,13 @@ Public Class AnchorSatelliteHKStrategyRule
             If currentMinuteCandlePayload.PayloadDate <= currentTrade.EntryTime Then
                 Dim triggerPrice As Decimal = Decimal.MinValue
                 If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                    Dim lowestPoint As Decimal = GetLowestPointOfTheDay(currentMinuteCandlePayload.PreviousCandlePayload)
+                    'Dim lowestPoint As Decimal = GetLowestPointOfTheDay(currentMinuteCandlePayload.PreviousCandlePayload)
+                    Dim lowestPoint As Decimal = Math.Min(_swingLowPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), currentTrade.SignalCandle.Low)
                     triggerPrice = ConvertFloorCeling(lowestPoint, _parentStrategy.TickSize, RoundOfType.Floor)
                     If triggerPrice = lowestPoint Then triggerPrice = triggerPrice - currentTrade.StoplossBuffer
                 ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                    Dim highestPoint As Decimal = GetHighestPointOfTheDay(currentMinuteCandlePayload.PreviousCandlePayload)
+                    'Dim highestPoint As Decimal = GetHighestPointOfTheDay(currentMinuteCandlePayload.PreviousCandlePayload)
+                    Dim highestPoint As Decimal = Math.Max(_swingHighPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), currentTrade.SignalCandle.High)
                     triggerPrice = ConvertFloorCeling(highestPoint, _parentStrategy.TickSize, RoundOfType.Celing)
                     If triggerPrice = highestPoint Then triggerPrice = triggerPrice + currentTrade.StoplossBuffer
                 End If
@@ -168,12 +173,12 @@ Public Class AnchorSatelliteHKStrategyRule
         If candle IsNot Nothing AndAlso Not candle.DeadCandle Then
             Dim hkCandle As Payload = _hkPayload(candle.PayloadDate)
             If Math.Round(hkCandle.Open, 4) = Math.Round(hkCandle.High, 4) Then
-                If hkCandle.Low <= hkCandle.PreviousCandlePayload.Low Then
+                If hkCandle.Low < hkCandle.PreviousCandlePayload.Low Then
                     Dim entryPrice As Decimal = ConvertFloorCeling(hkCandle.High, _parentStrategy.TickSize, RoundOfType.Celing)
                     ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection)(True, entryPrice, hkCandle, Trade.TradeExecutionDirection.Buy)
                 End If
             ElseIf Math.Round(hkCandle.Open, 4) = Math.Round(hkCandle.Low, 4) Then
-                If hkCandle.High >= hkCandle.PreviousCandlePayload.High Then
+                If hkCandle.High > hkCandle.PreviousCandlePayload.High Then
                     Dim entryPrice As Decimal = ConvertFloorCeling(hkCandle.Low, _parentStrategy.TickSize, RoundOfType.Floor)
                     ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection)(True, entryPrice, hkCandle, Trade.TradeExecutionDirection.Sell)
                 End If
