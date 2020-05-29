@@ -14,7 +14,6 @@
         Public CancelOrderDoneForTheMinute As Boolean
         Public ModifyStoplossOrderDoneForTheMinute As Boolean
         Public ModifyTargetOrderDoneForTheMinute As Boolean
-        Public StoplossOrderModified As Boolean
         Public Supporting1 As Decimal
         Public Supporting2 As Decimal
         Public Supporting3 As Decimal
