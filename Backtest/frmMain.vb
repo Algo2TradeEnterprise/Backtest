@@ -1384,7 +1384,7 @@ Public Class frmMain
                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                         With backtestStrategy
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Lowest Range Stock Of X Minute.csv")
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Highest Volume Per Range Stock Of X Minute.csv")
 
                             .AllowBothDirectionEntryAtSameTime = False
                             .TrailingStoploss = False
@@ -1395,7 +1395,7 @@ Public Class frmMain
                                             {
                                                 .MaxLossPerTrade = -500,
                                                 .TargetMultiplier = 2,
-                                                .BreakevenMovement = True
+                                                .BreakevenMovement = False
                                             }
 
                             .NumberOfTradeableStockPerDay = 10

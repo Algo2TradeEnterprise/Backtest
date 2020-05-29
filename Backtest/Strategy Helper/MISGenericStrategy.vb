@@ -739,7 +739,7 @@ Namespace StrategyHelper
                                     Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
                                     Dim slab As Decimal = dt.Rows(i).Item("Slab")
                                     Dim atr As Decimal = dt.Rows(i).Item("ATR %")
-                                    Dim range As Decimal = dt.Rows(i).Item("Range %")
+                                    Dim range As Decimal = dt.Rows(i).Item("Volume Per Range")
                                     Dim detailsOfStock As StockDetails = New StockDetails With
                                                 {.StockName = instrumentName,
                                                  .TradingSymbol = tradingSymbol,
@@ -757,15 +757,16 @@ Namespace StrategyHelper
                                 Dim avgATR As Decimal = stockList.Average(Function(x)
                                                                               Return x.Value.Supporting1
                                                                           End Function)
-                                Dim minimumATR As Decimal = Math.Floor(avgATR)
+                                'Dim minimumATR As Decimal = Math.Floor(avgATR)
+                                Dim minimumATR As Decimal = 5
                                 Dim supportedStocks As IEnumerable(Of KeyValuePair(Of String, StockDetails)) = stockList.Where(Function(x)
                                                                                                                                    Return x.Value.Supporting1 >= minimumATR
                                                                                                                                End Function)
                                 If supportedStocks IsNot Nothing AndAlso supportedStocks.Count > 0 Then
                                     Dim counter As Integer = 0
-                                    For Each runningStock In supportedStocks.OrderBy(Function(x)
-                                                                                         Return x.Value.Supporting2
-                                                                                     End Function)
+                                    For Each runningStock In supportedStocks.OrderByDescending(Function(x)
+                                                                                                   Return x.Value.Supporting2
+                                                                                               End Function)
                                         If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
                                         ret.Add(runningStock.Key, runningStock.Value)
 
