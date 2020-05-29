@@ -59,15 +59,16 @@ Public Class LossMakeupFavourableFractalBreakoutStrategyRule
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2, RoundOfType.Floor)
                     Dim triggerPrice As Decimal = signal.Item2 + buffer
                     Dim stoplossPrice As Decimal = _fractalLowPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) - buffer
-                    Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, triggerPrice, stoplossPrice, Math.Abs(_userInputs.MaxLossPerTrade) * -1, _parentStrategy.StockType)
-                    Dim targetPrice As Decimal = Decimal.MaxValue
-                    If _userInputs.MaxProfitPerTrade = Decimal.MaxValue Then
-                        targetPrice = triggerPrice + 1000000
-                    Else
-                        targetPrice = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, triggerPrice, quantity, _userInputs.MaxProfitPerTrade, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
-                    End If
+                    If stoplossPrice < triggerPrice Then
+                        Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, triggerPrice, stoplossPrice, Math.Abs(_userInputs.MaxLossPerTrade) * -1, _parentStrategy.StockType)
+                        Dim targetPrice As Decimal = Decimal.MaxValue
+                        If _userInputs.MaxProfitPerTrade = Decimal.MaxValue Then
+                            targetPrice = triggerPrice + 1000000
+                        Else
+                            targetPrice = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, triggerPrice, quantity, _userInputs.MaxProfitPerTrade, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
+                        End If
 
-                    parameter1 = New PlaceOrderParameters With {
+                        parameter1 = New PlaceOrderParameters With {
                                     .EntryPrice = triggerPrice,
                                     .EntryDirection = Trade.TradeExecutionDirection.Buy,
                                     .Quantity = quantity,
@@ -81,15 +82,15 @@ Public Class LossMakeupFavourableFractalBreakoutStrategyRule
                                     .Supporting3 = Math.Abs(triggerPrice - stoplossPrice)
                                 }
 
-                    Dim pl As Decimal = GetStockPotentialPL(currentMinuteCandlePayload)
-                    If pl < 0 Then
-                        Dim targetPoint As Decimal = ConvertFloorCeling((triggerPrice - stoplossPrice) / 2, _parentStrategy.TickSize, RoundOfType.Celing)
-                        Dim atr As Decimal = ConvertFloorCeling(_atrPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) * _userInputs.MinimumTargetATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing)
-                        targetPoint = Math.Max(atr, targetPoint)
-                        targetPrice = triggerPrice + targetPoint
-                        quantity = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, triggerPrice, targetPrice, Math.Abs(pl), Trade.TypeOfStock.Cash)
+                        Dim pl As Decimal = GetStockPotentialPL(currentMinuteCandlePayload)
+                        If pl < 0 Then
+                            Dim targetPoint As Decimal = ConvertFloorCeling((triggerPrice - stoplossPrice) / 2, _parentStrategy.TickSize, RoundOfType.Celing)
+                            Dim atr As Decimal = ConvertFloorCeling(_atrPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) * _userInputs.MinimumTargetATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing)
+                            targetPoint = Math.Max(atr, targetPoint)
+                            targetPrice = triggerPrice + targetPoint
+                            quantity = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, triggerPrice, targetPrice, Math.Abs(pl), Trade.TypeOfStock.Cash)
 
-                        parameter2 = New PlaceOrderParameters With {
+                            parameter2 = New PlaceOrderParameters With {
                                     .EntryPrice = triggerPrice,
                                     .EntryDirection = Trade.TradeExecutionDirection.Buy,
                                     .Quantity = quantity,
@@ -103,6 +104,7 @@ Public Class LossMakeupFavourableFractalBreakoutStrategyRule
                                     .Supporting3 = Math.Abs(triggerPrice - stoplossPrice),
                                     .Supporting4 = pl
                                 }
+                        End If
                     End If
                 End If
             End If
@@ -113,15 +115,16 @@ Public Class LossMakeupFavourableFractalBreakoutStrategyRule
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2, RoundOfType.Floor)
                     Dim triggerPrice As Decimal = signal.Item2 - buffer
                     Dim stoplossPrice As Decimal = _fractalHighPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) + buffer
-                    Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, stoplossPrice, triggerPrice, Math.Abs(_userInputs.MaxLossPerTrade) * -1, _parentStrategy.StockType)
-                    Dim targetPrice As Decimal = Decimal.MinValue
-                    If _userInputs.MaxProfitPerTrade = Decimal.MaxValue Then
-                        targetPrice = triggerPrice - 1000000
-                    Else
-                        targetPrice = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, triggerPrice, quantity, _userInputs.MaxProfitPerTrade, Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
-                    End If
+                    If stoplossPrice > triggerPrice Then
+                        Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, stoplossPrice, triggerPrice, Math.Abs(_userInputs.MaxLossPerTrade) * -1, _parentStrategy.StockType)
+                        Dim targetPrice As Decimal = Decimal.MinValue
+                        If _userInputs.MaxProfitPerTrade = Decimal.MaxValue Then
+                            targetPrice = triggerPrice - 1000000
+                        Else
+                            targetPrice = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, triggerPrice, quantity, _userInputs.MaxProfitPerTrade, Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
+                        End If
 
-                    parameter1 = New PlaceOrderParameters With {
+                        parameter1 = New PlaceOrderParameters With {
                                     .EntryPrice = triggerPrice,
                                     .EntryDirection = Trade.TradeExecutionDirection.Sell,
                                     .Quantity = quantity,
@@ -135,15 +138,15 @@ Public Class LossMakeupFavourableFractalBreakoutStrategyRule
                                     .Supporting3 = Math.Abs(triggerPrice - stoplossPrice)
                                 }
 
-                    Dim pl As Decimal = GetStockPotentialPL(currentMinuteCandlePayload)
-                    If pl < 0 Then
-                        Dim targetPoint As Decimal = ConvertFloorCeling((stoplossPrice - triggerPrice) / 2, _parentStrategy.TickSize, RoundOfType.Celing)
-                        Dim atr As Decimal = ConvertFloorCeling(_atrPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) * _userInputs.MinimumTargetATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing)
-                        targetPoint = Math.Max(atr, targetPoint)
-                        targetPrice = triggerPrice - targetPoint
-                        quantity = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, targetPrice, triggerPrice, Math.Abs(pl), Trade.TypeOfStock.Cash)
+                        Dim pl As Decimal = GetStockPotentialPL(currentMinuteCandlePayload)
+                        If pl < 0 Then
+                            Dim targetPoint As Decimal = ConvertFloorCeling((stoplossPrice - triggerPrice) / 2, _parentStrategy.TickSize, RoundOfType.Celing)
+                            Dim atr As Decimal = ConvertFloorCeling(_atrPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) * _userInputs.MinimumTargetATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing)
+                            targetPoint = Math.Max(atr, targetPoint)
+                            targetPrice = triggerPrice - targetPoint
+                            quantity = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, targetPrice, triggerPrice, Math.Abs(pl), Trade.TypeOfStock.Cash)
 
-                        parameter2 = New PlaceOrderParameters With {
+                            parameter2 = New PlaceOrderParameters With {
                                     .EntryPrice = triggerPrice,
                                     .EntryDirection = Trade.TradeExecutionDirection.Sell,
                                     .Quantity = quantity,
@@ -157,6 +160,7 @@ Public Class LossMakeupFavourableFractalBreakoutStrategyRule
                                     .Supporting3 = Math.Abs(triggerPrice - stoplossPrice),
                                     .Supporting4 = pl
                                 }
+                        End If
                     End If
                 End If
             End If
