@@ -119,6 +119,7 @@
     <Compile Include="Strategy Rule MIS\HeikenashiReverseSlabStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\HighestLowestPointStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\HL_LHBreakoutStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\LossMakeupFavourableFractalBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\MarketPlusMarketMinusStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\BNFMartingaleStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\MartingaleStrategyRule.vb" />
