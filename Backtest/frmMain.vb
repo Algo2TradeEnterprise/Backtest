@@ -1391,7 +1391,7 @@ Public Class frmMain
                             .TickBasedStrategy = True
                             .RuleNumber = ruleNumber
 
-                            .RuleEntityData = New SmallOpeningRangeBreakout.StrategyRuleEntities With
+                            .RuleEntityData = New SmallOpeningRangeBreakoutStrategyRule.StrategyRuleEntities With
                                             {
                                                 .MaxLossPerTrade = -500,
                                                 .TargetMultiplier = 2,
@@ -1419,7 +1419,7 @@ Public Class frmMain
                             .RealtimeTrailingPercentage = 50
                         End With
 
-                        Dim ruleData As SmallOpeningRangeBreakout.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                        Dim ruleData As SmallOpeningRangeBreakoutStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
                         Dim filename As String = String.Format("Sml Opng Rng Brkot, MxLsTrd {0}, TgtMul {1}, BrkEvnMvmnt{2}",
                                                                ruleData.MaxLossPerTrade, ruleData.TargetMultiplier, ruleData.BreakevenMovement)
 
