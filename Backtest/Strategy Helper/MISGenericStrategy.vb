@@ -142,6 +142,8 @@ Namespace StrategyHelper
                                             stockRule = New MartingaleStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 11
                                             stockRule = New AnchorSatelliteHKStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case 12
+                                            stockRule = New SmallOpeningRangeBreakout(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -722,6 +724,56 @@ Namespace StrategyHelper
                                     'End If
                                 End If
                             Next
+                        Case 12
+                            Dim stockList As Dictionary(Of String, StockDetails) = Nothing
+                            For i = 0 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i).Item("Date")
+                                If rowDate.Date = tradingDate.Date Then
+                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
+                                    Dim instrumentName As String = Nothing
+                                    If tradingSymbol.Contains("FUT") Then
+                                        instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                                    Else
+                                        instrumentName = tradingSymbol
+                                    End If
+                                    Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
+                                    Dim slab As Decimal = dt.Rows(i).Item("Slab")
+                                    Dim atr As Decimal = dt.Rows(i).Item("ATR %")
+                                    Dim range As Decimal = dt.Rows(i).Item("Range %")
+                                    Dim detailsOfStock As StockDetails = New StockDetails With
+                                                {.StockName = instrumentName,
+                                                 .TradingSymbol = tradingSymbol,
+                                                 .LotSize = lotsize,
+                                                 .Slab = slab,
+                                                 .EligibleToTakeTrade = True,
+                                                 .Supporting1 = atr,
+                                                 .Supporting2 = range}
+
+                                    If stockList Is Nothing Then stockList = New Dictionary(Of String, StockDetails)
+                                    stockList.Add(instrumentName, detailsOfStock)
+                                End If
+                            Next
+                            If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
+                                Dim avgATR As Decimal = stockList.Average(Function(x)
+                                                                              Return x.Value.Supporting1
+                                                                          End Function)
+                                Dim minimumATR As Decimal = Math.Floor(avgATR)
+                                Dim supportedStocks As IEnumerable(Of KeyValuePair(Of String, StockDetails)) = stockList.Where(Function(x)
+                                                                                                                                   Return x.Value.Supporting1 >= minimumATR
+                                                                                                                               End Function)
+                                If supportedStocks IsNot Nothing AndAlso supportedStocks.Count > 0 Then
+                                    Dim counter As Integer = 0
+                                    For Each runningStock In supportedStocks.OrderBy(Function(x)
+                                                                                         Return x.Value.Supporting2
+                                                                                     End Function)
+                                        If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                        ret.Add(runningStock.Key, runningStock.Value)
+
+                                        counter += 1
+                                        If counter >= Me.NumberOfTradeableStockPerDay Then Exit For
+                                    Next
+                                End If
+                            End If
                         Case Else
                             Dim counter As Integer = 0
                             For i = 0 To dt.Rows.Count - 1
