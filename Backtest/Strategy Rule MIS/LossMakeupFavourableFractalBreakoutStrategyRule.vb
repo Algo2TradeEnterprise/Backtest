@@ -191,7 +191,14 @@ Public Class LossMakeupFavourableFractalBreakoutStrategyRule
                 Else
                     Dim signal As Tuple(Of Boolean, Decimal) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, currentTrade.EntryDirection)
                     If signal IsNot Nothing Then
-                        If currentTrade.SignalCandle.PayloadDate <> currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate Then
+                        Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2, RoundOfType.Floor)
+                        Dim entryPrice As Decimal = Decimal.MinValue
+                        If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                            entryPrice = signal.Item2 + buffer
+                        ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                            entryPrice = signal.Item2 - buffer
+                        End If
+                        If entryPrice <> Decimal.MinValue AndAlso entryPrice <> currentTrade.EntryPrice Then
                             ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                         End If
                     End If
@@ -240,14 +247,34 @@ Public Class LossMakeupFavourableFractalBreakoutStrategyRule
         Dim ret As Tuple(Of Boolean, Decimal) = Nothing
         If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then
             If direction = Trade.TradeExecutionDirection.Buy Then
-                If _fractalHighPayload(candle.PayloadDate) < _fractalHighPayload(candle.PreviousCandlePayload.PayloadDate) Then
+                Dim lastfractal As Decimal = GetLastDifferentFractal(_fractalHighPayload, candle.PayloadDate)
+                If lastfractal <> Decimal.MinValue AndAlso _fractalHighPayload(candle.PayloadDate) < lastfractal Then
                     ret = New Tuple(Of Boolean, Decimal)(True, _fractalHighPayload(candle.PayloadDate))
                 End If
             ElseIf direction = Trade.TradeExecutionDirection.Sell Then
-                If _fractalLowPayload(candle.PayloadDate) > _fractalLowPayload(candle.PreviousCandlePayload.PayloadDate) Then
+                Dim lastfractal As Decimal = GetLastDifferentFractal(_fractalLowPayload, candle.PayloadDate)
+                If lastfractal <> Decimal.MinValue AndAlso _fractalLowPayload(candle.PayloadDate) > lastfractal Then
                     ret = New Tuple(Of Boolean, Decimal)(True, _fractalLowPayload(candle.PayloadDate))
                 End If
             End If
+        End If
+        Return ret
+    End Function
+
+    Private Function GetLastDifferentFractal(ByVal fractalPayload As Dictionary(Of Date, Decimal), ByVal currentTime As Date) As Decimal
+        Dim ret As Decimal = Decimal.MinValue
+        If fractalPayload IsNot Nothing AndAlso fractalPayload.Count > 0 Then
+
+            For Each runningFractal In fractalPayload.OrderByDescending(Function(x)
+                                                                            Return x.Key
+                                                                        End Function)
+                If runningFractal.Key < currentTime AndAlso runningFractal.Key.Date = _tradingDate.Date Then
+                    If runningFractal.Value <> fractalPayload(currentTime) Then
+                        ret = runningFractal.Value
+                        Exit For
+                    End If
+                End If
+            Next
         End If
         Return ret
     End Function
