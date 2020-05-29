@@ -113,17 +113,6 @@
     <Compile Include="Strategy Helper\StrategyRule.vb" />
     <Compile Include="Strategy Helper\Trade.vb" />
     <Compile Include="Strategy Rule MIS\AlwaysInTradeMartingaleStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\AnchorSatelliteHKStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\EMAScalpingStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\FractalTrendLineStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\HeikenashiReverseSlabStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\HighestLowestPointStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\HL_LHBreakoutStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\MarketPlusMarketMinusStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\BNFMartingaleStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\MartingaleStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\ReversalHHLLBreakoutStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\SupertrendCutReversalStrategyRule.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="frmMain.resx">

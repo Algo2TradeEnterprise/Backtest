@@ -119,29 +119,7 @@ Namespace StrategyHelper
                                     Dim tradingSymbol As String = currentDayOneMinutePayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
                                         Case 0
-                                            stockRule = New ReversalHHLLBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 1
-                                            stockRule = New FractalTrendLineStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 2
-                                            stockRule = New MarketPlusMarketMinusStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2)
-                                        Case 3
-                                            stockRule = New HighestLowestPointStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 4
-                                            stockRule = New HeikenashiReverseSlabStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Slab)
-                                        Case 5
-                                            stockRule = New EMAScalpingStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 6
-                                            stockRule = New SupertrendCutReversalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 7
-                                            stockRule = New BNFMartingaleStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 8
-                                            stockRule = New HL_LHBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 9
                                             stockRule = New AlwaysInTradeMartingaleStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Slab)
-                                        Case 10
-                                            stockRule = New MartingaleStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 11
-                                            stockRule = New AnchorSatelliteHKStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -599,160 +577,39 @@ Namespace StrategyHelper
                     dt = csvHelper.GetDataTableFromCSV(1)
                 End Using
                 If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
-                    Select Case Me.RuleNumber
-                        Case 2
-                            Dim nifty50Payload As Dictionary(Of Date, Payload) = Cmn.GetRawPayload(Common.DataBaseTable.Intraday_Cash, "NIFTY 50", tradingDate, tradingDate)
-                            If nifty50Payload IsNot Nothing AndAlso nifty50Payload.Count > 0 Then
-                                Dim nifty50XminPayload As Dictionary(Of Date, Payload) = Common.ConvertPayloadsToXMinutes(nifty50Payload, Me.SignalTimeFrame, New Date(tradingDate.Year, tradingDate.Month, tradingDate.Day, 9, 15, 0))
-                                If nifty50XminPayload IsNot Nothing AndAlso nifty50XminPayload.Count > 0 Then
-                                    Dim firstCandle As Payload = nifty50XminPayload.FirstOrDefault.Value
-                                    If firstCandle.CandleColor = Color.Green OrElse firstCandle.CandleColor = Color.Red Then
-                                        Dim counter As Integer = 0
-                                        For i = 0 To dt.Rows.Count - 1
-                                            Dim rowDate As Date = dt.Rows(i).Item("Date")
-                                            If rowDate.Date = tradingDate.Date Then
-                                                Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
-                                                Dim instrumentName As String = Nothing
-                                                If tradingSymbol.Contains("FUT") Then
-                                                    instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
-                                                Else
-                                                    instrumentName = tradingSymbol
-                                                End If
-                                                Dim changePer As Decimal = dt.Rows(i).Item("Change %")
-
-                                                Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
-                                                Dim slab As Decimal = dt.Rows(i).Item("Slab")
-                                                Dim detailsOfStock As StockDetails = New StockDetails With
-                                                {.StockName = instrumentName,
-                                                 .TradingSymbol = tradingSymbol,
-                                                 .LotSize = lotsize,
-                                                 .Slab = slab,
-                                                 .EligibleToTakeTrade = True,
-                                                 .Supporting1 = changePer,
-                                                 .Supporting2 = If(firstCandle.CandleColor = Color.Green, 1, -1)}
-
-                                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                                ret.Add(instrumentName, detailsOfStock)
-
-                                                counter += 1
-                                                If counter = Me.NumberOfTradeableStockPerDay Then Exit For
-                                            End If
-                                        Next
-                                    End If
-                                End If
+                    Dim counter As Integer = 0
+                    For i = 0 To dt.Rows.Count - 1
+                        Dim rowDate As Date = dt.Rows(i).Item("Date")
+                        If rowDate.Date = tradingDate.Date Then
+                            Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
+                            Dim instrumentName As String = Nothing
+                            If tradingSymbol.Contains("FUT") Then
+                                instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                            Else
+                                instrumentName = tradingSymbol
                             End If
-                        Case 4
-                            Dim slabList As List(Of Decimal) = New List(Of Decimal) From {0.5, 1, 2.5, 5, 10, 15}
-                            Dim counter As Integer = 0
-                            For i = 0 To dt.Rows.Count - 1
-                                Dim rowDate As Date = dt.Rows(i).Item("Date")
-                                If rowDate.Date = tradingDate.Date Then
-                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
-                                    Dim instrumentName As String = Nothing
-                                    If tradingSymbol.Contains("FUT") Then
-                                        instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
-                                    Else
-                                        instrumentName = tradingSymbol
-                                    End If
-                                    Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
-                                    Dim slab As Decimal = dt.Rows(i).Item("Slab")
-                                    Dim previousDayClose As Decimal = dt.Rows(i).Item("Previous Day Close")
-                                    Dim previousSlab As List(Of Decimal) = slabList.FindAll(Function(x)
-                                                                                                Return x < slab
-                                                                                            End Function)
-                                    If previousSlab IsNot Nothing AndAlso previousSlab.Count > 0 Then
-                                        Dim projectedSlab As Decimal = previousSlab.LastOrDefault
-                                        Dim buffer As Decimal = CalculateBuffer(previousDayClose, Utilities.Numbers.NumberManipulation.RoundOfType.Floor)
-                                        Dim slPoint As Decimal = projectedSlab + 2 * buffer
-                                        Dim pl As Decimal = CalculatePL(instrumentName, previousDayClose, previousDayClose - slPoint, lotsize, lotsize, Me.StockType)
-                                        If Math.Abs(pl) >= 600 AndAlso Math.Abs(pl) <= 1200 Then
-                                            slab = projectedSlab
-                                        Else
-                                            slab = Decimal.MinValue
-                                        End If
-                                    Else
-                                        slab = Decimal.MinValue
-                                    End If
+                            Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
+                            Dim slab As Decimal = dt.Rows(i).Item("Slab")
+                            'Dim price As Decimal = dt.Rows(i).Item("Previous Day Close")
+                            'Dim turnover As Decimal = (price * lotsize) / Me.MarginMultiplier
 
-                                    If slab <> Decimal.MinValue Then
-                                        Dim detailsOfStock As StockDetails = New StockDetails With
+                            'Console.WriteLine(String.Format("{0}, {1}", tradingSymbol, turnover))
+                            'If turnover < 7000 Then
+                            Dim detailsOfStock As StockDetails = New StockDetails With
                                                 {.StockName = instrumentName,
                                                  .TradingSymbol = tradingSymbol,
                                                  .LotSize = lotsize,
                                                  .Slab = slab,
                                                  .EligibleToTakeTrade = True}
 
-                                        If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                        ret.Add(instrumentName, detailsOfStock)
+                            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                            ret.Add(instrumentName, detailsOfStock)
 
-                                        counter += 1
-                                        If counter = Me.NumberOfTradeableStockPerDay Then Exit For
-                                    End If
-                                End If
-                            Next
-                        Case 10
-                            Dim counter As Integer = 0
-                            For i = 0 To dt.Rows.Count - 1
-                                Dim rowDate As Date = dt.Rows(i).Item("Date")
-                                If rowDate.Date = tradingDate.Date Then
-                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
-                                    Dim instrumentName As String = Nothing
-                                    If tradingSymbol.Contains("FUT") Then
-                                        instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
-                                    Else
-                                        instrumentName = tradingSymbol
-                                    End If
-                                    Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
-                                    Dim slab As Decimal = dt.Rows(i).Item("Slab")
-                                    'Dim price As Decimal = dt.Rows(i).Item("Previous Day Close")
-                                    'Dim turnover As Decimal = (price * lotsize) / Me.MarginMultiplier
-
-                                    'Console.WriteLine(String.Format("{0}, {1}", tradingSymbol, turnover))
-                                    'If turnover < 7000 Then
-                                    Dim detailsOfStock As StockDetails = New StockDetails With
-                                                {.StockName = instrumentName,
-                                                 .TradingSymbol = tradingSymbol,
-                                                 .LotSize = lotsize,
-                                                 .Slab = slab,
-                                                 .EligibleToTakeTrade = True}
-
-                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                    ret.Add(instrumentName, detailsOfStock)
-
-                                    counter += 1
-                                    If counter = Me.NumberOfTradeableStockPerDay Then Exit For
-                                    'End If
-                                End If
-                            Next
-                        Case Else
-                            Dim counter As Integer = 0
-                            For i = 0 To dt.Rows.Count - 1
-                                Dim rowDate As Date = dt.Rows(i).Item("Date")
-                                If rowDate.Date = tradingDate.Date Then
-                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
-                                    Dim instrumentName As String = Nothing
-                                    If tradingSymbol.Contains("FUT") Then
-                                        instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
-                                    Else
-                                        instrumentName = tradingSymbol
-                                    End If
-                                    Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
-                                    Dim slab As Decimal = dt.Rows(i).Item("Slab")
-                                    Dim detailsOfStock As StockDetails = New StockDetails With
-                                                {.StockName = instrumentName,
-                                                 .TradingSymbol = tradingSymbol,
-                                                 .LotSize = lotsize,
-                                                 .Slab = slab,
-                                                 .EligibleToTakeTrade = True}
-
-                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                    ret.Add(instrumentName, detailsOfStock)
-
-                                    counter += 1
-                                    If counter = Me.NumberOfTradeableStockPerDay Then Exit For
-                                End If
-                            Next
-                    End Select
+                            counter += 1
+                            If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                            'End If
+                        End If
+                    Next
                 End If
             End If
             Return ret
