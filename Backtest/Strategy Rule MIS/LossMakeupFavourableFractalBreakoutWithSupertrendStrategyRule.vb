@@ -65,7 +65,7 @@ Public Class LossMakeupFavourableFractalBreakoutWithSupertrendStrategyRule
                     Dim triggerPrice As Decimal = signal.Item2 + buffer
                     Dim stoplossPrice As Decimal = GetStoplossPrice(Trade.TradeExecutionDirection.Buy, currentMinuteCandlePayload.PreviousCandlePayload, signal.Item2, buffer).Item1
                     Dim slRemark As String = GetStoplossPrice(Trade.TradeExecutionDirection.Buy, currentMinuteCandlePayload.PreviousCandlePayload, signal.Item2, buffer).Item2
-                    Dim atr As Decimal = ConvertFloorCeling(_atrPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
+                    'Dim atr As Decimal = ConvertFloorCeling(_atrPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
                     If stoplossPrice < triggerPrice Then
                         Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, triggerPrice, stoplossPrice, Math.Abs(_userInputs.MaxLossPerTrade) * -1, _parentStrategy.StockType)
                         Dim targetPrice As Decimal = Decimal.MaxValue
@@ -93,8 +93,8 @@ Public Class LossMakeupFavourableFractalBreakoutWithSupertrendStrategyRule
                         Dim pl As Decimal = GetStockPotentialPL(currentMinuteCandlePayload)
                         If pl < 0 Then
                             Dim targetPoint As Decimal = ConvertFloorCeling((triggerPrice - stoplossPrice) / 2, _parentStrategy.TickSize, RoundOfType.Celing)
-                            Dim atrTarget As Decimal = ConvertFloorCeling(atr * _userInputs.MinimumTargetATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing)
-                            targetPoint = Math.Max(atrTarget, targetPoint)
+                            'Dim atrTarget As Decimal = ConvertFloorCeling(atr * _userInputs.MinimumTargetATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing)
+                            'targetPoint = Math.Max(atrTarget, targetPoint)
                             targetPrice = triggerPrice + targetPoint
                             quantity = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, triggerPrice, targetPrice, Math.Abs(pl), Trade.TypeOfStock.Cash)
 
@@ -125,7 +125,7 @@ Public Class LossMakeupFavourableFractalBreakoutWithSupertrendStrategyRule
                     Dim triggerPrice As Decimal = signal.Item2 - buffer
                     Dim stoplossPrice As Decimal = GetStoplossPrice(Trade.TradeExecutionDirection.Sell, currentMinuteCandlePayload.PreviousCandlePayload, signal.Item2, buffer).Item1
                     Dim slRemark As String = GetStoplossPrice(Trade.TradeExecutionDirection.Sell, currentMinuteCandlePayload.PreviousCandlePayload, signal.Item2, buffer).Item2
-                    Dim atr As Decimal = ConvertFloorCeling(_atrPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
+                    'Dim atr As Decimal = ConvertFloorCeling(_atrPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
                     If stoplossPrice > triggerPrice Then
                         Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, stoplossPrice, triggerPrice, Math.Abs(_userInputs.MaxLossPerTrade) * -1, _parentStrategy.StockType)
                         Dim targetPrice As Decimal = Decimal.MinValue
@@ -153,8 +153,8 @@ Public Class LossMakeupFavourableFractalBreakoutWithSupertrendStrategyRule
                         Dim pl As Decimal = GetStockPotentialPL(currentMinuteCandlePayload)
                         If pl < 0 Then
                             Dim targetPoint As Decimal = ConvertFloorCeling((stoplossPrice - triggerPrice) / 2, _parentStrategy.TickSize, RoundOfType.Celing)
-                            Dim atrTarget As Decimal = ConvertFloorCeling(atr * _userInputs.MinimumTargetATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing)
-                            targetPoint = Math.Max(atrTarget, targetPoint)
+                            'Dim atrTarget As Decimal = ConvertFloorCeling(atr * _userInputs.MinimumTargetATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing)
+                            'targetPoint = Math.Max(atrTarget, targetPoint)
                             targetPrice = triggerPrice - targetPoint
                             quantity = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, targetPrice, triggerPrice, Math.Abs(pl), Trade.TypeOfStock.Cash)
 
@@ -218,6 +218,16 @@ Public Class LossMakeupFavourableFractalBreakoutWithSupertrendStrategyRule
                         Dim stoplossPrice As Decimal = GetStoplossPrice(currentTrade.EntryDirection, currentMinuteCandlePayload.PreviousCandlePayload, signal.Item2, buffer).Item1
                         If entryPrice <> Decimal.MinValue AndAlso (entryPrice <> currentTrade.EntryPrice OrElse stoplossPrice <> currentTrade.PotentialStopLoss) Then
                             ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                        End If
+                    Else
+                        If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                            If _supertrendColorPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) = Color.Red Then
+                                ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                            End If
+                        ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                            If _supertrendColorPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) = Color.Green Then
+                                ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                            End If
                         End If
                     End If
                 End If
