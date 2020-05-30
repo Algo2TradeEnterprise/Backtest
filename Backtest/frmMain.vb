@@ -1478,11 +1478,11 @@ Public Class frmMain
                             .TickBasedStrategy = True
                             .RuleNumber = ruleNumber
 
-                            .RuleEntityData = New LossMakeupFavourableFractalBreakoutWithSupertrendStrategyRule.StrategyRuleEntities With
+                            .RuleEntityData = New LossMakeupFavourableFractalBreakoutStrategyRule.StrategyRuleEntities With
                                             {
                                                 .MaxLossPerTrade = -500,
-                                                .MaxProfitPerTrade = 500,
-                                                .MinimumTargetATRMultipler = 0.5,
+                                                .MaxProfitPerTrade = 1000,
+                                                .MinimumTargetATRMultipler = 1,
                                                 .MaximumStoplossATRMultipler = 2,
                                                 .MinimumStoplossATRMultipler = 1
                                             }
@@ -1495,7 +1495,7 @@ Public Class frmMain
                             .StockMaxLossPercentagePerDay = Decimal.MinValue
 
                             .ExitOnStockFixedTargetStoploss = True
-                            .StockMaxProfitPerDay = 500
+                            .StockMaxProfitPerDay = 1000
                             .StockMaxLossPerDay = Decimal.MinValue
 
                             .ExitOnOverAllFixedTargetStoploss = False
@@ -1508,7 +1508,7 @@ Public Class frmMain
                             .RealtimeTrailingPercentage = 50
                         End With
 
-                        Dim ruleData As LossMakeupFavourableFractalBreakoutWithSupertrendStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                        Dim ruleData As LossMakeupFavourableFractalBreakoutStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
                         Dim filename As String = String.Format("Ls Mkup Frctl Brkot,MxLsTrd {0},MxPrftTrd {1},MinTgtATRMul {2},MinSlATRMul {3},MaxSlATRMul {4}",
                                                                ruleData.MaxLossPerTrade,
                                                                ruleData.MaxProfitPerTrade,

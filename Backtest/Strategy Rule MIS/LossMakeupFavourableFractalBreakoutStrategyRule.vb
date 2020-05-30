@@ -23,6 +23,9 @@ Public Class LossMakeupFavourableFractalBreakoutStrategyRule
     Private _fractalHighPayload As Dictionary(Of Date, Decimal)
     Private _fractalLowPayload As Dictionary(Of Date, Decimal)
     Private _atrPayload As Dictionary(Of Date, Decimal)
+    Private _previousDayHighestATR As Decimal
+    Private _considerPreviousDayFractalForBuy As Boolean = False
+    Private _considerPreviousDayFractalForSell As Boolean = False
     Private _lastPotentialPL As Decimal = 0
     Private _lastCancelOrder As Trade = Nothing
 
@@ -42,6 +45,34 @@ Public Class LossMakeupFavourableFractalBreakoutStrategyRule
 
         Indicator.FractalBands.CalculateFractal(_signalPayload, _fractalHighPayload, _fractalLowPayload)
         Indicator.ATR.CalculateATR(14, _signalPayload, _atrPayload)
+
+        If _atrPayload IsNot Nothing AndAlso _atrPayload.Count > 0 Then
+            Dim firstCandle As Payload = Nothing
+            For Each runningPayload In _signalPayload
+                If runningPayload.Key.Date = _tradingDate.Date Then
+                    If runningPayload.Value.PreviousCandlePayload.PayloadDate.Date <> _tradingDate.Date Then
+                        firstCandle = runningPayload.Value
+                        Exit For
+                    End If
+                End If
+            Next
+            If firstCandle IsNot Nothing AndAlso firstCandle.PreviousCandlePayload IsNot Nothing Then
+                If firstCandle.Open > _fractalHighPayload(firstCandle.PayloadDate) AndAlso firstCandle.Open > _fractalLowPayload(firstCandle.PayloadDate) Then
+                    _considerPreviousDayFractalForSell = True
+                End If
+                If firstCandle.Open < _fractalHighPayload(firstCandle.PayloadDate) AndAlso firstCandle.Open < _fractalLowPayload(firstCandle.PayloadDate) Then
+                    _considerPreviousDayFractalForBuy = True
+                End If
+
+                _previousDayHighestATR = _atrPayload.Max(Function(x)
+                                                             If x.Key.Date = firstCandle.PreviousCandlePayload.PayloadDate.Date Then
+                                                                 Return x.Value
+                                                             Else
+                                                                 Return Decimal.MinValue
+                                                             End If
+                                                         End Function)
+            End If
+        End If
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(ByVal currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -57,22 +88,24 @@ Public Class LossMakeupFavourableFractalBreakoutStrategyRule
             If Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) AndAlso
                 Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) Then
                 Dim signal As Tuple(Of Boolean, Decimal) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, Trade.TradeExecutionDirection.Buy)
-                If signal IsNot Nothing AndAlso signal.Item1 Then
+                Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy)
+                If signal IsNot Nothing AndAlso signal.Item1 AndAlso (lastExecutedOrder Is Nothing OrElse Not IsBothFractalSame(_fractalHighPayload, currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate, lastExecutedOrder.SignalCandle.PayloadDate)) Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2, RoundOfType.Floor)
                     Dim triggerPrice As Decimal = signal.Item2 + buffer
-                    Dim stoplossPrice As Decimal = _fractalLowPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) - buffer
-                    Dim slRemark As String = "Fractal"
-                    Dim atr As Decimal = ConvertFloorCeling(_atrPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
-                    Dim minATRSL As Decimal = ConvertFloorCeling(atr * _userInputs.MinimumStoplossATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing)
-                    Dim maxATRSL As Decimal = ConvertFloorCeling(atr * _userInputs.MaximumStoplossATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing)
-                    Dim slPoint As Decimal = (triggerPrice - stoplossPrice) - 2 * buffer
-                    If slPoint < minATRSL Then
-                        stoplossPrice = triggerPrice - minATRSL - buffer
-                        slRemark = "Min ATR SL"
-                    ElseIf slPoint > maxATRSL Then
-                        stoplossPrice = triggerPrice - maxATRSL - buffer
-                        slRemark = "Max ATR SL"
-                    End If
+                    Dim stoplossPrice As Decimal = signal.Item2 - ConvertFloorCeling(_previousDayHighestATR, _parentStrategy.TickSize, RoundOfType.Celing) - buffer
+                    'Dim stoplossPrice As Decimal = _fractalLowPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) - buffer
+                    'Dim slRemark As String = "Fractal"
+                    'Dim atr As Decimal = ConvertFloorCeling(_atrPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
+                    'Dim minATRSL As Decimal = ConvertFloorCeling(atr * _userInputs.MinimumStoplossATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing)
+                    'Dim maxATRSL As Decimal = ConvertFloorCeling(atr * _userInputs.MaximumStoplossATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing)
+                    'Dim slPoint As Decimal = (triggerPrice - stoplossPrice) - 2 * buffer
+                    'If slPoint < minATRSL Then
+                    '    stoplossPrice = triggerPrice - minATRSL - buffer
+                    '    slRemark = "Min ATR SL"
+                    'ElseIf slPoint > maxATRSL Then
+                    '    stoplossPrice = triggerPrice - maxATRSL - buffer
+                    '    slRemark = "Max ATR SL"
+                    'End If
                     If stoplossPrice < triggerPrice Then
                         Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, triggerPrice, stoplossPrice, Math.Abs(_userInputs.MaxLossPerTrade) * -1, _parentStrategy.StockType)
                         Dim targetPrice As Decimal = Decimal.MaxValue
@@ -93,14 +126,14 @@ Public Class LossMakeupFavourableFractalBreakoutStrategyRule
                                     .OrderType = Trade.TypeOfOrder.SL,
                                     .Supporting1 = currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = "Normal",
-                                    .Supporting3 = Math.Abs(triggerPrice - stoplossPrice),
-                                    .Supporting4 = slRemark
+                                    .Supporting3 = Math.Abs(triggerPrice - stoplossPrice)
                                 }
 
                         Dim pl As Decimal = GetStockPotentialPL(currentMinuteCandlePayload)
                         If pl < 0 Then
                             Dim targetPoint As Decimal = ConvertFloorCeling((triggerPrice - stoplossPrice) / 2, _parentStrategy.TickSize, RoundOfType.Celing)
-                            Dim atrTarget As Decimal = ConvertFloorCeling(atr * _userInputs.MinimumTargetATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing)
+                            'Dim atrTarget As Decimal = ConvertFloorCeling(atr * _userInputs.MinimumTargetATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing)
+                            Dim atrTarget As Decimal = ConvertFloorCeling(_previousDayHighestATR * _userInputs.MinimumTargetATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing) + 2 * buffer
                             targetPoint = Math.Max(atrTarget, targetPoint)
                             targetPrice = triggerPrice + targetPoint
                             quantity = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, triggerPrice, targetPrice, Math.Abs(pl), Trade.TypeOfStock.Cash)
@@ -117,8 +150,7 @@ Public Class LossMakeupFavourableFractalBreakoutStrategyRule
                                     .Supporting1 = currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = "SL Makeup Trade",
                                     .Supporting3 = Math.Abs(triggerPrice - stoplossPrice),
-                                    .Supporting4 = slRemark,
-                                    .Supporting5 = pl
+                                    .Supporting4 = pl
                                 }
                         End If
                     End If
@@ -127,22 +159,24 @@ Public Class LossMakeupFavourableFractalBreakoutStrategyRule
             If Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) AndAlso
                 Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) Then
                 Dim signal As Tuple(Of Boolean, Decimal) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, Trade.TradeExecutionDirection.Sell)
-                If signal IsNot Nothing AndAlso signal.Item1 Then
+                Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell)
+                If signal IsNot Nothing AndAlso signal.Item1 AndAlso (lastExecutedOrder Is Nothing OrElse Not IsBothFractalSame(_fractalLowPayload, currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate, lastExecutedOrder.SignalCandle.PayloadDate)) Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2, RoundOfType.Floor)
                     Dim triggerPrice As Decimal = signal.Item2 - buffer
-                    Dim stoplossPrice As Decimal = _fractalHighPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) + buffer
-                    Dim slRemark As String = "Fractal"
-                    Dim atr As Decimal = ConvertFloorCeling(_atrPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
-                    Dim minATRSL As Decimal = ConvertFloorCeling(atr * _userInputs.MinimumStoplossATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing)
-                    Dim maxATRSL As Decimal = ConvertFloorCeling(atr * _userInputs.MaximumStoplossATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing)
-                    Dim slPoint As Decimal = (stoplossPrice - triggerPrice) - 2 * buffer
-                    If slPoint < minATRSL Then
-                        stoplossPrice = triggerPrice + minATRSL + buffer
-                        slRemark = "Min ATR SL"
-                    ElseIf slPoint > maxATRSL Then
-                        stoplossPrice = triggerPrice + maxATRSL + buffer
-                        slRemark = "Max ATR SL"
-                    End If
+                    Dim stoplossPrice As Decimal = signal.Item2 + ConvertFloorCeling(_previousDayHighestATR, _parentStrategy.TickSize, RoundOfType.Celing) + buffer
+                    'Dim stoplossPrice As Decimal = _fractalHighPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) + buffer
+                    'Dim slRemark As String = "Fractal"
+                    'Dim atr As Decimal = ConvertFloorCeling(_atrPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
+                    'Dim minATRSL As Decimal = ConvertFloorCeling(atr * _userInputs.MinimumStoplossATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing)
+                    'Dim maxATRSL As Decimal = ConvertFloorCeling(atr * _userInputs.MaximumStoplossATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing)
+                    'Dim slPoint As Decimal = (stoplossPrice - triggerPrice) - 2 * buffer
+                    'If slPoint < minATRSL Then
+                    '    stoplossPrice = triggerPrice + minATRSL + buffer
+                    '    slRemark = "Min ATR SL"
+                    'ElseIf slPoint > maxATRSL Then
+                    '    stoplossPrice = triggerPrice + maxATRSL + buffer
+                    '    slRemark = "Max ATR SL"
+                    'End If
                     If stoplossPrice > triggerPrice Then
                         Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, stoplossPrice, triggerPrice, Math.Abs(_userInputs.MaxLossPerTrade) * -1, _parentStrategy.StockType)
                         Dim targetPrice As Decimal = Decimal.MinValue
@@ -163,14 +197,14 @@ Public Class LossMakeupFavourableFractalBreakoutStrategyRule
                                     .OrderType = Trade.TypeOfOrder.SL,
                                     .Supporting1 = currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = "Normal",
-                                    .Supporting3 = Math.Abs(triggerPrice - stoplossPrice),
-                                    .Supporting4 = slRemark
+                                    .Supporting3 = Math.Abs(triggerPrice - stoplossPrice)
                                 }
 
                         Dim pl As Decimal = GetStockPotentialPL(currentMinuteCandlePayload)
                         If pl < 0 Then
                             Dim targetPoint As Decimal = ConvertFloorCeling((stoplossPrice - triggerPrice) / 2, _parentStrategy.TickSize, RoundOfType.Celing)
-                            Dim atrTarget As Decimal = ConvertFloorCeling(atr * _userInputs.MinimumTargetATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing)
+                            'Dim atrTarget As Decimal = ConvertFloorCeling(atr * _userInputs.MinimumTargetATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing)
+                            Dim atrTarget As Decimal = ConvertFloorCeling(_previousDayHighestATR * _userInputs.MinimumTargetATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing) + 2 * buffer
                             targetPoint = Math.Max(atrTarget, targetPoint)
                             targetPrice = triggerPrice - targetPoint
                             quantity = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, targetPrice, triggerPrice, Math.Abs(pl), Trade.TypeOfStock.Cash)
@@ -187,8 +221,7 @@ Public Class LossMakeupFavourableFractalBreakoutStrategyRule
                                     .Supporting1 = currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = "SL Makeup Trade",
                                     .Supporting3 = Math.Abs(triggerPrice - stoplossPrice),
-                                    .Supporting4 = slRemark,
-                                    .Supporting5 = pl
+                                    .Supporting4 = pl
                                 }
                         End If
                     End If
@@ -252,12 +285,16 @@ Public Class LossMakeupFavourableFractalBreakoutStrategyRule
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                 Dim fractal As Decimal = _fractalLowPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate)
                 If fractal - currentTrade.StoplossBuffer > currentTrade.PotentialStopLoss Then
-                    triggerPrice = fractal - currentTrade.StoplossBuffer
+                    If Not IsBothFractalSame(_fractalLowPayload, currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate, currentTrade.SignalCandle.PayloadDate) Then
+                        triggerPrice = fractal - currentTrade.StoplossBuffer
+                    End If
                 End If
             ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
                 Dim fractal As Decimal = _fractalHighPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate)
                 If fractal + currentTrade.StoplossBuffer < currentTrade.PotentialStopLoss Then
-                    triggerPrice = fractal + currentTrade.StoplossBuffer
+                    If Not IsBothFractalSame(_fractalHighPayload, currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate, currentTrade.SignalCandle.PayloadDate) Then
+                        triggerPrice = fractal + currentTrade.StoplossBuffer
+                    End If
                 End If
             End If
             If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
@@ -281,12 +318,12 @@ Public Class LossMakeupFavourableFractalBreakoutStrategyRule
         Dim ret As Tuple(Of Boolean, Decimal) = Nothing
         If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then
             If direction = Trade.TradeExecutionDirection.Buy Then
-                Dim lastfractal As Decimal = GetLastDifferentFractal(_fractalHighPayload, candle.PayloadDate)
+                Dim lastfractal As Decimal = GetLastDifferentFractal(_fractalHighPayload, candle.PayloadDate, _considerPreviousDayFractalForBuy)
                 If lastfractal <> Decimal.MinValue AndAlso _fractalHighPayload(candle.PayloadDate) < lastfractal Then
                     ret = New Tuple(Of Boolean, Decimal)(True, _fractalHighPayload(candle.PayloadDate))
                 End If
             ElseIf direction = Trade.TradeExecutionDirection.Sell Then
-                Dim lastfractal As Decimal = GetLastDifferentFractal(_fractalLowPayload, candle.PayloadDate)
+                Dim lastfractal As Decimal = GetLastDifferentFractal(_fractalLowPayload, candle.PayloadDate, _considerPreviousDayFractalForSell)
                 If lastfractal <> Decimal.MinValue AndAlso _fractalLowPayload(candle.PayloadDate) > lastfractal Then
                     ret = New Tuple(Of Boolean, Decimal)(True, _fractalLowPayload(candle.PayloadDate))
                 End If
@@ -295,20 +332,44 @@ Public Class LossMakeupFavourableFractalBreakoutStrategyRule
         Return ret
     End Function
 
-    Private Function GetLastDifferentFractal(ByVal fractalPayload As Dictionary(Of Date, Decimal), ByVal currentTime As Date) As Decimal
+    Private Function GetLastDifferentFractal(ByVal fractalPayload As Dictionary(Of Date, Decimal), ByVal currentTime As Date, ByVal considerPreviousDay As Boolean) As Decimal
         Dim ret As Decimal = Decimal.MinValue
         If fractalPayload IsNot Nothing AndAlso fractalPayload.Count > 0 Then
 
             For Each runningFractal In fractalPayload.OrderByDescending(Function(x)
                                                                             Return x.Key
                                                                         End Function)
-                If runningFractal.Key < currentTime AndAlso runningFractal.Key.Date = _tradingDate.Date Then
+                If runningFractal.Key < currentTime AndAlso (considerPreviousDay OrElse runningFractal.Key.Date = _tradingDate.Date) Then
                     If runningFractal.Value <> fractalPayload(currentTime) Then
                         ret = runningFractal.Value
                         Exit For
                     End If
                 End If
             Next
+        End If
+        Return ret
+    End Function
+
+    Private Function IsBothFractalSame(ByVal fractalPayload As Dictionary(Of Date, Decimal), ByVal currentSignalTime As Date, ByVal lastSignalTime As Date) As Boolean
+        Dim ret As Boolean = False
+        If fractalPayload IsNot Nothing AndAlso fractalPayload.Count > 0 Then
+            Dim currentSignalFractal As Decimal = fractalPayload(currentSignalTime)
+            Dim lastSignalFractal As Decimal = fractalPayload(lastSignalTime)
+            If currentSignalFractal = lastSignalFractal Then
+                For Each runningFractal In fractalPayload.OrderByDescending(Function(x)
+                                                                                Return x.Key
+                                                                            End Function)
+                    If runningFractal.Key < currentSignalTime AndAlso runningFractal.Key >= lastSignalTime Then
+                        If runningFractal.Value <> currentSignalFractal Then
+                            ret = False
+                            Exit For
+                        ElseIf runningFractal.Key = lastSignalTime Then
+                            ret = True
+                            Exit For
+                        End If
+                    End If
+                Next
+            End If
         End If
         Return ret
     End Function
