@@ -13,6 +13,8 @@ Public Class LossMakeupFavourableFractalBreakoutStrategyRule
         Public MaxLossPerTrade As Decimal
         Public MaxProfitPerTrade As Decimal
         Public MinimumTargetATRMultipler As Decimal
+        Public MinimumStoplossATRMultipler As Decimal
+        Public MaximumStoplossATRMultipler As Decimal
     End Class
 #End Region
 
@@ -59,6 +61,18 @@ Public Class LossMakeupFavourableFractalBreakoutStrategyRule
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2, RoundOfType.Floor)
                     Dim triggerPrice As Decimal = signal.Item2 + buffer
                     Dim stoplossPrice As Decimal = _fractalLowPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) - buffer
+                    Dim slRemark As String = "Fractal"
+                    Dim atr As Decimal = ConvertFloorCeling(_atrPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
+                    Dim minATRSL As Decimal = ConvertFloorCeling(atr * _userInputs.MinimumStoplossATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing)
+                    Dim maxATRSL As Decimal = ConvertFloorCeling(atr * _userInputs.MaximumStoplossATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing)
+                    Dim slPoint As Decimal = (triggerPrice - stoplossPrice) - 2 * buffer
+                    If slPoint < minATRSL Then
+                        stoplossPrice = triggerPrice - minATRSL - buffer
+                        slRemark = "Min ATR SL"
+                    ElseIf slPoint > maxATRSL Then
+                        stoplossPrice = triggerPrice - maxATRSL - buffer
+                        slRemark = "Max ATR SL"
+                    End If
                     If stoplossPrice < triggerPrice Then
                         Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, triggerPrice, stoplossPrice, Math.Abs(_userInputs.MaxLossPerTrade) * -1, _parentStrategy.StockType)
                         Dim targetPrice As Decimal = Decimal.MaxValue
@@ -79,14 +93,15 @@ Public Class LossMakeupFavourableFractalBreakoutStrategyRule
                                     .OrderType = Trade.TypeOfOrder.SL,
                                     .Supporting1 = currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = "Normal",
-                                    .Supporting3 = Math.Abs(triggerPrice - stoplossPrice)
+                                    .Supporting3 = Math.Abs(triggerPrice - stoplossPrice),
+                                    .Supporting4 = slRemark
                                 }
 
                         Dim pl As Decimal = GetStockPotentialPL(currentMinuteCandlePayload)
                         If pl < 0 Then
                             Dim targetPoint As Decimal = ConvertFloorCeling((triggerPrice - stoplossPrice) / 2, _parentStrategy.TickSize, RoundOfType.Celing)
-                            Dim atr As Decimal = ConvertFloorCeling(_atrPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) * _userInputs.MinimumTargetATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing)
-                            targetPoint = Math.Max(atr, targetPoint)
+                            Dim atrTarget As Decimal = ConvertFloorCeling(atr * _userInputs.MinimumTargetATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing)
+                            targetPoint = Math.Max(atrTarget, targetPoint)
                             targetPrice = triggerPrice + targetPoint
                             quantity = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, triggerPrice, targetPrice, Math.Abs(pl), Trade.TypeOfStock.Cash)
 
@@ -102,7 +117,8 @@ Public Class LossMakeupFavourableFractalBreakoutStrategyRule
                                     .Supporting1 = currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = "SL Makeup Trade",
                                     .Supporting3 = Math.Abs(triggerPrice - stoplossPrice),
-                                    .Supporting4 = pl
+                                    .Supporting4 = slRemark,
+                                    .Supporting5 = pl
                                 }
                         End If
                     End If
@@ -115,6 +131,18 @@ Public Class LossMakeupFavourableFractalBreakoutStrategyRule
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2, RoundOfType.Floor)
                     Dim triggerPrice As Decimal = signal.Item2 - buffer
                     Dim stoplossPrice As Decimal = _fractalHighPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) + buffer
+                    Dim slRemark As String = "Fractal"
+                    Dim atr As Decimal = ConvertFloorCeling(_atrPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
+                    Dim minATRSL As Decimal = ConvertFloorCeling(atr * _userInputs.MinimumStoplossATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing)
+                    Dim maxATRSL As Decimal = ConvertFloorCeling(atr * _userInputs.MaximumStoplossATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing)
+                    Dim slPoint As Decimal = (stoplossPrice - triggerPrice) - 2 * buffer
+                    If slPoint < minATRSL Then
+                        stoplossPrice = triggerPrice + minATRSL + buffer
+                        slRemark = "Min ATR SL"
+                    ElseIf slPoint > maxATRSL Then
+                        stoplossPrice = triggerPrice + maxATRSL + buffer
+                        slRemark = "Max ATR SL"
+                    End If
                     If stoplossPrice > triggerPrice Then
                         Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, stoplossPrice, triggerPrice, Math.Abs(_userInputs.MaxLossPerTrade) * -1, _parentStrategy.StockType)
                         Dim targetPrice As Decimal = Decimal.MinValue
@@ -135,14 +163,15 @@ Public Class LossMakeupFavourableFractalBreakoutStrategyRule
                                     .OrderType = Trade.TypeOfOrder.SL,
                                     .Supporting1 = currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = "Normal",
-                                    .Supporting3 = Math.Abs(triggerPrice - stoplossPrice)
+                                    .Supporting3 = Math.Abs(triggerPrice - stoplossPrice),
+                                    .Supporting4 = slRemark
                                 }
 
                         Dim pl As Decimal = GetStockPotentialPL(currentMinuteCandlePayload)
                         If pl < 0 Then
                             Dim targetPoint As Decimal = ConvertFloorCeling((stoplossPrice - triggerPrice) / 2, _parentStrategy.TickSize, RoundOfType.Celing)
-                            Dim atr As Decimal = ConvertFloorCeling(_atrPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) * _userInputs.MinimumTargetATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing)
-                            targetPoint = Math.Max(atr, targetPoint)
+                            Dim atrTarget As Decimal = ConvertFloorCeling(atr * _userInputs.MinimumTargetATRMultipler, _parentStrategy.TickSize, RoundOfType.Celing)
+                            targetPoint = Math.Max(atrTarget, targetPoint)
                             targetPrice = triggerPrice - targetPoint
                             quantity = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, targetPrice, triggerPrice, Math.Abs(pl), Trade.TypeOfStock.Cash)
 
@@ -158,7 +187,8 @@ Public Class LossMakeupFavourableFractalBreakoutStrategyRule
                                     .Supporting1 = currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = "SL Makeup Trade",
                                     .Supporting3 = Math.Abs(triggerPrice - stoplossPrice),
-                                    .Supporting4 = pl
+                                    .Supporting4 = slRemark,
+                                    .Supporting5 = pl
                                 }
                         End If
                     End If
