@@ -44,6 +44,7 @@ Namespace StrategyHelper
                        ByVal timeframe As Integer,
                        ByVal heikenAshiCandle As Boolean,
                        ByVal stockType As Trade.TypeOfStock,
+                       ByVal optionStockType As Trade.TypeOfStock,
                        ByVal tradeType As Trade.TypeOfTrade,
                        ByVal databaseTable As Common.DataBaseTable,
                        ByVal dataSource As SourceOfData,
@@ -62,6 +63,7 @@ Namespace StrategyHelper
             Me.SignalTimeFrame = timeframe
             Me.UseHeikenAshi = heikenAshiCandle
             Me.StockType = stockType
+            Me.OptionStockType = optionStockType
             Me.TradeType = tradeType
             Me.DatabaseTable = databaseTable
             Me.DataSource = dataSource
@@ -122,6 +124,7 @@ Namespace StrategyHelper
         Public ReadOnly SignalTimeFrame As Integer = 1
         Public ReadOnly UseHeikenAshi As Boolean = False
         Public ReadOnly StockType As Trade.TypeOfStock
+        Public ReadOnly OptionStockType As Trade.TypeOfStock
         Public ReadOnly TradeType As Trade.TypeOfTrade
         Public ReadOnly DatabaseTable As Common.DataBaseTable
         Public ReadOnly DataSource As SourceOfData = SourceOfData.Database

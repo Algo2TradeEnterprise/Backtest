@@ -33,6 +33,7 @@ Public Class DataFetcher
     Private ReadOnly _startDate As Date
     Private ReadOnly _endDate As Date
     Private ReadOnly _stockType As Trade.TypeOfStock
+    Private ReadOnly _optionStockType As Trade.TypeOfStock
     Private ReadOnly _directoryName As String
 
     Public Sub New(ByVal canceller As CancellationTokenSource,
@@ -41,6 +42,7 @@ Public Class DataFetcher
                    ByVal startDate As Date,
                    ByVal endDate As Date,
                    ByVal stockType As Trade.TypeOfStock,
+                   ByVal optionStockType As Trade.TypeOfStock,
                    ByVal strategyName As String)
         _cts = canceller
         _serverName = serverName
@@ -49,6 +51,7 @@ Public Class DataFetcher
         _endDate = endDate
         _stockType = stockType
         _directoryName = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0} CANDLE DATA", strategyName.ToUpper))
+        _optionStockType = optionStockType
     End Sub
 
     Public Async Function GetCandleData(ByVal tradingSymbol As String, ByVal startDate As Date, ByVal endDate As Date) As Task(Of Dictionary(Of Date, Payload))
@@ -127,6 +130,14 @@ Public Class DataFetcher
                         tableName = "intraday_prices_futures"
                     Case Else
                         Throw New NotImplementedException
+                End Select
+                Select Case _optionStockType
+                    Case Trade.TypeOfStock.Commodity
+                        tableName = "intraday_prices_opt_commodity"
+                    Case Trade.TypeOfStock.Currency
+                        tableName = "intraday_prices_opt_currency"
+                    Case Trade.TypeOfStock.Futures
+                        tableName = "intraday_prices_opt_futures"
                 End Select
 
                 Dim counter As Integer = 0

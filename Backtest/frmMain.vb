@@ -315,22 +315,23 @@ Public Class frmMain
                     End Select
 
                     Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
-                                                            exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                            exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                            tradeStartTime:=TimeSpan.Parse("9:18:00"),
-                                                            lastTradeEntryTime:=TimeSpan.Parse("14:29:59"),
-                                                            eodExitTime:=TimeSpan.Parse("15:15:00"),
-                                                            tickSize:=tick,
-                                                            marginMultiplier:=margin,
-                                                            timeframe:=1,
-                                                            heikenAshiCandle:=False,
-                                                            stockType:=stockType,
-                                                            databaseTable:=database,
-                                                            dataSource:=sourceData,
-                                                            initialCapital:=300000,
-                                                            usableCapital:=200000,
-                                                            minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
-                                                            amountToBeWithdrawn:=0)
+                                                                    exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                    exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                    tradeStartTime:=TimeSpan.Parse("9:18:00"),
+                                                                    lastTradeEntryTime:=TimeSpan.Parse("14:29:59"),
+                                                                    eodExitTime:=TimeSpan.Parse("15:15:00"),
+                                                                    tickSize:=tick,
+                                                                    marginMultiplier:=margin,
+                                                                    timeframe:=1,
+                                                                    heikenAshiCandle:=False,
+                                                                    stockType:=stockType,
+                                                                    optionStockType:=Trade.TypeOfStock.None,
+                                                                    databaseTable:=database,
+                                                                    dataSource:=sourceData,
+                                                                    initialCapital:=300000,
+                                                                    usableCapital:=200000,
+                                                                    minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                                    amountToBeWithdrawn:=0)
                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                         With backtestStrategy
@@ -400,22 +401,23 @@ Public Class frmMain
 
                     For trndLnTyp As Integer = 1 To 1
                         Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
-                                                                    exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                                    exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                                    tradeStartTime:=TimeSpan.Parse("9:16:00"),
-                                                                    lastTradeEntryTime:=TimeSpan.Parse("14:44:59"),
-                                                                    eodExitTime:=TimeSpan.Parse("15:15:00"),
-                                                                    tickSize:=tick,
-                                                                    marginMultiplier:=margin,
-                                                                    timeframe:=1,
-                                                                    heikenAshiCandle:=False,
-                                                                    stockType:=stockType,
-                                                                    databaseTable:=database,
-                                                                    dataSource:=sourceData,
-                                                                    initialCapital:=300000,
-                                                                    usableCapital:=200000,
-                                                                    minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
-                                                                    amountToBeWithdrawn:=0)
+                                                                        exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                        exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                        tradeStartTime:=TimeSpan.Parse("9:16:00"),
+                                                                        lastTradeEntryTime:=TimeSpan.Parse("14:44:59"),
+                                                                        eodExitTime:=TimeSpan.Parse("15:15:00"),
+                                                                        tickSize:=tick,
+                                                                        marginMultiplier:=margin,
+                                                                        timeframe:=1,
+                                                                        heikenAshiCandle:=False,
+                                                                        stockType:=stockType,
+                                                                        optionStockType:=Trade.TypeOfStock.None,
+                                                                        databaseTable:=database,
+                                                                        dataSource:=sourceData,
+                                                                        initialCapital:=300000,
+                                                                        usableCapital:=200000,
+                                                                        minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                                        amountToBeWithdrawn:=0)
                             AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                             With backtestStrategy
@@ -485,22 +487,23 @@ Public Class frmMain
                     End Select
 
                     Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
-                                                            exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                            exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                            tradeStartTime:=TimeSpan.Parse("9:20:00"),
-                                                            lastTradeEntryTime:=TimeSpan.Parse("14:29:59"),
-                                                            eodExitTime:=TimeSpan.Parse("15:15:00"),
-                                                            tickSize:=tick,
-                                                            marginMultiplier:=margin,
-                                                            timeframe:=5,
-                                                            heikenAshiCandle:=False,
-                                                            stockType:=stockType,
-                                                            databaseTable:=database,
-                                                            dataSource:=sourceData,
-                                                            initialCapital:=Decimal.MaxValue / 2,
-                                                            usableCapital:=Decimal.MaxValue / 2,
-                                                            minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
-                                                            amountToBeWithdrawn:=0)
+                                                                    exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                    exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                    tradeStartTime:=TimeSpan.Parse("9:20:00"),
+                                                                    lastTradeEntryTime:=TimeSpan.Parse("14:29:59"),
+                                                                    eodExitTime:=TimeSpan.Parse("15:15:00"),
+                                                                    tickSize:=tick,
+                                                                    marginMultiplier:=margin,
+                                                                    timeframe:=5,
+                                                                    heikenAshiCandle:=False,
+                                                                    stockType:=stockType,
+                                                                    optionStockType:=Trade.TypeOfStock.None,
+                                                                    databaseTable:=database,
+                                                                    dataSource:=sourceData,
+                                                                    initialCapital:=Decimal.MaxValue / 2,
+                                                                    usableCapital:=Decimal.MaxValue / 2,
+                                                                    minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                                    amountToBeWithdrawn:=0)
                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                         With backtestStrategy
@@ -569,22 +572,23 @@ Public Class frmMain
                     End Select
 
                     Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
-                                                            exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                            exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                            tradeStartTime:=TimeSpan.Parse("9:15:00"),
-                                                            lastTradeEntryTime:=TimeSpan.Parse("14:29:59"),
-                                                            eodExitTime:=TimeSpan.Parse("15:15:00"),
-                                                            tickSize:=tick,
-                                                            marginMultiplier:=margin,
-                                                            timeframe:=1,
-                                                            heikenAshiCandle:=False,
-                                                            stockType:=stockType,
-                                                            databaseTable:=database,
-                                                            dataSource:=sourceData,
-                                                            initialCapital:=Decimal.MaxValue / 2,
-                                                            usableCapital:=Decimal.MaxValue / 2,
-                                                            minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
-                                                            amountToBeWithdrawn:=0)
+                                                                    exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                    exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                    tradeStartTime:=TimeSpan.Parse("9:15:00"),
+                                                                    lastTradeEntryTime:=TimeSpan.Parse("14:29:59"),
+                                                                    eodExitTime:=TimeSpan.Parse("15:15:00"),
+                                                                    tickSize:=tick,
+                                                                    marginMultiplier:=margin,
+                                                                    timeframe:=1,
+                                                                    heikenAshiCandle:=False,
+                                                                    stockType:=stockType,
+                                                                    optionStockType:=Trade.TypeOfStock.None,
+                                                                    databaseTable:=database,
+                                                                    dataSource:=sourceData,
+                                                                    initialCapital:=Decimal.MaxValue / 2,
+                                                                    usableCapital:=Decimal.MaxValue / 2,
+                                                                    minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                                    amountToBeWithdrawn:=0)
                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                         With backtestStrategy
@@ -663,6 +667,7 @@ Public Class frmMain
                                                                     timeframe:=1,
                                                                     heikenAshiCandle:=False,
                                                                     stockType:=stockType,
+                                                                    optionStockType:=Trade.TypeOfStock.None,
                                                                     databaseTable:=database,
                                                                     dataSource:=sourceData,
                                                                     initialCapital:=Decimal.MaxValue / 2,
@@ -746,6 +751,7 @@ Public Class frmMain
                                                                     timeframe:=1,
                                                                     heikenAshiCandle:=False,
                                                                     stockType:=stockType,
+                                                                    optionStockType:=Trade.TypeOfStock.None,
                                                                     databaseTable:=database,
                                                                     dataSource:=sourceData,
                                                                     initialCapital:=Decimal.MaxValue / 2,
@@ -835,6 +841,7 @@ Public Class frmMain
                                                                                     timeframe:=1,
                                                                                     heikenAshiCandle:=False,
                                                                                     stockType:=stockType,
+                                                                                    optionStockType:=Trade.TypeOfStock.None,
                                                                                     databaseTable:=database,
                                                                                     dataSource:=sourceData,
                                                                                     initialCapital:=Decimal.MaxValue / 2,
@@ -930,6 +937,7 @@ Public Class frmMain
                                                                     timeframe:=1,
                                                                     heikenAshiCandle:=False,
                                                                     stockType:=stockType,
+                                                                    optionStockType:=Trade.TypeOfStock.None,
                                                                     databaseTable:=database,
                                                                     dataSource:=sourceData,
                                                                     initialCapital:=Decimal.MaxValue / 2,
@@ -1024,6 +1032,7 @@ Public Class frmMain
                                                                                         timeframe:=tf,
                                                                                         heikenAshiCandle:=False,
                                                                                         stockType:=stockType,
+                                                                                        optionStockType:=Trade.TypeOfStock.None,
                                                                                         databaseTable:=database,
                                                                                         dataSource:=sourceData,
                                                                                         initialCapital:=300000,
@@ -1123,6 +1132,7 @@ Public Class frmMain
                                                                     timeframe:=1,
                                                                     heikenAshiCandle:=False,
                                                                     stockType:=stockType,
+                                                                    optionStockType:=Trade.TypeOfStock.None,
                                                                     databaseTable:=database,
                                                                     dataSource:=sourceData,
                                                                     initialCapital:=Decimal.MaxValue / 2,
@@ -1203,6 +1213,7 @@ Public Class frmMain
                                                                     timeframe:=1,
                                                                     heikenAshiCandle:=False,
                                                                     stockType:=stockType,
+                                                                    optionStockType:=Trade.TypeOfStock.None,
                                                                     databaseTable:=database,
                                                                     dataSource:=sourceData,
                                                                     initialCapital:=Decimal.MaxValue / 2,
@@ -1295,6 +1306,7 @@ Public Class frmMain
                                                                     timeframe:=1,
                                                                     heikenAshiCandle:=False,
                                                                     stockType:=stockType,
+                                                                    optionStockType:=Trade.TypeOfStock.None,
                                                                     databaseTable:=database,
                                                                     dataSource:=sourceData,
                                                                     initialCapital:=Decimal.MaxValue / 2,
@@ -1375,6 +1387,7 @@ Public Class frmMain
                                                                     timeframe:=1,
                                                                     heikenAshiCandle:=False,
                                                                     stockType:=stockType,
+                                                                    optionStockType:=Trade.TypeOfStock.None,
                                                                     databaseTable:=database,
                                                                     dataSource:=sourceData,
                                                                     initialCapital:=Decimal.MaxValue / 2,
@@ -1462,6 +1475,7 @@ Public Class frmMain
                                                                     timeframe:=1,
                                                                     heikenAshiCandle:=False,
                                                                     stockType:=stockType,
+                                                                    optionStockType:=Trade.TypeOfStock.None,
                                                                     databaseTable:=database,
                                                                     dataSource:=sourceData,
                                                                     initialCapital:=Decimal.MaxValue / 2,
@@ -1555,6 +1569,7 @@ Public Class frmMain
                                                                     timeframe:=1,
                                                                     heikenAshiCandle:=False,
                                                                     stockType:=stockType,
+                                                                    optionStockType:=Trade.TypeOfStock.None,
                                                                     databaseTable:=database,
                                                                     dataSource:=sourceData,
                                                                     initialCapital:=Decimal.MaxValue / 2,
@@ -1602,6 +1617,87 @@ Public Class frmMain
                         Dim filename As String = String.Format("HK Rvs Slb Martingale,MxLsTrd {0},MxPrftTrd {1}",
                                                                ruleData.MaxLossPerTrade,
                                                                ruleData.MaxProfitPerTrade)
+
+                        Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                    End Using
+#End Region
+                Case 15
+#Region "Low Price Option Buy Only Strategy"
+                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Futures
+                    Dim database As Common.DataBaseTable = Common.DataBaseTable.None
+                    Dim margin As Decimal = 0
+                    Dim tick As Decimal = 0
+                    Select Case stockType
+                        Case Trade.TypeOfStock.Cash
+                            database = Common.DataBaseTable.Intraday_Cash
+                            margin = 15
+                            tick = 0.05
+                        Case Trade.TypeOfStock.Commodity
+                            database = Common.DataBaseTable.Intraday_Commodity
+                            margin = 70
+                            tick = 1
+                        Case Trade.TypeOfStock.Currency
+                            database = Common.DataBaseTable.Intraday_Currency
+                            margin = 98
+                            tick = 0.0025
+                        Case Trade.TypeOfStock.Futures
+                            database = Common.DataBaseTable.Intraday_Futures
+                            margin = 2
+                            tick = 0.05
+                    End Select
+
+                    Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+                                                                    exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                    exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                    tradeStartTime:=TimeSpan.Parse("9:15:00"),
+                                                                    lastTradeEntryTime:=TimeSpan.Parse("14:29:59"),
+                                                                    eodExitTime:=TimeSpan.Parse("15:15:00"),
+                                                                    tickSize:=tick,
+                                                                    marginMultiplier:=margin,
+                                                                    timeframe:=1,
+                                                                    heikenAshiCandle:=False,
+                                                                    stockType:=stockType,
+                                                                    optionStockType:=Trade.TypeOfStock.Futures,
+                                                                    databaseTable:=database,
+                                                                    dataSource:=sourceData,
+                                                                    initialCapital:=Decimal.MaxValue / 2,
+                                                                    usableCapital:=Decimal.MaxValue / 2,
+                                                                    minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                                    amountToBeWithdrawn:=0)
+                        AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+
+                        With backtestStrategy
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Lower Price Stocks With Volume OI.csv")
+
+                            .AllowBothDirectionEntryAtSameTime = False
+                            .TrailingStoploss = False
+                            .TickBasedStrategy = True
+                            .RuleNumber = ruleNumber
+
+                            .RuleEntityData = Nothing
+
+                            .NumberOfTradeableStockPerDay = 4
+
+                            .NumberOfTradesPerStockPerDay = 1
+
+                            .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                            .StockMaxLossPercentagePerDay = Decimal.MinValue
+
+                            .ExitOnStockFixedTargetStoploss = False
+                            .StockMaxProfitPerDay = Decimal.MaxValue
+                            .StockMaxLossPerDay = Decimal.MinValue
+
+                            .ExitOnOverAllFixedTargetStoploss = False
+                            .OverAllProfitPerDay = Decimal.MaxValue
+                            .OverAllLossPerDay = Decimal.MinValue
+
+                            .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+                            .MTMSlab = Math.Abs(.OverAllLossPerDay)
+                            .MovementSlab = .MTMSlab / 2
+                            .RealtimeTrailingPercentage = 50
+                        End With
+
+                        Dim filename As String = String.Format("Lower Price Option Buy Only Strategy")
 
                         Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
                     End Using

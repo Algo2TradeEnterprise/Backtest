@@ -945,6 +945,22 @@ Public Class Common
         End If
         Return ret
     End Function
+
+    Public Async Function RunSelectAsync(ByVal query As String) As Task(Of DataTable)
+        Dim ret As DataTable = Nothing
+        If query IsNot Nothing Then
+            Dim conn As MySqlConnection = OpenDBConnection()
+            _cts.Token.ThrowIfCancellationRequested()
+            Dim cm As MySqlCommand = Nothing
+            cm = New MySqlCommand(query, conn)
+            _cts.Token.ThrowIfCancellationRequested()
+            Dim adapter As New MySqlDataAdapter(cm)
+            adapter.SelectCommand.CommandTimeout = 300
+            ret = New DataTable()
+            Await adapter.FillAsync(ret, _cts.Token).ConfigureAwait(False)
+        End If
+        Return ret
+    End Function
 #End Region
 
 #Region "DB Connection"

@@ -21,13 +21,14 @@ Namespace StrategyHelper
                        ByVal timeframe As Integer,
                        ByVal heikenAshiCandle As Boolean,
                        ByVal stockType As Trade.TypeOfStock,
+                       ByVal optionStockType As Trade.TypeOfStock,
                        ByVal databaseTable As Common.DataBaseTable,
                        ByVal dataSource As SourceOfData,
                        ByVal initialCapital As Decimal,
                        ByVal usableCapital As Decimal,
                        ByVal minimumEarnedCapitalToWithdraw As Decimal,
                        ByVal amountToBeWithdrawn As Decimal)
-            MyBase.New(canceller, exchangeStartTime, exchangeEndTime, tradeStartTime, lastTradeEntryTime, eodExitTime, tickSize, marginMultiplier, timeframe, heikenAshiCandle, stockType, Trade.TypeOfTrade.MIS, databaseTable, dataSource, initialCapital, usableCapital, minimumEarnedCapitalToWithdraw, amountToBeWithdrawn)
+            MyBase.New(canceller, exchangeStartTime, exchangeEndTime, tradeStartTime, lastTradeEntryTime, eodExitTime, tickSize, marginMultiplier, timeframe, heikenAshiCandle, stockType, optionStockType, Trade.TypeOfTrade.MIS, databaseTable, dataSource, initialCapital, usableCapital, minimumEarnedCapitalToWithdraw, amountToBeWithdrawn)
             Me.NumberOfTradesPerDay = Integer.MaxValue
         End Sub
         Public Overrides Async Function TestStrategyAsync(startDate As Date, endDate As Date, filename As String) As Task
@@ -57,7 +58,7 @@ Namespace StrategyHelper
                 Dim strategyName As String = String.Format("Strategy{0}", Me.RuleNumber)
                 OnHeartbeat("Getting unique instrument list")
                 Dim allInstrumentList As List(Of String) = GetUniqueInstrumentList(startDate, endDate)
-                Dim dataFtchr As DataFetcher = New DataFetcher(_canceller, My.Settings.ServerName, allInstrumentList, startDate.AddDays(-15), endDate, Me.StockType, strategyName)
+                Dim dataFtchr As DataFetcher = New DataFetcher(_canceller, My.Settings.ServerName, allInstrumentList, startDate.AddDays(-15), endDate, Me.StockType, Me.OptionStockType, strategyName)
                 AddHandler dataFtchr.Heartbeat, AddressOf OnHeartbeat
                 AddHandler dataFtchr.WaitingFor, AddressOf OnWaitingFor
                 AddHandler dataFtchr.DocumentRetryStatus, AddressOf OnDocumentRetryStatus
@@ -148,6 +149,8 @@ Namespace StrategyHelper
                                             stockRule = New LossMakeupFavourableFractalBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 14
                                             stockRule = New HKReverseSlabMartingaleStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case 15
+                                            stockRule = New LowerPriceOptionBuyOnlyStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -777,6 +780,207 @@ Namespace StrategyHelper
                                         counter += 1
                                         If counter >= Me.NumberOfTradeableStockPerDay Then Exit For
                                     Next
+                                End If
+                            End If
+                        Case 15
+                            Dim stockDetails As List(Of LowerPriceOptionBuyOnlyStrategyRule.OptionInstumentDetails) = Nothing
+                            For i = 0 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i).Item("Date")
+                                If rowDate.Date = tradingDate.Date Then
+                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
+                                    Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
+                                    Dim instrumentType As String = dt.Rows(i).Item("Puts_Calls")
+                                    Dim close As Decimal = dt.Rows(i).Item("Previous Day Close")
+                                    Dim volume As Decimal = dt.Rows(i).Item("Previous Day Volume")
+                                    Dim oi As Decimal = dt.Rows(i).Item("Previous Day OI")
+                                    Dim detailsOfStock As LowerPriceOptionBuyOnlyStrategyRule.OptionInstumentDetails = New LowerPriceOptionBuyOnlyStrategyRule.OptionInstumentDetails With
+                                                {.TradingSymbol = tradingSymbol, .LotSize = lotsize, .InstrumentType = instrumentType, .Close = close, .Volume = volume, .OI = oi}
+
+                                    If stockDetails Is Nothing Then stockDetails = New List(Of LowerPriceOptionBuyOnlyStrategyRule.OptionInstumentDetails)
+                                    stockDetails.Add(detailsOfStock)
+                                End If
+                            Next
+                            If stockDetails IsNot Nothing AndAlso stockDetails.Count > 0 Then
+                                Dim peStocks As List(Of LowerPriceOptionBuyOnlyStrategyRule.OptionInstumentDetails) = stockDetails.FindAll(Function(x)
+                                                                                                                                               Return x.InstrumentType = "PE"
+                                                                                                                                           End Function)
+                                Dim ceStocks As List(Of LowerPriceOptionBuyOnlyStrategyRule.OptionInstumentDetails) = stockDetails.FindAll(Function(x)
+                                                                                                                                               Return x.InstrumentType = "CE"
+                                                                                                                                           End Function)
+                                If peStocks IsNot Nothing AndAlso peStocks.Count > 0 AndAlso ceStocks IsNot Nothing AndAlso ceStocks.Count > 0 Then
+                                    Dim avgPEVol As Double = peStocks.OrderByDescending(Function(x)
+                                                                                            Return x.Volume
+                                                                                        End Function).Take(3).Sum(Function(y)
+                                                                                                                      Return y.Volume
+                                                                                                                  End Function) / 3
+                                    Dim avgCEVol As Double = ceStocks.OrderByDescending(Function(x)
+                                                                                            Return x.Volume
+                                                                                        End Function).Take(3).Sum(Function(y)
+                                                                                                                      Return y.Volume
+                                                                                                                  End Function) / 3
+                                    Dim avgPEOI As Double = peStocks.OrderByDescending(Function(x)
+                                                                                           Return x.OI
+                                                                                       End Function).Take(3).Sum(Function(y)
+                                                                                                                     Return y.OI
+                                                                                                                 End Function) / 3
+                                    Dim avgCEOI As Double = ceStocks.OrderByDescending(Function(x)
+                                                                                           Return x.OI
+                                                                                       End Function).Take(3).Sum(Function(y)
+                                                                                                                     Return y.OI
+                                                                                                                 End Function) / 3
+                                    Dim peStockPayload As Dictionary(Of String, Dictionary(Of Date, Payload)) = Nothing
+                                    For Each runningStock In peStocks.OrderByDescending(Function(x)
+                                                                                            Return x.Volume
+                                                                                        End Function)
+                                        Dim queryString As String = String.Format("SELECT `Open`,`Low`,`High`,`Close`,`Volume`,`SnapshotDateTime`,`TradingSymbol` 
+                                                                                   FROM `intraday_prices_opt_futures` 
+                                                                                   WHERE `TradingSymbol` = '{0}' 
+                                                                                   AND `SnapshotDate`='{1}'",
+                                                                                   runningStock.TradingSymbol, tradingDate.ToString("yyyy-MM-dd"))
+                                        Dim tempdt As DataTable = Await Cmn.RunSelectAsync(queryString).ConfigureAwait(False)
+                                        Dim intrdayPayload As Dictionary(Of Date, Payload) = Common.ConvertDataTableToPayload(tempdt, 0, 1, 2, 3, 4, 5, 6)
+                                        If intrdayPayload IsNot Nothing AndAlso intrdayPayload.Count > 0 Then
+                                            If peStockPayload Is Nothing Then peStockPayload = New Dictionary(Of String, Dictionary(Of Date, Payload))
+                                            peStockPayload.Add(runningStock.TradingSymbol, intrdayPayload)
+                                        End If
+                                    Next
+                                    Dim peVolStock As LowerPriceOptionBuyOnlyStrategyRule.OptionInstumentDetails = Nothing
+                                    For Each runningStock In peStocks.OrderByDescending(Function(x)
+                                                                                            Return x.Volume
+                                                                                        End Function)
+                                        If peStockPayload IsNot Nothing AndAlso peStockPayload.ContainsKey(runningStock.TradingSymbol) Then
+                                            Dim intrdayPayload As Dictionary(Of Date, Payload) = peStockPayload(runningStock.TradingSymbol)
+                                            If intrdayPayload IsNot Nothing AndAlso intrdayPayload.Count > 0 Then
+                                                Dim open As Decimal = intrdayPayload.FirstOrDefault.Value.Open
+                                                If open < 10 Then
+                                                    Dim vol As Double = (runningStock.Volume / avgPEVol) * 100
+                                                    If vol > 80 Then
+                                                        If peVolStock Is Nothing OrElse open < peVolStock.LTP Then
+                                                            peVolStock = runningStock
+                                                            peVolStock.LTP = open
+                                                        End If
+                                                    Else
+                                                        If peVolStock Is Nothing Then
+                                                            peVolStock = runningStock
+                                                            peVolStock.LTP = open
+                                                        End If
+                                                    End If
+                                                End If
+                                            End If
+                                        End If
+                                    Next
+                                    Dim peOIStock As LowerPriceOptionBuyOnlyStrategyRule.OptionInstumentDetails = Nothing
+                                    For Each runningStock In peStocks.OrderByDescending(Function(x)
+                                                                                            Return x.Volume
+                                                                                        End Function)
+                                        If peStockPayload IsNot Nothing AndAlso peStockPayload.ContainsKey(runningStock.TradingSymbol) AndAlso
+                                            peVolStock IsNot Nothing AndAlso peVolStock.TradingSymbol <> runningStock.TradingSymbol Then
+                                            Dim intrdayPayload As Dictionary(Of Date, Payload) = peStockPayload(runningStock.TradingSymbol)
+                                            If intrdayPayload IsNot Nothing AndAlso intrdayPayload.Count > 0 Then
+                                                Dim open As Decimal = intrdayPayload.FirstOrDefault.Value.Open
+                                                If open < 10 Then
+                                                    Dim oi As Double = (runningStock.OI / avgPEOI) * 100
+                                                    If oi > 80 Then
+                                                        If peOIStock Is Nothing OrElse open < peOIStock.LTP Then
+                                                            peOIStock = runningStock
+                                                            peOIStock.LTP = open
+                                                        End If
+                                                    Else
+                                                        If peOIStock Is Nothing Then
+                                                            peOIStock = runningStock
+                                                            peOIStock.LTP = open
+                                                        End If
+                                                    End If
+                                                End If
+                                            End If
+                                        End If
+                                    Next
+                                    Dim ceStockPayload As Dictionary(Of String, Dictionary(Of Date, Payload)) = Nothing
+                                    For Each runningStock In ceStocks.OrderByDescending(Function(x)
+                                                                                            Return x.Volume
+                                                                                        End Function)
+                                        Dim queryString As String = String.Format("SELECT `Open`,`Low`,`High`,`Close`,`Volume`,`SnapshotDateTime`,`TradingSymbol` 
+                                                                                   FROM `intraday_prices_opt_futures` 
+                                                                                   WHERE `TradingSymbol` = '{0}' 
+                                                                                   AND `SnapshotDate`='{1}'",
+                                                                                   runningStock.TradingSymbol, tradingDate.ToString("yyyy-MM-dd"))
+                                        Dim tempdt As DataTable = Await Cmn.RunSelectAsync(queryString).ConfigureAwait(False)
+                                        Dim intrdayPayload As Dictionary(Of Date, Payload) = Common.ConvertDataTableToPayload(tempdt, 0, 1, 2, 3, 4, 5, 6)
+                                        If intrdayPayload IsNot Nothing AndAlso intrdayPayload.Count > 0 Then
+                                            If ceStockPayload Is Nothing Then ceStockPayload = New Dictionary(Of String, Dictionary(Of Date, Payload))
+                                            ceStockPayload.Add(runningStock.TradingSymbol, intrdayPayload)
+                                        End If
+                                    Next
+                                    Dim ceVolStock As LowerPriceOptionBuyOnlyStrategyRule.OptionInstumentDetails = Nothing
+                                    For Each runningStock In ceStocks.OrderByDescending(Function(x)
+                                                                                            Return x.Volume
+                                                                                        End Function)
+                                        If ceStockPayload IsNot Nothing AndAlso ceStockPayload.ContainsKey(runningStock.TradingSymbol) Then
+                                            Dim intrdayPayload As Dictionary(Of Date, Payload) = ceStockPayload(runningStock.TradingSymbol)
+                                            If intrdayPayload IsNot Nothing AndAlso intrdayPayload.Count > 0 Then
+                                                Dim open As Decimal = intrdayPayload.FirstOrDefault.Value.Open
+                                                If open < 10 Then
+                                                    Dim vol As Double = (runningStock.Volume / avgCEVol) * 100
+                                                    If vol > 80 Then
+                                                        If ceVolStock Is Nothing OrElse open < ceVolStock.LTP Then
+                                                            ceVolStock = runningStock
+                                                            ceVolStock.LTP = open
+                                                        End If
+                                                    Else
+                                                        If ceVolStock Is Nothing Then
+                                                            ceVolStock = runningStock
+                                                            ceVolStock.LTP = open
+                                                        End If
+                                                    End If
+                                                End If
+                                            End If
+                                        End If
+                                    Next
+                                    Dim ceOIStock As LowerPriceOptionBuyOnlyStrategyRule.OptionInstumentDetails = Nothing
+                                    For Each runningStock In ceStocks.OrderByDescending(Function(x)
+                                                                                            Return x.Volume
+                                                                                        End Function)
+                                        If ceStockPayload IsNot Nothing AndAlso ceStockPayload.ContainsKey(runningStock.TradingSymbol) AndAlso
+                                            ceVolStock IsNot Nothing AndAlso ceVolStock.TradingSymbol <> runningStock.TradingSymbol Then
+                                            Dim intrdayPayload As Dictionary(Of Date, Payload) = ceStockPayload(runningStock.TradingSymbol)
+                                            If intrdayPayload IsNot Nothing AndAlso intrdayPayload.Count > 0 Then
+                                                Dim open As Decimal = intrdayPayload.FirstOrDefault.Value.Open
+                                                If open < 10 Then
+                                                    Dim oi As Double = (runningStock.OI / avgCEOI) * 100
+                                                    If oi > 80 Then
+                                                        If ceOIStock Is Nothing OrElse open < ceOIStock.LTP Then
+                                                            ceOIStock = runningStock
+                                                            ceOIStock.LTP = open
+                                                        End If
+                                                    Else
+                                                        If ceOIStock Is Nothing Then
+                                                            ceOIStock = runningStock
+                                                            ceOIStock.LTP = open
+                                                        End If
+                                                    End If
+                                                End If
+                                            End If
+                                        End If
+                                    Next
+
+                                    If peVolStock IsNot Nothing AndAlso peOIStock IsNot Nothing AndAlso ceVolStock IsNot Nothing AndAlso ceOIStock IsNot Nothing Then
+                                        Dim avgPrice As Decimal = (peVolStock.LTP + peOIStock.LTP + ceVolStock.LTP + ceOIStock.LTP) / 4
+                                        Dim quantity As Integer = Math.Ceiling(CalculateQuantityFromTargetSL("NIFTY", avgPrice, 0, -2500, Trade.TypeOfStock.Futures) / 75)
+                                        Dim detailsOfStock1 As StockDetails = New StockDetails With {.StockName = "NIFTY", .TradingSymbol = peVolStock.TradingSymbol, .LotSize = peVolStock.LotSize, .Supporting1 = peVolStock.LTP, .Supporting2 = quantity, .EligibleToTakeTrade = True}
+                                        Dim detailsOfStock2 As StockDetails = New StockDetails With {.StockName = "NIFTY", .TradingSymbol = peOIStock.TradingSymbol, .LotSize = peOIStock.LotSize, .Supporting1 = peOIStock.LTP, .Supporting2 = quantity, .EligibleToTakeTrade = True}
+                                        Dim detailsOfStock3 As StockDetails = New StockDetails With {.StockName = "NIFTY", .TradingSymbol = ceVolStock.TradingSymbol, .LotSize = ceVolStock.LotSize, .Supporting1 = ceVolStock.LTP, .Supporting2 = quantity, .EligibleToTakeTrade = True}
+                                        Dim detailsOfStock4 As StockDetails = New StockDetails With {.StockName = "NIFTY", .TradingSymbol = ceOIStock.TradingSymbol, .LotSize = ceOIStock.LotSize, .Supporting1 = ceOIStock.LTP, .Supporting2 = quantity, .EligibleToTakeTrade = True}
+                                        ret = New Dictionary(Of String, StockDetails)
+                                        ret.Add(detailsOfStock1.TradingSymbol, detailsOfStock1)
+                                        ret.Add(detailsOfStock2.TradingSymbol, detailsOfStock2)
+                                        ret.Add(detailsOfStock3.TradingSymbol, detailsOfStock3)
+                                        ret.Add(detailsOfStock4.TradingSymbol, detailsOfStock4)
+
+                                        Console.WriteLine(String.Format("{0}, PE VOL", peVolStock.TradingSymbol))
+                                        Console.WriteLine(String.Format("{0}, PE OI", peOIStock.TradingSymbol))
+                                        Console.WriteLine(String.Format("{0}, CE VOL", ceVolStock.TradingSymbol))
+                                        Console.WriteLine(String.Format("{0}, CE OI", ceOIStock.TradingSymbol))
+                                    End If
                                 End If
                             End If
                         Case Else
