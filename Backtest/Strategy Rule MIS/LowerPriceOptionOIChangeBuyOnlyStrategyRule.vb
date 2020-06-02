@@ -40,8 +40,8 @@ Public Class LowerPriceOptionOIChangeBuyOnlyStrategyRule
             Dim orderType As Trade.TypeOfOrder = Trade.TypeOfOrder.SL
             Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS)
             If lastExecutedOrder IsNot Nothing Then
-                Dim averagePrice As Decimal = lastExecutedOrder.Supporting2
-                If currentTick.Open <= averagePrice - _targetPoint Then
+                Dim entryPrice As Decimal = lastExecutedOrder.EntryPrice
+                If currentTick.Open <= entryPrice - _targetPoint Then
                     signalCandle = currentMinuteCandlePayload
                     quantity = lastExecutedOrder.Quantity * 2
                     orderType = Trade.TypeOfOrder.Market
