@@ -1000,50 +1000,52 @@ Namespace StrategyHelper
                                     stockDetails.Add(detailsOfStock)
                                 End If
                             Next
-                            OnHeartbeat(String.Format("Getting stock for trading on {0}", tradingDate.ToString("dd-MM-yyyy")))
-                            Dim stockPayload As Dictionary(Of String, Dictionary(Of Date, Payload)) = Nothing
-                            For Each runningStock In stockDetails
-                                Dim queryString As String = String.Format("SELECT `Open`,`Low`,`High`,`Close`,`Volume`,`SnapshotDateTime`,`TradingSymbol` 
+                            If stockDetails IsNot Nothing AndAlso stockDetails.Count > 0 Then
+                                OnHeartbeat(String.Format("Getting stock for trading on {0}", tradingDate.ToString("dd-MM-yyyy")))
+                                Dim stockPayload As Dictionary(Of String, Dictionary(Of Date, Payload)) = Nothing
+                                For Each runningStock In stockDetails
+                                    Dim queryString As String = String.Format("SELECT `Open`,`Low`,`High`,`Close`,`Volume`,`SnapshotDateTime`,`TradingSymbol` 
                                                                            FROM `intraday_prices_opt_futures` 
                                                                            WHERE `TradingSymbol` = '{0}' 
                                                                            AND `SnapshotDate`>='{1}' AND `SnapshotDate`<='{2}'",
                                                                            runningStock.TradingSymbol, tradingDate.AddDays(-8).ToString("yyyy-MM-dd"), tradingDate.ToString("yyyy-MM-dd"))
-                                Dim tempdt As DataTable = Await Cmn.RunSelectAsync(queryString).ConfigureAwait(False)
-                                Dim intrdayPayload As Dictionary(Of Date, Payload) = Common.ConvertDataTableToPayload(tempdt, 0, 1, 2, 3, 4, 5, 6)
-                                If intrdayPayload IsNot Nothing AndAlso intrdayPayload.Count > 0 Then
-                                    If stockPayload Is Nothing Then stockPayload = New Dictionary(Of String, Dictionary(Of Date, Payload))
-                                    stockPayload.Add(runningStock.TradingSymbol, intrdayPayload)
-                                End If
-                            Next
-                            If stockPayload IsNot Nothing AndAlso stockPayload.Count > 0 Then
-                                Dim triggerTime As Dictionary(Of String, Date) = Nothing
-                                For Each runningStock In stockPayload.Keys
-                                    Dim trigger As Date = LowerPriceOptionOIChangeBuyOnlyStrategyRule.GetFirstTradeTriggerTime(stockPayload(runningStock), tradingDate)
-                                    If triggerTime Is Nothing Then triggerTime = New Dictionary(Of String, Date)
-                                    triggerTime.Add(runningStock, trigger)
+                                    Dim tempdt As DataTable = Await Cmn.RunSelectAsync(queryString).ConfigureAwait(False)
+                                    Dim intrdayPayload As Dictionary(Of Date, Payload) = Common.ConvertDataTableToPayload(tempdt, 0, 1, 2, 3, 4, 5, 6)
+                                    If intrdayPayload IsNot Nothing AndAlso intrdayPayload.Count > 0 Then
+                                        If stockPayload Is Nothing Then stockPayload = New Dictionary(Of String, Dictionary(Of Date, Payload))
+                                        stockPayload.Add(runningStock.TradingSymbol, intrdayPayload)
+                                    End If
                                 Next
-                                If triggerTime IsNot Nothing AndAlso triggerTime.Count > 0 Then
-                                    For Each runningStock In stockDetails
-                                        If triggerTime.ContainsKey(runningStock.TradingSymbol) Then
-                                            runningStock.TriggerTime = triggerTime(runningStock.TradingSymbol)
-                                        End If
+                                If stockPayload IsNot Nothing AndAlso stockPayload.Count > 0 Then
+                                    Dim triggerTime As Dictionary(Of String, Date) = Nothing
+                                    For Each runningStock In stockPayload.Keys
+                                        Dim trigger As Date = LowerPriceOptionOIChangeBuyOnlyStrategyRule.GetFirstTradeTriggerTime(stockPayload(runningStock), tradingDate)
+                                        If triggerTime Is Nothing Then triggerTime = New Dictionary(Of String, Date)
+                                        triggerTime.Add(runningStock, trigger)
                                     Next
-                                    Dim peStock As LowerPriceOptionOIChangeBuyOnlyStrategyRule.OptionInstumentDetails = stockDetails.FindAll(Function(x)
-                                                                                                                                                 Return x.InstrumentType = "PE"
-                                                                                                                                             End Function).OrderBy(Function(y)
-                                                                                                                                                                       Return y.TriggerTime
-                                                                                                                                                                   End Function).FirstOrDefault
-                                    Dim ceStock As LowerPriceOptionOIChangeBuyOnlyStrategyRule.OptionInstumentDetails = stockDetails.FindAll(Function(x)
-                                                                                                                                                 Return x.InstrumentType = "CE"
-                                                                                                                                             End Function).OrderBy(Function(y)
-                                                                                                                                                                       Return y.TriggerTime
-                                                                                                                                                                   End Function).FirstOrDefault
+                                    If triggerTime IsNot Nothing AndAlso triggerTime.Count > 0 Then
+                                        For Each runningStock In stockDetails
+                                            If triggerTime.ContainsKey(runningStock.TradingSymbol) Then
+                                                runningStock.TriggerTime = triggerTime(runningStock.TradingSymbol)
+                                            End If
+                                        Next
+                                        Dim peStock As LowerPriceOptionOIChangeBuyOnlyStrategyRule.OptionInstumentDetails = stockDetails.FindAll(Function(x)
+                                                                                                                                                     Return x.InstrumentType = "PE"
+                                                                                                                                                 End Function).OrderBy(Function(y)
+                                                                                                                                                                           Return y.TriggerTime
+                                                                                                                                                                       End Function).FirstOrDefault
+                                        Dim ceStock As LowerPriceOptionOIChangeBuyOnlyStrategyRule.OptionInstumentDetails = stockDetails.FindAll(Function(x)
+                                                                                                                                                     Return x.InstrumentType = "CE"
+                                                                                                                                                 End Function).OrderBy(Function(y)
+                                                                                                                                                                           Return y.TriggerTime
+                                                                                                                                                                       End Function).FirstOrDefault
 
-                                    Dim detailsOfStock1 As StockDetails = New StockDetails With {.StockName = "NIFTY", .TradingSymbol = peStock.TradingSymbol, .LotSize = peStock.LotSize, .EligibleToTakeTrade = True}
-                                    Dim detailsOfStock2 As StockDetails = New StockDetails With {.StockName = "NIFTY", .TradingSymbol = ceStock.TradingSymbol, .LotSize = ceStock.LotSize, .EligibleToTakeTrade = True}
-                                    ret = New Dictionary(Of String, StockDetails)
-                                    ret.Add(detailsOfStock1.TradingSymbol, detailsOfStock1)
-                                    ret.Add(detailsOfStock2.TradingSymbol, detailsOfStock2)
+                                        Dim detailsOfStock1 As StockDetails = New StockDetails With {.StockName = "NIFTY", .TradingSymbol = peStock.TradingSymbol, .LotSize = peStock.LotSize, .EligibleToTakeTrade = True}
+                                        Dim detailsOfStock2 As StockDetails = New StockDetails With {.StockName = "NIFTY", .TradingSymbol = ceStock.TradingSymbol, .LotSize = ceStock.LotSize, .EligibleToTakeTrade = True}
+                                        ret = New Dictionary(Of String, StockDetails)
+                                        ret.Add(detailsOfStock1.TradingSymbol, detailsOfStock1)
+                                        ret.Add(detailsOfStock2.TradingSymbol, detailsOfStock2)
+                                    End If
                                 End If
                             End If
                         Case Else

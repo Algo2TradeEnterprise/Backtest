@@ -166,7 +166,7 @@ Public Class LowerPriceOptionOIChangeBuyOnlyStrategyRule
         Public TriggerTime As Date
     End Class
     Public Shared Function GetFirstTradeTriggerTime(ByVal inputPayload As Dictionary(Of Date, Payload), ByVal tradingDate As Date) As Date
-        Dim ret As Date = Date.MinValue
+        Dim ret As Date = Date.MaxValue
         Dim hkPayload As Dictionary(Of Date, Payload) = Nothing
         Indicator.HeikenAshi.ConvertToHeikenAshi(inputPayload, hkPayload)
         Dim triggerPrice As Decimal = Decimal.MinValue
