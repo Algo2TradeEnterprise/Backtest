@@ -151,6 +151,8 @@ Namespace StrategyHelper
                                             stockRule = New HKReverseSlabMartingaleStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 15
                                             stockRule = New LowerPriceOptionBuyOnlyStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2)
+                                        Case 16
+                                            stockRule = New LowerPriceOptionOIChangeBuyOnlyStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -981,6 +983,67 @@ Namespace StrategyHelper
                                         Console.WriteLine(String.Format("{0}, CE VOL", ceVolStock.TradingSymbol))
                                         Console.WriteLine(String.Format("{0}, CE OI", ceOIStock.TradingSymbol))
                                     End If
+                                End If
+                            End If
+                        Case 16
+                            Dim stockDetails As List(Of LowerPriceOptionOIChangeBuyOnlyStrategyRule.OptionInstumentDetails) = Nothing
+                            For i = 0 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i).Item("Date")
+                                If rowDate.Date = tradingDate.Date Then
+                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
+                                    Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
+                                    Dim instrumentType As String = dt.Rows(i).Item("Instrument Type")
+                                    Dim detailsOfStock As LowerPriceOptionOIChangeBuyOnlyStrategyRule.OptionInstumentDetails = New LowerPriceOptionOIChangeBuyOnlyStrategyRule.OptionInstumentDetails With
+                                                {.TradingSymbol = tradingSymbol, .LotSize = lotsize, .InstrumentType = instrumentType}
+
+                                    If stockDetails Is Nothing Then stockDetails = New List(Of LowerPriceOptionOIChangeBuyOnlyStrategyRule.OptionInstumentDetails)
+                                    stockDetails.Add(detailsOfStock)
+                                End If
+                            Next
+                            OnHeartbeat(String.Format("Getting stock for trading on {0}", tradingDate.ToString("dd-MM-yyyy")))
+                            Dim stockPayload As Dictionary(Of String, Dictionary(Of Date, Payload)) = Nothing
+                            For Each runningStock In stockDetails
+                                Dim queryString As String = String.Format("SELECT `Open`,`Low`,`High`,`Close`,`Volume`,`SnapshotDateTime`,`TradingSymbol` 
+                                                                           FROM `intraday_prices_opt_futures` 
+                                                                           WHERE `TradingSymbol` = '{0}' 
+                                                                           AND `SnapshotDate`>='{1}' AND `SnapshotDate`<='{2}'",
+                                                                           runningStock.TradingSymbol, tradingDate.AddDays(-8).ToString("yyyy-MM-dd"), tradingDate.ToString("yyyy-MM-dd"))
+                                Dim tempdt As DataTable = Await Cmn.RunSelectAsync(queryString).ConfigureAwait(False)
+                                Dim intrdayPayload As Dictionary(Of Date, Payload) = Common.ConvertDataTableToPayload(tempdt, 0, 1, 2, 3, 4, 5, 6)
+                                If intrdayPayload IsNot Nothing AndAlso intrdayPayload.Count > 0 Then
+                                    If stockPayload Is Nothing Then stockPayload = New Dictionary(Of String, Dictionary(Of Date, Payload))
+                                    stockPayload.Add(runningStock.TradingSymbol, intrdayPayload)
+                                End If
+                            Next
+                            If stockPayload IsNot Nothing AndAlso stockPayload.Count > 0 Then
+                                Dim triggerTime As Dictionary(Of String, Date) = Nothing
+                                For Each runningStock In stockPayload.Keys
+                                    Dim trigger As Date = LowerPriceOptionOIChangeBuyOnlyStrategyRule.GetFirstTradeTriggerTime(stockPayload(runningStock), tradingDate)
+                                    If triggerTime Is Nothing Then triggerTime = New Dictionary(Of String, Date)
+                                    triggerTime.Add(runningStock, trigger)
+                                Next
+                                If triggerTime IsNot Nothing AndAlso triggerTime.Count > 0 Then
+                                    For Each runningStock In stockDetails
+                                        If triggerTime.ContainsKey(runningStock.TradingSymbol) Then
+                                            runningStock.TriggerTime = triggerTime(runningStock.TradingSymbol)
+                                        End If
+                                    Next
+                                    Dim peStock As LowerPriceOptionOIChangeBuyOnlyStrategyRule.OptionInstumentDetails = stockDetails.FindAll(Function(x)
+                                                                                                                                                 Return x.InstrumentType = "PE"
+                                                                                                                                             End Function).OrderBy(Function(y)
+                                                                                                                                                                       Return y.TriggerTime
+                                                                                                                                                                   End Function).FirstOrDefault
+                                    Dim ceStock As LowerPriceOptionOIChangeBuyOnlyStrategyRule.OptionInstumentDetails = stockDetails.FindAll(Function(x)
+                                                                                                                                                 Return x.InstrumentType = "CE"
+                                                                                                                                             End Function).OrderBy(Function(y)
+                                                                                                                                                                       Return y.TriggerTime
+                                                                                                                                                                   End Function).FirstOrDefault
+
+                                    Dim detailsOfStock1 As StockDetails = New StockDetails With {.StockName = "NIFTY", .TradingSymbol = peStock.TradingSymbol, .LotSize = peStock.LotSize, .EligibleToTakeTrade = True}
+                                    Dim detailsOfStock2 As StockDetails = New StockDetails With {.StockName = "NIFTY", .TradingSymbol = ceStock.TradingSymbol, .LotSize = ceStock.LotSize, .EligibleToTakeTrade = True}
+                                    ret = New Dictionary(Of String, StockDetails)
+                                    ret.Add(detailsOfStock1.TradingSymbol, detailsOfStock1)
+                                    ret.Add(detailsOfStock2.TradingSymbol, detailsOfStock2)
                                 End If
                             End If
                         Case Else
