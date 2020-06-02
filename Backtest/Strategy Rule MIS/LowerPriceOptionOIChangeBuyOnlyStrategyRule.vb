@@ -33,7 +33,7 @@ Public Class LowerPriceOptionOIChangeBuyOnlyStrategyRule
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         Dim parameter As PlaceOrderParameters = Nothing
         If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
-            Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS) AndAlso Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS) AndAlso
+            Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS) AndAlso
             currentMinuteCandlePayload.PayloadDate >= _tradeStartTime AndAlso Me.EligibleToTakeTrade Then
             Dim signalCandle As Payload = Nothing
             Dim quantity As Integer = Integer.MinValue
@@ -44,6 +44,7 @@ Public Class LowerPriceOptionOIChangeBuyOnlyStrategyRule
                 If currentTick.Open <= averagePrice - _targetPoint Then
                     signalCandle = currentMinuteCandlePayload
                     quantity = lastExecutedOrder.Quantity * 2
+                    orderType = Trade.TypeOfOrder.Market
                 End If
             Else
                 Dim signal As Tuple(Of Boolean, Payload) = GetEntrySignal(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
@@ -51,10 +52,12 @@ Public Class LowerPriceOptionOIChangeBuyOnlyStrategyRule
                     signalCandle = signal.Item2
                     _targetPoint = ConvertFloorCeling(_atrPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
                     Dim expectedQuantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, currentTick.Open, currentTick.Open + _targetPoint, 500, Trade.TypeOfStock.Futures)
+                    quantity = Math.Ceiling(expectedQuantity / Me.LotSize) * Me.LotSize
                 End If
             End If
             If signalCandle IsNot Nothing AndAlso quantity <> Integer.MinValue Then
                 Dim entryPrice As Decimal = ConvertFloorCeling(signalCandle.High, _parentStrategy.TickSize, RoundOfType.Celing)
+                If orderType = Trade.TypeOfOrder.Market Then entryPrice = currentTick.Open
 
                 parameter = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
@@ -65,8 +68,31 @@ Public Class LowerPriceOptionOIChangeBuyOnlyStrategyRule
                                     .Buffer = 0,
                                     .SignalCandle = signalCandle,
                                     .OrderType = orderType,
-                                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss")
+                                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                                    .Supporting3 = _targetPoint
                                 }
+
+                Dim totalCapitalUsedWithoutMargin As Decimal = 0
+                Dim totalQuantity As Decimal = 0
+                Dim openActiveTrades As List(Of Trade) = _parentStrategy.GetOpenActiveTrades(currentMinuteCandlePayload, _parentStrategy.TradeType, Trade.TradeExecutionDirection.Buy)
+                If openActiveTrades IsNot Nothing AndAlso openActiveTrades.Count > 0 Then
+                    For Each runningTrade In openActiveTrades
+                        If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                            totalCapitalUsedWithoutMargin += runningTrade.EntryPrice * runningTrade.Quantity
+                            totalQuantity += runningTrade.Quantity
+                        End If
+                    Next
+                End If
+                totalCapitalUsedWithoutMargin += parameter.EntryPrice * parameter.Quantity
+                totalQuantity += parameter.Quantity
+                Dim averageTradePrice As Decimal = totalCapitalUsedWithoutMargin / totalQuantity
+                If openActiveTrades IsNot Nothing AndAlso openActiveTrades.Count > 0 Then
+                    For Each runningTrade In openActiveTrades
+                        runningTrade.UpdateTrade(Supporting2:=ConvertFloorCeling(averageTradePrice, Me._parentStrategy.TickSize, RoundOfType.Floor))
+                    Next
+                End If
+                parameter.Supporting2 = ConvertFloorCeling(averageTradePrice, Me._parentStrategy.TickSize, RoundOfType.Floor)
+                parameter.Target = ConvertFloorCeling(averageTradePrice, Me._parentStrategy.TickSize, RoundOfType.Floor) + _targetPoint
             End If
         End If
         Dim parameters As List(Of PlaceOrderParameters) = Nothing
@@ -91,6 +117,11 @@ Public Class LowerPriceOptionOIChangeBuyOnlyStrategyRule
                 If currentTrade.SignalCandle.PayloadDate <> signal.Item2.PayloadDate Then
                     ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                 End If
+            End If
+        ElseIf currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            Dim averagePrice As Decimal = currentTrade.Supporting2
+            If currentTick.Open >= averagePrice + _targetPoint Then
+                ret = New Tuple(Of Boolean, String)(True, "Target")
             End If
         End If
         Return ret
