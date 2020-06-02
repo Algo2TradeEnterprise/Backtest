@@ -118,11 +118,11 @@ Public Class LowerPriceOptionOIChangeBuyOnlyStrategyRule
                     ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                 End If
             End If
-        ElseIf currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-            Dim averagePrice As Decimal = currentTrade.Supporting2
-            If currentTick.Open >= averagePrice + _targetPoint Then
-                ret = New Tuple(Of Boolean, String)(True, "Target")
-            End If
+            'ElseIf currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            'Dim averagePrice As Decimal = currentTrade.Supporting2
+            'If currentTick.Open >= averagePrice + _targetPoint Then
+            '    ret = New Tuple(Of Boolean, String)(True, "Target")
+            'End If
         End If
         Return ret
     End Function

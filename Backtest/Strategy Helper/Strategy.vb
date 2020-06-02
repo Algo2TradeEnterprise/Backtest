@@ -1434,6 +1434,19 @@ Namespace StrategyHelper
                     End If
                     If allTradesData IsNot Nothing AndAlso allTradesData.Count > 0 Then
                         Dim cts As New CancellationTokenSource
+                        Dim totalCapital As Decimal = allTradesData.Values.Sum(Function(x)
+                                                                                   Return x.Values.Sum(Function(y)
+                                                                                                           Return y.Sum(Function(z)
+                                                                                                                            If z.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel AndAlso
+                                                                                                                                z.CapitalRequiredWithMargin > 0 Then
+                                                                                                                                Return z.CapitalRequiredWithMargin
+                                                                                                                            Else
+                                                                                                                                Return 0
+                                                                                                                            End If
+                                                                                                                        End Function)
+                                                                                                       End Function)
+                                                                               End Function)
+
                         Dim totalTrades As Integer = allTradesData.Values.Sum(Function(x)
                                                                                   Return x.Values.Sum(Function(y)
                                                                                                           Return y.FindAll(Function(z)
@@ -1565,7 +1578,7 @@ Namespace StrategyHelper
                             .AverageDurationInLosingTrades = If((totalTrades - totalPositiveTrades) <> 0, totalDurationInNegativeTrades / (totalTrades - totalPositiveTrades), 0)
                         End With
 
-                        fileName = String.Format("PL {0},{1}.xlsx", Math.Round(strategyOutputData.NetProfit, 0), fileName)
+                        fileName = String.Format("PL {0},{1},{2}.xlsx", Math.Round(strategyOutputData.NetProfit, 0), Math.Round(totalCapital, 0), fileName)
                         Dim filepath As String = Path.Combine(My.Application.Info.DirectoryPath, "BackTest Output", fileName)
                         If File.Exists(filepath) Then File.Delete(filepath)
 
