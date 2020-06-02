@@ -56,7 +56,7 @@ Public Class LowerPriceOptionOIChangeBuyOnlyStrategyRule
                 End If
             End If
             If signalCandle IsNot Nothing AndAlso quantity <> Integer.MinValue Then
-                Dim entryPrice As Decimal = ConvertFloorCeling(signalCandle.High, _parentStrategy.TickSize, RoundOfType.Celing)
+                Dim entryPrice As Decimal = ConvertFloorCeling(Math.Round(signalCandle.High, 2), _parentStrategy.TickSize, RoundOfType.Celing)
                 If orderType = Trade.TypeOfOrder.Market Then entryPrice = currentTick.Open
 
                 parameter = New PlaceOrderParameters With {
