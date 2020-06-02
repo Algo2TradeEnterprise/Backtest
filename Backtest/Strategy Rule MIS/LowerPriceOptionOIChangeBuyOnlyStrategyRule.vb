@@ -64,7 +64,7 @@ Public Class LowerPriceOptionOIChangeBuyOnlyStrategyRule
                                     .EntryDirection = Trade.TradeExecutionDirection.Buy,
                                     .Quantity = quantity,
                                     .Stoploss = 0,
-                                    .Target = .EntryPrice + _targetPoint,
+                                    .Target = .EntryPrice + 10000000000,
                                     .Buffer = 0,
                                     .SignalCandle = signalCandle,
                                     .OrderType = orderType,
@@ -92,7 +92,7 @@ Public Class LowerPriceOptionOIChangeBuyOnlyStrategyRule
                     Next
                 End If
                 parameter.Supporting2 = ConvertFloorCeling(averageTradePrice, Me._parentStrategy.TickSize, RoundOfType.Floor)
-                parameter.Target = ConvertFloorCeling(averageTradePrice, Me._parentStrategy.TickSize, RoundOfType.Floor) + _targetPoint
+                'parameter.Target = ConvertFloorCeling(averageTradePrice, Me._parentStrategy.TickSize, RoundOfType.Floor) + _targetPoint
             End If
         End If
         Dim parameters As List(Of PlaceOrderParameters) = Nothing
