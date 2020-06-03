@@ -39,14 +39,14 @@ Public Class LowerPriceOptionBuyOnlyEODStrategyRule
             End If
             If signalCandle IsNot Nothing Then
                 Dim entryPrice As Decimal = signal.Item3
-                Dim expectedQuantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, 0.05, -500, Trade.TypeOfStock.Futures)
+                Dim expectedQuantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, 0, -500, Trade.TypeOfStock.Futures)
                 Dim quantity As Integer = Math.Ceiling(expectedQuantity / Me.LotSize) * Me.LotSize
 
                 parameter = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
                                     .EntryDirection = Trade.TradeExecutionDirection.Buy,
                                     .Quantity = quantity,
-                                    .Stoploss = 0.05,
+                                    .Stoploss = 0,
                                     .Target = .EntryPrice + 10000000000,
                                     .Buffer = 0,
                                     .SignalCandle = signalCandle,
