@@ -1075,8 +1075,8 @@ Namespace StrategyHelper
                                                                                                                                                      Return x.InstrumentType = "CE" AndAlso x.BlankCandlePer < 20
                                                                                                                                                  End Function)
                                 Dim tradableStockCount As Integer = Math.Min(peStockList.Count, ceStockList.Count)
-                                Dim maxLoss As Decimal = -500
-                                If tradableStockCount <= 3 Then maxLoss = -1000
+                                Dim maxLoss As Decimal = -1000
+                                If tradableStockCount <= 3 Then maxLoss = -2000
 
                                 If tradableStockCount > 0 Then
                                     Dim stockCounter As Integer = 0
