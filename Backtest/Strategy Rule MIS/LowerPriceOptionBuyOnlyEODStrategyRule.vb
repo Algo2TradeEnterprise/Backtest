@@ -6,7 +6,7 @@ Imports Utilities.Numbers.NumberManipulation
 Public Class LowerPriceOptionBuyOnlyEODStrategyRule
     Inherits StrategyRule
 
-    'Private _atrPayload As Dictionary(Of Date, Decimal)
+    Private _maxLoss As Decimal
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -14,14 +14,14 @@ Public Class LowerPriceOptionBuyOnlyEODStrategyRule
                    ByVal tradingDate As Date,
                    ByVal tradingSymbol As String,
                    ByVal canceller As CancellationTokenSource,
-                   ByVal entities As RuleEntities)
+                   ByVal entities As RuleEntities,
+                   ByVal maxLoss As Decimal)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
+        _maxLoss = maxLoss
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
         MyBase.CompletePreProcessing()
-
-        'Indicator.ATR.CalculateATR(14, _hkPayload, _atrPayload)
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -39,7 +39,7 @@ Public Class LowerPriceOptionBuyOnlyEODStrategyRule
             End If
             If signalCandle IsNot Nothing Then
                 Dim entryPrice As Decimal = signal.Item3
-                Dim expectedQuantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, 0, -500, Trade.TypeOfStock.Futures)
+                Dim expectedQuantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, 0, _maxLoss, Trade.TypeOfStock.Futures)
                 Dim quantity As Integer = Math.Ceiling(expectedQuantity / Me.LotSize) * Me.LotSize
 
                 parameter = New PlaceOrderParameters With {
@@ -52,7 +52,8 @@ Public Class LowerPriceOptionBuyOnlyEODStrategyRule
                                     .SignalCandle = signalCandle,
                                     .OrderType = Trade.TypeOfOrder.SL,
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
-                                    .Supporting2 = signal.Item4
+                                    .Supporting2 = signal.Item4,
+                                    .Supporting3 = _maxLoss
                                 }
             End If
         End If
@@ -116,5 +117,14 @@ Public Class LowerPriceOptionBuyOnlyEODStrategyRule
         End If
         Return ret
     End Function
+
+#Region "Stock Selection"
+    Public Class OptionInstumentDetails
+        Public TradingSymbol As String
+        Public LotSize As Integer
+        Public InstrumentType As String
+        Public BlankCandlePer As Decimal
+    End Class
+#End Region
 
 End Class

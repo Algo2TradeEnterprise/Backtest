@@ -154,7 +154,7 @@ Namespace StrategyHelper
                                         Case 16
                                             stockRule = New LowerPriceOptionOIChangeBuyOnlyStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 17
-                                            stockRule = New LowerPriceOptionBuyOnlyEODStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                            stockRule = New LowerPriceOptionBuyOnlyEODStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -1051,22 +1051,66 @@ Namespace StrategyHelper
                                 End If
                             End If
                         Case 17
+                            Dim stockDetails As List(Of LowerPriceOptionBuyOnlyEODStrategyRule.OptionInstumentDetails) = Nothing
                             For i = 0 To dt.Rows.Count - 1
                                 Dim rowDate As Date = dt.Rows(i).Item("Date")
                                 If rowDate.Date = tradingDate.Date Then
                                     Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
                                     Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
+                                    Dim instrumentType As String = dt.Rows(i).Item("Instrument Type")
+                                    Dim blankCandle As Decimal = dt.Rows(i).Item("Previous Blank Candle%")
 
-                                    Dim detailsOfStock As StockDetails = New StockDetails With
-                                                {.StockName = "NIFTY",
-                                                 .TradingSymbol = tradingSymbol,
-                                                 .LotSize = lotsize,
-                                                 .EligibleToTakeTrade = True}
+                                    Dim detailsOfStock As LowerPriceOptionBuyOnlyEODStrategyRule.OptionInstumentDetails = New LowerPriceOptionBuyOnlyEODStrategyRule.OptionInstumentDetails With
+                                                {.TradingSymbol = tradingSymbol, .LotSize = lotsize, .InstrumentType = instrumentType, .BlankCandlePer = blankCandle}
 
-                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                    ret.Add(detailsOfStock.TradingSymbol, detailsOfStock)
+                                    If stockDetails Is Nothing Then stockDetails = New List(Of LowerPriceOptionBuyOnlyEODStrategyRule.OptionInstumentDetails)
+                                    stockDetails.Add(detailsOfStock)
                                 End If
                             Next
+                            If stockDetails IsNot Nothing AndAlso stockDetails.Count > 0 Then
+                                Dim peStockList As List(Of LowerPriceOptionBuyOnlyEODStrategyRule.OptionInstumentDetails) = stockDetails.FindAll(Function(x)
+                                                                                                                                                     Return x.InstrumentType = "PE" AndAlso x.BlankCandlePer < 20
+                                                                                                                                                 End Function)
+                                Dim ceStockList As List(Of LowerPriceOptionBuyOnlyEODStrategyRule.OptionInstumentDetails) = stockDetails.FindAll(Function(x)
+                                                                                                                                                     Return x.InstrumentType = "CE" AndAlso x.BlankCandlePer < 20
+                                                                                                                                                 End Function)
+                                Dim tradableStockCount As Integer = Math.Min(peStockList.Count, ceStockList.Count)
+                                Dim maxLoss As Decimal = -500
+                                If tradableStockCount <= 3 Then maxLoss = -1000
+
+                                If tradableStockCount > 0 Then
+                                    Dim stockCounter As Integer = 0
+                                    For Each runningStock In peStockList
+                                        Dim detailsOfStock As StockDetails = New StockDetails With
+                                                {.StockName = "NIFTY",
+                                                 .TradingSymbol = runningStock.TradingSymbol,
+                                                 .LotSize = runningStock.LotSize,
+                                                 .Supporting1 = maxLoss,
+                                                 .EligibleToTakeTrade = True}
+
+                                        If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                        ret.Add(detailsOfStock.TradingSymbol, detailsOfStock)
+
+                                        stockCounter += 1
+                                        If stockCounter >= tradableStockCount Then Exit For
+                                    Next
+                                    stockCounter = 0
+                                    For Each runningStock In ceStockList
+                                        Dim detailsOfStock As StockDetails = New StockDetails With
+                                                {.StockName = "NIFTY",
+                                                 .TradingSymbol = runningStock.TradingSymbol,
+                                                 .LotSize = runningStock.LotSize,
+                                                 .Supporting1 = maxLoss,
+                                                 .EligibleToTakeTrade = True}
+
+                                        If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                        ret.Add(detailsOfStock.TradingSymbol, detailsOfStock)
+
+                                        stockCounter += 1
+                                        If stockCounter >= tradableStockCount Then Exit For
+                                    Next
+                                End If
+                            End If
                         Case Else
                             Dim counter As Integer = 0
                             For i = 0 To dt.Rows.Count - 1
