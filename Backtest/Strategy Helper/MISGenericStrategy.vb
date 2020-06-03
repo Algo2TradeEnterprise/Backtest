@@ -153,6 +153,8 @@ Namespace StrategyHelper
                                             stockRule = New LowerPriceOptionBuyOnlyStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2)
                                         Case 16
                                             stockRule = New LowerPriceOptionOIChangeBuyOnlyStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case 17
+                                            stockRule = New LowerPriceOptionBuyOnlyEODStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -1048,6 +1050,23 @@ Namespace StrategyHelper
                                     End If
                                 End If
                             End If
+                        Case 17
+                            For i = 0 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i).Item("Date")
+                                If rowDate.Date = tradingDate.Date Then
+                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
+                                    Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
+
+                                    Dim detailsOfStock As StockDetails = New StockDetails With
+                                                {.StockName = "NIFTY",
+                                                 .TradingSymbol = tradingSymbol,
+                                                 .LotSize = lotsize,
+                                                 .EligibleToTakeTrade = True}
+
+                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                    ret.Add(detailsOfStock.TradingSymbol, detailsOfStock)
+                                End If
+                            Next
                         Case Else
                             Dim counter As Integer = 0
                             For i = 0 To dt.Rows.Count - 1
