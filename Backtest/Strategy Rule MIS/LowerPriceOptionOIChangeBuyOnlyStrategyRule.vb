@@ -186,7 +186,7 @@ Public Class LowerPriceOptionOIChangeBuyOnlyStrategyRule
                             Exit For
                         End If
                     Next
-                    If ret <> Date.MinValue Then Exit For
+                    If ret <> Date.MaxValue Then Exit For
                 End If
             End If
         Next

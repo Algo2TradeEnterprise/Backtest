@@ -115,6 +115,7 @@
     <Compile Include="Strategy Rule MIS\AlwaysInTradeMartingaleStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\AnchorSatelliteHKStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\EMAScalpingStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\EveryMinuteTopGainerLosserHKReversalStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\FractalTrendLineStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\HeikenashiReverseSlabStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\HighestLowestPointStrategyRule.vb" />

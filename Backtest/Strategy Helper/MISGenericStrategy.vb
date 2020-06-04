@@ -155,6 +155,8 @@ Namespace StrategyHelper
                                             stockRule = New LowerPriceOptionOIChangeBuyOnlyStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 17
                                             stockRule = New LowerPriceOptionBuyOnlyEODStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
+                                        Case 18
+                                            stockRule = New EveryMinuteTopGainerLosserHKReversalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).SupportingDate, stockList(stock).Supporting1)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -1108,6 +1110,66 @@ Namespace StrategyHelper
 
                                         stockCounter += 1
                                         If stockCounter >= tradableStockCount Then Exit For
+                                    Next
+                                End If
+                            End If
+                        Case 18
+                            Dim stockDetails As List(Of EveryMinuteTopGainerLosserHKReversalStrategyRule.InstumentDetails) = Nothing
+                            For i = 0 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i).Item("Date")
+                                If rowDate.Date = tradingDate.Date Then
+                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
+                                    Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
+                                    Dim signalTime As Date = dt.Rows(i).Item("Time")
+                                    Dim gainLossPer As Decimal = dt.Rows(i).Item("Gain Loss %")
+                                    Dim detailsOfStock As EveryMinuteTopGainerLosserHKReversalStrategyRule.InstumentDetails = New EveryMinuteTopGainerLosserHKReversalStrategyRule.InstumentDetails With
+                                                {.TradingSymbol = tradingSymbol, .LotSize = lotsize, .SignalTime = signalTime, .GainLossPer = gainLossPer}
+
+                                    If stockDetails IsNot Nothing AndAlso stockDetails.Count > 0 Then
+                                        Dim availableStock = stockDetails.Find(Function(x)
+                                                                                   Return x.TradingSymbol = detailsOfStock.TradingSymbol
+                                                                               End Function)
+                                        If availableStock Is Nothing Then stockDetails.Add(detailsOfStock)
+                                    Else
+                                        stockDetails = New List(Of EveryMinuteTopGainerLosserHKReversalStrategyRule.InstumentDetails)
+                                        stockDetails.Add(detailsOfStock)
+                                    End If
+                                End If
+                            Next
+                            If stockDetails IsNot Nothing AndAlso stockDetails.Count > 0 Then
+                                OnHeartbeat(String.Format("Getting stock for trading on {0}", tradingDate.ToString("dd-MM-yyyy")))
+                                Dim stockPayload As Dictionary(Of String, Dictionary(Of Date, Payload)) = Nothing
+                                For Each runningStock In stockDetails
+                                    Dim intrdayPayload As Dictionary(Of Date, Payload) = Cmn.GetRawPayload(Common.DataBaseTable.Intraday_Cash, runningStock.TradingSymbol, tradingDate.AddDays(-8), tradingDate)
+                                    If intrdayPayload IsNot Nothing AndAlso intrdayPayload.Count > 0 Then
+                                        If stockPayload Is Nothing Then stockPayload = New Dictionary(Of String, Dictionary(Of Date, Payload))
+                                        stockPayload.Add(runningStock.TradingSymbol, intrdayPayload)
+                                    End If
+                                Next
+                                If stockPayload IsNot Nothing AndAlso stockPayload.Count > 0 Then
+                                    For Each runningStock In stockDetails
+                                        If stockPayload.ContainsKey(runningStock.TradingSymbol) Then
+                                            Dim triggerTime As Date = EveryMinuteTopGainerLosserHKReversalStrategyRule.GetFirstTradeTriggerTime(stockPayload(runningStock.TradingSymbol), tradingDate, runningStock.SignalTime, runningStock.GainLossPer)
+                                            runningStock.SignalTriggerTime = triggerTime
+                                        End If
+                                    Next
+                                    Dim counter As Integer = 0
+                                    For Each runningStock In stockDetails.OrderBy(Function(x)
+                                                                                      Return x.SignalTriggerTime
+                                                                                  End Function)
+                                        Dim detailsOfStock As StockDetails = New StockDetails With
+                                                {.StockName = runningStock.TradingSymbol,
+                                                 .TradingSymbol = runningStock.TradingSymbol,
+                                                 .LotSize = runningStock.LotSize,
+                                                 .Supporting1 = runningStock.GainLossPer,
+                                                 .SupportingDate = runningStock.SignalTime,
+                                                 .EligibleToTakeTrade = True}
+
+                                        If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                        ret.Add(detailsOfStock.StockName, detailsOfStock)
+
+                                        counter += 1
+                                        If counter = Me.NumberOfTradeableStockPerDay Then Exit For
                                     Next
                                 End If
                             End If
