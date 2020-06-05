@@ -920,6 +920,7 @@ Namespace StrategyHelper
 
                 If NetProfitLossOfTrade > 0 Then
                     If potentialBrokerage.NetProfitLoss > NetProfitLossOfTrade Then
+                        previousQuantity = quantity
                         Exit For
                     Else
                         previousQuantity = quantity
@@ -1578,7 +1579,8 @@ Namespace StrategyHelper
                             .AverageDurationInLosingTrades = If((totalTrades - totalPositiveTrades) <> 0, totalDurationInNegativeTrades / (totalTrades - totalPositiveTrades), 0)
                         End With
 
-                        fileName = String.Format("PL {0},Cap {1},{2}.xlsx", Math.Round(strategyOutputData.NetProfit, 0), Math.Round(totalCapital, 0), fileName)
+                        'fileName = String.Format("PL {0},Cap {1},{2}.xlsx", Math.Round(strategyOutputData.NetProfit, 0), Math.Round(totalCapital, 0), fileName)
+                        fileName = String.Format("PL {0},{1}.xlsx", Math.Round(strategyOutputData.NetProfit, 0), fileName)
                         Dim filepath As String = Path.Combine(My.Application.Info.DirectoryPath, "BackTest Output", fileName)
                         If File.Exists(filepath) Then File.Delete(filepath)
 

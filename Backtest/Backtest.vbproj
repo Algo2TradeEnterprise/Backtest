@@ -123,6 +123,7 @@
     <Compile Include="Strategy Rule MIS\HL_LHBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\LossMakeupFavourableFractalBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\LossMakeupFavourableFractalBreakoutWithSupertrendStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\LossMakeupRainbowStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\LowerPriceOptionBuyOnlyStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\LowerPriceOptionOIChangeBuyOnlyStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\LowerPriceOptionBuyOnlyEODStrategyRule.vb" />
