@@ -78,7 +78,9 @@ Public Class LossMakeupRainbowStrategyRule
                     _quantity = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, currentTick.Open, currentTick.Open - _slPoint, _userInputs.MaxLossPerStock, Trade.TypeOfStock.Cash)
                     _targetPoint = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, currentTick.Open, _quantity, _userInputs.MaxProfitPerStock, Trade.TradeExecutionDirection.Buy, Trade.TypeOfStock.Cash) - currentTick.Open
                 ElseIf lastExecutedOrder IsNot Nothing Then
-                    If signal.Item2.PayloadDate <> lastExecutedOrder.SignalCandle.PayloadDate Then
+                    Dim exitCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(lastExecutedOrder.ExitTime, _signalPayload))
+                    If signal.Item2.PayloadDate <> lastExecutedOrder.SignalCandle.PayloadDate AndAlso
+                        exitCandle.PayloadDate <> currentMinuteCandlePayload.PayloadDate Then
                         signalCandle = signal.Item2
                     End If
                 End If
