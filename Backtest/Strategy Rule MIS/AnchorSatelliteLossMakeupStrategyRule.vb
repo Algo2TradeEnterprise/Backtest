@@ -39,7 +39,16 @@ Public Class AnchorSatelliteLossMakeupStrategyRule
             End If
         Next
 
-        _slPoint = ConvertFloorCeling(GetHighestATR(_firstCandleOfTheDay) * 1.5, _parentStrategy.TickSize, RoundOfType.Celing)
+        Dim previousDayHighestATR As Decimal = GetHighestATR(_firstCandleOfTheDay.PreviousCandlePayload)
+        Dim currentDayATR As Decimal = _atrPayload(_firstCandleOfTheDay.PayloadDate)
+        Dim slPoint As Decimal = currentDayATR
+        If currentDayATR < previousDayHighestATR Then
+            slPoint = currentDayATR * 1.5
+        Else
+            slPoint = previousDayHighestATR
+        End If
+
+        _slPoint = ConvertFloorCeling(slPoint, _parentStrategy.TickSize, RoundOfType.Celing)
         _quantity = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, _firstCandleOfTheDay.Open, _firstCandleOfTheDay.Open - _slPoint, -500, Trade.TypeOfStock.Cash)
         _targetPoint = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, _firstCandleOfTheDay.Open, _quantity, 500, Trade.TradeExecutionDirection.Buy, Trade.TypeOfStock.Cash) - _firstCandleOfTheDay.Open
     End Sub
