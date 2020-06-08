@@ -6,11 +6,25 @@ Imports Utilities.Numbers.NumberManipulation
 Public Class AnchorSatelliteLossMakeupStrategyRule
     Inherits StrategyRule
 
+#Region "Entity"
+    Public Class StrategyRuleEntities
+        Inherits RuleEntities
+
+        Public ATRMultiplier As Decimal
+        Public FirstTradeGapEntry As Boolean
+        Public ReEntryAfterHalfATR As Boolean
+    End Class
+#End Region
+
+    Private ReadOnly _userInputs As StrategyRuleEntities
+
+    Private _hkPayload As Dictionary(Of Date, Payload)
     Private _swingHighPayload As Dictionary(Of Date, Decimal)
     Private _swingLowPayload As Dictionary(Of Date, Decimal)
     Private _atrPayload As Dictionary(Of Date, Decimal)
     Private _firstCandleOfTheDay As Payload = Nothing
     Private _slPoint As Decimal = Decimal.MinValue
+    Private _halfSlPoint As Decimal = Decimal.MinValue
     Private _targetPoint As Decimal = Decimal.MinValue
     Private _quantity As Integer = Integer.MinValue
 
@@ -22,12 +36,14 @@ Public Class AnchorSatelliteLossMakeupStrategyRule
                    ByVal canceller As CancellationTokenSource,
                    ByVal entities As RuleEntities)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
+        _userInputs = _entities
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
         MyBase.CompletePreProcessing()
 
-        Indicator.ATR.CalculateATR(14, _signalPayload, _atrPayload)
+        Indicator.HeikenAshi.ConvertToHeikenAshi(_signalPayload, _hkPayload)
+        Indicator.ATR.CalculateATR(14, _hkPayload, _atrPayload)
         Indicator.SwingHighLow.CalculateSwingHighLow(_signalPayload, False, _swingHighPayload, _swingLowPayload)
 
         For Each runningPayload In _signalPayload
@@ -39,16 +55,8 @@ Public Class AnchorSatelliteLossMakeupStrategyRule
             End If
         Next
 
-        Dim previousDayHighestATR As Decimal = GetHighestATR(_firstCandleOfTheDay.PreviousCandlePayload)
-        Dim currentDayATR As Decimal = _atrPayload(_firstCandleOfTheDay.PayloadDate)
-        Dim slPoint As Decimal = currentDayATR
-        If currentDayATR < previousDayHighestATR Then
-            slPoint = currentDayATR * 1.5
-        Else
-            slPoint = previousDayHighestATR
-        End If
-
-        _slPoint = ConvertFloorCeling(slPoint, _parentStrategy.TickSize, RoundOfType.Celing)
+        _slPoint = ConvertFloorCeling(GetHighestATR(_firstCandleOfTheDay) * _userInputs.ATRMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
+        _halfSlPoint = ConvertFloorCeling(_slPoint / 2, _parentStrategy.TickSize, RoundOfType.Celing)
         _quantity = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, _firstCandleOfTheDay.Open, _firstCandleOfTheDay.Open - _slPoint, -500, Trade.TypeOfStock.Cash)
         _targetPoint = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, _firstCandleOfTheDay.Open, _quantity, 500, Trade.TradeExecutionDirection.Buy, Trade.TypeOfStock.Cash) - _firstCandleOfTheDay.Open
     End Sub
@@ -203,6 +211,7 @@ Public Class AnchorSatelliteLossMakeupStrategyRule
     Private Function GetSignalCandle(ByVal candle As Payload, ByVal currentTick As Payload, ByVal direction As Trade.TradeExecutionDirection) As Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)
         Dim ret As Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder) = Nothing
         If candle IsNot Nothing Then
+            If Not _userInputs.ReEntryAfterHalfATR Then _halfSlPoint = ConvertFloorCeling(_atrPayload(candle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
             Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(candle, Trade.TypeOfTrade.MIS, direction)
             If lastExecutedTrade IsNot Nothing Then
                 Dim exitCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(lastExecutedTrade.ExitTime, _signalPayload))
@@ -214,9 +223,15 @@ Public Class AnchorSatelliteLossMakeupStrategyRule
                         'Else
                         '    ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, candle, currentTick.Open, Trade.TypeOfOrder.Market)
                         'End If
-                        If _swingHighPayload(candle.PayloadDate) > lowestPoint Then
+                        'If _swingHighPayload(candle.PayloadDate) > lowestPoint Then
+                        '    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentTick.Open, RoundOfType.Floor)
+                        '    ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, candle, _swingHighPayload(candle.PayloadDate) + buffer, Trade.TypeOfOrder.SL)
+                        'End If
+                        If _swingHighPayload(candle.PayloadDate) <= lastExecutedTrade.EntryPrice - _halfSlPoint Then
                             Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentTick.Open, RoundOfType.Floor)
                             ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, candle, _swingHighPayload(candle.PayloadDate) + buffer, Trade.TypeOfOrder.SL)
+                        Else
+                            ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, candle, lastExecutedTrade.EntryPrice, Trade.TypeOfOrder.SL)
                         End If
                     ElseIf direction = Trade.TradeExecutionDirection.Sell Then
                         Dim highestPoint As Decimal = GetHighestPointOfTheDay(exitCandle, candle)
@@ -225,9 +240,15 @@ Public Class AnchorSatelliteLossMakeupStrategyRule
                         'Else
                         '    ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, candle, currentTick.Open, Trade.TypeOfOrder.Market)
                         'End If
-                        If _swingLowPayload(candle.PayloadDate) < highestPoint Then
+                        'If _swingLowPayload(candle.PayloadDate) < highestPoint Then
+                        '    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentTick.Open, RoundOfType.Floor)
+                        '    ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, candle, _swingLowPayload(candle.PayloadDate) - buffer, Trade.TypeOfOrder.SL)
+                        'End If
+                        If _swingLowPayload(candle.PayloadDate) >= lastExecutedTrade.EntryPrice + _halfSlPoint Then
                             Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentTick.Open, RoundOfType.Floor)
                             ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, candle, _swingLowPayload(candle.PayloadDate) - buffer, Trade.TypeOfOrder.SL)
+                        Else
+                            ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, candle, lastExecutedTrade.EntryPrice, Trade.TypeOfOrder.SL)
                         End If
                     End If
                 End If
@@ -258,40 +279,48 @@ Public Class AnchorSatelliteLossMakeupStrategyRule
                         End If
                     End If
                 ElseIf lastTrade Is Nothing Then
-                    Dim highestPoint As Decimal = GetHighestPointOfTheDay(_firstCandleOfTheDay, candle)
-                    Dim lowestPoint As Decimal = GetLowestPointOfTheDay(_firstCandleOfTheDay, candle)
-                    Dim differenceFromHighestPoint As Decimal = highestPoint - currentTick.Open
-                    Dim differenceFromLowestPoint As Decimal = currentTick.Open - lowestPoint
-                    If differenceFromHighestPoint > _slPoint AndAlso differenceFromLowestPoint > _slPoint Then
-                        If differenceFromHighestPoint > differenceFromLowestPoint Then
+                    If _userInputs.FirstTradeGapEntry Then
+                        If _firstCandleOfTheDay.Open > _firstCandleOfTheDay.PreviousCandlePayload.Close Then
                             If direction = Trade.TradeExecutionDirection.Sell Then ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, candle, currentTick.Open, Trade.TypeOfOrder.Market)
-                        ElseIf differenceFromHighestPoint < differenceFromLowestPoint Then
+                        Else
                             If direction = Trade.TradeExecutionDirection.Buy Then ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, candle, currentTick.Open, Trade.TypeOfOrder.Market)
                         End If
-                    ElseIf differenceFromLowestPoint > _slPoint AndAlso direction = Trade.TradeExecutionDirection.Buy Then
-                        ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, candle, currentTick.Open, Trade.TypeOfOrder.Market)
-                    ElseIf differenceFromHighestPoint > _slPoint AndAlso direction = Trade.TradeExecutionDirection.Sell Then
-                        ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, candle, currentTick.Open, Trade.TypeOfOrder.Market)
                     Else
-                        If direction = Trade.TradeExecutionDirection.Buy Then
-                            'If currentTick.Open < lowestPoint + _slPoint Then
-                            '    ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, candle, lowestPoint + _slPoint, Trade.TypeOfOrder.SL)
-                            'Else
-                            '    ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, candle, currentTick.Open, Trade.TypeOfOrder.Market)
-                            'End If
-                            If _swingHighPayload(candle.PayloadDate) > lowestPoint Then
-                                Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentTick.Open, RoundOfType.Floor)
-                                ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, candle, _swingHighPayload(candle.PayloadDate) + buffer, Trade.TypeOfOrder.SL)
+                        Dim highestPoint As Decimal = GetHighestPointOfTheDay(_firstCandleOfTheDay, candle)
+                        Dim lowestPoint As Decimal = GetLowestPointOfTheDay(_firstCandleOfTheDay, candle)
+                        Dim differenceFromHighestPoint As Decimal = highestPoint - currentTick.Open
+                        Dim differenceFromLowestPoint As Decimal = currentTick.Open - lowestPoint
+                        If differenceFromHighestPoint > _slPoint AndAlso differenceFromLowestPoint > _slPoint Then
+                            If differenceFromHighestPoint > differenceFromLowestPoint Then
+                                If direction = Trade.TradeExecutionDirection.Sell Then ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, candle, currentTick.Open, Trade.TypeOfOrder.Market)
+                            ElseIf differenceFromHighestPoint < differenceFromLowestPoint Then
+                                If direction = Trade.TradeExecutionDirection.Buy Then ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, candle, currentTick.Open, Trade.TypeOfOrder.Market)
                             End If
-                        ElseIf direction = Trade.TradeExecutionDirection.Sell Then
-                            'If currentTick.Open > highestPoint - _slPoint Then
-                            '    ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, candle, highestPoint - _slPoint, Trade.TypeOfOrder.SL)
-                            'Else
-                            '    ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, candle, currentTick.Open, Trade.TypeOfOrder.Market)
-                            'End If
-                            If _swingLowPayload(candle.PayloadDate) < highestPoint Then
-                                Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentTick.Open, RoundOfType.Floor)
-                                ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, candle, _swingLowPayload(candle.PayloadDate) - buffer, Trade.TypeOfOrder.SL)
+                        ElseIf differenceFromLowestPoint > _slPoint AndAlso direction = Trade.TradeExecutionDirection.Buy Then
+                            ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, candle, currentTick.Open, Trade.TypeOfOrder.Market)
+                        ElseIf differenceFromHighestPoint > _slPoint AndAlso direction = Trade.TradeExecutionDirection.Sell Then
+                            ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, candle, currentTick.Open, Trade.TypeOfOrder.Market)
+                        Else
+                            If direction = Trade.TradeExecutionDirection.Buy Then
+                                'If currentTick.Open < lowestPoint + _slPoint Then
+                                '    ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, candle, lowestPoint + _slPoint, Trade.TypeOfOrder.SL)
+                                'Else
+                                '    ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, candle, currentTick.Open, Trade.TypeOfOrder.Market)
+                                'End If
+                                If _swingHighPayload(candle.PayloadDate) > lowestPoint Then
+                                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentTick.Open, RoundOfType.Floor)
+                                    ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, candle, _swingHighPayload(candle.PayloadDate) + buffer, Trade.TypeOfOrder.SL)
+                                End If
+                            ElseIf direction = Trade.TradeExecutionDirection.Sell Then
+                                'If currentTick.Open > highestPoint - _slPoint Then
+                                '    ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, candle, highestPoint - _slPoint, Trade.TypeOfOrder.SL)
+                                'Else
+                                '    ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, candle, currentTick.Open, Trade.TypeOfOrder.Market)
+                                'End If
+                                If _swingLowPayload(candle.PayloadDate) < highestPoint Then
+                                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentTick.Open, RoundOfType.Floor)
+                                    ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, candle, _swingLowPayload(candle.PayloadDate) - buffer, Trade.TypeOfOrder.SL)
+                                End If
                             End If
                         End If
                     End If
