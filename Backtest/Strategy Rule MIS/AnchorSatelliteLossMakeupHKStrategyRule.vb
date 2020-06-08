@@ -12,6 +12,7 @@ Public Class AnchorSatelliteLossMakeupHKStrategyRule
 
         Public ATRMultiplier As Decimal
         Public FirstTradeMarketEntry As Boolean
+        Public ReEntryAfterHalfATR As Boolean
     End Class
 #End Region
 
@@ -208,6 +209,7 @@ Public Class AnchorSatelliteLossMakeupHKStrategyRule
         Dim ret As Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder) = Nothing
         If candle IsNot Nothing Then
             Dim hkCandle As Payload = _hkPayload(candle.PayloadDate)
+            If Not _userInputs.ReEntryAfterHalfATR Then _halfSlPoint = ConvertFloorCeling(_atrPayload(hkCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
             Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(candle, Trade.TypeOfTrade.MIS, direction)
             If lastExecutedTrade IsNot Nothing Then
                 Dim exitCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(lastExecutedTrade.ExitTime, _signalPayload))
