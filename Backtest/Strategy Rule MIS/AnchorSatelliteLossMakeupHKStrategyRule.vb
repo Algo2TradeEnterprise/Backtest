@@ -6,6 +6,17 @@ Imports Utilities.Numbers.NumberManipulation
 Public Class AnchorSatelliteLossMakeupHKStrategyRule
     Inherits StrategyRule
 
+#Region "Entity"
+    Public Class StrategyRuleEntities
+        Inherits RuleEntities
+
+        Public ATRMultiplier As Decimal
+        Public FirstTradeMarketEntry As Boolean
+    End Class
+#End Region
+
+    Private ReadOnly _userInputs As StrategyRuleEntities
+
     Private _hkPayload As Dictionary(Of Date, Payload)
     Private _atrPayload As Dictionary(Of Date, Decimal)
     Private _firstCandleOfTheDay As Payload = Nothing
@@ -22,6 +33,7 @@ Public Class AnchorSatelliteLossMakeupHKStrategyRule
                    ByVal canceller As CancellationTokenSource,
                    ByVal entities As RuleEntities)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
+        _userInputs = _entities
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -39,7 +51,7 @@ Public Class AnchorSatelliteLossMakeupHKStrategyRule
             End If
         Next
 
-        _slPoint = ConvertFloorCeling(GetHighestATR(_firstCandleOfTheDay), _parentStrategy.TickSize, RoundOfType.Celing)
+        _slPoint = ConvertFloorCeling(GetHighestATR(_firstCandleOfTheDay) * _userInputs.ATRMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
         _halfSlPoint = ConvertFloorCeling(_slPoint / 2, _parentStrategy.TickSize, RoundOfType.Celing)
         _quantity = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, _firstCandleOfTheDay.Open, _firstCandleOfTheDay.Open - _slPoint, -500, Trade.TypeOfStock.Cash)
         _targetPoint = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, _firstCandleOfTheDay.Open, _quantity, 500, Trade.TradeExecutionDirection.Buy, Trade.TypeOfStock.Cash) - _firstCandleOfTheDay.Open
@@ -55,7 +67,7 @@ Public Class AnchorSatelliteLossMakeupHKStrategyRule
             currentMinuteCandlePayload.PayloadDate >= _tradeStartTime AndAlso Me.EligibleToTakeTrade Then
             If Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) AndAlso
                 Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) Then
-                Dim signal As Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, Trade.TradeExecutionDirection.Buy)
+                Dim signal As Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, Trade.TradeExecutionDirection.Buy, True)
                 If signal IsNot Nothing AndAlso signal.Item1 Then
                     Dim entryPrice As Decimal = signal.Item3
                     Dim slPoint As Decimal = _slPoint
@@ -100,7 +112,7 @@ Public Class AnchorSatelliteLossMakeupHKStrategyRule
             End If
             If Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) AndAlso
                 Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) Then
-                Dim signal As Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, Trade.TradeExecutionDirection.Sell)
+                Dim signal As Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, Trade.TradeExecutionDirection.Sell, True)
                 If signal IsNot Nothing AndAlso signal.Item1 Then
                     Dim entryPrice As Decimal = signal.Item3
                     Dim slPoint As Decimal = _slPoint
@@ -164,7 +176,7 @@ Public Class AnchorSatelliteLossMakeupHKStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
             Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
-            Dim signal As Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, currentTrade.EntryDirection)
+            Dim signal As Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, currentTrade.EntryDirection, False)
             If signal IsNot Nothing AndAlso signal.Item1 AndAlso currentTrade.EntryPrice <> signal.Item3 Then
                 ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
             End If
@@ -192,7 +204,7 @@ Public Class AnchorSatelliteLossMakeupHKStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
     End Function
 
-    Private Function GetSignalCandle(ByVal candle As Payload, ByVal currentTick As Payload, ByVal direction As Trade.TradeExecutionDirection) As Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)
+    Private Function GetSignalCandle(ByVal candle As Payload, ByVal currentTick As Payload, ByVal direction As Trade.TradeExecutionDirection, ByVal forcePrint As Boolean) As Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)
         Dim ret As Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder) = Nothing
         If candle IsNot Nothing Then
             Dim hkCandle As Payload = _hkPayload(candle.PayloadDate)
@@ -210,6 +222,7 @@ Public Class AnchorSatelliteLossMakeupHKStrategyRule
                                 ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, hkCandle, entryPrice, Trade.TypeOfOrder.SL)
                             End If
                         Else
+                            If forcePrint AndAlso hkCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then Debug.WriteLine(String.Format("Trade neglected {0}, {1}", hkCandle.TradingSymbol, hkCandle.PayloadDate.ToString("dd-MM-yyyy HH:mm:ss")))
                             ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, hkCandle, lastExecutedTrade.EntryPrice, Trade.TypeOfOrder.SL)
                         End If
                     ElseIf direction = Trade.TradeExecutionDirection.Sell Then
@@ -222,6 +235,7 @@ Public Class AnchorSatelliteLossMakeupHKStrategyRule
                                 ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, hkCandle, entryPrice, Trade.TypeOfOrder.SL)
                             End If
                         Else
+                            If forcePrint AndAlso hkCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then Debug.WriteLine(String.Format("Trade neglected {0}, {1}", hkCandle.TradingSymbol, hkCandle.PayloadDate.ToString("dd-MM-yyyy HH:mm:ss")))
                             ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, hkCandle, lastExecutedTrade.EntryPrice, Trade.TypeOfOrder.SL)
                         End If
                     End If
@@ -249,10 +263,30 @@ Public Class AnchorSatelliteLossMakeupHKStrategyRule
                         End If
                     End If
                 ElseIf lastTrade Is Nothing Then
-                    If hkCandle.CandleColor = Color.Green Then
-                        If direction = Trade.TradeExecutionDirection.Sell Then ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, hkCandle, currentTick.Open, Trade.TypeOfOrder.Market)
-                    ElseIf hkCandle.CandleColor = Color.Red Then
-                        If direction = Trade.TradeExecutionDirection.Buy Then ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, hkCandle, currentTick.Open, Trade.TypeOfOrder.Market)
+                    If _userInputs.FirstTradeMarketEntry Then
+                        If hkCandle.CandleColor = Color.Green Then
+                            If direction = Trade.TradeExecutionDirection.Sell Then ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, hkCandle, currentTick.Open, Trade.TypeOfOrder.Market)
+                        ElseIf hkCandle.CandleColor = Color.Red Then
+                            If direction = Trade.TradeExecutionDirection.Buy Then ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, hkCandle, currentTick.Open, Trade.TypeOfOrder.Market)
+                        End If
+                    Else
+                        If direction = Trade.TradeExecutionDirection.Buy Then
+                            If hkCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
+                                Dim entryPrice As Decimal = ConvertFloorCeling(hkCandle.High, _parentStrategy.TickSize, RoundOfType.Celing)
+                                If entryPrice = hkCandle.High Then
+                                    entryPrice = hkCandle.High + _parentStrategy.CalculateBuffer(hkCandle.High, RoundOfType.Floor)
+                                End If
+                                ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, hkCandle, entryPrice, Trade.TypeOfOrder.SL)
+                            End If
+                        ElseIf direction = Trade.TradeExecutionDirection.Sell Then
+                            If hkCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
+                                Dim entryPrice As Decimal = ConvertFloorCeling(hkCandle.Low, _parentStrategy.TickSize, RoundOfType.Floor)
+                                If entryPrice = hkCandle.Low Then
+                                    entryPrice = hkCandle.Low - _parentStrategy.CalculateBuffer(hkCandle.Low, RoundOfType.Floor)
+                                End If
+                                ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, hkCandle, entryPrice, Trade.TypeOfOrder.SL)
+                            End If
+                        End If
                     End If
                 End If
             End If

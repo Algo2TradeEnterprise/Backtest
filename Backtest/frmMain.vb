@@ -2145,7 +2145,9 @@ Public Class frmMain
                             tick = 0.05
                     End Select
 
-                    Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+                    For atrMul As Decimal = 1 To 1
+                        For frstTrd As Integer = 0 To 0
+                            Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                     exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                     exchangeEndTime:=TimeSpan.Parse("15:29:59"),
                                                                     tradeStartTime:=TimeSpan.Parse("9:16:00"),
@@ -2163,43 +2165,47 @@ Public Class frmMain
                                                                     usableCapital:=Decimal.MaxValue / 2,
                                                                     minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
                                                                     amountToBeWithdrawn:=0)
-                        AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+                                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                        With backtestStrategy
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Cash Stock.csv")
+                                With backtestStrategy
+                                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Cash Stock.csv")
 
-                            .AllowBothDirectionEntryAtSameTime = True
-                            .TrailingStoploss = False
-                            .TickBasedStrategy = True
-                            .RuleNumber = ruleNumber
+                                    .AllowBothDirectionEntryAtSameTime = True
+                                    .TrailingStoploss = False
+                                    .TickBasedStrategy = True
+                                    .RuleNumber = ruleNumber
 
-                            .RuleEntityData = Nothing
+                                    .RuleEntityData = New AnchorSatelliteLossMakeupHKStrategyRule.StrategyRuleEntities With
+                                        {.ATRMultiplier = atrMul, .FirstTradeMarketEntry = frstTrd}
 
-                            .NumberOfTradeableStockPerDay = 5
+                                    .NumberOfTradeableStockPerDay = 5
 
-                            .NumberOfTradesPerStockPerDay = Integer.MaxValue
+                                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
-                            .StockMaxProfitPercentagePerDay = Decimal.MaxValue
-                            .StockMaxLossPercentagePerDay = Decimal.MinValue
+                                    .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                                    .StockMaxLossPercentagePerDay = Decimal.MinValue
 
-                            .ExitOnStockFixedTargetStoploss = True
-                            .StockMaxProfitPerDay = 500
-                            .StockMaxLossPerDay = Decimal.MinValue
+                                    .ExitOnStockFixedTargetStoploss = True
+                                    .StockMaxProfitPerDay = 500
+                                    .StockMaxLossPerDay = Decimal.MinValue
 
-                            .ExitOnOverAllFixedTargetStoploss = False
-                            .OverAllProfitPerDay = Decimal.MaxValue
-                            .OverAllLossPerDay = Decimal.MinValue
+                                    .ExitOnOverAllFixedTargetStoploss = False
+                                    .OverAllProfitPerDay = Decimal.MaxValue
+                                    .OverAllLossPerDay = Decimal.MinValue
 
-                            .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
-                            .MTMSlab = Math.Abs(.OverAllLossPerDay)
-                            .MovementSlab = .MTMSlab / 2
-                            .RealtimeTrailingPercentage = 50
-                        End With
+                                    .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+                                    .MTMSlab = Math.Abs(.OverAllLossPerDay)
+                                    .MovementSlab = .MTMSlab / 2
+                                    .RealtimeTrailingPercentage = 50
+                                End With
 
-                        Dim filename As String = String.Format("Anchor Satellite Loss Makeup HK")
+                                Dim ruleData As AnchorSatelliteLossMakeupHKStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                                Dim filename As String = String.Format("Anchor Satellite Loss Makeup HK,ATRMul {0},FrstTrdMktEntry {1}", ruleData.ATRMultiplier, ruleData.FirstTradeMarketEntry)
 
-                        Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-                    End Using
+                                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                            End Using
+                        Next
+                    Next
 #End Region
                 Case Else
                     Throw New NotImplementedException
