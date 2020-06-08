@@ -2145,7 +2145,7 @@ Public Class frmMain
                             tick = 0.05
                     End Select
 
-                    For atrMul As Decimal = 1 To 1
+                    For atrMul As Decimal = 1 To 1 Step 1
                         For frstTrd As Integer = 0 To 0
                             Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                     exchangeStartTime:=TimeSpan.Parse("09:15:00"),
