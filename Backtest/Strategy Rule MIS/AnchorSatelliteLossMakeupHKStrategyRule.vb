@@ -13,6 +13,7 @@ Public Class AnchorSatelliteLossMakeupHKStrategyRule
         Public ATRMultiplier As Decimal
         Public FirstTradeMarketEntry As Boolean
         Public ReEntryAfterHalfATR As Boolean
+        Public CurrentATRTarget As Boolean
     End Class
 #End Region
 
@@ -73,6 +74,9 @@ Public Class AnchorSatelliteLossMakeupHKStrategyRule
                     Dim entryPrice As Decimal = signal.Item3
                     Dim slPoint As Decimal = _slPoint
                     Dim targetPoint As Decimal = _targetPoint
+                    If _userInputs.CurrentATRTarget Then
+                        targetPoint = ConvertFloorCeling(_atrPayload(signal.Item2.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
+                    End If
                     Dim targetRemark As String = "Normal"
                     Dim quantity As Integer = _quantity
 
@@ -118,6 +122,9 @@ Public Class AnchorSatelliteLossMakeupHKStrategyRule
                     Dim entryPrice As Decimal = signal.Item3
                     Dim slPoint As Decimal = _slPoint
                     Dim targetPoint As Decimal = _targetPoint
+                    If _userInputs.CurrentATRTarget Then
+                        targetPoint = ConvertFloorCeling(_atrPayload(signal.Item2.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
+                    End If
                     Dim targetRemark As String = "Normal"
                     Dim quantity As Integer = _quantity
 
