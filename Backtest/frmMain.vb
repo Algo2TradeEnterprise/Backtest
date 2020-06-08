@@ -277,6 +277,7 @@ Public Class frmMain
     End Sub
 
     Private Async Function ViewDataMISAsync() As Task
+        Dim ruleNumber As Integer = GetComboBoxIndex_ThreadSafe(cmbRule)
         Try
             Dim startDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrStartDate)
             Dim endDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrEndDate)
@@ -287,7 +288,6 @@ Public Class frmMain
                 sourceData = Strategy.SourceOfData.Database
             End If
 
-            Dim ruleNumber As Integer = GetComboBoxIndex_ThreadSafe(cmbRule)
             Select Case ruleNumber
                 Case 0
 #Region "Reversal HHLL Breakout"
@@ -2217,6 +2217,12 @@ Public Class frmMain
                 Directory.Delete(directoryName, True)
             End If
         Catch cex As OperationCanceledException
+            'Delete Directory
+            Dim directoryName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("STRATEGY{0} CANDLE DATA", ruleNumber))
+            If Directory.Exists(directoryName) Then
+                Directory.Delete(directoryName, True)
+            End If
+
             MsgBox(cex.Message, MsgBoxStyle.Exclamation)
         Catch ex As Exception
             MsgBox(ex.ToString, MsgBoxStyle.Critical)
