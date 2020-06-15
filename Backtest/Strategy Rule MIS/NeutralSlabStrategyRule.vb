@@ -58,7 +58,7 @@ Public Class NeutralSlabStrategyRule
                 If signal.Item4 = Trade.TradeExecutionDirection.Buy Then
                     Dim entryPrice As Decimal = _buyEntryLevel + buffer
                     Dim stoploss As Decimal = _buyEntryLevel - _slab - buffer
-                    Dim target As Decimal = entryPrice + ConvertFloorCeling(_slab * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
+                    Dim target As Decimal = _buyEntryLevel + ConvertFloorCeling(_slab * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
                     Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, stoploss, _userInputs.MaxLossPerTrade, Trade.TypeOfStock.Cash)
 
                     parameter1 = New PlaceOrderParameters With {
@@ -75,10 +75,10 @@ Public Class NeutralSlabStrategyRule
                                     .Supporting3 = "Normal"
                                 }
 
-                    quantity = GetLossQuantity(currentMinuteCandlePayload)
                     Dim pl As Decimal = _parentStrategy.StockPLAfterBrokerage(_tradingDate, _tradingSymbol)
-                    If quantity > 0 AndAlso pl < 0 Then
-                        target = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, quantity, Math.Abs(pl), Trade.TradeExecutionDirection.Buy, Trade.TypeOfStock.Cash)
+                    If pl < 0 Then
+                        target = _buyEntryLevel + _slab
+                        quantity = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, target, Math.Abs(pl), Trade.TypeOfStock.Cash)
 
                         parameter2 = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
@@ -97,7 +97,7 @@ Public Class NeutralSlabStrategyRule
                 ElseIf signal.Item4 = Trade.TradeExecutionDirection.Sell Then
                     Dim entryPrice As Decimal = _sellEntryLevel - buffer
                     Dim stoploss As Decimal = _sellEntryLevel + _slab + buffer
-                    Dim target As Decimal = entryPrice - ConvertFloorCeling(_slab * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
+                    Dim target As Decimal = _sellEntryLevel - ConvertFloorCeling(_slab * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
                     Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, stoploss, entryPrice, _userInputs.MaxLossPerTrade, Trade.TypeOfStock.Cash)
 
                     parameter1 = New PlaceOrderParameters With {
@@ -114,10 +114,10 @@ Public Class NeutralSlabStrategyRule
                                     .Supporting3 = "Normal"
                                 }
 
-                    quantity = GetLossQuantity(currentMinuteCandlePayload)
                     Dim pl As Decimal = _parentStrategy.StockPLAfterBrokerage(_tradingDate, _tradingSymbol)
-                    If quantity > 0 AndAlso pl < 0 Then
-                        target = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, quantity, Math.Abs(pl), Trade.TradeExecutionDirection.Sell, Trade.TypeOfStock.Cash)
+                    If pl < 0 Then
+                        target = _sellEntryLevel - _slab
+                        quantity = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, target, entryPrice, Math.Abs(pl), Trade.TypeOfStock.Cash)
 
                         parameter2 = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
@@ -179,12 +179,12 @@ Public Class NeutralSlabStrategyRule
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                 Dim potentialEntryPrice As Decimal = _buyEntryLevel + currentTrade.EntryBuffer
                 If currentTrade.EntryPrice <> potentialEntryPrice Then
-                    price = potentialEntryPrice + ConvertFloorCeling(_slab * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
+                    price = _buyEntryLevel + ConvertFloorCeling(_slab * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
                 End If
             ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
                 Dim potentialEntryPrice As Decimal = _sellEntryLevel - currentTrade.EntryBuffer
                 If currentTrade.EntryPrice <> potentialEntryPrice Then
-                    price = potentialEntryPrice - ConvertFloorCeling(_slab * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
+                    price = _sellEntryLevel - ConvertFloorCeling(_slab * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
                 End If
             End If
             If price <> Decimal.MinValue AndAlso currentTrade.PotentialTarget <> price Then
@@ -248,31 +248,6 @@ Public Class NeutralSlabStrategyRule
             If targetTrades IsNot Nothing AndAlso targetTrades.Count > 0 Then
                 ret = True
             End If
-        End If
-        Return ret
-    End Function
-
-    Private Function GetLossQuantity(ByVal currentMinutePayload As Payload) As Integer
-        Dim ret As Integer = 0
-        Dim completeTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentMinutePayload, _parentStrategy.TradeType, Trade.TradeExecutionStatus.Close)
-        If completeTrades IsNot Nothing AndAlso completeTrades.Count > 0 Then
-            Dim lossQuantity As Integer = completeTrades.Sum(Function(x)
-                                                                 If x.PLAfterBrokerage < 0 Then
-                                                                     Return x.Quantity
-                                                                 Else
-                                                                     Return 0
-                                                                 End If
-                                                             End Function)
-
-            Dim lossMakeupQuantity As Integer = completeTrades.Sum(Function(x)
-                                                                       If x.Supporting3 = "SL Makeup" AndAlso x.PLAfterBrokerage > 0 Then
-                                                                           Return x.Quantity
-                                                                       Else
-                                                                           Return 0
-                                                                       End If
-                                                                   End Function)
-
-            ret = lossQuantity - lossMakeupQuantity
         End If
         Return ret
     End Function
