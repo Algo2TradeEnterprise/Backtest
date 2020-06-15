@@ -147,7 +147,8 @@
     <Compile Include="Strategy Rule MIS\MarketPlusMarketMinusStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\BNFMartingaleStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\MartingaleStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\NeutralSlabStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\LossMakeupNeutralSlabStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\NeutralSlabMartingaleStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\ReversalHHLLBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\SmallOpeningRangeBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\SupertrendCutReversalStrategyRule.vb" />

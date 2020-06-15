@@ -3,7 +3,7 @@ Imports System.Threading
 Imports Algo2TradeBLL
 Imports Utilities.Numbers.NumberManipulation
 
-Public Class NeutralSlabStrategyRule
+Public Class LossMakeupNeutralSlabStrategyRule
     Inherits StrategyRule
 
 #Region "Entity"
