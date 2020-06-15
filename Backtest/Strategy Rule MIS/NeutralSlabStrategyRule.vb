@@ -229,8 +229,8 @@ Public Class NeutralSlabStrategyRule
                     _buyEntryLevel = buyLevel + _slab
                     _sellEntryLevel = buyLevel - _slab
                 ElseIf currentTick.Open <= sellLevel Then
-                    _buyEntryLevel = sellLevel - _slab
-                    _sellEntryLevel = sellLevel + _slab
+                    _buyEntryLevel = sellLevel + _slab
+                    _sellEntryLevel = sellLevel - _slab
                 End If
             End If
         End If
