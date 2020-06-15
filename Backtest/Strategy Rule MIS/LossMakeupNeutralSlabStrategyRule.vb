@@ -31,7 +31,17 @@ Public Class LossMakeupNeutralSlabStrategyRule
                    ByVal slab As Decimal)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _userInputs = _entities
-        _slab = slab
+
+
+        Dim slabList As List(Of Decimal) = New List(Of Decimal) From {0.5, 1, 2.5, 5, 10, 25, 50, 100}
+        Dim supportedSlabList As List(Of Decimal) = slabList.FindAll(Function(x)
+                                                                         Return x < slab
+                                                                     End Function)
+        If supportedSlabList IsNot Nothing AndAlso supportedSlabList.Count > 0 Then
+            _slab = supportedSlabList.Max
+        Else
+            Me.EligibleToTakeTrade = False
+        End If
     End Sub
 
     Public Overrides Sub CompletePreProcessing()

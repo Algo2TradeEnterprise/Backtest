@@ -2286,7 +2286,7 @@ Public Class frmMain
 
                             .RuleEntityData = New LossMakeupNeutralSlabStrategyRule.StrategyRuleEntities With
                                             {
-                                                .MaxLossPerTrade = -500,
+                                                .MaxLossPerTrade = -250,
                                                 .TargetMultiplier = 2
                                             }
 
