@@ -169,6 +169,8 @@ Namespace StrategyHelper
                                             stockRule = New NeutralSlabMartingaleStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Slab)
                                         Case 24
                                             stockRule = New AnchorSatelliteLossMakeupHKFuturesStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case 25
+                                            stockRule = New HKReversalSingleTradeStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
