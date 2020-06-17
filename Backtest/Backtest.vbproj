@@ -129,6 +129,7 @@
     <Compile Include="Strategy Helper\Trade.vb" />
     <Compile Include="Strategy Rule MIS\AlwaysInTradeMartingaleStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\AnchorSatelliteHKStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\AnchorSatelliteLossMakeupHKFuturesStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\AnchorSatelliteLossMakeupHKStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\AnchorSatelliteLossMakeupStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\EMAScalpingStrategyRule.vb" />
