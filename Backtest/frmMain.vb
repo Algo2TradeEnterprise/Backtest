@@ -2555,7 +2555,7 @@ Public Class frmMain
                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                         With backtestStrategy
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Cash Stock.csv")
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pre Market Cash Stocks.csv")
 
                             .AllowBothDirectionEntryAtSameTime = False
                             .TrailingStoploss = False
@@ -2579,12 +2579,12 @@ Public Class frmMain
                             .StockMaxProfitPerDay = Decimal.MaxValue
                             .StockMaxLossPerDay = Decimal.MinValue
 
-                            .ExitOnOverAllFixedTargetStoploss = True
+                            .ExitOnOverAllFixedTargetStoploss = False
                             .OverAllProfitPerDay = 500
                             .OverAllLossPerDay = Decimal.MinValue
 
                             .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
-                            .MTMSlab = Math.Abs(.OverAllLossPerDay)
+                            .MTMSlab = 500
                             .MovementSlab = .MTMSlab / 2
                             .RealtimeTrailingPercentage = 50
                         End With

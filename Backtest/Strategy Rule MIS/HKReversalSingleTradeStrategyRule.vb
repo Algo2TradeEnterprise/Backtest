@@ -22,6 +22,7 @@ Public Class HKReversalSingleTradeStrategyRule
     Private _quantity As Integer = Integer.MinValue
     Private _previousDayHighestATR As Decimal = Decimal.MinValue
     Private ReadOnly _userInputs As StrategyRuleEntities
+    Private ReadOnly _direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -29,9 +30,15 @@ Public Class HKReversalSingleTradeStrategyRule
                    ByVal tradingDate As Date,
                    ByVal tradingSymbol As String,
                    ByVal canceller As CancellationTokenSource,
-                   ByVal entities As RuleEntities)
+                   ByVal entities As RuleEntities,
+                   ByVal direction As Integer)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _userInputs = _entities
+        If direction > 0 Then
+            _direction = Trade.TradeExecutionDirection.Buy
+        ElseIf direction < 0 Then
+            _direction = Trade.TradeExecutionDirection.Sell
+        End If
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -178,14 +185,14 @@ Public Class HKReversalSingleTradeStrategyRule
         Dim ret As Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection) = Nothing
         If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then
             Dim hkCandle As Payload = _hkPayload(candle.PayloadDate)
-            If hkCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
+            If _direction = Trade.TradeExecutionDirection.Buy AndAlso hkCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
                 Dim buyLevel As Decimal = ConvertFloorCeling(hkCandle.High, _parentStrategy.TickSize, RoundOfType.Celing)
                 If buyLevel = Math.Round(hkCandle.High, 2) Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(hkCandle.High, RoundOfType.Floor)
                     buyLevel = buyLevel + buffer
                 End If
                 ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection)(True, buyLevel, hkCandle, Trade.TradeExecutionDirection.Buy)
-            ElseIf hkCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
+            ElseIf _direction = Trade.TradeExecutionDirection.Sell AndAlso hkCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
                 Dim sellLevel As Decimal = ConvertFloorCeling(hkCandle.Low, _parentStrategy.TickSize, RoundOfType.Floor)
                 If sellLevel = Math.Round(hkCandle.Low, 2) Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(hkCandle.Low, RoundOfType.Floor)
