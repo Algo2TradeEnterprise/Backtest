@@ -2565,7 +2565,7 @@ Public Class frmMain
                             .RuleEntityData = New HKReversalSingleTradeStrategyRule.StrategyRuleEntities With
                                             {
                                                 .MaxLossPerTrade = -500,
-                                                .TargetMultiplier = 1
+                                                .TargetMultiplier = 200
                                             }
 
                             .NumberOfTradeableStockPerDay = 20
@@ -2583,7 +2583,7 @@ Public Class frmMain
                             .OverAllProfitPerDay = 500
                             .OverAllLossPerDay = Decimal.MinValue
 
-                            .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+                            .TypeOfMTMTrailing = Strategy.MTMTrailingType.FixedSlabTrailing
                             .MTMSlab = 500
                             .MovementSlab = .MTMSlab / 2
                             .RealtimeTrailingPercentage = 50
