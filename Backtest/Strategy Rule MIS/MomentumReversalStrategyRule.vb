@@ -52,7 +52,8 @@ Public Class MomentumReversalStrategyRule
                 If lastExecutedOrder Is Nothing Then
                     signalCandle = signal.Item3
                 ElseIf lastExecutedOrder IsNot Nothing Then
-                    If signal.Item3.PayloadDate <> lastExecutedOrder.SignalCandle.PayloadDate Then
+                    Dim exitPayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(lastExecutedOrder.ExitTime, _signalPayload))
+                    If signal.Item3.PayloadDate >= exitPayload.PayloadDate Then
                         signalCandle = signal.Item3
                     End If
                 End If
@@ -88,7 +89,8 @@ Public Class MomentumReversalStrategyRule
                                     .OrderType = Trade.TypeOfOrder.SL,
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = slRemark,
-                                    .Supporting3 = (entryPrice - stoploss)
+                                    .Supporting3 = (entryPrice - stoploss),
+                                    .Supporting4 = ((signalCandle.CandleWicks.Top + buffer) / signalCandle.CandleRange) * 100
                                 }
                 ElseIf signal.Item4 = Trade.TradeExecutionDirection.Sell Then
                     Dim entryPrice As Decimal = signal.Item2
@@ -117,7 +119,8 @@ Public Class MomentumReversalStrategyRule
                                     .OrderType = Trade.TypeOfOrder.SL,
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = slRemark,
-                                    .Supporting3 = (stoploss - entryPrice)
+                                    .Supporting3 = (stoploss - entryPrice),
+                                    .Supporting4 = ((signalCandle.CandleWicks.Bottom + buffer) / signalCandle.CandleRange) * 100
                                 }
                 End If
             End If

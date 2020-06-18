@@ -2657,7 +2657,7 @@ Public Class frmMain
                                                 .BreakevenMovement = True
                                             }
 
-                            .NumberOfTradeableStockPerDay = 5
+                            .NumberOfTradeableStockPerDay = 1
 
                             .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
