@@ -53,8 +53,8 @@ Public Class StochasticDivergenceStrategyRule
                     If lastTrade Is Nothing OrElse lastTrade.SignalCandle.PayloadDate <> signal.Item3.PayloadDate Then
                         Dim signalCandle As Payload = signal.Item3
                         Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2, RoundOfType.Floor)
-                        Dim entryPrice As Decimal = signal.Item2 + buffer
-                        Dim stoploss As Decimal = signalCandle.Low - buffer
+                        Dim entryPrice As Decimal = signalCandle.High + buffer
+                        Dim stoploss As Decimal = signal.Item2 - buffer
                         Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, stoploss, _userInputs.MaxLossPerTrade, Trade.TypeOfStock.Cash)
                         Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, quantity, Math.Abs(_userInputs.MaxLossPerTrade * _userInputs.TargetMultiplier), Trade.TradeExecutionDirection.Buy, Trade.TypeOfStock.Cash)
 
@@ -81,8 +81,8 @@ Public Class StochasticDivergenceStrategyRule
                     If lastTrade Is Nothing OrElse lastTrade.SignalCandle.PayloadDate <> signal.Item3.PayloadDate Then
                         Dim signalCandle As Payload = signal.Item3
                         Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2, RoundOfType.Floor)
-                        Dim entryPrice As Decimal = signal.Item2 - buffer
-                        Dim stoploss As Decimal = signalCandle.High + buffer
+                        Dim entryPrice As Decimal = signalCandle.Low - buffer
+                        Dim stoploss As Decimal = signal.Item2 + buffer
                         Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, stoploss, entryPrice, _userInputs.MaxLossPerTrade, Trade.TypeOfStock.Cash)
                         Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, quantity, Math.Abs(_userInputs.MaxLossPerTrade * _userInputs.TargetMultiplier), Trade.TradeExecutionDirection.Sell, Trade.TypeOfStock.Cash)
 
@@ -122,9 +122,23 @@ Public Class StochasticDivergenceStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
             Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
-            Dim signal As Tuple(Of Boolean, Decimal, Payload, String) = GetEntrySignal(currentMinuteCandlePayload, currentTick, currentTrade.EntryDirection)
-            If signal IsNot Nothing AndAlso signal.Item1 Then
-                If currentTrade.SignalCandle.PayloadDate <> signal.Item3.PayloadDate Then
+            'Dim signal As Tuple(Of Boolean, Decimal, Payload, String) = GetEntrySignal(currentMinuteCandlePayload, currentTick, currentTrade.EntryDirection)
+            'If signal IsNot Nothing AndAlso signal.Item1 Then
+            '    If currentTrade.SignalCandle.PayloadDate <> signal.Item3.PayloadDate Then
+            '        ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+            '    End If
+            'End If
+            Dim lastMountain As Tuple(Of Date, Date) = GetMoutainCandles(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate, currentTrade.EntryDirection)
+            If lastMountain IsNot Nothing AndAlso lastMountain.Item1 <> Date.MinValue Then
+                If currentTrade.SignalCandle.PayloadDate <> lastMountain.Item2 Then
+                    ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                End If
+            End If
+            If ret Is Nothing Then
+                Dim smi As Decimal = _smiPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate)
+                If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy AndAlso smi > 40 Then
+                    ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell AndAlso smi < -40 Then
                     ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                 End If
             End If
@@ -155,7 +169,8 @@ Public Class StochasticDivergenceStrategyRule
     Private Function GetEntrySignal(ByVal candle As Payload, ByVal currentTick As Payload, ByVal direction As Trade.TradeExecutionDirection) As Tuple(Of Boolean, Decimal, Payload, String)
         Dim ret As Tuple(Of Boolean, Decimal, Payload, String) = Nothing
         Dim lastMountain As Tuple(Of Date, Date) = GetMoutainCandles(candle.PreviousCandlePayload.PayloadDate, direction)
-        If lastMountain IsNot Nothing AndAlso lastMountain.Item1 <> Date.MinValue AndAlso lastMountain.Item1.Date = _tradingDate.Date Then
+        If IsSignalValid(lastMountain.Item2, candle.PreviousCandlePayload.PayloadDate, direction) AndAlso
+            lastMountain IsNot Nothing AndAlso lastMountain.Item1 <> Date.MinValue AndAlso lastMountain.Item1.Date = _tradingDate.Date Then
             Dim preLastMountain As Tuple(Of Date, Date) = GetMoutainCandles(lastMountain.Item1, direction)
             If preLastMountain IsNot Nothing AndAlso preLastMountain.Item1 <> Date.MinValue Then
                 If direction = Trade.TradeExecutionDirection.Sell Then
@@ -191,7 +206,7 @@ Public Class StochasticDivergenceStrategyRule
                     If Not ((lastMountainHigh > preLastMountainHigh AndAlso lastMountainSMIHigh > preLastMountainSMIHigh) OrElse
                         (lastMountainHigh < preLastMountainHigh AndAlso lastMountainSMIHigh < preLastMountainSMIHigh)) Then
                         Dim signalCandle As Payload = _signalPayload(lastMountain.Item2)
-                        ret = New Tuple(Of Boolean, Decimal, Payload, String)(True, signalCandle.Low, signalCandle, String.Format("{0},{1},{2},{3},{4},{5},{6},{7}",
+                        ret = New Tuple(Of Boolean, Decimal, Payload, String)(True, lastMountainHigh, signalCandle, String.Format("{0},{1},{2},{3},{4},{5},{6},{7}",
                                                                                                                                   preLastMountain.Item1.ToString("dd-MMM-yyyy HH:mm:ss"),
                                                                                                                                   preLastMountain.Item2.ToString("dd-MMM-yyyy HH:mm:ss"),
                                                                                                                                   preLastMountainHigh,
@@ -234,7 +249,7 @@ Public Class StochasticDivergenceStrategyRule
                     If Not ((lastMountainLow > preLastMountainLow AndAlso lastMountainSMILow > preLastMountainSMILow) OrElse
                         (lastMountainLow < preLastMountainLow AndAlso lastMountainSMILow < preLastMountainSMILow)) Then
                         Dim signalCandle As Payload = _signalPayload(lastMountain.Item2)
-                        ret = New Tuple(Of Boolean, Decimal, Payload, String)(True, signalCandle.High, signalCandle, String.Format("{0},{1},{2},{3},{4},{5},{6},{7}",
+                        ret = New Tuple(Of Boolean, Decimal, Payload, String)(True, lastMountainLow, signalCandle, String.Format("{0},{1},{2},{3},{4},{5},{6},{7}",
                                                                                                                                   preLastMountain.Item1.ToString("dd-MMM-yyyy HH:mm:ss"),
                                                                                                                                   preLastMountain.Item2.ToString("dd-MMM-yyyy HH:mm:ss"),
                                                                                                                                   preLastMountainLow,
@@ -264,76 +279,87 @@ Public Class StochasticDivergenceStrategyRule
                                                                                  Return x.Key
                                                                              End Function)
                     If direction = Trade.TradeExecutionDirection.Sell Then
-                        Dim checkSignal As Boolean = True
                         If Not _userInputs.TakeAnyHighLow Then
                             If middleCandleTime <> Date.MinValue AndAlso _smiPayload(middleCandleTime) < 40 Then
-                                checkSignal = False
-                                firstCandleTime = Date.MinValue
+                                firstCandleTime = middleCandleTime
                                 middleCandleTime = Date.MinValue
                                 lastCandleTime = Date.MinValue
                             End If
                         End If
-                        If checkSignal Then
-                            If firstCandleTime = Date.MinValue Then
-                                firstCandleTime = runningPayload.Key
-                            Else
-                                If middleCandleTime = Date.MinValue Then
-                                    If runningPayload.Value > _smiPayload(firstCandleTime) Then
-                                        middleCandleTime = runningPayload.Key
-                                    Else
-                                        firstCandleTime = runningPayload.Key
-                                    End If
+                        If firstCandleTime = Date.MinValue Then
+                            firstCandleTime = runningPayload.Key
+                        Else
+                            If middleCandleTime = Date.MinValue Then
+                                If runningPayload.Value > _smiPayload(firstCandleTime) Then
+                                    middleCandleTime = runningPayload.Key
                                 Else
-                                    If runningPayload.Value = _smiPayload(middleCandleTime) Then
-                                        middleCandleTime = runningPayload.Key
-                                    ElseIf runningPayload.Value > _smiPayload(middleCandleTime) Then
-                                        firstCandleTime = middleCandleTime
-                                        middleCandleTime = runningPayload.Key
-                                    ElseIf runningPayload.Value < _smiPayload(middleCandleTime) Then
-                                        lastCandleTime = runningPayload.Key
-                                        ret = New Tuple(Of Date, Date)(lastCandleTime, firstCandleTime)
-                                        Exit For
-                                    End If
+                                    firstCandleTime = runningPayload.Key
+                                End If
+                            Else
+                                If runningPayload.Value = _smiPayload(middleCandleTime) Then
+                                    middleCandleTime = runningPayload.Key
+                                ElseIf runningPayload.Value > _smiPayload(middleCandleTime) Then
+                                    firstCandleTime = middleCandleTime
+                                    middleCandleTime = runningPayload.Key
+                                ElseIf runningPayload.Value < _smiPayload(middleCandleTime) Then
+                                    lastCandleTime = runningPayload.Key
+                                    ret = New Tuple(Of Date, Date)(lastCandleTime, firstCandleTime)
+                                    Exit For
                                 End If
                             End If
                         End If
                     ElseIf direction = Trade.TradeExecutionDirection.Buy Then
-                        Dim checkSignal As Boolean = True
                         If Not _userInputs.TakeAnyHighLow Then
                             If middleCandleTime <> Date.MinValue AndAlso _smiPayload(middleCandleTime) > -40 Then
-                                checkSignal = False
-                                firstCandleTime = Date.MinValue
+                                firstCandleTime = middleCandleTime
                                 middleCandleTime = Date.MinValue
                                 lastCandleTime = Date.MinValue
                             End If
                         End If
-                        If checkSignal Then
-                            If firstCandleTime = Date.MinValue Then
-                                firstCandleTime = runningPayload.Key
-                            Else
-                                If middleCandleTime = Date.MinValue Then
-                                    If runningPayload.Value < _smiPayload(firstCandleTime) Then
-                                        middleCandleTime = runningPayload.Key
-                                    Else
-                                        firstCandleTime = runningPayload.Key
-                                    End If
+                        If firstCandleTime = Date.MinValue Then
+                            firstCandleTime = runningPayload.Key
+                        Else
+                            If middleCandleTime = Date.MinValue Then
+                                If runningPayload.Value < _smiPayload(firstCandleTime) Then
+                                    middleCandleTime = runningPayload.Key
                                 Else
-                                    If runningPayload.Value = _smiPayload(middleCandleTime) Then
-                                        middleCandleTime = runningPayload.Key
-                                    ElseIf runningPayload.Value < _smiPayload(middleCandleTime) Then
-                                        firstCandleTime = middleCandleTime
-                                        middleCandleTime = runningPayload.Key
-                                    ElseIf runningPayload.Value > _smiPayload(middleCandleTime) Then
-                                        lastCandleTime = runningPayload.Key
-                                        ret = New Tuple(Of Date, Date)(lastCandleTime, firstCandleTime)
-                                        Exit For
-                                    End If
+                                    firstCandleTime = runningPayload.Key
+                                End If
+                            Else
+                                If runningPayload.Value = _smiPayload(middleCandleTime) Then
+                                    middleCandleTime = runningPayload.Key
+                                ElseIf runningPayload.Value < _smiPayload(middleCandleTime) Then
+                                    firstCandleTime = middleCandleTime
+                                    middleCandleTime = runningPayload.Key
+                                ElseIf runningPayload.Value > _smiPayload(middleCandleTime) Then
+                                    lastCandleTime = runningPayload.Key
+                                    ret = New Tuple(Of Date, Date)(lastCandleTime, firstCandleTime)
+                                    Exit For
                                 End If
                             End If
                         End If
                     End If
                 Next
             End If
+        End If
+        Return ret
+    End Function
+
+    Private Function IsSignalValid(ByVal startTime As Date, ByVal currentTime As Date, ByVal direction As Trade.TradeExecutionDirection) As Boolean
+        Dim ret As Boolean = False
+        If startTime <> Date.MinValue Then
+            For Each runningSMI In _smiPayload
+                If runningSMI.Key >= startTime AndAlso runningSMI.Key <= currentTime Then
+                    ret = True
+                    If direction = Trade.TradeExecutionDirection.Buy AndAlso runningSMI.Value > 40 Then
+                        ret = False
+                        Exit For
+                    ElseIf direction = Trade.TradeExecutionDirection.Sell AndAlso runningSMI.Value < -40 Then
+                        ret = False
+                        Exit For
+                    End If
+                End If
+            Next
         End If
         Return ret
     End Function

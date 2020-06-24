@@ -2745,7 +2745,7 @@ Public Class frmMain
                                                 .TakeAnyHighLow = False
                                             }
 
-                            .NumberOfTradeableStockPerDay = 1
+                            .NumberOfTradeableStockPerDay = 5
 
                             .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
