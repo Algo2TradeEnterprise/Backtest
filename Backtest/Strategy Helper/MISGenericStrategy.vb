@@ -112,6 +112,8 @@ Namespace StrategyHelper
                                             stockRule = New PairChangePercentStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, _canceller, stockList(stock).Supporting1, stockList(stock).Supporting2, stockList(stock).Supporting3)
                                         Case 3
                                             stockRule = New NiftyBankniftyPairStrategy(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, RuleEntityData, _canceller, stockList(stock).Supporting1, stockList(stock).Supporting2, stockList(stock).Supporting3)
+                                        Case 4
+                                            stockRule = New PairAnchorHKStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, _canceller, stockList(stock).Supporting1)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -594,6 +596,25 @@ Namespace StrategyHelper
                                             .Supporting3 = dt.Rows(i).Item(4)}
 
                                 If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                ret.Add(instrumentName, detailsOfStock)
+                            Next
+                        Case 4
+                            For i = 1 To 2
+                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                Dim tradingSymbol As String = dt.Rows(i).Item(0)
+                                Dim instrumentName As String = Nothing
+                                If tradingSymbol.Contains("FUT") Then
+                                    instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                                Else
+                                    instrumentName = tradingSymbol
+                                End If
+                                Dim lotSize As Integer = dt.Rows(i).Item(1)
+                                Dim controller As String = dt.Rows(i).Item(2)
+                                Dim detailsOfStock As StockDetails = New StockDetails With
+                                            {.StockName = instrumentName,
+                                             .LotSize = lotSize,
+                                             .EligibleToTakeTrade = True,
+                                             .Supporting1 = If(controller.ToUpper = "TRUE", 1, 0)}
                                 ret.Add(instrumentName, detailsOfStock)
                             Next
                         Case Else

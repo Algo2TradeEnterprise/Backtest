@@ -1007,12 +1007,13 @@ Namespace StrategyHelper
         ''' </summary>
         Public Function GetPreviousXMinuteCandleTime(ByVal lowerTFTime As Date, ByVal higherTFPayload As Dictionary(Of Date, Payload), ByVal higherTF As Integer) As Date
             Dim ret As Date = Nothing
-
-            If higherTFPayload IsNot Nothing AndAlso higherTFPayload.Count > 0 Then
-                ret = higherTFPayload.Keys.LastOrDefault(Function(x)
-                                                             Return x <= lowerTFTime.AddMinutes(-higherTF)
-                                                         End Function)
-            End If
+            Throw New NotImplementedException()
+            'Change this according to GetCurrentXMinuteCandleTime
+            'If higherTFPayload IsNot Nothing AndAlso higherTFPayload.Count > 0 Then
+            '    ret = higherTFPayload.Keys.LastOrDefault(Function(x)
+            '                                                 Return x <= lowerTFTime.AddMinutes(-higherTF)
+            '                                             End Function)
+            'End If
             Return ret
         End Function
 
@@ -1020,9 +1021,36 @@ Namespace StrategyHelper
             Dim ret As Date = Nothing
 
             If higherTFPayload IsNot Nothing AndAlso higherTFPayload.Count > 0 Then
-                ret = higherTFPayload.Keys.LastOrDefault(Function(x)
-                                                             Return x <= lowerTFTime
-                                                         End Function)
+                'ret = higherTFPayload.Keys.LastOrDefault(Function(x)
+                '                                             Return x <= lowerTFTime
+                '                                         End Function)
+                'For Each runningPayload In higherTFPayload.Keys
+                '    If runningPayload > lowerTFTime AndAlso higherTFPayload(runningPayload).PreviousCandlePayload IsNot Nothing AndAlso
+                '        higherTFPayload(runningPayload).PreviousCandlePayload.PayloadDate <= lowerTFTime Then
+                '        ret = higherTFPayload(runningPayload).PreviousCandlePayload.PayloadDate
+                '        Exit For
+                '    End If
+                'Next
+
+                If Me.ExchangeStartTime.Minutes Mod Me.SignalTimeFrame = 0 Then
+                    ret = New Date(lowerTFTime.Year,
+                                    lowerTFTime.Month,
+                                    lowerTFTime.Day,
+                                    lowerTFTime.Hour,
+                                    Math.Floor(lowerTFTime.Minute / Me.SignalTimeFrame) * Me.SignalTimeFrame, 0)
+                Else
+                    Dim exchangeTime As Date = New Date(lowerTFTime.Year, lowerTFTime.Month, lowerTFTime.Day, Me.ExchangeStartTime.Hours, Me.ExchangeStartTime.Minutes, 0)
+                    Dim currentTime As Date = New Date(lowerTFTime.Year, lowerTFTime.Month, lowerTFTime.Day, lowerTFTime.Hour, lowerTFTime.Minute, 0)
+                    Dim timeDifference As Double = currentTime.Subtract(exchangeTime).TotalMinutes
+                    Dim adjustedTimeDifference As Integer = Math.Floor(timeDifference / Me.SignalTimeFrame) * Me.SignalTimeFrame
+                    ret = exchangeTime.AddMinutes(adjustedTimeDifference)
+                    'Dim currentMinute As Date = exchangeTime.AddMinutes(adjustedTimeDifference)
+                    'ret = New Date(lowerTFTime.Year,
+                    '                lowerTFTime.Month,
+                    '                lowerTFTime.Day,
+                    '                currentMinute.Hour,
+                    '                currentMinute.Minute, 0)
+                End If
             End If
             Return ret
         End Function
@@ -1134,7 +1162,7 @@ Namespace StrategyHelper
             Return ret
         End Function
 
-        Public Function GetLastExecutedTradeOfTheStock(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TypeOfTrade) As Trade
+        Public Function GetLastExecutedTradeOfTheStock(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TypeOfTrade, Optional ByVal direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None) As Trade
             Dim ret As Trade = Nothing
             'If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentMinutePayload.PayloadDate.Date) AndAlso TradesTaken(currentMinutePayload.PayloadDate.Date).ContainsKey(currentMinutePayload.TradingSymbol) Then
             If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
@@ -1144,9 +1172,20 @@ Namespace StrategyHelper
                 If completeTrades IsNot Nothing AndAlso completeTrades.Count > 0 Then allTrades.AddRange(completeTrades)
                 If inprogressTrades IsNot Nothing AndAlso inprogressTrades.Count > 0 Then allTrades.AddRange(inprogressTrades)
                 If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
-                    ret = allTrades.OrderBy(Function(x)
-                                                Return x.EntryTime
-                                            End Function).LastOrDefault
+                    If direction = Trade.TradeExecutionDirection.None Then
+                        ret = allTrades.OrderBy(Function(x)
+                                                    Return x.EntryTime
+                                                End Function).LastOrDefault
+                    Else
+                        Dim directionBasedTrades As List(Of Trade) = allTrades.FindAll(Function(x)
+                                                                                           Return x.EntryDirection = direction
+                                                                                       End Function)
+                        If directionBasedTrades IsNot Nothing AndAlso directionBasedTrades.Count > 0 Then
+                            ret = directionBasedTrades.OrderBy(Function(x)
+                                                                   Return x.EntryTime
+                                                               End Function).LastOrDefault
+                        End If
+                    End If
                 End If
             End If
             Return ret
