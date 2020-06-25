@@ -2883,7 +2883,7 @@ Public Class frmMain
                                         .RuleEntityData = New PairAnchorHKStrategyRule.StrategyRuleEntities With
                                             {.FirstTradeMarketEntry = frstTrdMktEntry}
 
-                                        .NumberOfTradeableStockPerDay = 5
+                                        .NumberOfTradeableStockPerDay = 2
 
                                         .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
@@ -2894,8 +2894,8 @@ Public Class frmMain
                                         .StockMaxProfitPerDay = Decimal.MaxValue
                                         .StockMaxLossPerDay = Decimal.MinValue
 
-                                        .ExitOnOverAllFixedTargetStoploss = False
-                                        .OverAllProfitPerDay = Decimal.MaxValue
+                                        .ExitOnOverAllFixedTargetStoploss = True
+                                        .OverAllProfitPerDay = 1000
                                         .OverAllLossPerDay = Decimal.MinValue
 
                                         .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
