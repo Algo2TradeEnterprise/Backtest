@@ -175,6 +175,8 @@ Namespace StrategyHelper
                                             stockRule = New MomentumReversalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 27
                                             stockRule = New StochasticDivergenceStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case 28
+                                            stockRule = New PairAnchorHKStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
@@ -1239,6 +1241,42 @@ Namespace StrategyHelper
                                     If counter >= Me.NumberOfTradeableStockPerDay / 2 Then Exit For
                                 Next
                             End If
+                        Case 28
+                            Dim counter As Integer = 0
+                            For i = 0 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i).Item("Date")
+                                If rowDate.Date = tradingDate.Date Then
+                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
+                                    Dim instrumentName As String = Nothing
+                                    If tradingSymbol.Contains("FUT") Then
+                                        instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                                    Else
+                                        instrumentName = tradingSymbol
+                                    End If
+                                    Dim lotsize As Integer = 1
+                                    Dim slab As Decimal = 1
+                                    Dim direction As String = dt.Rows(i).Item("Direction")
+                                    Dim dict As Integer = 0
+                                    If direction.ToUpper = "BUY" Then
+                                        dict = 1
+                                    ElseIf direction.ToUpper = "SELL" Then
+                                        dict = -1
+                                    End If
+                                    Dim detailsOfStock As StockDetails = New StockDetails With
+                                                {.StockName = instrumentName,
+                                                 .TradingSymbol = tradingSymbol,
+                                                 .LotSize = lotsize,
+                                                 .Slab = slab,
+                                                 .EligibleToTakeTrade = True,
+                                                 .Supporting1 = dict}
+
+                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                    ret.Add(instrumentName, detailsOfStock)
+
+                                    counter += 1
+                                    If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                                End If
+                            Next
                         Case Else
                             Dim counter As Integer = 0
                             For i = 0 To dt.Rows.Count - 1

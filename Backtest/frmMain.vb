@@ -2773,6 +2773,147 @@ Public Class frmMain
                         Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
                     End Using
 #End Region
+                Case 28
+#Region "Pair Anchor Satellite Loss Makeup HK Strategy"
+
+#Region "File Setup"
+                    'Dim dt As DataTable = Nothing
+                    'Using csvHelper As New Utilities.DAL.CSVHelper(Path.Combine(My.Application.Info.DirectoryPath, "Stock Files", "Pair Anchor Satellite.csv"), ",", _canceller)
+                    '    dt = csvHelper.GetDataTableFromCSV(1)
+                    'End Using
+                    'If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
+                    '    Dim dataDict As Dictionary(Of Date, List(Of Tuple(Of String, String))) = New Dictionary(Of Date, List(Of Tuple(Of String, String)))
+                    '    For i = 0 To dt.Rows.Count - 1
+                    '        Dim rowDate As Date = dt.Rows(i).Item(0)
+                    '        Dim tradingSymbol1 As String = dt.Rows(i).Item(1)
+                    '        Dim tradingSymbol2 As String = dt.Rows(i).Item(2)
+                    '        Dim direction1 As String = dt.Rows(i).Item(5)
+                    '        Dim direction2 As String = dt.Rows(i).Item(6)
+
+                    '        If dataDict.ContainsKey(rowDate.Date) Then
+                    '            Dim dataList As List(Of Tuple(Of String, String)) = dataDict(rowDate.Date)
+                    '            dataList.Add(New Tuple(Of String, String)(tradingSymbol1, direction1))
+                    '            dataList.Add(New Tuple(Of String, String)(tradingSymbol2, direction2))
+                    '        Else
+                    '            Dim dataList As List(Of Tuple(Of String, String)) = New List(Of Tuple(Of String, String))
+                    '            dataList.Add(New Tuple(Of String, String)(tradingSymbol1, direction1))
+                    '            dataList.Add(New Tuple(Of String, String)(tradingSymbol2, direction2))
+                    '            dataDict.Add(rowDate.Date, dataList)
+                    '        End If
+                    '    Next
+
+                    '    If dataDict IsNot Nothing AndAlso dataDict.Count > 0 Then
+                    '        Dim retDt As DataTable = New DataTable
+                    '        retDt.Columns.Add("Date")
+                    '        retDt.Columns.Add("Trading Symbol")
+                    '        retDt.Columns.Add("Direction")
+
+                    '        For Each runningDate In dataDict
+                    '            For Each runningData In runningDate.Value
+                    '                Dim row As DataRow = retDt.NewRow
+                    '                row("Date") = runningDate.Key.ToString("dd-MMM-yyyy")
+                    '                row("Trading Symbol") = runningData.Item1
+                    '                row("Direction") = runningData.Item2
+
+                    '                retDt.Rows.Add(row)
+                    '            Next
+                    '        Next
+
+                    '        Using csvHelper As New Utilities.DAL.CSVHelper(Path.Combine(My.Application.Info.DirectoryPath, "Pair Anchor Satellite.csv"), ",", _canceller)
+                    '            csvHelper.GetCSVFromDataTable(retDt)
+                    '        End Using
+                    '    End If
+                    'End If
+#End Region
+
+                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
+                    Dim database As Common.DataBaseTable = Common.DataBaseTable.None
+                    Dim margin As Decimal = 0
+                    Dim tick As Decimal = 0
+                    Select Case stockType
+                        Case Trade.TypeOfStock.Cash
+                            database = Common.DataBaseTable.Intraday_Cash
+                            margin = 15
+                            tick = 0.05
+                        Case Trade.TypeOfStock.Commodity
+                            database = Common.DataBaseTable.Intraday_Commodity
+                            margin = 70
+                            tick = 1
+                        Case Trade.TypeOfStock.Currency
+                            database = Common.DataBaseTable.Intraday_Currency
+                            margin = 98
+                            tick = 0.0025
+                        Case Trade.TypeOfStock.Futures
+                            database = Common.DataBaseTable.Intraday_Futures
+                            margin = 50
+                            tick = 0.05
+                    End Select
+
+                    For atrMul As Decimal = 1 To 1 Step 1
+                        For frstTrdMktEntry As Integer = 0 To 0
+                            For hlfATREntry As Integer = 1 To 1
+                                Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+                                                                                exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                                exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                                tradeStartTime:=TimeSpan.Parse("9:16:00"),
+                                                                                lastTradeEntryTime:=TimeSpan.Parse("14:44:59"),
+                                                                                eodExitTime:=TimeSpan.Parse("15:15:00"),
+                                                                                tickSize:=tick,
+                                                                                marginMultiplier:=margin,
+                                                                                timeframe:=1,
+                                                                                heikenAshiCandle:=False,
+                                                                                stockType:=stockType,
+                                                                                optionStockType:=Trade.TypeOfStock.None,
+                                                                                databaseTable:=database,
+                                                                                dataSource:=sourceData,
+                                                                                initialCapital:=Decimal.MaxValue / 2,
+                                                                                usableCapital:=Decimal.MaxValue / 2,
+                                                                                minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                                                amountToBeWithdrawn:=0)
+                                    AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+
+                                    With backtestStrategy
+                                        .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pair Anchor Satellite.csv")
+
+                                        .AllowBothDirectionEntryAtSameTime = True
+                                        .TrailingStoploss = False
+                                        .TickBasedStrategy = True
+                                        .RuleNumber = ruleNumber
+
+                                        .RuleEntityData = New PairAnchorHKStrategyRule.StrategyRuleEntities With
+                                            {.FirstTradeMarketEntry = frstTrdMktEntry}
+
+                                        .NumberOfTradeableStockPerDay = 5
+
+                                        .NumberOfTradesPerStockPerDay = Integer.MaxValue
+
+                                        .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                                        .StockMaxLossPercentagePerDay = Decimal.MinValue
+
+                                        .ExitOnStockFixedTargetStoploss = False
+                                        .StockMaxProfitPerDay = Decimal.MaxValue
+                                        .StockMaxLossPerDay = Decimal.MinValue
+
+                                        .ExitOnOverAllFixedTargetStoploss = False
+                                        .OverAllProfitPerDay = Decimal.MaxValue
+                                        .OverAllLossPerDay = Decimal.MinValue
+
+                                        .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+                                        .MTMSlab = Math.Abs(.OverAllLossPerDay)
+                                        .MovementSlab = .MTMSlab / 2
+                                        .RealtimeTrailingPercentage = 50
+                                    End With
+
+                                    Dim ruleData As PairAnchorHKStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                                    Dim filename As String = String.Format("Pair Anchor HK,FrstTrdMktEntry {0}",
+                                                                           ruleData.FirstTradeMarketEntry)
+
+                                    Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                                End Using
+                            Next
+                        Next
+                    Next
+#End Region
                 Case Else
                     Throw New NotImplementedException
             End Select
