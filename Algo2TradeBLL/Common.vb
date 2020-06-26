@@ -591,7 +591,7 @@ Public Class Common
         Return ret
     End Function
 
-    Public Function GetRawPayloadForSpecificTradingSymbol(ByVal tableName As DataBaseTable, ByVal tradingSymbol As String, ByVal startDate As Date, ByVal endDate As Date) As Dictionary(Of Date, Payload)
+    Public Function GetRawPayloadForSpecificTradingSymbol(ByVal tableName As DataBaseTable, ByVal tradingSymbol As String, ByVal startDate As Date, ByVal endDate As Date, Optional ByVal optionStock As Boolean = False) As Dictionary(Of Date, Payload)
         Dim ret As Dictionary(Of Date, Payload) = Nothing
         Dim dt As DataTable = Nothing
         Dim conn As MySqlConnection = OpenDBConnection()
@@ -618,6 +618,29 @@ Public Class Common
             Case DataBaseTable.EOD_POSITIONAL
                 cm = New MySqlCommand("SELECT `Open`,`Low`,`High`,`Close`,`Volume`,`SnapshotDate`,`TradingSymbol` FROM `eod_positional_data` WHERE `TradingSymbol`=@trd AND `SnapshotDate`<=@ed AND `SnapshotDate`>=@sd", conn)
         End Select
+
+        If optionStock Then
+            Select Case tableName
+                Case DataBaseTable.Intraday_Cash
+                    cm = New MySqlCommand("SELECT `Open`,`Low`,`High`,`Close`,`Volume`,`SnapshotDateTime`,`TradingSymbol` FROM `intraday_prices_opt_futures` WHERE `TradingSymbol`=@trd AND `SnapshotDate`<=@ed AND `SnapshotDate`>=@sd", conn)
+                Case DataBaseTable.Intraday_Currency
+                    cm = New MySqlCommand("SELECT `Open`,`Low`,`High`,`Close`,`Volume`,`SnapshotDateTime`,`TradingSymbol` FROM `intraday_prices_opt_currency` WHERE `TradingSymbol`=@trd AND `SnapshotDate`<=@ed AND `SnapshotDate`>=@sd", conn)
+                Case DataBaseTable.Intraday_Commodity
+                    cm = New MySqlCommand("SELECT `Open`,`Low`,`High`,`Close`,`Volume`,`SnapshotDateTime`,`TradingSymbol` FROM `intraday_prices_opt_commodity` WHERE `TradingSymbol`=@trd AND `SnapshotDate`<=@ed AND `SnapshotDate`>=@sd", conn)
+                Case DataBaseTable.Intraday_Futures
+                    cm = New MySqlCommand("SELECT `Open`,`Low`,`High`,`Close`,`Volume`,`SnapshotDateTime`,`TradingSymbol` FROM `intraday_prices_opt_futures` WHERE `TradingSymbol`=@trd AND `SnapshotDate`<=@ed AND `SnapshotDate`>=@sd", conn)
+                Case DataBaseTable.EOD_Cash
+                    cm = New MySqlCommand("SELECT `Open`,`Low`,`High`,`Close`,`Volume`,`SnapshotDate`,`TradingSymbol` FROM `eod_prices_opt_futures` WHERE `TradingSymbol`=@trd AND `SnapshotDate`<=@ed AND `SnapshotDate`>=@sd", conn)
+                Case DataBaseTable.EOD_Currency
+                    cm = New MySqlCommand("SELECT `Open`,`Low`,`High`,`Close`,`Volume`,`SnapshotDate`,`TradingSymbol` FROM `eod_prices_opt_currency` WHERE `TradingSymbol`=@trd AND `SnapshotDate`<=@ed AND `SnapshotDate`>=@sd", conn)
+                Case DataBaseTable.EOD_Commodity
+                    cm = New MySqlCommand("SELECT `Open`,`Low`,`High`,`Close`,`Volume`,`SnapshotDate`,`TradingSymbol` FROM `eod_prices_opt_commodity` WHERE `TradingSymbol`=@trd AND `SnapshotDate`<=@ed AND `SnapshotDate`>=@sd", conn)
+                Case DataBaseTable.EOD_Futures
+                    cm = New MySqlCommand("SELECT `Open`,`Low`,`High`,`Close`,`Volume`,`SnapshotDate`,`TradingSymbol` FROM `eod_prices_opt_futures` WHERE `TradingSymbol`=@trd AND `SnapshotDate`<=@ed AND `SnapshotDate`>=@sd", conn)
+                Case DataBaseTable.EOD_POSITIONAL
+                    cm = New MySqlCommand("SELECT `Open`,`Low`,`High`,`Close`,`Volume`,`SnapshotDate`,`TradingSymbol` FROM `eod_prices_opt_futures` WHERE `TradingSymbol`=@trd AND `SnapshotDate`<=@ed AND `SnapshotDate`>=@sd", conn)
+            End Select
+        End If
 
         _cts.Token.ThrowIfCancellationRequested()
         If tradingSymbol IsNot Nothing Then

@@ -1,9 +1,9 @@
-﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
+﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()>
 Partial Class frmMain
     Inherits System.Windows.Forms.Form
 
     'Form overrides dispose to clean up the component list.
-    <System.Diagnostics.DebuggerNonUserCode()> _
+    <System.Diagnostics.DebuggerNonUserCode()>
     Protected Overrides Sub Dispose(ByVal disposing As Boolean)
         Try
             If disposing AndAlso components IsNot Nothing Then
@@ -20,7 +20,7 @@ Partial Class frmMain
     'NOTE: The following procedure is required by the Windows Form Designer
     'It can be modified using the Windows Form Designer.  
     'Do not modify it using the code editor.
-    <System.Diagnostics.DebuggerStepThrough()> _
+    <System.Diagnostics.DebuggerStepThrough()>
     Private Sub InitializeComponent()
         Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(frmMain))
         Me.btnStart = New System.Windows.Forms.Button()
@@ -35,13 +35,7 @@ Partial Class frmMain
         Me.dtpckrStartDate = New System.Windows.Forms.DateTimePicker()
         Me.dtpckrEndDate = New System.Windows.Forms.DateTimePicker()
         Me.btnStop = New System.Windows.Forms.Button()
-        Me.grpbxStrategyType = New System.Windows.Forms.GroupBox()
-        Me.rdbCNCEOD = New System.Windows.Forms.RadioButton()
-        Me.rdbCNCCandle = New System.Windows.Forms.RadioButton()
-        Me.rdbCNCTick = New System.Windows.Forms.RadioButton()
-        Me.rdbMIS = New System.Windows.Forms.RadioButton()
         Me.grpbxDataSource.SuspendLayout()
-        Me.grpbxStrategyType.SuspendLayout()
         Me.SuspendLayout()
         '
         'btnStart
@@ -104,7 +98,7 @@ Partial Class frmMain
         '
         Me.cmbRule.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.cmbRule.FormattingEnabled = True
-        Me.cmbRule.Items.AddRange(New Object() {"Change Percentage", "Difference", "Difference Bollinger", "Nifty-Banknifty Pair", "Pair Anchor Satellite Loss Makeup HK Strategy"})
+        Me.cmbRule.Items.AddRange(New Object() {"Option Ladder"})
         Me.cmbRule.Location = New System.Drawing.Point(123, 30)
         Me.cmbRule.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
         Me.cmbRule.Name = "cmbRule"
@@ -170,73 +164,11 @@ Partial Class frmMain
         Me.btnStop.Text = "Stop"
         Me.btnStop.UseVisualStyleBackColor = True
         '
-        'grpbxStrategyType
-        '
-        Me.grpbxStrategyType.Controls.Add(Me.rdbCNCEOD)
-        Me.grpbxStrategyType.Controls.Add(Me.rdbCNCCandle)
-        Me.grpbxStrategyType.Controls.Add(Me.rdbCNCTick)
-        Me.grpbxStrategyType.Controls.Add(Me.rdbMIS)
-        Me.grpbxStrategyType.Location = New System.Drawing.Point(476, 66)
-        Me.grpbxStrategyType.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
-        Me.grpbxStrategyType.Name = "grpbxStrategyType"
-        Me.grpbxStrategyType.Padding = New System.Windows.Forms.Padding(3, 2, 3, 2)
-        Me.grpbxStrategyType.Size = New System.Drawing.Size(187, 72)
-        Me.grpbxStrategyType.TabIndex = 29
-        Me.grpbxStrategyType.TabStop = False
-        Me.grpbxStrategyType.Text = "Strategy Type"
-        '
-        'rdbCNCEOD
-        '
-        Me.rdbCNCEOD.AutoSize = True
-        Me.rdbCNCEOD.Location = New System.Drawing.Point(97, 46)
-        Me.rdbCNCEOD.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
-        Me.rdbCNCEOD.Name = "rdbCNCEOD"
-        Me.rdbCNCEOD.Size = New System.Drawing.Size(91, 21)
-        Me.rdbCNCEOD.TabIndex = 3
-        Me.rdbCNCEOD.Text = "CNC EOD"
-        Me.rdbCNCEOD.UseVisualStyleBackColor = True
-        '
-        'rdbCNCCandle
-        '
-        Me.rdbCNCCandle.AutoSize = True
-        Me.rdbCNCCandle.Location = New System.Drawing.Point(7, 46)
-        Me.rdbCNCCandle.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
-        Me.rdbCNCCandle.Name = "rdbCNCCandle"
-        Me.rdbCNCCandle.Size = New System.Drawing.Size(89, 21)
-        Me.rdbCNCCandle.TabIndex = 2
-        Me.rdbCNCCandle.Text = "CNC Cndl"
-        Me.rdbCNCCandle.UseVisualStyleBackColor = True
-        '
-        'rdbCNCTick
-        '
-        Me.rdbCNCTick.AutoSize = True
-        Me.rdbCNCTick.Location = New System.Drawing.Point(96, 22)
-        Me.rdbCNCTick.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
-        Me.rdbCNCTick.Name = "rdbCNCTick"
-        Me.rdbCNCTick.Size = New System.Drawing.Size(87, 21)
-        Me.rdbCNCTick.TabIndex = 1
-        Me.rdbCNCTick.Text = "CNC Tick"
-        Me.rdbCNCTick.UseVisualStyleBackColor = True
-        '
-        'rdbMIS
-        '
-        Me.rdbMIS.AutoSize = True
-        Me.rdbMIS.Checked = True
-        Me.rdbMIS.Location = New System.Drawing.Point(7, 20)
-        Me.rdbMIS.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
-        Me.rdbMIS.Name = "rdbMIS"
-        Me.rdbMIS.Size = New System.Drawing.Size(52, 21)
-        Me.rdbMIS.TabIndex = 0
-        Me.rdbMIS.TabStop = True
-        Me.rdbMIS.Text = "MIS"
-        Me.rdbMIS.UseVisualStyleBackColor = True
-        '
         'frmMain
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(8.0!, 16.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.ClientSize = New System.Drawing.Size(679, 293)
-        Me.Controls.Add(Me.grpbxStrategyType)
         Me.Controls.Add(Me.btnStop)
         Me.Controls.Add(Me.dtpckrEndDate)
         Me.Controls.Add(Me.dtpckrStartDate)
@@ -254,8 +186,6 @@ Partial Class frmMain
         Me.Text = "Algo2Trade Backtest"
         Me.grpbxDataSource.ResumeLayout(False)
         Me.grpbxDataSource.PerformLayout()
-        Me.grpbxStrategyType.ResumeLayout(False)
-        Me.grpbxStrategyType.PerformLayout()
         Me.ResumeLayout(False)
         Me.PerformLayout()
 
@@ -273,9 +203,4 @@ Partial Class frmMain
     Friend WithEvents dtpckrStartDate As DateTimePicker
     Friend WithEvents dtpckrEndDate As DateTimePicker
     Friend WithEvents btnStop As Button
-    Friend WithEvents grpbxStrategyType As GroupBox
-    Friend WithEvents rdbCNCTick As RadioButton
-    Friend WithEvents rdbMIS As RadioButton
-    Friend WithEvents rdbCNCEOD As RadioButton
-    Friend WithEvents rdbCNCCandle As RadioButton
 End Class

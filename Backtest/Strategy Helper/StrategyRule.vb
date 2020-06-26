@@ -41,12 +41,13 @@ Namespace StrategyHelper
 
         Protected ReadOnly _parentStrategy As Strategy
         Protected ReadOnly _tradingDate As Date
-        Protected ReadOnly _tradingSymbol As String
+        Public ReadOnly TradingSymbol As String
         Protected ReadOnly _inputPayload As Dictionary(Of Date, Payload)
         Protected ReadOnly _cts As CancellationTokenSource
         Protected ReadOnly _entities As RuleEntities
+        Public ReadOnly Controller As Boolean
 
-        Public AnotherPairInstrument As StrategyRule
+        Public DependentInstrument As List(Of StrategyRule)
 
         Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                        ByVal lotSize As Integer,
@@ -54,14 +55,16 @@ Namespace StrategyHelper
                        ByVal tradingDate As Date,
                        ByVal tradingSymbol As String,
                        ByVal entities As RuleEntities,
+                       ByVal controlller As Boolean,
                        ByVal canceller As CancellationTokenSource)
             _inputPayload = inputPayload
             Me.LotSize = lotSize
             _parentStrategy = parentStrategy
             _tradingDate = tradingDate
-            _tradingSymbol = tradingSymbol
+            Me.TradingSymbol = tradingSymbol
             _cts = canceller
             _entities = entities
+            Me.Controller = controlller
 
             EligibleToTakeTrade = True
         End Sub
@@ -120,6 +123,10 @@ Namespace StrategyHelper
                 Next
             End If
             Return ret
+        End Function
+
+        Public Overrides Function ToString() As String
+            Return String.Format("{0}", Me.TradingSymbol)
         End Function
     End Class
 End Namespace

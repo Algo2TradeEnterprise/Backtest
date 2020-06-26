@@ -81,9 +81,10 @@ Namespace StrategyHelper
                             Dim XDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             Dim currentDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             If Me.DataSource = SourceOfData.Database Then
-                                XDayOneMinutePayload = Cmn.GetRawPayload(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate)
+                                XDayOneMinutePayload = Cmn.GetRawPayloadForSpecificTradingSymbol(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate, stockList(stock).OptionStock)
                             ElseIf Me.DataSource = SourceOfData.Live Then
-                                XDayOneMinutePayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate).ConfigureAwait(False)
+                                Throw New NotImplementedException
+                                'XDayOneMinutePayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate).ConfigureAwait(False)
                             End If
 
                             _canceller.Token.ThrowIfCancellationRequested()
@@ -109,11 +110,9 @@ Namespace StrategyHelper
                                     Dim tradingSymbol As String = currentDayOneMinutePayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
                                         Case 0
-                                            stockRule = New PairChangePercentStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, _canceller, stockList(stock).Supporting1, stockList(stock).Supporting2, stockList(stock).Supporting3)
-                                        Case 3
-                                            stockRule = New NiftyBankniftyPairStrategy(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, RuleEntityData, _canceller, stockList(stock).Supporting1, stockList(stock).Supporting2, stockList(stock).Supporting3)
-                                        Case 4
-                                            stockRule = New PairAnchorHKStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, _canceller, stockList(stock).Supporting1)
+                                            stockRule = New OptionLadderStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, stockList(stock).Controller, _canceller)
+                                        Case Else
+                                            Throw New NotImplementedException
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -123,11 +122,19 @@ Namespace StrategyHelper
                             End If
                         Next
                         If stocksRuleData IsNot Nothing AndAlso stocksRuleData.Count > 0 Then
-                            stocksRuleData.FirstOrDefault.Value.AnotherPairInstrument = stocksRuleData.LastOrDefault.Value
-                            stocksRuleData.LastOrDefault.Value.AnotherPairInstrument = stocksRuleData.FirstOrDefault.Value
+                            Dim dependentInstrument As List(Of StrategyRule) = Nothing
+                            For Each stockRule In stocksRuleData.Values
+                                If Not stockRule.Controller Then
+                                    If dependentInstrument Is Nothing Then dependentInstrument = New List(Of StrategyRule)
+                                    dependentInstrument.Add(stockRule)
+                                End If
+                            Next
 
                             For Each stockRule In stocksRuleData.Values
-                                stockRule.CompletePairProcessing()
+                                If stockRule.Controller Then
+                                    stockRule.DependentInstrument = dependentInstrument
+                                    stockRule.CompletePairProcessing()
+                                End If
                             Next
                         End If
                         '---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -135,6 +142,7 @@ Namespace StrategyHelper
                         If currentDayOneMinuteStocksPayload IsNot Nothing AndAlso currentDayOneMinuteStocksPayload.Count > 0 Then
                             OnHeartbeat(String.Format("Checking Trade on {0}", tradeCheckingDate.ToShortDateString))
                             _canceller.Token.ThrowIfCancellationRequested()
+                            Dim eodTime As Date = New Date(tradeCheckingDate.Year, tradeCheckingDate.Month, tradeCheckingDate.Day, Me.EODExitTime.Hours, Me.EODExitTime.Minutes, Me.EODExitTime.Seconds)
                             Dim startMinute As TimeSpan = Me.ExchangeStartTime
                             Dim endMinute As TimeSpan = ExchangeEndTime
                             While startMinute < endMinute
@@ -166,6 +174,9 @@ Namespace StrategyHelper
                                             Continue For
                                         End If
                                         Dim stockStrategyRule As StrategyRule = stocksRuleData(stockName)
+                                        If Not stockStrategyRule.EligibleToTakeTrade Then
+                                            Continue For
+                                        End If
 
                                         If Not stockList(stockName).EligibleToTakeTrade Then
                                             Continue For
@@ -226,17 +237,17 @@ Namespace StrategyHelper
 
                                                     'Specific Stock MTM Check
                                                     _canceller.Token.ThrowIfCancellationRequested()
-                                                    If StockPLAfterBrokerage(tradeCheckingDate, runningTick.TradingSymbol) >= stockStrategyRule.MaxProfitOfThisStock Then
+                                                    Dim stockPL As Decimal = StockPLAfterBrokerage(tradeCheckingDate, runningTick.TradingSymbol)
+                                                    If stockPL >= stockStrategyRule.MaxProfitOfThisStock Then
                                                         ExitStockTradesByForce(runningTick, Trade.TypeOfTrade.MIS, "Max Stock Profit reached for the day")
                                                         stockList(stockName).EligibleToTakeTrade = False
-                                                    ElseIf StockPLAfterBrokerage(tradeCheckingDate, runningTick.TradingSymbol) <= Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
+                                                    ElseIf stockPL <= Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
                                                         ExitStockTradesByForce(runningTick, Trade.TypeOfTrade.MIS, "Max Stock Loss reached for the day")
                                                         stockList(stockName).EligibleToTakeTrade = False
                                                     End If
 
                                                     'Force exit at day end
                                                     _canceller.Token.ThrowIfCancellationRequested()
-                                                    Dim eodTime As Date = New Date(runningTick.PayloadDate.Year, runningTick.PayloadDate.Month, runningTick.PayloadDate.Day, Me.EODExitTime.Hours, Me.EODExitTime.Minutes, Me.EODExitTime.Seconds)
                                                     If runningTick.PayloadDate >= eodTime Then
                                                         ExitStockTradesByForce(runningTick, Trade.TypeOfTrade.MIS, "EOD Exit")
                                                         stockList(stockName).EligibleToTakeTrade = False
@@ -245,10 +256,11 @@ Namespace StrategyHelper
                                                     'Stock MTM Check
                                                     _canceller.Token.ThrowIfCancellationRequested()
                                                     If ExitOnStockFixedTargetStoploss Then
-                                                        If StockPLAfterBrokerage(tradeCheckingDate, runningTick.TradingSymbol) >= StockMaxProfitPerDay Then
+                                                        stockPL = StockPLAfterBrokerage(tradeCheckingDate, runningTick.TradingSymbol)
+                                                        If stockPL >= StockMaxProfitPerDay Then
                                                             ExitStockTradesByForce(runningTick, Trade.TypeOfTrade.MIS, "Max Stock Profit reached for the day")
                                                             stockList(stockName).EligibleToTakeTrade = False
-                                                        ElseIf StockPLAfterBrokerage(tradeCheckingDate, runningTick.TradingSymbol) <= Math.Abs(StockMaxLossPerDay) * -1 Then
+                                                        ElseIf stockPL <= Math.Abs(StockMaxLossPerDay) * -1 Then
                                                             ExitStockTradesByForce(runningTick, Trade.TypeOfTrade.MIS, "Max Stock Loss reached for the day")
                                                             stockList(stockName).EligibleToTakeTrade = False
                                                         End If
@@ -256,22 +268,35 @@ Namespace StrategyHelper
 
                                                     'OverAll MTM Check
                                                     _canceller.Token.ThrowIfCancellationRequested()
+                                                    Dim totalPLOftheDay As Decimal = Decimal.MinValue
                                                     If ExitOnOverAllFixedTargetStoploss Then
-                                                        If TotalPLAfterBrokerage(tradeCheckingDate) >= OverAllProfitPerDay Then
+                                                        totalPLOftheDay = TotalPLAfterBrokerage(tradeCheckingDate)
+                                                        Dim exitTrade As Boolean = False
+                                                        If totalPLOftheDay >= OverAllProfitPerDay Then
                                                             ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Max Profit reached for the day")
                                                             stockList(stockName).EligibleToTakeTrade = False
-                                                        ElseIf TotalPLAfterBrokerage(tradeCheckingDate) <= Math.Abs(OverAllLossPerDay) * -1 Then
+                                                            exitTrade = True
+                                                        ElseIf totalPLOftheDay <= Math.Abs(OverAllLossPerDay) * -1 Then
                                                             ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Max Loss reached for the day")
                                                             stockList(stockName).EligibleToTakeTrade = False
-                                                        ElseIf Me.TypeOfMTMTrailing = MTMTrailingType.FixedSlabTrailing AndAlso TotalPLAfterBrokerage(tradeCheckingDate) <= OverAllLossPerDay Then
+                                                            exitTrade = True
+                                                        ElseIf Me.TypeOfMTMTrailing = MTMTrailingType.FixedSlabTrailing AndAlso totalPLOftheDay <= OverAllLossPerDay Then
                                                             ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Trailing MTM reached for the day")
                                                             stockList(stockName).EligibleToTakeTrade = False
-                                                        ElseIf Me.TypeOfMTMTrailing = MTMTrailingType.LogSlabTrailing AndAlso TotalPLAfterBrokerage(tradeCheckingDate) <= OverAllLossPerDay Then
+                                                            exitTrade = True
+                                                        ElseIf Me.TypeOfMTMTrailing = MTMTrailingType.LogSlabTrailing AndAlso totalPLOftheDay <= OverAllLossPerDay Then
                                                             ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Log MTM reached for the day")
                                                             stockList(stockName).EligibleToTakeTrade = False
-                                                        ElseIf Me.TypeOfMTMTrailing = MTMTrailingType.RealtimeTrailing AndAlso TotalPLAfterBrokerage(tradeCheckingDate) <= OverAllLossPerDay Then
+                                                            exitTrade = True
+                                                        ElseIf Me.TypeOfMTMTrailing = MTMTrailingType.RealtimeTrailing AndAlso totalPLOftheDay <= OverAllLossPerDay Then
                                                             ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Realtime Trailing MTM reached for the day")
                                                             stockList(stockName).EligibleToTakeTrade = False
+                                                            exitTrade = True
+                                                        End If
+                                                        If exitTrade Then
+                                                            For Each runningStock In stockList
+                                                                runningStock.Value.EligibleToTakeTrade = False
+                                                            Next
                                                         End If
                                                     End If
 
@@ -310,26 +335,29 @@ Namespace StrategyHelper
                                                     _canceller.Token.ThrowIfCancellationRequested()
                                                     Dim placeOrderDetails As Tuple(Of Boolean, List(Of PlaceOrderParameters)) = Nothing
                                                     If stockList(stockName).EligibleToTakeTrade Then
+                                                        stockPL = Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol)
+                                                        totalPLOftheDay = Me.TotalPLAfterBrokerage(runningTick.PayloadDate)
+                                                        Dim nmbrOfTrd As Integer = Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol)
                                                         If Me.TickBasedStrategy OrElse Not stockList(stockName).PlaceOrderDoneForTheMinute Then
-                                                            If Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.NumberOfTradesPerStockPerDay AndAlso
-                                                                Me.TotalPLAfterBrokerage(runningTick.PayloadDate) < Me.OverAllProfitPerDay AndAlso
-                                                                Me.TotalPLAfterBrokerage(runningTick.PayloadDate) > Me.OverAllLossPerDay AndAlso
-                                                                Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.StockMaxProfitPerDay AndAlso
-                                                                Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso
-                                                                Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < stockStrategyRule.MaxProfitOfThisStock AndAlso
-                                                                Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
+                                                            If nmbrOfTrd < Me.NumberOfTradesPerStockPerDay AndAlso
+                                                                totalPLOftheDay < Me.OverAllProfitPerDay AndAlso
+                                                                totalPLOftheDay > Me.OverAllLossPerDay AndAlso
+                                                                stockPL < Me.StockMaxProfitPerDay AndAlso
+                                                                stockPL > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso
+                                                                stockPL < stockStrategyRule.MaxProfitOfThisStock AndAlso
+                                                                stockPL > Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
                                                                 placeOrderDetails = Await stockStrategyRule.IsTriggerReceivedForPlaceOrderAsync(runningTick).ConfigureAwait(False)
                                                                 stockList(stockName).PlaceOrderTrigger = placeOrderDetails
                                                                 stockList(stockName).PlaceOrderDoneForTheMinute = True
                                                             End If
                                                         Else
-                                                            If Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.NumberOfTradesPerStockPerDay AndAlso
-                                                                Me.TotalPLAfterBrokerage(runningTick.PayloadDate) < Me.OverAllProfitPerDay AndAlso
-                                                                Me.TotalPLAfterBrokerage(runningTick.PayloadDate) > Me.OverAllLossPerDay AndAlso
-                                                                Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.StockMaxProfitPerDay AndAlso
-                                                                Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso
-                                                                Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < stockStrategyRule.MaxProfitOfThisStock AndAlso
-                                                                Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
+                                                            If nmbrOfTrd < Me.NumberOfTradesPerStockPerDay AndAlso
+                                                                totalPLOftheDay < Me.OverAllProfitPerDay AndAlso
+                                                                totalPLOftheDay > Me.OverAllLossPerDay AndAlso
+                                                                stockPL < Me.StockMaxProfitPerDay AndAlso
+                                                                stockPL > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso
+                                                                stockPL < stockStrategyRule.MaxProfitOfThisStock AndAlso
+                                                                stockPL > Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
                                                                 placeOrderDetails = stockList(stockName).PlaceOrderTrigger
                                                             End If
                                                         End If
@@ -409,13 +437,16 @@ Namespace StrategyHelper
                                                     _canceller.Token.ThrowIfCancellationRequested()
                                                     Dim placeOrderTrigger As Tuple(Of Boolean, List(Of PlaceOrderParameters)) = Nothing
                                                     If exitOrderSuccessful Then
-                                                        If Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.NumberOfTradesPerStockPerDay AndAlso
-                                                            Me.TotalPLAfterBrokerage(runningTick.PayloadDate) < Me.OverAllProfitPerDay AndAlso
-                                                            Me.TotalPLAfterBrokerage(runningTick.PayloadDate) > Me.OverAllLossPerDay AndAlso
-                                                            Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.StockMaxProfitPerDay AndAlso
-                                                            Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso
-                                                            Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < stockStrategyRule.MaxProfitOfThisStock AndAlso
-                                                            Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
+                                                        totalPLOftheDay = Me.TotalPLAfterBrokerage(runningTick.PayloadDate)
+                                                        stockPL = Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol)
+                                                        Dim nmbrOfTrd As Integer = Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol)
+                                                        If nmbrOfTrd < Me.NumberOfTradesPerStockPerDay AndAlso
+                                                            totalPLOftheDay < Me.OverAllProfitPerDay AndAlso
+                                                            totalPLOftheDay > Me.OverAllLossPerDay AndAlso
+                                                            stockPL < Me.StockMaxProfitPerDay AndAlso
+                                                            stockPL > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso
+                                                            stockPL < stockStrategyRule.MaxProfitOfThisStock AndAlso
+                                                            stockPL > Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
                                                             placeOrderTrigger = Await stockStrategyRule.IsTriggerReceivedForPlaceOrderAsync(runningTick).ConfigureAwait(False)
                                                             stockList(stockName).PlaceOrderTrigger = placeOrderTrigger
                                                         End If
@@ -564,81 +595,25 @@ Namespace StrategyHelper
                 If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
                     Select Case Me.RuleNumber
                         Case 0
-                            For i = 1 To 2
-                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                Dim tradingSymbol As String = dt.Rows(i).Item(0)
-                                Dim instrumentName As String = Nothing
-                                If tradingSymbol.Contains("FUT") Then
-                                    instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
-                                Else
-                                    instrumentName = tradingSymbol
-                                End If
-                                Dim lotSize As Integer = dt.Rows(i).Item(1)
-                                Dim controller As String = dt.Rows(i).Item(2)
-                                Dim detailsOfStock As StockDetails = New StockDetails With
-                                            {.StockName = instrumentName,
-                                             .LotSize = lotSize,
-                                             .EligibleToTakeTrade = True,
-                                             .Supporting1 = If(controller.ToUpper = "TRUE", 1, 0),
-                                             .Supporting2 = dt.Rows(i).Item(3),
-                                             .Supporting3 = dt.Rows(i).Item(4)}
-                                ret.Add(instrumentName, detailsOfStock)
-                            Next
-                        Case 3
-                            For i = 1 To dt.Rows.Count - 1
-                                Dim instrumentName As String = dt.Rows(i).Item(0)
-                                Dim detailsOfStock As StockDetails = New StockDetails With
-                                            {.StockName = instrumentName,
-                                            .LotSize = dt.Rows(i).Item(1),
-                                            .EligibleToTakeTrade = True,
-                                            .Supporting1 = If(dt.Rows(i).Item(2).ToString.ToUpper = "BUY", 1, -1),
-                                            .Supporting2 = dt.Rows(i).Item(3),
-                                            .Supporting3 = dt.Rows(i).Item(4)}
-
-                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                ret.Add(instrumentName, detailsOfStock)
-                            Next
-                        Case 4
-                            For i = 1 To 2
-                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                Dim tradingSymbol As String = dt.Rows(i).Item(0)
-                                Dim instrumentName As String = Nothing
-                                If tradingSymbol.Contains("FUT") Then
-                                    instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
-                                Else
-                                    instrumentName = tradingSymbol
-                                End If
-                                Dim lotSize As Integer = dt.Rows(i).Item(1)
-                                Dim controller As String = dt.Rows(i).Item(2)
-                                Dim detailsOfStock As StockDetails = New StockDetails With
-                                            {.StockName = instrumentName,
-                                             .LotSize = lotSize,
-                                             .EligibleToTakeTrade = True,
-                                             .Supporting1 = If(controller.ToUpper = "TRUE", 1, 0)}
-                                ret.Add(instrumentName, detailsOfStock)
-                            Next
-                        Case Else
-                            Dim counter As Integer = 0
-                            For i = 1 To dt.Rows.Count - 1
-                                Dim rowDate As Date = dt.Rows(i)(0)
+                            For i = 0 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i).Item("Date")
                                 If rowDate.Date = tradingDate.Date Then
                                     If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                    Dim tradingSymbol As String = dt.Rows(i).Item(1)
-                                    Dim instrumentName As String = Nothing
-                                    If tradingSymbol.Contains("FUT") Then
-                                        instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
-                                    Else
-                                        instrumentName = tradingSymbol
+                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
+                                    Dim lotSize As Integer = dt.Rows(i).Item("Lot Size")
+                                    Dim controller As Boolean = dt.Rows(i).Item("Controller")
+                                    Dim optionStock As Boolean = False
+                                    If tradingSymbol.EndsWith("CE") OrElse tradingSymbol.EndsWith("PE") Then
+                                        optionStock = True
                                     End If
+
                                     Dim detailsOfStock As StockDetails = New StockDetails With
-                                                {.StockName = instrumentName,
-                                                .LotSize = dt.Rows(i).Item(2),
-                                                .EligibleToTakeTrade = True,
-                                                .Supporting1 = dt.Rows(i).Item(3),
-                                                .Supporting2 = dt.Rows(i).Item(5)}
-                                    ret.Add(instrumentName, detailsOfStock)
-                                    counter += 1
-                                    If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                                               {.StockName = tradingSymbol,
+                                                .LotSize = lotSize,
+                                                .Controller = controller,
+                                                .OptionStock = optionStock,
+                                                .EligibleToTakeTrade = True}
+                                    ret.Add(detailsOfStock.StockName, detailsOfStock)
                                 End If
                             Next
                     End Select

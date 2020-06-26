@@ -103,9 +103,6 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
     <Compile Include="Strategy Helper\Capital.vb" />
-    <Compile Include="Strategy Helper\CNCCandleGenericStrategy.vb" />
-    <Compile Include="Strategy Helper\CNCEODGenericStrategy.vb" />
-    <Compile Include="Strategy Helper\CNCGenericStrategy.vb" />
     <Compile Include="Strategy Helper\MISGenericStrategy.vb" />
     <Compile Include="Strategy Helper\PlaceOrderParameters.vb" />
     <Compile Include="Strategy Helper\RuleEntities.vb" />
@@ -114,11 +111,7 @@
     <Compile Include="Strategy Helper\StrategyOutput.vb" />
     <Compile Include="Strategy Helper\StrategyRule.vb" />
     <Compile Include="Strategy Helper\Trade.vb" />
-    <Compile Include="Strategy Rule CNC\PairBollingerDifferenceStrategyRule.vb" />
-    <Compile Include="Strategy Rule CNC\PairDifferenceStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\NiftyBankniftyPairStrategy.vb" />
-    <Compile Include="Strategy Rule MIS\PairAnchorHKStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\PairChangePercentStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\OptionLadderStrategyRule.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="frmMain.resx">
