@@ -88,7 +88,7 @@ Public Class PairAnchorHKStrategyRule
             _parentStrategy.StockPLAfterBrokerage(currentTick.PayloadDate, currentTick.TradingSymbol) > Math.Abs(Me.MaxLossOfThisStock) * -1 AndAlso
             currentMinuteCandlePayload.PayloadDate >= tradeStartTime AndAlso Me.EligibleToTakeTrade Then
             If DirectionToTrade = Trade.TradeExecutionDirection.Buy AndAlso Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) Then
-                Dim signal As Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, Trade.TradeExecutionDirection.Buy, True)
+                Dim signal As Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder, String) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, Trade.TradeExecutionDirection.Buy, True)
                 If signal IsNot Nothing AndAlso signal.Item1 Then
                     Dim entryPrice As Decimal = signal.Item3
                     Dim quantity As Integer = _parentStrategy.CalculateQuantityFromInvestment(1, 5000, entryPrice, Trade.TypeOfStock.Cash, True)
@@ -103,12 +103,13 @@ Public Class PairAnchorHKStrategyRule
                                 .SignalCandle = signal.Item2,
                                 .OrderType = signal.Item4,
                                 .Supporting1 = signal.Item2.PayloadDate.ToString("HH:mm:ss"),
-                                .Supporting2 = If(_highestATR = Decimal.MinValue, "∞", _highestATR)
+                                .Supporting2 = If(_highestATR = Decimal.MinValue, "∞", _highestATR),
+                                .Supporting3 = signal.Item5
                             }
                 End If
             End If
             If DirectionToTrade = Trade.TradeExecutionDirection.Sell AndAlso Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) Then
-                Dim signal As Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, Trade.TradeExecutionDirection.Sell, True)
+                Dim signal As Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder, String) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, Trade.TradeExecutionDirection.Sell, True)
                 If signal IsNot Nothing AndAlso signal.Item1 Then
                     Dim entryPrice As Decimal = signal.Item3
                     Dim quantity As Integer = _parentStrategy.CalculateQuantityFromInvestment(1, 5000, entryPrice, Trade.TypeOfStock.Cash, True)
@@ -123,7 +124,8 @@ Public Class PairAnchorHKStrategyRule
                                 .SignalCandle = signal.Item2,
                                 .OrderType = signal.Item4,
                                 .Supporting1 = signal.Item2.PayloadDate.ToString("HH:mm:ss"),
-                                .Supporting2 = If(_highestATR = Decimal.MinValue, "∞", _highestATR)
+                                .Supporting2 = If(_highestATR = Decimal.MinValue, "∞", _highestATR),
+                                .Supporting3 = signal.Item5
                             }
                 End If
             End If
@@ -140,7 +142,7 @@ Public Class PairAnchorHKStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
             Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
-            Dim signal As Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, currentTrade.EntryDirection, False)
+            Dim signal As Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder, String) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, currentTrade.EntryDirection, False)
             If signal IsNot Nothing AndAlso signal.Item1 AndAlso currentTrade.EntryPrice <> signal.Item3 Then
                 ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
             End If
@@ -164,15 +166,18 @@ Public Class PairAnchorHKStrategyRule
         Return ret
     End Function
 
-    Private Function GetSignalCandle(ByVal candle As Payload, ByVal currentTick As Payload, ByVal direction As Trade.TradeExecutionDirection, ByVal forcePrint As Boolean) As Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)
-        Dim ret As Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder) = Nothing
+    Private Function GetSignalCandle(ByVal candle As Payload, ByVal currentTick As Payload, ByVal direction As Trade.TradeExecutionDirection, ByVal forcePrint As Boolean) As Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder, String)
+        Dim ret As Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder, String) = Nothing
         If candle IsNot Nothing Then
             Dim hkCandle As Payload = _hkPayload(candle.PayloadDate)
-            Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(candle, Trade.TypeOfTrade.MIS, direction)
+            Dim lastExecutedTrade As Trade = GetLastExecutedTradeOfTheStock(candle, Trade.TypeOfTrade.MIS, direction)
             If lastExecutedTrade IsNot Nothing Then
                 If _highestATR = Decimal.MinValue Then
                     _highestATR = ConvertFloorCeling(GetHighestATR(lastExecutedTrade.SignalCandle), _parentStrategy.TickSize, RoundOfType.Celing)
                 End If
+                Dim myPair As PairAnchorHKStrategyRule = Me.AnotherPairInstrument
+                Dim mypairTradeCount As Integer = _parentStrategy.StockNumberOfTrades(myPair.DummyCandle.PayloadDate, myPair.DummyCandle.TradingSymbol)
+                Dim myTradeCount As Integer = _parentStrategy.StockNumberOfTrades(candle.PayloadDate, candle.TradingSymbol)
                 If direction = Trade.TradeExecutionDirection.Buy Then
                     If hkCandle.High <= lastExecutedTrade.EntryPrice - _highestATR Then
                         If hkCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
@@ -180,7 +185,15 @@ Public Class PairAnchorHKStrategyRule
                             If entryPrice = hkCandle.High Then
                                 entryPrice = hkCandle.High + _parentStrategy.CalculateBuffer(hkCandle.High, RoundOfType.Floor)
                             End If
-                            ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, hkCandle, entryPrice, Trade.TypeOfOrder.SL)
+                            ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder, String)(True, hkCandle, entryPrice, Trade.TypeOfOrder.SL, "")
+                        End If
+                    ElseIf myTradeCount < mypairTradeCount Then
+                        If hkCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
+                            Dim entryPrice As Decimal = ConvertFloorCeling(hkCandle.High, _parentStrategy.TickSize, RoundOfType.Celing)
+                            If entryPrice = hkCandle.High Then
+                                entryPrice = hkCandle.High + _parentStrategy.CalculateBuffer(hkCandle.High, RoundOfType.Floor)
+                            End If
+                            ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder, String)(True, hkCandle, entryPrice, Trade.TypeOfOrder.SL, "Force")
                         End If
                     End If
                 ElseIf direction = Trade.TradeExecutionDirection.Sell Then
@@ -190,7 +203,15 @@ Public Class PairAnchorHKStrategyRule
                             If entryPrice = hkCandle.Low Then
                                 entryPrice = hkCandle.Low - _parentStrategy.CalculateBuffer(hkCandle.Low, RoundOfType.Floor)
                             End If
-                            ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, hkCandle, entryPrice, Trade.TypeOfOrder.SL)
+                            ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder, String)(True, hkCandle, entryPrice, Trade.TypeOfOrder.SL, "")
+                        End If
+                    ElseIf myTradeCount < mypairTradeCount Then
+                        If hkCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
+                            Dim entryPrice As Decimal = ConvertFloorCeling(hkCandle.Low, _parentStrategy.TickSize, RoundOfType.Floor)
+                            If entryPrice = hkCandle.Low Then
+                                entryPrice = hkCandle.Low - _parentStrategy.CalculateBuffer(hkCandle.Low, RoundOfType.Floor)
+                            End If
+                            ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder, String)(True, hkCandle, entryPrice, Trade.TypeOfOrder.SL, "Force")
                         End If
                     End If
                 End If
@@ -201,7 +222,7 @@ Public Class PairAnchorHKStrategyRule
                         If entryPrice = hkCandle.High Then
                             entryPrice = hkCandle.High + _parentStrategy.CalculateBuffer(hkCandle.High, RoundOfType.Floor)
                         End If
-                        ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, hkCandle, entryPrice, Trade.TypeOfOrder.SL)
+                        ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder, String)(True, hkCandle, entryPrice, Trade.TypeOfOrder.SL, "")
                     End If
                 ElseIf direction = Trade.TradeExecutionDirection.Sell Then
                     If hkCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
@@ -209,7 +230,7 @@ Public Class PairAnchorHKStrategyRule
                         If entryPrice = hkCandle.Low Then
                             entryPrice = hkCandle.Low - _parentStrategy.CalculateBuffer(hkCandle.Low, RoundOfType.Floor)
                         End If
-                        ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder)(True, hkCandle, entryPrice, Trade.TypeOfOrder.SL)
+                        ret = New Tuple(Of Boolean, Payload, Decimal, Trade.TypeOfOrder, String)(True, hkCandle, entryPrice, Trade.TypeOfOrder.SL, "")
                     End If
                 End If
             End If
@@ -228,6 +249,32 @@ Public Class PairAnchorHKStrategyRule
                                           Return Decimal.MinValue
                                       End If
                                   End Function)
+        End If
+        Return ret
+    End Function
+
+    Private Function GetLastExecutedTradeOfTheStock(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TypeOfTrade, Optional ByVal direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None) As Trade
+        Dim ret As Trade = Nothing
+        Dim completeTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Close)
+        Dim inprogressTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Inprogress)
+        Dim allTrades As List(Of Trade) = New List(Of Trade)
+        If completeTrades IsNot Nothing AndAlso completeTrades.Count > 0 Then allTrades.AddRange(completeTrades)
+        If inprogressTrades IsNot Nothing AndAlso inprogressTrades.Count > 0 Then allTrades.AddRange(inprogressTrades)
+        If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
+            If direction = Trade.TradeExecutionDirection.None Then
+                ret = allTrades.OrderBy(Function(x)
+                                            Return x.EntryTime
+                                        End Function).LastOrDefault
+            Else
+                Dim directionBasedTrades As List(Of Trade) = allTrades.FindAll(Function(x)
+                                                                                   Return x.EntryDirection = direction AndAlso x.Supporting3 = ""
+                                                                               End Function)
+                If directionBasedTrades IsNot Nothing AndAlso directionBasedTrades.Count > 0 Then
+                    ret = directionBasedTrades.OrderBy(Function(x)
+                                                           Return x.EntryTime
+                                                       End Function).LastOrDefault
+                End If
+            End If
         End If
         Return ret
     End Function
