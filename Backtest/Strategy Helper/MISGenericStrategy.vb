@@ -330,6 +330,9 @@ Namespace StrategyHelper
                                                             stockList(stockName).ExitOrderDoneForTheMinute = True
                                                         End If
                                                     End If
+                                                    If stockStrategyRule.Controller Then
+                                                        Await stockStrategyRule.IsTriggerReceivedForExitOrderAsync(runningTick, Nothing).ConfigureAwait(False)
+                                                    End If
 
                                                     'Place Order
                                                     _canceller.Token.ThrowIfCancellationRequested()
