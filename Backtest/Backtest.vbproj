@@ -127,36 +127,7 @@
     <Compile Include="Strategy Helper\StrategyOutput.vb" />
     <Compile Include="Strategy Helper\StrategyRule.vb" />
     <Compile Include="Strategy Helper\Trade.vb" />
-    <Compile Include="Strategy Rule MIS\AlwaysInTradeMartingaleStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\AnchorSatelliteHKStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\AnchorSatelliteLossMakeupHKFuturesStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\AnchorSatelliteLossMakeupHKStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\AnchorSatelliteLossMakeupStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\EMAScalpingStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\EveryMinuteTopGainerLosserHKReversalStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\FractalTrendLineStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\HeikenashiReverseSlabStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\HighestLowestPointStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\HKReversalSingleTradeStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\HKReverseSlabMartingaleStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\HL_LHBreakoutStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\LossMakeupFavourableFractalBreakoutStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\LossMakeupFavourableFractalBreakoutWithSupertrendStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\LossMakeupRainbowStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\LowerPriceOptionBuyOnlyStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\LowerPriceOptionOIChangeBuyOnlyStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\LowerPriceOptionBuyOnlyEODStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\MarketPlusMarketMinusStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\BNFMartingaleStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\MartingaleStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\LossMakeupNeutralSlabStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\MomentumReversalStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\NeutralSlabMartingaleStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\PairAnchorHKStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\ReversalHHLLBreakoutStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\SmallOpeningRangeBreakoutStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\StochasticDivergenceStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\SupertrendCutReversalStrategyRule.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="frmMain.resx">

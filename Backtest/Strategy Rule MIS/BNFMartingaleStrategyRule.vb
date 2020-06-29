@@ -18,6 +18,7 @@ Public Class BNFMartingaleStrategyRule
 
     Private _atrPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _firstCandleATR As Decimal = Decimal.MinValue
+    Private _quantity As Integer = Integer.MinValue
     Private ReadOnly _userInputs As StrategyRuleEntities
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -33,10 +34,11 @@ Public Class BNFMartingaleStrategyRule
     Public Overrides Sub CompletePreProcessing()
         MyBase.CompletePreProcessing()
 
-        Dim eodCandle As Dictionary(Of Date, Payload) = _parentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.EOD_Futures, _tradingSymbol, _tradingDate.AddDays(-200), _tradingDate.AddDays(-1))
+        Dim eodCandle As Dictionary(Of Date, Payload) = _parentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.EOD_Cash, _tradingSymbol, _tradingDate.AddDays(-200), _tradingDate.AddDays(-1))
         If eodCandle IsNot Nothing AndAlso eodCandle.Count > 0 Then
             Indicator.ATR.CalculateATR(14, eodCandle, _atrPayload, True)
             _firstCandleATR = (_atrPayload.LastOrDefault.Value / 8) / 2
+            _quantity = _parentStrategy.CalculateQuantityFromInvestment(1, 5000, eodCandle.LastOrDefault.Value.Close, Trade.TypeOfStock.Cash, False)
         End If
 
 
@@ -52,6 +54,7 @@ Public Class BNFMartingaleStrategyRule
         '        End If
         '    Next
         'End If
+
         If _firstCandleATR = Decimal.MinValue Then Throw New ApplicationException("Unable to fetch first candle ATR")
     End Sub
 
@@ -64,7 +67,7 @@ Public Class BNFMartingaleStrategyRule
         If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
             Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS) AndAlso Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS) AndAlso
             currentMinuteCandlePayload.PayloadDate >= _tradeStartTime AndAlso Me.EligibleToTakeTrade AndAlso
-            GetQuantity(currentMinuteCandlePayload) <> Me.LotSize Then
+            GetQuantity(currentMinuteCandlePayload) <> _quantity Then
 
             Dim signalCandle As Payload = Nothing
             Dim signal As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
@@ -89,7 +92,7 @@ Public Class BNFMartingaleStrategyRule
                     End If
                     Dim targetPoint As Decimal = ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
                     Dim targetRemark As String = "Normal"
-                    Dim quantity As Integer = Me.LotSize
+                    Dim quantity As Integer = _quantity
 
                     parameter1 = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
@@ -108,8 +111,8 @@ Public Class BNFMartingaleStrategyRule
 
                     quantity = GetQuantity(currentMinuteCandlePayload)
                     If quantity < 0 Then
-                        Dim totalQuantity As Integer = Math.Abs(quantity) + Me.LotSize
-                        Dim iteration As Integer = Math.Log(totalQuantity / Me.LotSize, 2) + 1
+                        Dim totalQuantity As Integer = Math.Abs(quantity) + _quantity
+                        Dim iteration As Integer = Math.Log(totalQuantity / _quantity, 2) + 1
                         Dim pl As Decimal = _parentStrategy.StockPLAfterBrokerage(currentMinuteCandlePayload.PayloadDate, currentMinuteCandlePayload.TradingSymbol)
                         Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, Math.Abs(quantity), Math.Abs(pl), Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
                         parameter2 = New PlaceOrderParameters With {
@@ -137,7 +140,7 @@ Public Class BNFMartingaleStrategyRule
                     End If
                     Dim targetPoint As Decimal = ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
                     Dim targetRemark As String = "Normal"
-                    Dim quantity As Integer = Me.LotSize
+                    Dim quantity As Integer = _quantity
 
                     parameter1 = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
@@ -156,8 +159,8 @@ Public Class BNFMartingaleStrategyRule
 
                     quantity = GetQuantity(currentMinuteCandlePayload)
                     If quantity < 0 Then
-                        Dim totalQuantity As Integer = Math.Abs(quantity) + Me.LotSize
-                        Dim iteration As Integer = Math.Log(totalQuantity / Me.LotSize, 2) + 1
+                        Dim totalQuantity As Integer = Math.Abs(quantity) + _quantity
+                        Dim iteration As Integer = Math.Log(totalQuantity / _quantity, 2) + 1
                         Dim pl As Decimal = _parentStrategy.StockPLAfterBrokerage(currentMinuteCandlePayload.PayloadDate, currentMinuteCandlePayload.TradingSymbol)
                         Dim targetPrice As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, Math.Abs(quantity), Math.Abs(pl), Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
                         parameter2 = New PlaceOrderParameters With {
