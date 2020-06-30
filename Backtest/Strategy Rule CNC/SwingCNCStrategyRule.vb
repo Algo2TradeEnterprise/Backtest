@@ -111,7 +111,7 @@ Public Class SwingCNCStrategyRule
         Dim quantity As Integer = GetQuantity(iteration, currentTick.Open)
         If candle.PreviousCandlePayload.PayloadDate.Date = _tradingDate.Date Then
             Dim payloadToCheck As Payload = candle.PreviousCandlePayload
-            If currentTick.PayloadDate >= _lastTradeEntryTime Then
+            If currentTick.PayloadDate >= New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, 15, 29, 30) Then
                 payloadToCheck = candle
             End If
             Dim swingData As Indicator.Swing = _swingPayload(payloadToCheck.PayloadDate)
