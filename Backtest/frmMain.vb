@@ -261,7 +261,6 @@ Public Class frmMain
         End If
     End Sub
 
-#Region "CNC Tick"
     Private Async Function ViewDataCNCAsync() As Task
         Try
             Dim startDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrStartDate)
@@ -298,12 +297,12 @@ Public Class frmMain
             Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
                                                             exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                             exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                            tradeStartTime:=TimeSpan.Parse("09:31:00"),
-                                                            lastTradeEntryTime:=TimeSpan.Parse("15:14:59"),
+                                                            tradeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                            lastTradeEntryTime:=TimeSpan.Parse("15:29:59"),
                                                             eodExitTime:=TimeSpan.Parse("15:29:59"),
                                                             tickSize:=tick,
                                                             marginMultiplier:=margin,
-                                                            timeframe:=1,
+                                                            timeframe:=60,
                                                             heikenAshiCandle:=False,
                                                             stockType:=stockType,
                                                             databaseTable:=database,
@@ -319,14 +318,10 @@ Public Class frmMain
 
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                    .RuleEntityData = New VijayPositionalStrategyRule.StrategyRuleEntities With
+                    .RuleEntityData = New SwingCNCStrategyRule.StrategyRuleEntities With
                                         {
-                                         .TargetPoint = 7,
-                                         .PriceInterval = 5,
-                                         .StartingQuantity = 1,
-                                         .QuantityMultiplier = 2,
-                                         .MaxNumberOfIteration = 5,
-                                         .MinTimeGapInMinutes = 1
+                                         .InitialCapital = 10000,
+                                         .QuantityType = SwingCNCStrategyRule.TypeOfQuantity.Flat
                                         }
 
                     .NumberOfTradeableStockPerDay = 1
@@ -337,14 +332,9 @@ Public Class frmMain
                     .TickBasedStrategy = True
                 End With
 
-                Dim ruleData As VijayPositionalStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                Dim filename As String = String.Format("Vijay Output,Tgt {0},PrcIntrvl {1},SrtQn {2},QtyMul {3},MaxNmbrItrtn {4},MaxTmGp {5}",
-                                                       ruleData.TargetPoint,
-                                                       ruleData.PriceInterval,
-                                                       ruleData.StartingQuantity,
-                                                       ruleData.QuantityMultiplier,
-                                                       ruleData.MaxNumberOfIteration,
-                                                       ruleData.MinTimeGapInMinutes)
+                Dim ruleData As SwingCNCStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                Dim filename As String = String.Format("Swing CNC Output,QtyTyp {0}",
+                                                       ruleData.QuantityType.ToString)
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using
@@ -356,7 +346,6 @@ Public Class frmMain
             SetObjectEnableDisable_ThreadSafe(btnStop, False)
         End Try
     End Function
-#End Region
 
     Private Sub btnStop_Click(sender As Object, e As EventArgs) Handles btnStop.Click
         _canceller.Cancel()
