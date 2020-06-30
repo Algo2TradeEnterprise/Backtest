@@ -3064,7 +3064,7 @@ Public Class frmMain
                                                 .ReverseSignalEntry = True
                                             }
 
-                            .NumberOfTradeableStockPerDay = 5
+                            .NumberOfTradeableStockPerDay = Integer.MaxValue
 
                             .NumberOfTradesPerStockPerDay = 2
 
