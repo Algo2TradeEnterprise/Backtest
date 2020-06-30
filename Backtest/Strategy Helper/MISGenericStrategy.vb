@@ -58,7 +58,7 @@ Namespace StrategyHelper
                 Dim strategyName As String = String.Format("Strategy{0}", Me.RuleNumber)
                 OnHeartbeat("Getting unique instrument list")
                 Dim allInstrumentList As List(Of String) = GetUniqueInstrumentList(startDate, endDate)
-                Dim dataFtchr As DataFetcher = New DataFetcher(_canceller, My.Settings.ServerName, allInstrumentList, startDate.AddDays(-15), endDate, Me.StockType, Me.OptionStockType, strategyName)
+                Dim dataFtchr As DataFetcher = New DataFetcher(_canceller, My.Settings.ServerName, allInstrumentList, startDate.AddDays(-25), endDate, Me.StockType, Me.OptionStockType, strategyName)
                 AddHandler dataFtchr.Heartbeat, AddressOf OnHeartbeat
                 AddHandler dataFtchr.WaitingFor, AddressOf OnWaitingFor
                 AddHandler dataFtchr.DocumentRetryStatus, AddressOf OnDocumentRetryStatus
@@ -93,7 +93,7 @@ Namespace StrategyHelper
                             Dim currentDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             If Me.DataSource = SourceOfData.Database Then
                                 'XDayOneMinutePayload = Cmn.GetRawPayload(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate)
-                                XDayOneMinutePayload = Await dataFtchr.GetCandleData(stockList(stock).TradingSymbol, tradeCheckingDate.AddDays(-7), tradeCheckingDate).ConfigureAwait(False)
+                                XDayOneMinutePayload = Await dataFtchr.GetCandleData(stockList(stock).TradingSymbol, tradeCheckingDate.AddDays(-25), tradeCheckingDate).ConfigureAwait(False)
                             ElseIf Me.DataSource = SourceOfData.Live Then
                                 XDayOneMinutePayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate).ConfigureAwait(False)
                             End If
@@ -179,6 +179,8 @@ Namespace StrategyHelper
                                             stockRule = New PairAnchorHKStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                         Case 29
                                             stockRule = New TwoThirdStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case 30
+                                            stockRule = New SmallRangeBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
@@ -787,7 +789,7 @@ Namespace StrategyHelper
                                     Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
                                     Dim slab As Decimal = dt.Rows(i).Item("Slab")
                                     Dim atr As Decimal = dt.Rows(i).Item("ATR %")
-                                    Dim range As Decimal = dt.Rows(i).Item("Volume Per Range")
+                                    Dim range As Decimal = dt.Rows(i).Item("Range %")
                                     Dim detailsOfStock As StockDetails = New StockDetails With
                                                 {.StockName = instrumentName,
                                                  .TradingSymbol = tradingSymbol,

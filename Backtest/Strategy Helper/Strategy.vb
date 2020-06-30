@@ -253,13 +253,14 @@ Namespace StrategyHelper
                                                                                                               x.TradeCurrentStatus <> Trade.TradeExecutionStatus.Open
                                                                                                                 End Function)
                     If tradeList IsNot Nothing AndAlso tradeList.Count > 0 Then
-                        Dim artnrGroups = From a In tradeList
-                                          Group a By Key = a.Tag Into Group
-                                          Select artnr = Key, numbersCount = Group.Count()
+                        'Dim artnrGroups = From a In tradeList
+                        '                  Group a By Key = a.Tag Into Group
+                        '                  Select artnr = Key, numbersCount = Group.Count()
 
-                        If artnrGroups IsNot Nothing AndAlso artnrGroups.Count > 0 Then
-                            ret = artnrGroups.Count
-                        End If
+                        'If artnrGroups IsNot Nothing AndAlso artnrGroups.Count > 0 Then
+                        '    ret = artnrGroups.Count
+                        'End If
+                        ret = tradeList.Count
                     End If
                 End If
                 If StockNumberOfTradeBuffer IsNot Nothing AndAlso StockNumberOfTradeBuffer.ContainsKey(currentDate.Date) AndAlso

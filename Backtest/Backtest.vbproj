@@ -155,6 +155,7 @@
     <Compile Include="Strategy Rule MIS\PairAnchorHKStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\ReversalHHLLBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\SmallOpeningRangeBreakoutStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\SmallRangeBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\StochasticDivergenceStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\SupertrendCutReversalStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\TwoThirdStrategyRule.vb" />
