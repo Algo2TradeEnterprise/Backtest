@@ -8,7 +8,7 @@ Public Class SwingCNCStrategyRule
 
 #Region "Entity"
     Enum TypeOfQuantity
-        Flat
+        Flat = 1
         AP
         GP
         Misc
@@ -44,7 +44,7 @@ Public Class SwingCNCStrategyRule
     Public Overrides Sub CompletePreProcessing()
         MyBase.CompletePreProcessing()
 
-        Indicator.ATR.CalculateATR(14, _signalPayload, _atrPayload)
+        Indicator.ATR.CalculateATR(14, _signalPayload, _atrPayload, True)
         Indicator.SwingHighLow.CalculateSwingHighLow(_signalPayload, False, _swingPayload)
     End Sub
 
