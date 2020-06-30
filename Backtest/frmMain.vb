@@ -321,7 +321,8 @@ Public Class frmMain
                     .RuleEntityData = New SwingCNCStrategyRule.StrategyRuleEntities With
                                         {
                                          .InitialCapital = 10000,
-                                         .QuantityType = SwingCNCStrategyRule.TypeOfQuantity.Flat
+                                         .QuantityType = SwingCNCStrategyRule.TypeOfQuantity.Flat,
+                                         .MaxIteration = 3
                                         }
 
                     .NumberOfTradeableStockPerDay = 1

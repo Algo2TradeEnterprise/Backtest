@@ -140,14 +140,17 @@ Public Class SwingCNCStrategyRule
             If ((candle.PreviousCandlePayload.Close - candle.Open) / candle.PreviousCandlePayload.Close) * 100 >= 1 Then
                 Dim openTime As Date = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, candle.PayloadDate.Hour, candle.PayloadDate.Minute, 9)
                 If lastTrade IsNot Nothing Then
-                    If candle.Open < lastTrade.EntryPrice Then
-                        If lastTrade.EntryPrice - candle.Open >= atr Then
-                            iteration = Val(lastTrade.Supporting1) + 1
-                            quantity = GetQuantity(iteration, currentTick.Open)
-                            ret = New Tuple(Of Boolean, Payload, Integer, Integer, Date, String)(True, candle, quantity, iteration, openTime, "Below last entry")
+                    Dim lastSignalTime As Date = Date.ParseExact(lastTrade.Supporting3, "dd-MMM-yyyy HH:mm:ss", Nothing)
+                    If openTime <> lastSignalTime Then
+                        If candle.Open < lastTrade.EntryPrice Then
+                            If lastTrade.EntryPrice - candle.Open >= atr Then
+                                iteration = Val(lastTrade.Supporting1) + 1
+                                quantity = GetQuantity(iteration, currentTick.Open)
+                                ret = New Tuple(Of Boolean, Payload, Integer, Integer, Date, String)(True, candle, quantity, iteration, openTime, "Below last entry")
+                            End If
+                        Else
+                            ret = New Tuple(Of Boolean, Payload, Integer, Integer, Date, String)(True, candle, quantity, iteration, openTime, "(Reset) Above last entry")
                         End If
-                    Else
-                        ret = New Tuple(Of Boolean, Payload, Integer, Integer, Date, String)(True, candle, quantity, iteration, openTime, "(Reset) Above last entry")
                     End If
                 Else
                     ret = New Tuple(Of Boolean, Payload, Integer, Integer, Date, String)(True, candle, quantity, iteration, openTime, "First Trade")
