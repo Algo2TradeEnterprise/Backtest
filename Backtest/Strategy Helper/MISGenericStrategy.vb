@@ -292,6 +292,7 @@ Namespace StrategyHelper
                                                     'Specific Stock MTM Check
                                                     _canceller.Token.ThrowIfCancellationRequested()
                                                     Dim stockPL As Decimal = StockPLAfterBrokerage(tradeCheckingDate, runningTick.TradingSymbol)
+                                                    Console.WriteLine(String.Format("{0} Stock PL:{1}, Time:{2}", runningTick.TradingSymbol, stockPL, runningTick.PayloadDate))
                                                     If stockPL >= stockStrategyRule.MaxProfitOfThisStock Then
                                                         ExitStockTradesByForce(runningTick, Trade.TypeOfTrade.MIS, "Max Stock Profit reached for the day")
                                                         stockList(stockName).EligibleToTakeTrade = False

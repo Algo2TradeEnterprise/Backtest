@@ -3155,12 +3155,12 @@ Public Class frmMain
                             .StockMaxProfitPercentagePerDay = Decimal.MaxValue
                             .StockMaxLossPercentagePerDay = Decimal.MinValue
 
-                            .ExitOnStockFixedTargetStoploss = False
+                            .ExitOnStockFixedTargetStoploss = True
                             .StockMaxProfitPerDay = 500
                             .StockMaxLossPerDay = Decimal.MinValue
 
-                            .ExitOnOverAllFixedTargetStoploss = False
-                            .OverAllProfitPerDay = Decimal.MaxValue
+                            .ExitOnOverAllFixedTargetStoploss = True
+                            .OverAllProfitPerDay = 2000
                             .OverAllLossPerDay = Decimal.MinValue
 
                             .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
