@@ -132,6 +132,7 @@
     <Compile Include="Strategy Rule MIS\AnchorSatelliteLossMakeupHKFuturesStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\AnchorSatelliteLossMakeupHKStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\AnchorSatelliteLossMakeupStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\EmaSmaCrossoverStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\HighestLowestPointAnchorSatelliteStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\EMAScalpingStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\EveryMinuteTopGainerLosserHKReversalStrategyRule.vb" />

@@ -93,7 +93,7 @@ Namespace StrategyHelper
                             Dim currentDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             If Me.DataSource = SourceOfData.Database Then
                                 'XDayOneMinutePayload = Cmn.GetRawPayload(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate)
-                                XDayOneMinutePayload = Await dataFtchr.GetCandleData(stockList(stock).TradingSymbol, tradeCheckingDate.AddDays(-25), tradeCheckingDate).ConfigureAwait(False)
+                                XDayOneMinutePayload = Await dataFtchr.GetCandleData(stockList(stock).TradingSymbol, tradeCheckingDate.AddDays(-8), tradeCheckingDate).ConfigureAwait(False)
                             ElseIf Me.DataSource = SourceOfData.Live Then
                                 XDayOneMinutePayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate).ConfigureAwait(False)
                             End If
@@ -183,6 +183,8 @@ Namespace StrategyHelper
                                             stockRule = New SmallRangeBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 31
                                             stockRule = New HighestLowestPointAnchorSatelliteStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting3)
+                                        Case 32
+                                            stockRule = New EmaSmaCrossoverStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting3)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
@@ -292,7 +294,7 @@ Namespace StrategyHelper
                                                     'Specific Stock MTM Check
                                                     _canceller.Token.ThrowIfCancellationRequested()
                                                     Dim stockPL As Decimal = StockPLAfterBrokerage(tradeCheckingDate, runningTick.TradingSymbol)
-                                                    Console.WriteLine(String.Format("{0} Stock PL:{1}, Time:{2}", runningTick.TradingSymbol, stockPL, runningTick.PayloadDate))
+                                                    'Console.WriteLine(String.Format("{0} Stock PL:{1}, Time:{2}", runningTick.TradingSymbol, stockPL, runningTick.PayloadDate))
                                                     If stockPL >= stockStrategyRule.MaxProfitOfThisStock Then
                                                         ExitStockTradesByForce(runningTick, Trade.TypeOfTrade.MIS, "Max Stock Profit reached for the day")
                                                         stockList(stockName).EligibleToTakeTrade = False
@@ -1295,7 +1297,7 @@ Namespace StrategyHelper
                                     If counter = Me.NumberOfTradeableStockPerDay Then Exit For
                                 End If
                             Next
-                        Case 31
+                        Case 31, 32
                             Dim stockDetails As List(Of StockDetails) = Nothing
                             For i = 0 To dt.Rows.Count - 1
                                 Dim rowDate As Date = dt.Rows(i).Item("Date")
