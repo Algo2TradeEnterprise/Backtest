@@ -15,6 +15,7 @@ Public Class HighestLowestPointAnchorSatelliteStrategyRule
 #End Region
 
     Private ReadOnly _userInputs As StrategyRuleEntities
+    Private ReadOnly _dayATR As Decimal
 
     Private _atrPayload As Dictionary(Of Date, Decimal)
     Private _firstCandleOfTheDay As Payload = Nothing
@@ -29,9 +30,11 @@ Public Class HighestLowestPointAnchorSatelliteStrategyRule
                    ByVal tradingDate As Date,
                    ByVal tradingSymbol As String,
                    ByVal canceller As CancellationTokenSource,
-                   ByVal entities As RuleEntities)
+                   ByVal entities As RuleEntities,
+                   ByVal dayATR As Decimal)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _userInputs = _entities
+        _dayATR = dayATR
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -48,7 +51,8 @@ Public Class HighestLowestPointAnchorSatelliteStrategyRule
             End If
         Next
 
-        _slPoint = ConvertFloorCeling(GetHighestATR(_firstCandleOfTheDay) * _userInputs.ATRMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
+        _slPoint = ConvertFloorCeling(_dayATR / 8, _parentStrategy.TickSize, RoundOfType.Celing)
+        '_slPoint = ConvertFloorCeling(GetHighestATR(_firstCandleOfTheDay) * _userInputs.ATRMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
         _quantity = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, _firstCandleOfTheDay.Open, _firstCandleOfTheDay.Open - _slPoint, -500, Trade.TypeOfStock.Cash)
         '_targetPoint = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, _firstCandleOfTheDay.Open, _quantity, 500, Trade.TradeExecutionDirection.Buy, Trade.TypeOfStock.Cash) - _firstCandleOfTheDay.Open
     End Sub

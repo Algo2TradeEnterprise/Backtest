@@ -182,7 +182,7 @@ Namespace StrategyHelper
                                         Case 30
                                             stockRule = New SmallRangeBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 31
-                                            stockRule = New HighestLowestPointAnchorSatelliteStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                            stockRule = New HighestLowestPointAnchorSatelliteStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting3)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
@@ -1310,6 +1310,7 @@ Namespace StrategyHelper
                                     Dim slab As Decimal = dt.Rows(i).Item("Slab")
                                     Dim atr As Decimal = dt.Rows(i).Item("ATR %")
                                     Dim crAtr As Decimal = dt.Rows(i).Item("CR ATR %")
+                                    Dim dayATR As Decimal = dt.Rows(i).Item("Day ATR")
                                     Dim detailsOfStock As StockDetails = New StockDetails With
                                         {.StockName = instrumentName,
                                          .TradingSymbol = tradingSymbol,
@@ -1317,7 +1318,8 @@ Namespace StrategyHelper
                                          .Slab = slab,
                                          .EligibleToTakeTrade = True,
                                          .Supporting1 = atr,
-                                         .Supporting2 = crAtr}
+                                         .Supporting2 = crAtr,
+                                         .Supporting3 = dayATR}
 
                                     If stockDetails Is Nothing Then stockDetails = New List(Of StockDetails)
                                     stockDetails.Add(detailsOfStock)
