@@ -391,9 +391,9 @@ Public Class Common
                 tempPayload.PreviousCandlePayload = tempPreCandle
 
                 Dim multiplier As Integer = 1
-                If tempPayload.TradingSymbol = "NIFTYBEES" AndAlso tempPayload.PayloadDate.Date <= dateToCheck.Date Then
-                    multiplier = 10
-                End If
+                'If tempPayload.TradingSymbol = "NIFTYBEES" AndAlso tempPayload.PayloadDate.Date <= dateToCheck.Date Then
+                '    multiplier = 10
+                'End If
 
                 tempPayload.Open = dt.Rows(i).Item(openColumnIndex) / multiplier
                 tempPayload.Low = dt.Rows(i).Item(lowColumnIndex) / multiplier
