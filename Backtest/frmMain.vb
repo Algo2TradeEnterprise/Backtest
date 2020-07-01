@@ -3229,7 +3229,7 @@ Public Class frmMain
                             .RuleNumber = ruleNumber
 
                             .RuleEntityData = New EmaSmaCrossoverStrategyRule.StrategyRuleEntities With
-                                    {.MaxLossPerTrade = -500, .TargetMultiplier = Decimal.MaxValue}
+                                    {.MaxLossPerTrade = -500, .TargetMultiplier = 2}
 
                             .NumberOfTradeableStockPerDay = 20
 
@@ -3238,12 +3238,12 @@ Public Class frmMain
                             .StockMaxProfitPercentagePerDay = Decimal.MaxValue
                             .StockMaxLossPercentagePerDay = Decimal.MinValue
 
-                            .ExitOnStockFixedTargetStoploss = False
-                            .StockMaxProfitPerDay = 500
-                            .StockMaxLossPerDay = Decimal.MinValue
+                            .ExitOnStockFixedTargetStoploss = True
+                            .StockMaxProfitPerDay = 1000
+                            .StockMaxLossPerDay = -1000
 
-                            .ExitOnOverAllFixedTargetStoploss = True
-                            .OverAllProfitPerDay = 2000
+                            .ExitOnOverAllFixedTargetStoploss = False
+                            .OverAllProfitPerDay = Decimal.MaxValue
                             .OverAllLossPerDay = Decimal.MinValue
 
                             .TypeOfMTMTrailing = Strategy.MTMTrailingType.None

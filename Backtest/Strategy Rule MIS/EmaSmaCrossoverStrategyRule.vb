@@ -18,6 +18,7 @@ Public Class EmaSmaCrossoverStrategyRule
     Private ReadOnly _userInputs As StrategyRuleEntities
     Private ReadOnly _dayATR As Decimal
     Private ReadOnly _slPoint As Decimal
+    Private ReadOnly _slab As Decimal
 
     Private _ema13Payload As Dictionary(Of Date, Decimal) = Nothing
     Private _sma50Payload As Dictionary(Of Date, Decimal) = Nothing
@@ -30,11 +31,14 @@ Public Class EmaSmaCrossoverStrategyRule
                    ByVal tradingSymbol As String,
                    ByVal canceller As CancellationTokenSource,
                    ByVal entities As RuleEntities,
-                   ByVal dayATR As Decimal)
+                   ByVal dayATR As Decimal,
+                   ByVal slab As Decimal)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _userInputs = _entities
         _dayATR = dayATR
-        _slPoint = ConvertFloorCeling(_dayATR / 8, _parentStrategy.TickSize, RoundOfType.Floor)
+        _slab = slab
+        '_slPoint = ConvertFloorCeling(_dayATR / 8, _parentStrategy.TickSize, RoundOfType.Floor)
+        _slPoint = _slab
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
