@@ -253,15 +253,15 @@ Public Class frmMain
         If rdbMIS.Checked Then
             Throw New NotImplementedException
         ElseIf rdbCNCTick.Checked Then
-            Await Task.Run(AddressOf ViewDataCNCAsync).ConfigureAwait(False)
+            Await Task.Run(AddressOf ViewDataCNCTickAsync).ConfigureAwait(False)
         ElseIf rdbCNCEOD.Checked Then
-            Throw New NotImplementedException
+            Await Task.Run(AddressOf ViewDataCNCEODAsync).ConfigureAwait(False)
         ElseIf rdbCNCCandle.Checked Then
             Throw New NotImplementedException
         End If
     End Sub
 
-    Private Async Function ViewDataCNCAsync() As Task
+    Private Async Function ViewDataCNCTickAsync() As Task
         Try
             Dim startDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrStartDate)
             Dim endDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrEndDate)
@@ -319,11 +319,9 @@ Public Class frmMain
 
                         .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                        .RuleEntityData = New SwingCNCStrategyRule.StrategyRuleEntities With
+                        .RuleEntityData = New PreviousDayLowStrategyRule.StrategyRuleEntities With
                                             {
-                                             .InitialCapital = 10000,
-                                             .QuantityType = qty,
-                                             .MaxIteration = 3
+                                             .InitialCapital = 10000
                                             }
 
                         .NumberOfTradeableStockPerDay = 1
@@ -334,9 +332,94 @@ Public Class frmMain
                         .TickBasedStrategy = True
                     End With
 
-                    Dim ruleData As SwingCNCStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                    Dim filename As String = String.Format("Swing CNC Output,QtyTyp {0}",
-                                                           ruleData.QuantityType.ToString)
+                    Dim ruleData As PreviousDayLowStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                    Dim filename As String = String.Format("At Previous Day Low CNC Tick Output")
+
+                    Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                End Using
+            Next
+        Catch ex As Exception
+            MsgBox(ex.ToString, MsgBoxStyle.Critical)
+        Finally
+            OnHeartbeat("Process Complete")
+            SetObjectEnableDisable_ThreadSafe(btnStart, True)
+            SetObjectEnableDisable_ThreadSafe(btnStop, False)
+        End Try
+    End Function
+
+    Private Async Function ViewDataCNCEODAsync() As Task
+        Try
+            Dim startDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrStartDate)
+            Dim endDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrEndDate)
+            Dim sourceData As Strategy.SourceOfData = Strategy.SourceOfData.None
+            If GetRadioButtonChecked_ThreadSafe(rdbLive) Then
+                sourceData = Strategy.SourceOfData.Live
+            Else
+                sourceData = Strategy.SourceOfData.Database
+            End If
+            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
+            Dim database As Common.DataBaseTable = Common.DataBaseTable.None
+            Dim margin As Decimal = 0
+            Dim tick As Decimal = 0
+            Select Case stockType
+                Case Trade.TypeOfStock.Cash
+                    database = Common.DataBaseTable.Intraday_Cash
+                    margin = 1
+                    tick = 0.05
+                Case Trade.TypeOfStock.Commodity
+                    database = Common.DataBaseTable.Intraday_Commodity
+                    margin = 1
+                    tick = 1
+                Case Trade.TypeOfStock.Currency
+                    database = Common.DataBaseTable.Intraday_Currency
+                    margin = 1
+                    tick = 0.0025
+                Case Trade.TypeOfStock.Futures
+                    database = Common.DataBaseTable.Intraday_Futures
+                    margin = 1
+                    tick = 0.05
+            End Select
+
+            For qty As Integer = 1 To 4
+                Using backtestStrategy As New CNCEODGenericStrategy(canceller:=_canceller,
+                                                                    exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                    exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                    tradeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                    lastTradeEntryTime:=TimeSpan.Parse("15:29:59"),
+                                                                    eodExitTime:=TimeSpan.Parse("15:29:59"),
+                                                                    tickSize:=tick,
+                                                                    marginMultiplier:=margin,
+                                                                    timeframe:=1,
+                                                                    heikenAshiCandle:=False,
+                                                                    stockType:=stockType,
+                                                                    databaseTable:=database,
+                                                                    dataSource:=sourceData,
+                                                                    initialCapital:=Decimal.MaxValue / 2,
+                                                                    usableCapital:=Decimal.MaxValue / 2,
+                                                                    minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
+                                                                    amountToBeWithdrawn:=5000)
+                    AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+
+                    With backtestStrategy
+                        .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "")
+
+                        .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+
+                        .RuleEntityData = New PreviousDayLowStrategyRule.StrategyRuleEntities With
+                                            {
+                                             .InitialCapital = 10000
+                                            }
+
+                        .NumberOfTradeableStockPerDay = 1
+
+                        .NumberOfTradesPerDay = Integer.MaxValue
+                        .NumberOfTradesPerStockPerDay = Integer.MaxValue
+
+                        .TickBasedStrategy = True
+                    End With
+
+                    Dim ruleData As PreviousDayLowStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                    Dim filename As String = String.Format("At Previous Day Low CNC EOD Output")
 
                     Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
                 End Using
