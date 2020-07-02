@@ -378,50 +378,48 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            For qty As Integer = 1 To 4
-                Using backtestStrategy As New CNCEODGenericStrategy(canceller:=_canceller,
-                                                                    exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                                    exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                                    tradeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                                    lastTradeEntryTime:=TimeSpan.Parse("15:29:59"),
-                                                                    eodExitTime:=TimeSpan.Parse("15:29:59"),
-                                                                    tickSize:=tick,
-                                                                    marginMultiplier:=margin,
-                                                                    timeframe:=1,
-                                                                    heikenAshiCandle:=False,
-                                                                    stockType:=stockType,
-                                                                    databaseTable:=database,
-                                                                    dataSource:=sourceData,
-                                                                    initialCapital:=Decimal.MaxValue / 2,
-                                                                    usableCapital:=Decimal.MaxValue / 2,
-                                                                    minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
-                                                                    amountToBeWithdrawn:=5000)
-                    AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+            Using backtestStrategy As New CNCEODGenericStrategy(canceller:=_canceller,
+                                                                exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                tradeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                lastTradeEntryTime:=TimeSpan.Parse("15:29:59"),
+                                                                eodExitTime:=TimeSpan.Parse("15:29:59"),
+                                                                tickSize:=tick,
+                                                                marginMultiplier:=margin,
+                                                                timeframe:=1,
+                                                                heikenAshiCandle:=False,
+                                                                stockType:=stockType,
+                                                                databaseTable:=database,
+                                                                dataSource:=sourceData,
+                                                                initialCapital:=Decimal.MaxValue / 2,
+                                                                usableCapital:=Decimal.MaxValue / 2,
+                                                                minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
+                                                                amountToBeWithdrawn:=5000)
+                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                    With backtestStrategy
-                        .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "")
+                With backtestStrategy
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "")
 
-                        .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                        .RuleEntityData = New PreviousDayLowStrategyRule.StrategyRuleEntities With
-                                            {
-                                             .InitialCapital = 10000
-                                            }
+                    .RuleEntityData = New PreviousDayLowStrategyRule.StrategyRuleEntities With
+                                        {
+                                         .InitialCapital = 10000
+                                        }
 
-                        .NumberOfTradeableStockPerDay = 1
+                    .NumberOfTradeableStockPerDay = 1
 
-                        .NumberOfTradesPerDay = Integer.MaxValue
-                        .NumberOfTradesPerStockPerDay = Integer.MaxValue
+                    .NumberOfTradesPerDay = Integer.MaxValue
+                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
-                        .TickBasedStrategy = True
-                    End With
+                    .TickBasedStrategy = True
+                End With
 
-                    Dim ruleData As PreviousDayLowStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                    Dim filename As String = String.Format("At Previous Day Low CNC EOD Output")
+                Dim ruleData As PreviousDayLowStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                Dim filename As String = String.Format("At Previous Day Low CNC EOD Output")
 
-                    Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-                End Using
-            Next
+                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+            End Using
         Catch ex As Exception
             MsgBox(ex.ToString, MsgBoxStyle.Critical)
         Finally
