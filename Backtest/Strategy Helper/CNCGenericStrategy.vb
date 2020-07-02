@@ -184,62 +184,15 @@ Namespace StrategyHelper
                                                     'Update Collection
                                                     Await stockStrategyRule.UpdateRequiredCollectionsAsync(runningTick).ConfigureAwait(False)
 
-                                                    'Exit Trade From Rule
-                                                    _canceller.Token.ThrowIfCancellationRequested()
-                                                    Dim potentialRuleCancelTrades As List(Of Trade) = GetSpecificTrades(currentMinuteCandlePayload, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Open)
-                                                    If potentialRuleCancelTrades IsNot Nothing AndAlso potentialRuleCancelTrades.Count > 0 Then
-                                                        If Me.TickBasedStrategy OrElse Not stockList(stockName).CancelOrderDoneForTheMinute Then
-                                                            For Each runningCancelTrade In potentialRuleCancelTrades
-                                                                _canceller.Token.ThrowIfCancellationRequested()
-                                                                Dim exitOrderDetails As Tuple(Of Boolean, String) = Await stockStrategyRule.IsTriggerReceivedForExitOrderAsync(runningTick, runningCancelTrade).ConfigureAwait(False)
-                                                                If exitOrderDetails IsNot Nothing AndAlso exitOrderDetails.Item1 Then
-                                                                    _canceller.Token.ThrowIfCancellationRequested()
-                                                                    ExitTradeByForce(runningCancelTrade, runningTick, exitOrderDetails.Item2)
-                                                                End If
-                                                            Next
-                                                            stockList(stockName).CancelOrderDoneForTheMinute = True
-                                                        End If
-                                                    End If
-                                                    _canceller.Token.ThrowIfCancellationRequested()
-                                                    Dim potentialRuleExitTrades As List(Of Trade) = GetSpecificTrades(currentMinuteCandlePayload, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
-                                                    If potentialRuleExitTrades IsNot Nothing AndAlso potentialRuleExitTrades.Count > 0 Then
-                                                        If Me.TickBasedStrategy OrElse Not stockList(stockName).ExitOrderDoneForTheMinute Then
-                                                            For Each runningExitTrade In potentialRuleExitTrades
-                                                                _canceller.Token.ThrowIfCancellationRequested()
-                                                                Dim exitOrderDetails As Tuple(Of Boolean, String) = Await stockStrategyRule.IsTriggerReceivedForExitOrderAsync(runningTick, runningExitTrade).ConfigureAwait(False)
-                                                                If exitOrderDetails IsNot Nothing AndAlso exitOrderDetails.Item1 Then
-                                                                    ExitTradeByForce(runningExitTrade, runningTick, exitOrderDetails.Item2)
-                                                                End If
-                                                            Next
-                                                            stockList(stockName).ExitOrderDoneForTheMinute = True
-                                                        End If
-                                                    End If
-
                                                     'Place Order
                                                     _canceller.Token.ThrowIfCancellationRequested()
                                                     Dim placeOrderDetails As Tuple(Of Boolean, List(Of PlaceOrderParameters)) = Nothing
                                                     If Me.TickBasedStrategy OrElse Not stockList(stockName).PlaceOrderDoneForTheMinute Then
-                                                        If Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.NumberOfTradesPerStockPerDay AndAlso
-                                                        Me.TotalPLAfterBrokerage(runningTick.PayloadDate) < Me.OverAllProfitPerDay AndAlso
-                                                        Me.TotalPLAfterBrokerage(runningTick.PayloadDate) > Math.Abs(Me.OverAllLossPerDay) * -1 AndAlso
-                                                        Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.StockMaxProfitPerDay AndAlso
-                                                        Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso
-                                                        Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < stockStrategyRule.MaxProfitOfThisStock AndAlso
-                                                        Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
-                                                            placeOrderDetails = Await stockStrategyRule.IsTriggerReceivedForPlaceOrderAsync(runningTick).ConfigureAwait(False)
-                                                            stockList(stockName).PlaceOrderTrigger = placeOrderDetails
-                                                            stockList(stockName).PlaceOrderDoneForTheMinute = True
-                                                        End If
+                                                        placeOrderDetails = Await stockStrategyRule.IsTriggerReceivedForPlaceOrderAsync(runningTick).ConfigureAwait(False)
+                                                        stockList(stockName).PlaceOrderTrigger = placeOrderDetails
+                                                        stockList(stockName).PlaceOrderDoneForTheMinute = True
                                                     Else
-                                                        If Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.NumberOfTradesPerStockPerDay AndAlso
-                                                        Me.TotalPLAfterBrokerage(runningTick.PayloadDate) < Me.OverAllProfitPerDay AndAlso
-                                                        Me.TotalPLAfterBrokerage(runningTick.PayloadDate) > Math.Abs(Me.OverAllLossPerDay) * -1 AndAlso
-                                                        Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.StockMaxProfitPerDay AndAlso
-                                                        Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso
-                                                        Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < stockStrategyRule.MaxProfitOfThisStock AndAlso
-                                                        Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
-                                                            placeOrderDetails = stockList(stockName).PlaceOrderTrigger
-                                                        End If
+                                                        placeOrderDetails = stockList(stockName).PlaceOrderTrigger
                                                     End If
                                                     If placeOrderDetails IsNot Nothing AndAlso placeOrderDetails.Item1 Then
                                                         Dim placeOrders As List(Of PlaceOrderParameters) = placeOrderDetails.Item2
@@ -267,110 +220,24 @@ Namespace StrategyHelper
                                                                         Throw New NotImplementedException
                                                                 End Select
                                                                 Dim runningTrade As Trade = New Trade(originatingStrategy:=Me,
-                                                                                                  tradingSymbol:=runningTick.TradingSymbol,
-                                                                                                  stockType:=Me.StockType,
-                                                                                                  orderType:=runningOrder.OrderType,
-                                                                                                  tradingDate:=runningTick.PayloadDate,
-                                                                                                  entryDirection:=runningOrder.EntryDirection,
-                                                                                                  entryPrice:=runningOrder.EntryPrice,
-                                                                                                  entryBuffer:=runningOrder.Buffer,
-                                                                                                  squareOffType:=Trade.TypeOfTrade.CNC,
-                                                                                                  entryCondition:=Trade.TradeEntryCondition.Original,
-                                                                                                  entryRemark:="Original Entry",
-                                                                                                  quantity:=runningOrder.Quantity,
-                                                                                                  lotSize:=stockStrategyRule.LotSize,
-                                                                                                  potentialTarget:=runningOrder.Target,
-                                                                                                  targetRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Target),
-                                                                                                  potentialStopLoss:=runningOrder.Stoploss,
-                                                                                                  stoplossBuffer:=runningOrder.Buffer,
-                                                                                                  slRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Stoploss),
-                                                                                                  signalCandle:=runningOrder.SignalCandle)
-
-                                                                runningTrade.UpdateTrade(Tag:=tradeTag,
-                                                                                     SquareOffValue:=Math.Abs(runningOrder.EntryPrice - runningOrder.Target),
-                                                                                     Supporting1:=runningOrder.Supporting1,
-                                                                                     Supporting2:=runningOrder.Supporting2,
-                                                                                     Supporting3:=runningOrder.Supporting3,
-                                                                                     Supporting4:=runningOrder.Supporting4,
-                                                                                     Supporting5:=runningOrder.Supporting5)
-
-                                                                If PlaceOrModifyOrder(runningTrade, Nothing) Then
-                                                                    runningOrder.Used = True
-                                                                End If
-                                                            Next
-                                                        End If
-                                                    End If
-
-                                                    'Exit Trade
-                                                    _canceller.Token.ThrowIfCancellationRequested()
-                                                    Dim exitOrderSuccessful As Boolean = False
-                                                    Dim potentialExitTrades As List(Of Trade) = GetSpecificTrades(currentMinuteCandlePayload, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
-                                                    If potentialExitTrades IsNot Nothing AndAlso potentialExitTrades.Count > 0 Then
-                                                        For Each runningPotentialExitTrade In potentialExitTrades
-                                                            _canceller.Token.ThrowIfCancellationRequested()
-                                                            exitOrderSuccessful = ExitTradeIfPossible(runningPotentialExitTrade, runningTick)
-                                                        Next
-                                                    End If
-
-                                                    'Place Order
-                                                    _canceller.Token.ThrowIfCancellationRequested()
-                                                    Dim placeOrderTrigger As Tuple(Of Boolean, List(Of PlaceOrderParameters)) = Nothing
-                                                    If exitOrderSuccessful Then
-                                                        If Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.NumberOfTradesPerStockPerDay AndAlso
-                                                        Me.TotalPLAfterBrokerage(runningTick.PayloadDate) < Me.OverAllProfitPerDay AndAlso
-                                                        Me.TotalPLAfterBrokerage(runningTick.PayloadDate) > Math.Abs(Me.OverAllLossPerDay) * -1 AndAlso
-                                                        Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < Me.StockMaxProfitPerDay AndAlso
-                                                        Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(Me.StockMaxLossPerDay) * -1 AndAlso
-                                                        Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) < stockStrategyRule.MaxProfitOfThisStock AndAlso
-                                                        Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol) > Math.Abs(stockStrategyRule.MaxLossOfThisStock) * -1 Then
-                                                            placeOrderTrigger = Await stockStrategyRule.IsTriggerReceivedForPlaceOrderAsync(runningTick).ConfigureAwait(False)
-                                                            stockList(stockName).PlaceOrderTrigger = placeOrderTrigger
-                                                        End If
-                                                    End If
-                                                    If placeOrderTrigger IsNot Nothing AndAlso placeOrderTrigger.Item1 Then
-                                                        Dim placeOrders As List(Of PlaceOrderParameters) = placeOrderTrigger.Item2
-                                                        If placeOrders IsNot Nothing AndAlso placeOrders.Count > 0 Then
-                                                            Dim tradeTag As String = System.Guid.NewGuid.ToString()
-                                                            For Each runningOrder In placeOrders
-                                                                _canceller.Token.ThrowIfCancellationRequested()
-                                                                If runningOrder.Used Then
-                                                                    Continue For
-                                                                End If
-                                                                Select Case runningOrder.OrderType
-                                                                    Case Trade.TypeOfOrder.SL
-                                                                        If runningOrder.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                                                                            If runningTick.High > runningOrder.EntryPrice Then
-                                                                                Continue For
-                                                                            End If
-                                                                        ElseIf runningOrder.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                                                                            If runningTick.Low < runningOrder.EntryPrice Then
-                                                                                Continue For
-                                                                            End If
-                                                                        End If
-                                                                    Case Trade.TypeOfOrder.Market
-                                                                        runningOrder.EntryPrice = runningTick.Open
-                                                                    Case Else
-                                                                        Throw New NotImplementedException
-                                                                End Select
-                                                                Dim runningTrade As Trade = New Trade(originatingStrategy:=Me,
-                                                                                                  tradingSymbol:=runningTick.TradingSymbol,
-                                                                                                  stockType:=Me.StockType,
-                                                                                                  orderType:=runningOrder.OrderType,
-                                                                                                  tradingDate:=runningTick.PayloadDate,
-                                                                                                  entryDirection:=runningOrder.EntryDirection,
-                                                                                                  entryPrice:=runningOrder.EntryPrice,
-                                                                                                  entryBuffer:=runningOrder.Buffer,
-                                                                                                  squareOffType:=Trade.TypeOfTrade.CNC,
-                                                                                                  entryCondition:=Trade.TradeEntryCondition.Original,
-                                                                                                  entryRemark:="Original Entry",
-                                                                                                  quantity:=runningOrder.Quantity,
-                                                                                                  lotSize:=stockStrategyRule.LotSize,
-                                                                                                  potentialTarget:=runningOrder.Target,
-                                                                                                  targetRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Target),
-                                                                                                  potentialStopLoss:=runningOrder.Stoploss,
-                                                                                                  stoplossBuffer:=runningOrder.Buffer,
-                                                                                                  slRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Stoploss),
-                                                                                                  signalCandle:=runningOrder.SignalCandle)
+                                                                                                      tradingSymbol:=runningTick.TradingSymbol,
+                                                                                                      stockType:=Me.StockType,
+                                                                                                      orderType:=runningOrder.OrderType,
+                                                                                                      tradingDate:=runningTick.PayloadDate,
+                                                                                                      entryDirection:=runningOrder.EntryDirection,
+                                                                                                      entryPrice:=runningOrder.EntryPrice,
+                                                                                                      entryBuffer:=runningOrder.Buffer,
+                                                                                                      squareOffType:=Trade.TypeOfTrade.CNC,
+                                                                                                      entryCondition:=Trade.TradeEntryCondition.Original,
+                                                                                                      entryRemark:="Original Entry",
+                                                                                                      quantity:=runningOrder.Quantity,
+                                                                                                      lotSize:=stockStrategyRule.LotSize,
+                                                                                                      potentialTarget:=runningOrder.Target,
+                                                                                                      targetRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Target),
+                                                                                                      potentialStopLoss:=runningOrder.Stoploss,
+                                                                                                      stoplossBuffer:=runningOrder.Buffer,
+                                                                                                      slRemark:=Math.Abs(runningOrder.EntryPrice - runningOrder.Stoploss),
+                                                                                                      signalCandle:=runningOrder.SignalCandle)
 
                                                                 runningTrade.UpdateTrade(Tag:=tradeTag,
                                                                                      SquareOffValue:=Math.Abs(runningOrder.EntryPrice - runningOrder.Target),
@@ -395,40 +262,6 @@ Namespace StrategyHelper
                                                             _canceller.Token.ThrowIfCancellationRequested()
                                                             EnterTradeIfPossible(runningPotentialEntryTrade, runningTick)
                                                         Next
-                                                    End If
-
-                                                    'Modify Stoploss Trade
-                                                    _canceller.Token.ThrowIfCancellationRequested()
-                                                    Dim potentialModifySLTrades As List(Of Trade) = GetSpecificTrades(currentMinuteCandlePayload, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
-                                                    If potentialModifySLTrades IsNot Nothing AndAlso potentialModifySLTrades.Count > 0 Then
-                                                        If Me.TickBasedStrategy OrElse Not stockList(stockName).ModifyStoplossOrderDoneForTheMinute OrElse Me.TrailingStoploss Then
-                                                            For Each runningModifyTrade In potentialModifySLTrades
-                                                                _canceller.Token.ThrowIfCancellationRequested()
-                                                                Dim modifyOrderDetails As Tuple(Of Boolean, Decimal, String) = Await stockStrategyRule.IsTriggerReceivedForModifyStoplossOrderAsync(runningTick, runningModifyTrade).ConfigureAwait(False)
-                                                                If modifyOrderDetails IsNot Nothing AndAlso modifyOrderDetails.Item1 Then
-                                                                    _canceller.Token.ThrowIfCancellationRequested()
-                                                                    runningModifyTrade.UpdateTrade(PotentialStopLoss:=modifyOrderDetails.Item2, SLRemark:=modifyOrderDetails.Item3)
-                                                                End If
-                                                            Next
-                                                            stockList(stockName).ModifyStoplossOrderDoneForTheMinute = True
-                                                        End If
-                                                    End If
-
-                                                    'Modify Target Trade
-                                                    _canceller.Token.ThrowIfCancellationRequested()
-                                                    Dim potentialModifyTargetTrades As List(Of Trade) = GetSpecificTrades(currentMinuteCandlePayload, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
-                                                    If potentialModifyTargetTrades IsNot Nothing AndAlso potentialModifyTargetTrades.Count > 0 Then
-                                                        If Me.TickBasedStrategy OrElse Not stockList(stockName).ModifyTargetOrderDoneForTheMinute Then
-                                                            For Each runningModifyTrade In potentialModifyTargetTrades
-                                                                _canceller.Token.ThrowIfCancellationRequested()
-                                                                Dim modifyOrderDetails As Tuple(Of Boolean, Decimal, String) = Await stockStrategyRule.IsTriggerReceivedForModifyTargetOrderAsync(runningTick, runningModifyTrade).ConfigureAwait(False)
-                                                                If modifyOrderDetails IsNot Nothing AndAlso modifyOrderDetails.Item1 Then
-                                                                    _canceller.Token.ThrowIfCancellationRequested()
-                                                                    runningModifyTrade.UpdateTrade(PotentialTarget:=modifyOrderDetails.Item2, TargetRemark:=modifyOrderDetails.Item3)
-                                                                End If
-                                                            Next
-                                                            stockList(stockName).ModifyTargetOrderDoneForTheMinute = True
-                                                        End If
                                                     End If
                                                 Next
                                             End If
