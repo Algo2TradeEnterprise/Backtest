@@ -150,7 +150,7 @@ Public Class PreviousDayLowStrategyRule
     End Function
 
     Private Function GetQuantity(ByVal iterationNumber As Integer, ByVal price As Decimal) As Integer
-        Dim capital As Decimal = _userInputs.InitialCapital * iterationNumber
+        Dim capital As Decimal = _userInputs.InitialCapital * Math.Pow(2, iterationNumber - 1)
         Return _parentStrategy.CalculateQuantityFromInvestment(1, capital, price, Trade.TypeOfStock.Cash, False)
     End Function
 
