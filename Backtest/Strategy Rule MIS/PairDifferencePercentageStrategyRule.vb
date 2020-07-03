@@ -72,17 +72,6 @@ Public Class PairDifferencePercentageStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         Me.DummyCandle = currentTick
-        If _controller AndAlso Me.AnotherPairInstrument IsNot Nothing Then
-            Dim myPair As PairDifferencePercentageStrategyRule = Me.AnotherPairInstrument
-            If myPair.DummyCandle IsNot Nothing Then
-                Dim myPairChange As Decimal = ((myPair.DummyCandle.Open / myPair.PreviousDayLastCandleClose) - 1) * 100
-                Dim myChange As Decimal = ((Me.DummyCandle.Open / Me.PreviousDayLastCandleClose) - 1) * 100
-                Dim diff As Decimal = Math.Round(myChange - myPairChange, 4)
-                Dim pl As Decimal = _parentStrategy.TotalPLAfterBrokerage(_tradingDate)
-
-                Console.WriteLine(String.Format("{0},{1},{2}", currentTick.PayloadDate.ToString("HH:mm:ss"), diff, Math.Round(pl, 4)))
-            End If
-        End If
         Dim parameter As PlaceOrderParameters = Nothing
         If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
             Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS) AndAlso Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS) AndAlso
@@ -139,6 +128,18 @@ Public Class PairDifferencePercentageStrategyRule
     Public Overrides Async Function IsTriggerReceivedForExitOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, String))
         Dim ret As Tuple(Of Boolean, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
+        Me.DummyCandle = currentTick
+        If _controller AndAlso Me.AnotherPairInstrument IsNot Nothing Then
+            Dim myPair As PairDifferencePercentageStrategyRule = Me.AnotherPairInstrument
+            If myPair.DummyCandle IsNot Nothing Then
+                Dim myPairChange As Decimal = ((myPair.DummyCandle.Open / myPair.PreviousDayLastCandleClose) - 1) * 100
+                Dim myChange As Decimal = ((Me.DummyCandle.Open / Me.PreviousDayLastCandleClose) - 1) * 100
+                Dim diff As Decimal = Math.Round(myChange - myPairChange, 4)
+                Dim pl As Decimal = _parentStrategy.TotalPLAfterBrokerage(_tradingDate)
+
+                Console.WriteLine(String.Format("{0},{1},{2}", currentTick.PayloadDate.ToString("HH:mm:ss"), diff, Math.Round(pl, 4)))
+            End If
+        End If
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
             Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
             Dim signal As Tuple(Of Boolean, Decimal, Payload) = GetEntrySignal(currentMinuteCandlePayload, currentTick)
