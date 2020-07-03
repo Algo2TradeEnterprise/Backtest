@@ -137,7 +137,7 @@ Public Class PairDifferencePercentageStrategyRule
                 Dim diff As Decimal = Math.Round(myChange - myPairChange, 4)
                 Dim pl As Decimal = _parentStrategy.TotalPLAfterBrokerage(_tradingDate)
 
-                Console.WriteLine(String.Format("{0},{1},{2}", currentTick.PayloadDate.ToString("HH:mm:ss"), diff, Math.Round(pl, 4)))
+                Console.WriteLine(String.Format("{0},{1},{2},{3},{4}", currentTick.PayloadDate.ToString("HH:mm:ss"), Math.Round(myChange, 4), Math.Round(myPairChange, 4), diff, Math.Round(pl, 4)))
             End If
         End If
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
