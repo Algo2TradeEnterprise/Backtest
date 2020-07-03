@@ -253,6 +253,7 @@ Public Class frmMain
         If rdbMIS.Checked Then
             Throw New NotImplementedException
         ElseIf rdbCNCTick.Checked Then
+            Throw New NotImplementedException
             Await Task.Run(AddressOf ViewDataCNCTickAsync).ConfigureAwait(False)
         ElseIf rdbCNCEOD.Checked Then
             Await Task.Run(AddressOf ViewDataCNCEODAsync).ConfigureAwait(False)
@@ -402,7 +403,7 @@ Public Class frmMain
 
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                    .RuleEntityData = New PreviousDayLowStrategyRule.StrategyRuleEntities With
+                    .RuleEntityData = New PreviousSwingLowStrategyRule.StrategyRuleEntities With
                                         {
                                          .InitialCapital = 10000
                                         }
@@ -415,8 +416,8 @@ Public Class frmMain
                     .TickBasedStrategy = True
                 End With
 
-                Dim ruleData As PreviousDayLowStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                Dim filename As String = String.Format("At Previous Day Low CNC EOD Output")
+                Dim ruleData As PreviousSwingLowStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                Dim filename As String = String.Format("At Previous Swing Low CNC EOD Output")
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using
