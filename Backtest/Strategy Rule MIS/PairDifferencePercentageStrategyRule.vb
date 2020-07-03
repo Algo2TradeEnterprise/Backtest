@@ -72,8 +72,16 @@ Public Class PairDifferencePercentageStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         Me.DummyCandle = currentTick
-        If _controller Then
+        If _controller AndAlso Me.AnotherPairInstrument IsNot Nothing Then
+            Dim myPair As PairDifferencePercentageStrategyRule = Me.AnotherPairInstrument
+            If myPair.DummyCandle IsNot Nothing Then
+                Dim myPairChange As Decimal = ((myPair.DummyCandle.Open / myPair.PreviousDayLastCandleClose) - 1) * 100
+                Dim myChange As Decimal = ((Me.DummyCandle.Open / Me.PreviousDayLastCandleClose) - 1) * 100
+                Dim diff As Decimal = Math.Round(myChange - myPairChange, 4)
+                Dim pl As Decimal = _parentStrategy.TotalPLAfterBrokerage(_tradingDate)
 
+                Console.WriteLine(String.Format("{0},{1},{2}", currentTick.PayloadDate.ToString("HH:mm:ss"), diff, Math.Round(pl, 4)))
+            End If
         End If
         Dim parameter As PlaceOrderParameters = Nothing
         If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
