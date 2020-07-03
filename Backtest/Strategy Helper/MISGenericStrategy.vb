@@ -114,6 +114,8 @@ Namespace StrategyHelper
                                             stockRule = New NiftyBankniftyPairStrategy(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, RuleEntityData, _canceller, stockList(stock).Supporting1, stockList(stock).Supporting2, stockList(stock).Supporting3)
                                         Case 4
                                             stockRule = New PairAnchorHKStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, _canceller, stockList(stock).Supporting1)
+                                        Case 5
+                                            stockRule = New PairDifferencePercentageStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, _canceller, stockList(stock).Supporting1)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -598,7 +600,7 @@ Namespace StrategyHelper
                                 If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
                                 ret.Add(instrumentName, detailsOfStock)
                             Next
-                        Case 4
+                        Case 4, 5
                             For i = 1 To 2
                                 If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
                                 Dim tradingSymbol As String = dt.Rows(i).Item(0)
