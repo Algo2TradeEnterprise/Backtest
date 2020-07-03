@@ -104,9 +104,8 @@ Public Class PreviousSwingLowStrategyRule
         Dim iteration As Integer = 1
         Dim quantity As Integer = GetQuantity(iteration, candle.Open)
         Dim swing As Indicator.Swing = _swingPayload(candle.PreviousCandlePayload.PayloadDate)
-        If candle.Low < swing.SwingLow Then
-            Dim entryPrice As Decimal = swing.SwingLow
-            If candle.Open < entryPrice Then entryPrice = candle.Open
+        If candle.Close < swing.SwingLow Then
+            Dim entryPrice As Decimal = candle.Close
             If lastTrade Is Nothing Then
                 If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
                 ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)(True, entryPrice, quantity, iteration, "First Trade", swing.SwingLowTime))
