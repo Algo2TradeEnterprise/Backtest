@@ -109,7 +109,7 @@ Namespace StrategyHelper
                                     Dim tradingSymbol As String = currentDayOneMinutePayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
                                         Case 0
-                                            stockRule = New PairChangePercentStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, _canceller, stockList(stock).Supporting1, stockList(stock).Supporting2, stockList(stock).Supporting3)
+                                            stockRule = New PairChangePercentStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, _canceller, stockList(stock).Supporting1)
                                         Case 3
                                             stockRule = New NiftyBankniftyPairStrategy(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, RuleEntityData, _canceller, stockList(stock).Supporting1, stockList(stock).Supporting2, stockList(stock).Supporting3)
                                         Case 4
@@ -581,9 +581,7 @@ Namespace StrategyHelper
                                             {.StockName = instrumentName,
                                              .LotSize = lotSize,
                                              .EligibleToTakeTrade = True,
-                                             .Supporting1 = If(controller.ToUpper = "TRUE", 1, 0),
-                                             .Supporting2 = dt.Rows(i).Item(3),
-                                             .Supporting3 = dt.Rows(i).Item(4)}
+                                             .Supporting1 = If(controller.ToUpper = "TRUE", 1, 0)}
                                 ret.Add(instrumentName, detailsOfStock)
                             Next
                         Case 3
