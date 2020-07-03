@@ -41,22 +41,22 @@ Public Class PairChangePercentStrategyRule
                                                                                                 Return y.Key
                                                                                             End Function).FirstOrDefault.Value
             Dim previousTradingDay As Date = firstCandleOfTheDay.PreviousCandlePayload.PayloadDate
-            Dim previousDayLastCandleClose As Decimal = firstCandleOfTheDay.PreviousCandlePayload.Close
+            'Dim previousDayLastCandleClose As Decimal = firstCandleOfTheDay.PreviousCandlePayload.Close
             Dim firstCandleOfThePreviousDay As Payload = _signalPayload.Where(Function(x)
                                                                                   Return x.Key.Date = previousTradingDay.Date
                                                                               End Function).OrderBy(Function(y)
                                                                                                         Return y.Key
                                                                                                     End Function).FirstOrDefault.Value
-            Dim prePreviousDayLastCandleClose As Decimal = firstCandleOfThePreviousDay.PreviousCandlePayload.Close
+            'Dim prePreviousDayLastCandleClose As Decimal = firstCandleOfThePreviousDay.PreviousCandlePayload.Close
 
             Dim previousChangePayload As Payload = Nothing
             For Each runningPayload In _signalPayload
                 If runningPayload.Key >= previousTradingDay.Date Then
                     Dim close As Decimal = Decimal.MinValue
                     If runningPayload.Key.Date = previousTradingDay.Date Then
-                        close = prePreviousDayLastCandleClose
+                        close = firstCandleOfThePreviousDay.Close
                     ElseIf runningPayload.Key.Date = _tradingDate.Date Then
-                        close = previousDayLastCandleClose
+                        close = firstCandleOfTheDay.Close
                     End If
                     If close <> Decimal.MinValue Then
                         Dim change As Payload = New Payload(Payload.CandleDataSource.Calculated) With
