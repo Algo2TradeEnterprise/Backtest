@@ -145,6 +145,9 @@ Public Class SmallRangeBreakoutStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
+            If _parentStrategy.StockNumberOfTrades(_tradingDate.Date, _tradingSymbol) >= _parentStrategy.NumberOfTradesPerStockPerDay Then
+                ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+            End If
             Dim signal As Tuple(Of Boolean, Payload) = GetEntrySignal(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, currentTrade.EntryDirection)
             If signal IsNot Nothing AndAlso signal.Item1 Then
                 If currentTrade.SignalCandle.PayloadDate <> signal.Item2.PayloadDate Then
