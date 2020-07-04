@@ -3285,8 +3285,8 @@ Public Class frmMain
 
                     For tf As Integer = 1 To 1
                         For atrMul As Decimal = 1 To 1
-                            For sd As Decimal = 2 To 2
-                                For prftExt As Integer = 0 To 1
+                            For sd As Decimal = 2.5 To 2.5
+                                For prftExt As Integer = 1 To 1
                                     Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                                     exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                                     exchangeEndTime:=TimeSpan.Parse("15:29:59"),
@@ -3322,7 +3322,7 @@ Public Class frmMain
                                                  .StandardDeviation = sd,
                                                  .ExitAtProfit = prftExt}
 
-                                            .NumberOfTradeableStockPerDay = 1
+                                            .NumberOfTradeableStockPerDay = 5
 
                                             .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
