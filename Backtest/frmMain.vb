@@ -3059,12 +3059,12 @@ Public Class frmMain
                             .RuleEntityData = New SmallRangeBreakoutStrategyRule.StrategyRuleEntities With
                                             {
                                                 .MaxLossPerTrade = -500,
-                                                .TargetMultiplier = 2,
+                                                .TargetMultiplier = 2.5,
                                                 .BreakevenMovement = False,
-                                                .ReverseSignalEntry = True
+                                                .ReverseSignalEntry = False
                                             }
 
-                            .NumberOfTradeableStockPerDay = Integer.MaxValue
+                            .NumberOfTradeableStockPerDay = 10
 
                             .NumberOfTradesPerStockPerDay = 2
 
