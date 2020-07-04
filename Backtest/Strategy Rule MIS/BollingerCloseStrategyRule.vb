@@ -10,7 +10,7 @@ Public Class BollingerCloseStrategyRule
     Public Class StrategyRuleEntities
         Inherits RuleEntities
 
-        Public ATRMultiplier As Decimal
+        Public MaxLossPerTrade As Decimal
         Public BollingerPeriod As Decimal
         Public StandardDeviation As Decimal
     End Class
@@ -144,15 +144,19 @@ Public Class BollingerCloseStrategyRule
         If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then
             Dim bollingerHigh As Decimal = _bollingerHighPayload(candle.PayloadDate)
             Dim bollingerLow As Decimal = _bollingerLowPayload(candle.PayloadDate)
-            Dim atr As Decimal = _atrPayload(candle.PayloadDate) * _userInputs.ATRMultiplier
+            Dim atr As Decimal = _atrPayload(candle.PayloadDate)
             Dim quantity As Integer = Me.LotSize
+            If _parentStrategy.StockType = Trade.TypeOfStock.Cash Then
+                quantity = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, currentTick.Open, currentTick.Open - atr, _userInputs.MaxLossPerTrade, Trade.TypeOfStock.Cash)
+            End If
             Dim iteration As Integer = 1
             If candle.Close < bollingerLow Then
                 Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(candle, _parentStrategy.TradeType, Trade.TradeExecutionDirection.Buy)
                 If lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
                     If lastExecutedOrder.EntryPrice - candle.Close >= atr Then
                         iteration = Val(lastExecutedOrder.Supporting2) + 1
-                        ret = New Tuple(Of Boolean, Integer, Integer, Payload, Trade.TradeExecutionDirection)(True, quantity * iteration, iteration, candle, Trade.TradeExecutionDirection.Buy)
+                        quantity = lastExecutedOrder.Quantity + (lastExecutedOrder.Quantity / (iteration - 1))
+                        ret = New Tuple(Of Boolean, Integer, Integer, Payload, Trade.TradeExecutionDirection)(True, quantity, iteration, candle, Trade.TradeExecutionDirection.Buy)
                     End If
                 Else
                     ret = New Tuple(Of Boolean, Integer, Integer, Payload, Trade.TradeExecutionDirection)(True, quantity, iteration, candle, Trade.TradeExecutionDirection.Buy)
@@ -162,7 +166,8 @@ Public Class BollingerCloseStrategyRule
                 If lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
                     If candle.Close - lastExecutedOrder.EntryPrice >= atr Then
                         iteration = Val(lastExecutedOrder.Supporting2) + 1
-                        ret = New Tuple(Of Boolean, Integer, Integer, Payload, Trade.TradeExecutionDirection)(True, quantity * iteration, iteration, candle, Trade.TradeExecutionDirection.Sell)
+                        quantity = lastExecutedOrder.Quantity + (lastExecutedOrder.Quantity / (iteration - 1))
+                        ret = New Tuple(Of Boolean, Integer, Integer, Payload, Trade.TradeExecutionDirection)(True, quantity, iteration, candle, Trade.TradeExecutionDirection.Sell)
                     End If
                 Else
                     ret = New Tuple(Of Boolean, Integer, Integer, Payload, Trade.TradeExecutionDirection)(True, quantity, iteration, candle, Trade.TradeExecutionDirection.Sell)

@@ -3312,7 +3312,7 @@ Public Class frmMain
                             .RuleNumber = ruleNumber
 
                             .RuleEntityData = New BollingerCloseStrategyRule.StrategyRuleEntities With
-                                                {.ATRMultiplier = 1,
+                                                {.MaxLossPerTrade = -500,
                                                  .BollingerPeriod = 20,
                                                  .StandardDeviation = 2}
 
