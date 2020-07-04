@@ -54,12 +54,9 @@ Public Class BollingerCloseStrategyRule
             End If
 
             If signalCandle IsNot Nothing Then
-                'Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Open, RoundOfType.Floor)
-                Dim buffer As Decimal = 1
                 Dim atr As Decimal = _atrPayload(signalCandle.PayloadDate)
-                If signal.Item5 = Trade.TradeExecutionDirection.Buy AndAlso
-                    Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) Then
-                    Dim entryPrice As Decimal = signalCandle.High + buffer
+                If signal.Item5 = Trade.TradeExecutionDirection.Buy Then
+                    Dim entryPrice As Decimal = currentTick.Open
                     Dim quantity As Integer = signal.Item2
 
                     parameter = New PlaceOrderParameters With {
@@ -68,16 +65,15 @@ Public Class BollingerCloseStrategyRule
                                     .Quantity = quantity,
                                     .Stoploss = entryPrice - 100000000,
                                     .Target = entryPrice + 100000000,
-                                    .Buffer = buffer,
+                                    .Buffer = 0,
                                     .SignalCandle = signalCandle,
-                                    .OrderType = Trade.TypeOfOrder.SL,
+                                    .OrderType = Trade.TypeOfOrder.Market,
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = signal.Item3,
                                     .Supporting3 = atr
                                 }
-                ElseIf signal.Item5 = Trade.TradeExecutionDirection.Sell AndAlso
-                    Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) Then
-                    Dim entryPrice As Decimal = signalCandle.Low - buffer
+                ElseIf signal.Item5 = Trade.TradeExecutionDirection.Sell Then
+                    Dim entryPrice As Decimal = currentTick.Open
                     Dim quantity As Integer = signal.Item2
 
                     parameter = New PlaceOrderParameters With {
@@ -86,9 +82,9 @@ Public Class BollingerCloseStrategyRule
                                     .Quantity = quantity,
                                     .Stoploss = entryPrice + 100000000,
                                     .Target = entryPrice - 100000000,
-                                    .Buffer = buffer,
+                                    .Buffer = 0,
                                     .SignalCandle = signalCandle,
-                                    .OrderType = Trade.TypeOfOrder.SL,
+                                    .OrderType = Trade.TypeOfOrder.Market,
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = signal.Item3,
                                     .Supporting3 = atr
@@ -110,19 +106,14 @@ Public Class BollingerCloseStrategyRule
     Public Overrides Async Function IsTriggerReceivedForExitOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, String))
         Dim ret As Tuple(Of Boolean, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
-        Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
             Dim bollingerHigh As Decimal = _bollingerHighPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate)
             Dim bollingerLow As Decimal = _bollingerLowPayload(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate)
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy AndAlso currentMinuteCandlePayload.PreviousCandlePayload.Close > bollingerHigh Then
                 ret = New Tuple(Of Boolean, String)(True, "Reverse Signal")
             ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell AndAlso currentMinuteCandlePayload.PreviousCandlePayload.Close < bollingerLow Then
                 ret = New Tuple(Of Boolean, String)(True, "Reverse Signal")
-            End If
-        ElseIf currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
-            Dim signal As Tuple(Of Boolean, Integer, Integer, Payload, Trade.TradeExecutionDirection) = GetEntrySignal(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
-            If signal IsNot Nothing AndAlso signal.Item1 AndAlso signal.Item4.PayloadDate <> currentTrade.SignalCandle.PayloadDate Then
-                ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
             End If
         End If
         Return ret
@@ -151,66 +142,33 @@ Public Class BollingerCloseStrategyRule
     Private Function GetEntrySignal(ByVal candle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, Integer, Integer, Payload, Trade.TradeExecutionDirection)
         Dim ret As Tuple(Of Boolean, Integer, Integer, Payload, Trade.TradeExecutionDirection) = Nothing
         If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then
-            Dim direction As Tuple(Of Trade.TradeExecutionDirection, Payload) = GetSignalDirection(candle)
-            If direction IsNot Nothing Then
-                Dim atr As Decimal = _atrPayload(candle.PayloadDate) * _userInputs.ATRMultiplier
-                Dim quantity As Integer = Me.LotSize
-                Dim iteration As Integer = 1
-                If direction.Item1 = Trade.TradeExecutionDirection.Buy Then
-                    If candle.High < candle.PreviousCandlePayload.High Then
-                        'Dim buffer As Decimal = _parentStrategy.CalculateBuffer(candle.High, RoundOfType.Floor)
-                        Dim buffer As Decimal = 1
-                        Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(candle, _parentStrategy.TradeType, Trade.TradeExecutionDirection.Buy)
-                        If lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-                            If direction.Item2.PayloadDate > lastExecutedOrder.SignalCandle.PayloadDate AndAlso
-                                lastExecutedOrder.EntryPrice - (candle.High + buffer) >= atr Then
-                                iteration = Val(lastExecutedOrder.Supporting2) + 1
-                                ret = New Tuple(Of Boolean, Integer, Integer, Payload, Trade.TradeExecutionDirection)(True, quantity * iteration, iteration, candle, Trade.TradeExecutionDirection.Buy)
-                            End If
-                        Else
-                            ret = New Tuple(Of Boolean, Integer, Integer, Payload, Trade.TradeExecutionDirection)(True, quantity, iteration, candle, Trade.TradeExecutionDirection.Buy)
-                        End If
+            Dim bollingerHigh As Decimal = _bollingerHighPayload(candle.PayloadDate)
+            Dim bollingerLow As Decimal = _bollingerLowPayload(candle.PayloadDate)
+            Dim atr As Decimal = _atrPayload(candle.PayloadDate) * _userInputs.ATRMultiplier
+            Dim quantity As Integer = Me.LotSize
+            Dim iteration As Integer = 1
+            If candle.Close < bollingerLow Then
+                Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(candle, _parentStrategy.TradeType, Trade.TradeExecutionDirection.Buy)
+                If lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                    If lastExecutedOrder.EntryPrice - candle.Close >= atr Then
+                        iteration = Val(lastExecutedOrder.Supporting2) + 1
+                        ret = New Tuple(Of Boolean, Integer, Integer, Payload, Trade.TradeExecutionDirection)(True, quantity * iteration, iteration, candle, Trade.TradeExecutionDirection.Buy)
                     End If
-                ElseIf direction.Item1 = Trade.TradeExecutionDirection.Sell Then
-                    If candle.Low > candle.PreviousCandlePayload.Low Then
-                        'Dim buffer As Decimal = _parentStrategy.CalculateBuffer(candle.Low, RoundOfType.Floor)
-                        Dim buffer As Decimal = 1
-                        Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(candle, _parentStrategy.TradeType, Trade.TradeExecutionDirection.Sell)
-                        If lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-                            If direction.Item2.PayloadDate > lastExecutedOrder.SignalCandle.PayloadDate AndAlso
-                            (candle.Low - buffer) - lastExecutedOrder.EntryPrice >= atr Then
-                                iteration = Val(lastExecutedOrder.Supporting2) + 1
-                                ret = New Tuple(Of Boolean, Integer, Integer, Payload, Trade.TradeExecutionDirection)(True, quantity * iteration, iteration, candle, Trade.TradeExecutionDirection.Sell)
-                            End If
-                        Else
-                            ret = New Tuple(Of Boolean, Integer, Integer, Payload, Trade.TradeExecutionDirection)(True, quantity, iteration, candle, Trade.TradeExecutionDirection.Sell)
-                        End If
+                Else
+                    ret = New Tuple(Of Boolean, Integer, Integer, Payload, Trade.TradeExecutionDirection)(True, quantity, iteration, candle, Trade.TradeExecutionDirection.Buy)
+                End If
+            ElseIf candle.Close > bollingerHigh Then
+                Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(candle, _parentStrategy.TradeType, Trade.TradeExecutionDirection.Sell)
+                If lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                    If candle.Close - lastExecutedOrder.EntryPrice >= atr Then
+                        iteration = Val(lastExecutedOrder.Supporting2) + 1
+                        ret = New Tuple(Of Boolean, Integer, Integer, Payload, Trade.TradeExecutionDirection)(True, quantity * iteration, iteration, candle, Trade.TradeExecutionDirection.Sell)
                     End If
+                Else
+                    ret = New Tuple(Of Boolean, Integer, Integer, Payload, Trade.TradeExecutionDirection)(True, quantity, iteration, candle, Trade.TradeExecutionDirection.Sell)
                 End If
             End If
         End If
-        Return ret
-    End Function
-
-    Private Function GetSignalDirection(ByVal candle As Payload) As Tuple(Of Trade.TradeExecutionDirection, Payload)
-        Dim ret As Tuple(Of Trade.TradeExecutionDirection, Payload) = Nothing
-        Dim lastExitOrder As Trade = _parentStrategy.GetLastExitTradeOfTheStock(candle, _parentStrategy.TradeType)
-        Dim startTime As Date = _tradingDate.Date
-        If lastExitOrder IsNot Nothing Then
-            Dim exitPayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(lastExitOrder.ExitTime, _signalPayload))
-            startTime = exitPayload.PreviousCandlePayload.PayloadDate
-        End If
-        For Each runningPayload In _signalPayload
-            If runningPayload.Key >= startTime AndAlso runningPayload.Key <= candle.PayloadDate Then
-                Dim bollingerHigh As Decimal = _bollingerHighPayload(runningPayload.Value.PayloadDate)
-                Dim bollingerLow As Decimal = _bollingerLowPayload(runningPayload.Value.PayloadDate)
-                If runningPayload.Value.Close > bollingerHigh Then
-                    ret = New Tuple(Of Trade.TradeExecutionDirection, Payload)(Trade.TradeExecutionDirection.Sell, runningPayload.Value)
-                ElseIf runningPayload.Value.Close < bollingerLow Then
-                    ret = New Tuple(Of Trade.TradeExecutionDirection, Payload)(Trade.TradeExecutionDirection.Buy, runningPayload.Value)
-                End If
-            End If
-        Next
         Return ret
     End Function
 End Class
