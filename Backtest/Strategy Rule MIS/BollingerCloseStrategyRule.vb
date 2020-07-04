@@ -163,7 +163,7 @@ Public Class BollingerCloseStrategyRule
                         Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(candle, _parentStrategy.TradeType, Trade.TradeExecutionDirection.Buy)
                         If lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
                             If direction.Item2.PayloadDate > lastExecutedOrder.SignalCandle.PayloadDate AndAlso
-                            lastExecutedOrder.EntryPrice - (candle.High + buffer) >= atr Then
+                                lastExecutedOrder.EntryPrice - (candle.High + buffer) >= atr Then
                                 iteration = Val(lastExecutedOrder.Supporting2) + 1
                                 ret = New Tuple(Of Boolean, Integer, Integer, Payload, Trade.TradeExecutionDirection)(True, quantity * iteration, iteration, candle, Trade.TradeExecutionDirection.Buy)
                             End If
@@ -198,12 +198,12 @@ Public Class BollingerCloseStrategyRule
         Dim startTime As Date = _tradingDate.Date
         If lastExitOrder IsNot Nothing Then
             Dim exitPayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(lastExitOrder.ExitTime, _signalPayload))
-            startTime = exitPayload.PayloadDate
+            startTime = exitPayload.PreviousCandlePayload.PayloadDate
         End If
         For Each runningPayload In _signalPayload
             If runningPayload.Key >= startTime AndAlso runningPayload.Key <= candle.PayloadDate Then
-                Dim bollingerHigh As Decimal = _bollingerHighPayload(candle.PayloadDate)
-                Dim bollingerLow As Decimal = _bollingerLowPayload(candle.PayloadDate)
+                Dim bollingerHigh As Decimal = _bollingerHighPayload(runningPayload.Value.PayloadDate)
+                Dim bollingerLow As Decimal = _bollingerLowPayload(runningPayload.Value.PayloadDate)
                 If runningPayload.Value.Close > bollingerHigh Then
                     ret = New Tuple(Of Trade.TradeExecutionDirection, Payload)(Trade.TradeExecutionDirection.Sell, runningPayload.Value)
                 ElseIf runningPayload.Value.Close < bollingerLow Then
