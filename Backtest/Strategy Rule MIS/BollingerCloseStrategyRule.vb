@@ -11,8 +11,10 @@ Public Class BollingerCloseStrategyRule
         Inherits RuleEntities
 
         Public MaxLossPerTrade As Decimal
+        Public ATRMultiplier As Decimal
         Public BollingerPeriod As Decimal
         Public StandardDeviation As Decimal
+        Public ExitAtProfit As Boolean
     End Class
 #End Region
 
@@ -55,7 +57,11 @@ Public Class BollingerCloseStrategyRule
 
             If signalCandle IsNot Nothing Then
                 Dim atr As Decimal = _atrPayload(signalCandle.PayloadDate)
-                If signal.Item5 = Trade.TradeExecutionDirection.Buy Then
+                If signal.Item5 = Trade.TradeExecutionDirection.Buy AndAlso (Not _userInputs.ExitAtProfit OrElse
+                    (_parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) OrElse
+                     (Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) AndAlso
+                      _parentStrategy.StockPLAfterBrokerage(_tradingDate, _tradingSymbol) < Math.Abs(_userInputs.MaxLossPerTrade)))) Then
+
                     Dim entryPrice As Decimal = currentTick.Open
                     Dim quantity As Integer = signal.Item2
 
@@ -72,7 +78,11 @@ Public Class BollingerCloseStrategyRule
                                     .Supporting2 = signal.Item3,
                                     .Supporting3 = atr
                                 }
-                ElseIf signal.Item5 = Trade.TradeExecutionDirection.Sell Then
+                ElseIf signal.Item5 = Trade.TradeExecutionDirection.Sell AndAlso (Not _userInputs.ExitAtProfit OrElse
+                    (_parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) OrElse
+                     (Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) AndAlso
+                      _parentStrategy.StockPLAfterBrokerage(_tradingDate, _tradingSymbol) < Math.Abs(_userInputs.MaxLossPerTrade)))) Then
+
                     Dim entryPrice As Decimal = currentTick.Open
                     Dim quantity As Integer = signal.Item2
 
@@ -144,7 +154,7 @@ Public Class BollingerCloseStrategyRule
         If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then
             Dim bollingerHigh As Decimal = _bollingerHighPayload(candle.PayloadDate)
             Dim bollingerLow As Decimal = _bollingerLowPayload(candle.PayloadDate)
-            Dim atr As Decimal = _atrPayload(candle.PayloadDate)
+            Dim atr As Decimal = _atrPayload(candle.PayloadDate) * _userInputs.ATRMultiplier
             Dim quantity As Integer = Me.LotSize
             If _parentStrategy.StockType = Trade.TypeOfStock.Cash Then
                 quantity = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, currentTick.Open, currentTick.Open - atr, _userInputs.MaxLossPerTrade, Trade.TypeOfStock.Cash)

@@ -3260,7 +3260,7 @@ Public Class frmMain
 #End Region
                 Case 33
 #Region "Bollinger Close Strategy"
-                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Futures
+                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
                     Dim database As Common.DataBaseTable = Common.DataBaseTable.None
                     Dim margin As Decimal = 0
                     Dim tick As Decimal = 0
@@ -3304,7 +3304,7 @@ Public Class frmMain
                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                         With backtestStrategy
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "NIFTY.csv")
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Cash Stock.csv")
 
                             .AllowBothDirectionEntryAtSameTime = False
                             .TrailingStoploss = False
@@ -3313,8 +3313,10 @@ Public Class frmMain
 
                             .RuleEntityData = New BollingerCloseStrategyRule.StrategyRuleEntities With
                                                 {.MaxLossPerTrade = -500,
+                                                 .ATRMultiplier = 1,
                                                  .BollingerPeriod = 20,
-                                                 .StandardDeviation = 2}
+                                                 .StandardDeviation = 2,
+                                                 .ExitAtProfit = True}
 
                             .NumberOfTradeableStockPerDay = 1
 
