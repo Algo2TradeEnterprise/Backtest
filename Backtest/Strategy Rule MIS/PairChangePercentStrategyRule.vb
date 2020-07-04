@@ -117,36 +117,40 @@ Public Class PairChangePercentStrategyRule
         Me.DummyCandle = currentTick
         If Me.ForceTakeTrade AndAlso Not _controller Then
             Dim quantity As Integer = 1
-            If currentTick.Open > CType(Me.AnotherPairInstrument, PairChangePercentStrategyRule).DummyCandle.Open Then
-                quantity = Me.LotSize
+            If _parentStrategy.StockType = Trade.TypeOfStock.Cash Then
+                If currentTick.Open > CType(Me.AnotherPairInstrument, PairChangePercentStrategyRule).DummyCandle.Open Then
+                    quantity = Me.LotSize
+                Else
+                    Dim multiplier As Decimal = CType(Me.AnotherPairInstrument, PairChangePercentStrategyRule).DummyCandle.Open / currentTick.Open
+                    quantity = Math.Floor(multiplier * CType(Me.AnotherPairInstrument, PairChangePercentStrategyRule).LotSize)
+                End If
             Else
-                Dim multiplier As Decimal = CType(Me.AnotherPairInstrument, PairChangePercentStrategyRule).DummyCandle.Open / currentTick.Open
-                quantity = Math.Floor(multiplier * CType(Me.AnotherPairInstrument, PairChangePercentStrategyRule).LotSize)
+                quantity = Me.LotSize
             End If
 
             Dim parameter As PlaceOrderParameters = Nothing
             If Me.Direction = Trade.TradeExecutionDirection.Buy Then
                 parameter = New PlaceOrderParameters With {
-                                        .EntryPrice = currentTick.Open,
-                                        .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                        .Quantity = quantity,
-                                        .Stoploss = .EntryPrice - 100000,
-                                        .Target = .EntryPrice + 100000,
-                                        .Buffer = 0,
-                                        .SignalCandle = currentMinuteCandlePayload.PreviousCandlePayload,
-                                        .OrderType = Trade.TypeOfOrder.Market
-                                    }
+                                    .EntryPrice = currentTick.Open,
+                                    .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                                    .Quantity = quantity,
+                                    .Stoploss = .EntryPrice - 100000,
+                                    .Target = .EntryPrice + 100000,
+                                    .Buffer = 0,
+                                    .SignalCandle = currentMinuteCandlePayload.PreviousCandlePayload,
+                                    .OrderType = Trade.TypeOfOrder.Market
+                                }
             ElseIf Me.Direction = Trade.TradeExecutionDirection.Sell Then
                 parameter = New PlaceOrderParameters With {
-                                        .EntryPrice = currentTick.Open,
-                                        .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                                        .Quantity = quantity,
-                                        .Stoploss = .EntryPrice + 100000,
-                                        .Target = .EntryPrice - 100000,
-                                        .Buffer = 0,
-                                        .SignalCandle = currentMinuteCandlePayload.PreviousCandlePayload,
-                                        .OrderType = Trade.TypeOfOrder.Market
-                                    }
+                                    .EntryPrice = currentTick.Open,
+                                    .EntryDirection = Trade.TradeExecutionDirection.Sell,
+                                    .Quantity = quantity,
+                                    .Stoploss = .EntryPrice + 100000,
+                                    .Target = .EntryPrice - 100000,
+                                    .Buffer = 0,
+                                    .SignalCandle = currentMinuteCandlePayload.PreviousCandlePayload,
+                                    .OrderType = Trade.TypeOfOrder.Market
+                                }
             End If
 
             ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
@@ -165,11 +169,15 @@ Public Class PairChangePercentStrategyRule
                 End If
                 If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
                     Dim quantity As Integer = 1
-                    If currentTick.Open > CType(Me.AnotherPairInstrument, PairChangePercentStrategyRule).DummyCandle.Open Then
-                        quantity = Me.LotSize
+                    If _parentStrategy.StockType = Trade.TypeOfStock.Cash Then
+                        If currentTick.Open > CType(Me.AnotherPairInstrument, PairChangePercentStrategyRule).DummyCandle.Open Then
+                            quantity = Me.LotSize
+                        Else
+                            Dim multiplier As Decimal = CType(Me.AnotherPairInstrument, PairChangePercentStrategyRule).DummyCandle.Open / currentTick.Open
+                            quantity = Math.Floor(multiplier * CType(Me.AnotherPairInstrument, PairChangePercentStrategyRule).LotSize)
+                        End If
                     Else
-                        Dim multiplier As Decimal = CType(Me.AnotherPairInstrument, PairChangePercentStrategyRule).DummyCandle.Open / currentTick.Open
-                        quantity = Math.Floor(multiplier * CType(Me.AnotherPairInstrument, PairChangePercentStrategyRule).LotSize)
+                        quantity = Me.LotSize
                     End If
 
                     If signal.Item2 = Trade.TradeExecutionDirection.Buy Then
