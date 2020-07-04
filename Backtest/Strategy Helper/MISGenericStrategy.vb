@@ -1331,7 +1331,7 @@ Namespace StrategyHelper
                                 For Each runningStock In stockDetails.OrderByDescending(Function(x)
                                                                                             Return x.Supporting1
                                                                                         End Function)
-                                    If runningStock.Supporting1 <= 25 Then
+                                    If runningStock.Supporting1 <= 20 Then
                                         If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
                                         ret.Add(runningStock.StockName, runningStock)
 
