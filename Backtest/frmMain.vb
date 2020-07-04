@@ -3036,7 +3036,7 @@ Public Class frmMain
                                                                     eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                                     tickSize:=tick,
                                                                     marginMultiplier:=margin,
-                                                                    timeframe:=60,
+                                                                    timeframe:=5,
                                                                     heikenAshiCandle:=False,
                                                                     stockType:=stockType,
                                                                     optionStockType:=Trade.TypeOfStock.None,
@@ -3049,7 +3049,7 @@ Public Class frmMain
                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                         With backtestStrategy
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Cash Stock.csv")
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Lowest Range Stock Of X Minute.csv")
 
                             .AllowBothDirectionEntryAtSameTime = False
                             .TrailingStoploss = False
