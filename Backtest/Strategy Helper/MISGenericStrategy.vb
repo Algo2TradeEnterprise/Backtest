@@ -185,6 +185,8 @@ Namespace StrategyHelper
                                             stockRule = New HighestLowestPointAnchorSatelliteStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting3)
                                         Case 32
                                             stockRule = New EmaSmaCrossoverStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting3, stockList(stock).Slab)
+                                        Case 33
+                                            stockRule = New BollingerCloseStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
