@@ -3417,7 +3417,7 @@ Public Class frmMain
 
                             .NumberOfTradeableStockPerDay = 5
 
-                            .NumberOfTradesPerStockPerDay = 2
+                            .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
                             .StockMaxProfitPercentagePerDay = Decimal.MaxValue
                             .StockMaxLossPercentagePerDay = Decimal.MinValue

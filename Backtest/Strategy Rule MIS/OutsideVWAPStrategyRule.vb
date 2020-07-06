@@ -20,6 +20,7 @@ Public Class OutsideVWAPStrategyRule
     Private _vwapPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _signalCandle As Payload = Nothing
     Private _targetMultiplier As Decimal = Decimal.MinValue
+    Private _numberOfTrade As Integer = 2
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -45,12 +46,11 @@ Public Class OutsideVWAPStrategyRule
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         Dim parameter1 As PlaceOrderParameters = Nothing
         Dim parameter2 As PlaceOrderParameters = Nothing
-        If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
-            currentMinuteCandlePayload.PayloadDate >= _tradeStartTime AndAlso Me.EligibleToTakeTrade AndAlso
+        If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PayloadDate >= _tradeStartTime AndAlso
+            Me.EligibleToTakeTrade AndAlso _parentStrategy.StockNumberOfTrades(_tradingDate.Date, _tradingSymbol) < _numberOfTrade AndAlso
             Not _parentStrategy.IsAnyTradeOfTheStockTargetReached(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS) Then
-            Dim lastExecutedBuyOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandlePayload, _parentStrategy.TradeType, Trade.TradeExecutionDirection.Buy)
             If Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) AndAlso
-                Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) AndAlso lastExecutedBuyOrder Is Nothing Then
+                Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) Then
                 Dim signal As Tuple(Of Boolean, Payload) = GetEntrySignal(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, Trade.TradeExecutionDirection.Buy)
                 If signal IsNot Nothing AndAlso signal.Item1 AndAlso _targetMultiplier <> Decimal.MinValue Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2.High, RoundOfType.Floor)
@@ -76,9 +76,8 @@ Public Class OutsideVWAPStrategyRule
                     End If
                 End If
             End If
-            Dim lastExecutedSellOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandlePayload, _parentStrategy.TradeType, Trade.TradeExecutionDirection.Sell)
             If Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) AndAlso
-                Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) AndAlso lastExecutedSellOrder Is Nothing Then
+                Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) Then
                 Dim signal As Tuple(Of Boolean, Payload) = GetEntrySignal(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, Trade.TradeExecutionDirection.Sell)
                 If signal IsNot Nothing AndAlso signal.Item1 AndAlso _targetMultiplier <> Decimal.MinValue Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2.Low, RoundOfType.Floor)
@@ -126,7 +125,7 @@ Public Class OutsideVWAPStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
-            If _parentStrategy.StockNumberOfTrades(_tradingDate.Date, _tradingSymbol) >= _parentStrategy.NumberOfTradesPerStockPerDay Then
+            If _parentStrategy.StockNumberOfTrades(_tradingDate.Date, _tradingSymbol) >= _numberOfTrade Then
                 ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
             End If
             If _parentStrategy.IsAnyTradeOfTheStockTargetReached(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS) Then
@@ -175,6 +174,7 @@ Public Class OutsideVWAPStrategyRule
                     Else
                         _targetMultiplier = 4
                     End If
+                    _numberOfTrade = _targetMultiplier + 1
                 End If
             End If
         End If
