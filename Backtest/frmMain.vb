@@ -3036,7 +3036,7 @@ Public Class frmMain
                                                                     eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                                     tickSize:=tick,
                                                                     marginMultiplier:=margin,
-                                                                    timeframe:=5,
+                                                                    timeframe:=1,
                                                                     heikenAshiCandle:=False,
                                                                     stockType:=stockType,
                                                                     optionStockType:=Trade.TypeOfStock.None,
@@ -3049,7 +3049,7 @@ Public Class frmMain
                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                         With backtestStrategy
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Lowest Range Stock Of X Minute.csv")
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Low ATR Candle Quick Entry Stocks.csv")
 
                             .AllowBothDirectionEntryAtSameTime = False
                             .TrailingStoploss = False
@@ -3059,14 +3059,14 @@ Public Class frmMain
                             .RuleEntityData = New SmallRangeBreakoutStrategyRule.StrategyRuleEntities With
                                             {
                                                 .MaxLossPerTrade = -500,
-                                                .TargetMultiplier = 2.5,
+                                                .TargetMultiplier = 2,
                                                 .BreakevenMovement = False,
-                                                .ReverseSignalEntry = False
+                                                .ReverseSignalEntry = True
                                             }
 
-                            .NumberOfTradeableStockPerDay = 10
+                            .NumberOfTradeableStockPerDay = 20
 
-                            .NumberOfTradesPerStockPerDay = 1
+                            .NumberOfTradesPerStockPerDay = 2
 
                             .StockMaxProfitPercentagePerDay = Decimal.MaxValue
                             .StockMaxLossPercentagePerDay = Decimal.MinValue
@@ -3285,7 +3285,7 @@ Public Class frmMain
 
                     For tf As Integer = 1 To 1
                         For atrMul As Decimal = 1 To 1
-                            For sd As Decimal = 2.5 To 2.5
+                            For sd As Decimal = 3 To 3
                                 For prftExt As Integer = 1 To 1
                                     Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                                     exchangeStartTime:=TimeSpan.Parse("09:15:00"),
@@ -3333,8 +3333,8 @@ Public Class frmMain
                                             .StockMaxProfitPerDay = Decimal.MaxValue
                                             .StockMaxLossPerDay = Decimal.MinValue
 
-                                            .ExitOnOverAllFixedTargetStoploss = False
-                                            .OverAllProfitPerDay = Decimal.MaxValue
+                                            .ExitOnOverAllFixedTargetStoploss = True
+                                            .OverAllProfitPerDay = 4000
                                             .OverAllLossPerDay = Decimal.MinValue
 
                                             .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
