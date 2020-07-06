@@ -302,7 +302,7 @@ Public Class frmMain
                                                             eodExitTime:=TimeSpan.Parse("15:29:59"),
                                                             tickSize:=tick,
                                                             marginMultiplier:=margin,
-                                                            timeframe:=60,
+                                                            timeframe:=180,
                                                             heikenAshiCandle:=False,
                                                             stockType:=stockType,
                                                             databaseTable:=database,
