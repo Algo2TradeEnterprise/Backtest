@@ -379,6 +379,7 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
+            Dim rule As Integer = GetComboBoxIndex_ThreadSafe(cmbRule)
             Using backtestStrategy As New CNCEODGenericStrategy(canceller:=_canceller,
                                                                 exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                 exchangeEndTime:=TimeSpan.Parse("15:29:59"),
@@ -401,12 +402,20 @@ Public Class frmMain
                 With backtestStrategy
                     .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "")
 
-                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+                    .RuleNumber = rule
 
-                    .RuleEntityData = New PreviousSwingLowStrategyRule.StrategyRuleEntities With
+                    Select Case rule
+                        Case 0
+                            .RuleEntityData = New PreviousSwingLowStrategyRule.StrategyRuleEntities With
                                         {
                                          .InitialCapital = 10000
                                         }
+                        Case 1
+                            .RuleEntityData = New PreviousSwingHighStrategyRule.StrategyRuleEntities With
+                                        {
+                                         .InitialCapital = 10000
+                                        }
+                    End Select
 
                     .NumberOfTradeableStockPerDay = 1
 
@@ -416,8 +425,15 @@ Public Class frmMain
                     .TickBasedStrategy = True
                 End With
 
-                Dim ruleData As PreviousSwingLowStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                Dim filename As String = String.Format("At Previous Swing Low CNC EOD Output")
+                Dim filename As String = Nothing
+                Select Case rule
+                    Case 0
+                        filename = String.Format("At Previous Swing Low CNC EOD Output")
+                    Case 1
+                        filename = String.Format("At Previous Swing High CNC EOD Output")
+                    Case Else
+                        Throw New NotImplementedException
+                End Select
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using
