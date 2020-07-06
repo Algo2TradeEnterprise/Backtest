@@ -3061,7 +3061,7 @@ Public Class frmMain
                                                 .MaxLossPerTrade = -500,
                                                 .TargetMultiplier = 2,
                                                 .BreakevenMovement = False,
-                                                .ReverseSignalEntry = True
+                                                .ReverseSignalEntry = False
                                             }
 
                             .NumberOfTradeableStockPerDay = 20

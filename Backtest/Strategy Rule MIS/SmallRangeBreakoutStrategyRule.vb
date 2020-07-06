@@ -205,7 +205,7 @@ Public Class SmallRangeBreakoutStrategyRule
 
     Private Function GetEntrySignal(ByVal candle As Payload, ByVal currentTick As Payload, ByVal direction As Trade.TradeExecutionDirection) As Tuple(Of Boolean, Payload)
         Dim ret As Tuple(Of Boolean, Payload) = Nothing
-        If candle IsNot Nothing Then
+        If candle IsNot Nothing AndAlso _signalCandle Is Nothing Then
             Dim atr As Decimal = _atrPayload(candle.PayloadDate)
             If candle.CandleRange < atr AndAlso candle.CandleRange > 0.5 * atr Then
                 _signalCandle = candle
