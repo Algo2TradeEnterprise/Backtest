@@ -105,7 +105,9 @@ Namespace StrategyHelper
                                     Dim tradingSymbol As String = currentDayOneMinutePayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
                                         Case 0
-                                            stockRule = New PreviousCandleLowStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                            Throw New NotImplementedException
+                                        Case 1
+                                            stockRule = New PreviousCandleSwingHighStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -183,6 +185,23 @@ Namespace StrategyHelper
 
                                                     'Update Collection
                                                     Await stockStrategyRule.UpdateRequiredCollectionsAsync(runningTick).ConfigureAwait(False)
+
+                                                    'Exit Trade From Rule
+                                                    _canceller.Token.ThrowIfCancellationRequested()
+                                                    Dim potentialRuleCancelTrades As List(Of Trade) = GetSpecificTrades(currentMinuteCandlePayload, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Open)
+                                                    If potentialRuleCancelTrades IsNot Nothing AndAlso potentialRuleCancelTrades.Count > 0 Then
+                                                        If Me.TickBasedStrategy OrElse Not stockList(stockName).CancelOrderDoneForTheMinute Then
+                                                            For Each runningCancelTrade In potentialRuleCancelTrades
+                                                                _canceller.Token.ThrowIfCancellationRequested()
+                                                                Dim exitOrderDetails As Tuple(Of Boolean, String) = Await stockStrategyRule.IsTriggerReceivedForExitOrderAsync(runningTick, runningCancelTrade).ConfigureAwait(False)
+                                                                If exitOrderDetails IsNot Nothing AndAlso exitOrderDetails.Item1 Then
+                                                                    _canceller.Token.ThrowIfCancellationRequested()
+                                                                    ExitTradeByForce(runningCancelTrade, runningTick, exitOrderDetails.Item2)
+                                                                End If
+                                                            Next
+                                                            stockList(stockName).CancelOrderDoneForTheMinute = True
+                                                        End If
+                                                    End If
 
                                                     'Place Order
                                                     _canceller.Token.ThrowIfCancellationRequested()

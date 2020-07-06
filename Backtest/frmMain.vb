@@ -253,7 +253,6 @@ Public Class frmMain
         If rdbMIS.Checked Then
             Throw New NotImplementedException
         ElseIf rdbCNCTick.Checked Then
-            Throw New NotImplementedException
             Await Task.Run(AddressOf ViewDataCNCTickAsync).ConfigureAwait(False)
         ElseIf rdbCNCEOD.Checked Then
             Await Task.Run(AddressOf ViewDataCNCEODAsync).ConfigureAwait(False)
@@ -280,7 +279,7 @@ Public Class frmMain
                 Case Trade.TypeOfStock.Cash
                     database = Common.DataBaseTable.Intraday_Cash
                     margin = 1
-                    tick = 0.05
+                    tick = 0.01
                 Case Trade.TypeOfStock.Commodity
                     database = Common.DataBaseTable.Intraday_Commodity
                     margin = 1
@@ -319,7 +318,7 @@ Public Class frmMain
 
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                    .RuleEntityData = New PreviousCandleLowStrategyRule.StrategyRuleEntities With
+                    .RuleEntityData = New PreviousCandleSwingHighStrategyRule.StrategyRuleEntities With
                                         {
                                          .InitialCapital = 10000
                                         }
@@ -332,8 +331,8 @@ Public Class frmMain
                     .TickBasedStrategy = True
                 End With
 
-                Dim ruleData As PreviousCandleLowStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                Dim filename As String = String.Format("At Previous Day Low CNC Tick Output")
+                Dim ruleData As PreviousCandleSwingHighStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                Dim filename As String = String.Format("At Previous Candle Swing High CNC Output")
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using
@@ -364,7 +363,7 @@ Public Class frmMain
                 Case Trade.TypeOfStock.Cash
                     database = Common.DataBaseTable.Intraday_Cash
                     margin = 1
-                    tick = 0.05
+                    tick = 0.01
                 Case Trade.TypeOfStock.Commodity
                     database = Common.DataBaseTable.Intraday_Commodity
                     margin = 1

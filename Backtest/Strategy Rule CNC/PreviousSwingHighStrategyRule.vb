@@ -49,6 +49,7 @@ Public Class PreviousSwingHighStrategyRule
                     Dim quantity As Integer = runningSignal.Item3
                     Dim iteration As Integer = runningSignal.Item4
                     Dim remarks As String = runningSignal.Item5
+                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(entryPrice, Utilities.Numbers.NumberManipulation.RoundOfType.Floor)
 
                     Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                                                                 .EntryPrice = entryPrice,
@@ -56,7 +57,7 @@ Public Class PreviousSwingHighStrategyRule
                                                                 .Quantity = quantity,
                                                                 .Stoploss = .EntryPrice - 1000000000,
                                                                 .Target = .EntryPrice + 1000000000,
-                                                                .Buffer = 0,
+                                                                .Buffer = buffer,
                                                                 .SignalCandle = currentDayCandlePayload,
                                                                 .OrderType = Trade.TypeOfOrder.Market,
                                                                 .Supporting1 = iteration,
