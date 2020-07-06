@@ -167,13 +167,13 @@ Public Class OutsideVWAPStrategyRule
             Dim vwap As Decimal = _vwapPayload(candle.PayloadDate)
             If candle.High < vwap OrElse candle.Low > vwap Then
                 Dim highestATR As Decimal = GetHighestATR(candle)
-                If highestATR <> Decimal.MinValue AndAlso candle.CandleRange >= 0.5 * highestATR AndAlso candle.CandleRange <= 2 * highestATR Then
+                If highestATR <> Decimal.MinValue AndAlso candle.CandleRange >= 0.5 * highestATR AndAlso candle.CandleRange <= 1 * highestATR Then
                     _signalCandle = candle
-                    If _signalCandle.CandleRange >= highestATR Then
-                        _targetMultiplier = 2
-                    Else
-                        _targetMultiplier = 4
-                    End If
+                    'If _signalCandle.CandleRange >= highestATR Then
+                    '    _targetMultiplier = 2
+                    'Else
+                    _targetMultiplier = 4
+                    'End If
                     _numberOfTrade = _targetMultiplier + 1
                 End If
             End If
