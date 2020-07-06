@@ -1435,24 +1435,26 @@ Namespace StrategyHelper
                         allCapitalData = CapitalMovement
                     End If
                     If allTradesData IsNot Nothing AndAlso allTradesData.Count > 0 Then
-                        Dim maxDrawUp As Decimal = 0
-                        Dim maxDrawDown As Decimal = 0
-                        For Each runningDate In allTradesData
-                            For Each runningStock In runningDate.Value
-                                If runningStock.Value IsNot Nothing AndAlso runningStock.Value.Count > 0 Then
-                                    For Each runningTrade In runningStock.Value
-                                        If runningTrade.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel Then
-                                            maxDrawDown = runningTrade.OverAllMaxDrawDownPL
-                                            maxDrawUp = runningTrade.OverAllMaxDrawUpPL
+                        Dim maxDrawUp As Decimal = Decimal.MinValue
+                        Dim maxDrawDown As Decimal = Decimal.MinValue
+                        If allTradesData.Count = 1 Then
+                            For Each runningDate In allTradesData
+                                For Each runningStock In runningDate.Value
+                                    If runningStock.Value IsNot Nothing AndAlso runningStock.Value.Count > 0 Then
+                                        For Each runningTrade In runningStock.Value
+                                            If runningTrade.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel Then
+                                                maxDrawDown = runningTrade.OverAllMaxDrawDownPL
+                                                maxDrawUp = runningTrade.OverAllMaxDrawUpPL
 
-                                            Exit For
-                                        End If
-                                    Next
-                                    Exit For
-                                End If
+                                                Exit For
+                                            End If
+                                        Next
+                                        Exit For
+                                    End If
+                                Next
+                                Exit For
                             Next
-                            Exit For
-                        Next
+                        End If
 
                         Dim maxCapital As Decimal = allCapitalData.Values.Max(Function(x)
                                                                                   Return x.Max(Function(y)
@@ -1472,7 +1474,7 @@ Namespace StrategyHelper
                                                                                           Return x.Values.Sum(Function(y)
                                                                                                                   Return y.FindAll(Function(z)
                                                                                                                                        Return z.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel AndAlso
-                                                                                                                                  z.PLAfterBrokerage > 0
+                                                                                                                              z.PLAfterBrokerage > 0
                                                                                                                                    End Function).Count
                                                                                                               End Function)
                                                                                       End Function)
@@ -1481,7 +1483,7 @@ Namespace StrategyHelper
                                                                                           Return x.Values.Sum(Function(y)
                                                                                                                   Return y.Sum(Function(z)
                                                                                                                                    If z.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel AndAlso
-                                                                                                                                z.PLAfterBrokerage > 0 Then
+                                                                                                                            z.PLAfterBrokerage > 0 Then
                                                                                                                                        Return z.PLAfterBrokerage
                                                                                                                                    Else
                                                                                                                                        Return 0
@@ -1494,7 +1496,7 @@ Namespace StrategyHelper
                                                                                           Return x.Values.Sum(Function(y)
                                                                                                                   Return y.Sum(Function(z)
                                                                                                                                    If z.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel AndAlso
-                                                                                                                                z.PLAfterBrokerage <= 0 Then
+                                                                                                                            z.PLAfterBrokerage <= 0 Then
                                                                                                                                        Return z.PLAfterBrokerage
                                                                                                                                    Else
                                                                                                                                        Return 0
@@ -1519,7 +1521,7 @@ Namespace StrategyHelper
                                                                                                     Return x.Values.Sum(Function(y)
                                                                                                                             Return y.Sum(Function(z)
                                                                                                                                              If z.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel AndAlso
-                                                                                                                                          z.PLAfterBrokerage > 0 Then
+                                                                                                                                      z.PLAfterBrokerage > 0 Then
                                                                                                                                                  Return z.DurationOfTrade.TotalMinutes
                                                                                                                                              Else
                                                                                                                                                  Return 0
@@ -1532,7 +1534,7 @@ Namespace StrategyHelper
                                                                                                     Return x.Values.Sum(Function(y)
                                                                                                                             Return y.Sum(Function(z)
                                                                                                                                              If z.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel AndAlso
-                                                                                                                                          z.PLAfterBrokerage <= 0 Then
+                                                                                                                                      z.PLAfterBrokerage <= 0 Then
                                                                                                                                                  Return z.DurationOfTrade.TotalMinutes
                                                                                                                                              Else
                                                                                                                                                  Return 0
@@ -1591,9 +1593,13 @@ Namespace StrategyHelper
                             .AverageDurationInLosingTrades = If((totalTrades - totalPositiveTrades) <> 0, totalDurationInNegativeTrades / (totalTrades - totalPositiveTrades), 0)
                         End With
 
-                        fileName = String.Format("PL {0},Cap {1},DrwUp {2},DrwDwn {3},{4}.xlsx", Math.Round(strategyOutputData.NetProfit, 0), Math.Round(maxCapital, 0), Math.Round(maxDrawUp, 0), Math.Round(maxDrawDown, 0), fileName)
-                        'fileName = String.Format("PL {0},Cap {1},{2}.xlsx", Math.Round(strategyOutputData.NetProfit, 0), Math.Round(maxCapital, 0), fileName)
+                        If maxDrawUp <> Decimal.MinValue AndAlso maxDrawDown <> Decimal.MinValue Then
+                            fileName = String.Format("PL {0},Cap {1},DrwUp {2},DrwDwn {3},{4}.xlsx", Math.Round(strategyOutputData.NetProfit, 0), Math.Round(maxCapital, 0), Math.Round(maxDrawUp, 0), Math.Round(maxDrawDown, 0), fileName)
+                        Else
+                            fileName = String.Format("PL {0},Cap {1},{2}.xlsx", Math.Round(strategyOutputData.NetProfit, 0), Math.Round(maxCapital, 0), fileName)
+                        End If
                         'fileName = String.Format("PL {0},{1}.xlsx", Math.Round(strategyOutputData.NetProfit, 0), fileName)
+
                         Dim filepath As String = Path.Combine(My.Application.Info.DirectoryPath, "BackTest Output", fileName)
                         If File.Exists(filepath) Then File.Delete(filepath)
 
