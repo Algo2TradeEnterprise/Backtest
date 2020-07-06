@@ -157,6 +157,12 @@ Public Class SmallRangeBreakoutStrategyRule
             If _parentStrategy.IsAnyTradeOfTheStockTargetReached(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS) Then
                 ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
             End If
+        ElseIf currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            If _parentStrategy.StockNumberOfTrades(_tradingDate.Date, _tradingSymbol) = _parentStrategy.NumberOfTradesPerStockPerDay Then
+                If _parentStrategy.StockPLAfterBrokerage(_tradingDate, _tradingSymbol) >= 0 Then
+                    ret = New Tuple(Of Boolean, String)(True, "Loss makeup done")
+                End If
+            End If
         End If
         Return ret
     End Function
