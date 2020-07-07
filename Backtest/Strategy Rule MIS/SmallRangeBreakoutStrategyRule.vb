@@ -12,14 +12,12 @@ Public Class SmallRangeBreakoutStrategyRule
 
         Public MaxLossPerTrade As Decimal
         Public TargetMultiplier As Decimal
-        Public BreakevenMovement As Boolean
-        Public ReverseSignalEntry As Boolean
     End Class
 #End Region
 
     Private ReadOnly _userInputs As StrategyRuleEntities
+    Private ReadOnly _signalTime As Date = Date.MinValue
 
-    Private _atrPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _signalCandle As Payload = Nothing
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
@@ -28,15 +26,19 @@ Public Class SmallRangeBreakoutStrategyRule
                    ByVal tradingDate As Date,
                    ByVal tradingSymbol As String,
                    ByVal canceller As CancellationTokenSource,
-                   ByVal entities As RuleEntities)
+                   ByVal entities As RuleEntities,
+                   ByVal signalTime As Date)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _userInputs = _entities
+        _signalTime = signalTime
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
         MyBase.CompletePreProcessing()
 
-        Indicator.ATR.CalculateATR(14, _signalPayload, _atrPayload)
+        If _signalPayload.ContainsKey(_signalTime) Then
+            _signalCandle = _signalPayload(_signalTime)
+        End If
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -45,29 +47,15 @@ Public Class SmallRangeBreakoutStrategyRule
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         Dim parameter1 As PlaceOrderParameters = Nothing
         Dim parameter2 As PlaceOrderParameters = Nothing
-        If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
-            currentMinuteCandlePayload.PayloadDate >= _tradeStartTime AndAlso Me.EligibleToTakeTrade AndAlso
-            Not _parentStrategy.IsAnyTradeOfTheStockTargetReached(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS) Then
-
-            If ((_userInputs.ReverseSignalEntry AndAlso Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) AndAlso
-                Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy)) OrElse
-                (Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS) AndAlso Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS))) Then
-                Dim signalCandle As Payload = Nothing
+        If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PayloadDate >= _tradeStartTime AndAlso
+            Me.EligibleToTakeTrade AndAlso Not _parentStrategy.IsAnyTradeOfTheStockTargetReached(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS) Then
+            If Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) AndAlso
+                Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) Then
                 Dim signal As Tuple(Of Boolean, Payload) = GetEntrySignal(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, Trade.TradeExecutionDirection.Buy)
                 If signal IsNot Nothing AndAlso signal.Item1 Then
-                    Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandlePayload, _parentStrategy.TradeType, Trade.TradeExecutionDirection.Buy)
-                    If lastExecutedOrder Is Nothing Then
-                        signalCandle = signal.Item2
-                    ElseIf lastExecutedOrder IsNot Nothing Then
-                        If lastExecutedOrder.SignalCandle.PayloadDate <> signal.Item2.PayloadDate Then
-                            signalCandle = signal.Item2
-                        End If
-                    End If
-                End If
-                If signalCandle IsNot Nothing Then
-                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.High, RoundOfType.Floor)
-                    Dim entryPrice As Decimal = signalCandle.High + buffer
-                    Dim stoploss As Decimal = signalCandle.Low - buffer
+                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2.High, RoundOfType.Floor)
+                    Dim entryPrice As Decimal = signal.Item2.High + buffer
+                    Dim stoploss As Decimal = signal.Item2.Low - buffer
                     Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, stoploss, Math.Abs(_userInputs.MaxLossPerTrade) * -1, Trade.TypeOfStock.Cash)
                     Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, quantity, Math.Abs(_userInputs.MaxLossPerTrade) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, Trade.TypeOfStock.Cash)
                     If currentTick.Open < entryPrice Then
@@ -78,33 +66,20 @@ Public Class SmallRangeBreakoutStrategyRule
                                     .Stoploss = stoploss,
                                     .Target = target,
                                     .Buffer = buffer,
-                                    .SignalCandle = signalCandle,
+                                    .SignalCandle = signal.Item2,
                                     .OrderType = Trade.TypeOfOrder.SL,
-                                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
-                                    .Supporting2 = Math.Round((signalCandle.CandleRange / _atrPayload(signalCandle.PayloadDate)) * 100, 4)
+                                    .Supporting1 = signal.Item2.PayloadDate.ToString("HH:mm:ss")
                                 }
                     End If
                 End If
             End If
-            If ((_userInputs.ReverseSignalEntry AndAlso Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) AndAlso
-                Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell)) OrElse
-                (Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS) AndAlso Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS))) Then
-                Dim signalCandle As Payload = Nothing
+            If Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) AndAlso
+                Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) Then
                 Dim signal As Tuple(Of Boolean, Payload) = GetEntrySignal(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, Trade.TradeExecutionDirection.Sell)
                 If signal IsNot Nothing AndAlso signal.Item1 Then
-                    Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandlePayload, _parentStrategy.TradeType, Trade.TradeExecutionDirection.Sell)
-                    If lastExecutedOrder Is Nothing Then
-                        signalCandle = signal.Item2
-                    ElseIf lastExecutedOrder IsNot Nothing Then
-                        If lastExecutedOrder.SignalCandle.PayloadDate <> signal.Item2.PayloadDate Then
-                            signalCandle = signal.Item2
-                        End If
-                    End If
-                End If
-                If signalCandle IsNot Nothing Then
-                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Low, RoundOfType.Floor)
-                    Dim entryPrice As Decimal = signalCandle.Low - buffer
-                    Dim stoploss As Decimal = signalCandle.High + buffer
+                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2.Low, RoundOfType.Floor)
+                    Dim entryPrice As Decimal = signal.Item2.Low - buffer
+                    Dim stoploss As Decimal = signal.Item2.High + buffer
                     Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, stoploss, entryPrice, Math.Abs(_userInputs.MaxLossPerTrade) * -1, Trade.TypeOfStock.Cash)
                     Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, quantity, Math.Abs(_userInputs.MaxLossPerTrade) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Sell, Trade.TypeOfStock.Cash)
                     If currentTick.Open > entryPrice Then
@@ -115,10 +90,9 @@ Public Class SmallRangeBreakoutStrategyRule
                                     .Stoploss = stoploss,
                                     .Target = target,
                                     .Buffer = buffer,
-                                    .SignalCandle = signalCandle,
+                                    .SignalCandle = signal.Item2,
                                     .OrderType = Trade.TypeOfOrder.SL,
-                                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
-                                    .Supporting2 = Math.Round((signalCandle.CandleRange / _atrPayload(signalCandle.PayloadDate)) * 100, 4)
+                                    .Supporting1 = signal.Item2.PayloadDate.ToString("HH:mm:ss")
                                 }
                     End If
                 End If
@@ -148,19 +122,13 @@ Public Class SmallRangeBreakoutStrategyRule
             If _parentStrategy.StockNumberOfTrades(_tradingDate.Date, _tradingSymbol) >= _parentStrategy.NumberOfTradesPerStockPerDay Then
                 ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
             End If
+            If _parentStrategy.IsAnyTradeOfTheStockTargetReached(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS) Then
+                ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+            End If
             Dim signal As Tuple(Of Boolean, Payload) = GetEntrySignal(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, currentTrade.EntryDirection)
             If signal IsNot Nothing AndAlso signal.Item1 Then
                 If currentTrade.SignalCandle.PayloadDate <> signal.Item2.PayloadDate Then
                     ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
-                End If
-            End If
-            If _parentStrategy.IsAnyTradeOfTheStockTargetReached(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS) Then
-                ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
-            End If
-        ElseIf currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-            If _parentStrategy.StockNumberOfTrades(_tradingDate.Date, _tradingSymbol) = _parentStrategy.NumberOfTradesPerStockPerDay Then
-                If _parentStrategy.StockPLAfterBrokerage(_tradingDate, _tradingSymbol) >= 0 Then
-                    ret = New Tuple(Of Boolean, String)(True, "Loss makeup done")
                 End If
             End If
         End If
@@ -170,22 +138,6 @@ Public Class SmallRangeBreakoutStrategyRule
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
-        If _userInputs.BreakevenMovement AndAlso currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-            Dim slPoint As Decimal = currentTrade.SignalCandle.CandleRange + 2 * currentTrade.StoplossBuffer
-            Dim triggerPrice As Decimal = Decimal.MinValue
-            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                If currentTick.Open >= currentTrade.EntryPrice + slPoint Then
-                    triggerPrice = currentTrade.EntryPrice + _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, Trade.TradeExecutionDirection.Buy, Me.LotSize, _parentStrategy.StockType)
-                End If
-            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                If currentTick.Open <= currentTrade.EntryPrice - slPoint Then
-                    triggerPrice = currentTrade.EntryPrice - _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, Trade.TradeExecutionDirection.Sell, Me.LotSize, _parentStrategy.StockType)
-                End If
-            End If
-            If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
-                ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, String.Format("({0})Breakeven at {1}", slPoint, currentTick.PayloadDate.ToString("HH:mm:ss")))
-            End If
-        End If
         Return ret
     End Function
 
@@ -205,13 +157,6 @@ Public Class SmallRangeBreakoutStrategyRule
 
     Private Function GetEntrySignal(ByVal candle As Payload, ByVal currentTick As Payload, ByVal direction As Trade.TradeExecutionDirection) As Tuple(Of Boolean, Payload)
         Dim ret As Tuple(Of Boolean, Payload) = Nothing
-        If candle IsNot Nothing AndAlso _signalCandle Is Nothing Then
-            Dim atr As Decimal = _atrPayload(candle.PayloadDate)
-            If candle.CandleRange < atr AndAlso candle.CandleRange > 0.5 * atr Then
-                _signalCandle = candle
-            End If
-            '_signalCandle = _signalPayload(New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, 9, 15, 0))
-        End If
         If _signalCandle IsNot Nothing Then
             ret = New Tuple(Of Boolean, Payload)(True, _signalCandle)
         End If
