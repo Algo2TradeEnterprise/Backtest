@@ -78,12 +78,26 @@ Namespace StrategyHelper
                         For Each stock In stockList.Keys
                             _canceller.Token.ThrowIfCancellationRequested()
                             stockCount += 1
+
+                            If stockList(stock).StockType = Trade.TypeOfStock.None Then stockList(stock).StockType = Me.StockType
+                            Dim database As Common.DataBaseTable = Common.DataBaseTable.None
+                            Select Case stockList(stock).StockType
+                                Case Trade.TypeOfStock.Cash
+                                    database = Common.DataBaseTable.Intraday_Cash
+                                Case Trade.TypeOfStock.Commodity
+                                    database = Common.DataBaseTable.Intraday_Commodity
+                                Case Trade.TypeOfStock.Currency
+                                    database = Common.DataBaseTable.Intraday_Currency
+                                Case Trade.TypeOfStock.Futures
+                                    database = Common.DataBaseTable.Intraday_Futures
+                            End Select
+
                             Dim XDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             Dim currentDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             If Me.DataSource = SourceOfData.Database Then
-                                XDayOneMinutePayload = Cmn.GetRawPayload(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate)
+                                XDayOneMinutePayload = Cmn.GetRawPayload(database, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate)
                             ElseIf Me.DataSource = SourceOfData.Live Then
-                                XDayOneMinutePayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate).ConfigureAwait(False)
+                                XDayOneMinutePayload = Await Cmn.GetHistoricalDataAsync(database, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate).ConfigureAwait(False)
                             End If
 
                             _canceller.Token.ThrowIfCancellationRequested()
@@ -116,6 +130,10 @@ Namespace StrategyHelper
                                             stockRule = New PairAnchorHKStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, _canceller, stockList(stock).Supporting1)
                                         Case 5
                                             stockRule = New PairDifferencePercentageStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, _canceller, stockList(stock).Supporting1)
+                                        Case 6
+                                            stockRule = New PairChangePercentWithAdjustmentStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, _canceller, stockList(stock).Supporting1, stockList(stock).StockType)
+                                        Case Else
+                                            Throw New NotImplementedException
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -615,6 +633,38 @@ Namespace StrategyHelper
                                              .LotSize = lotSize,
                                              .EligibleToTakeTrade = True,
                                              .Supporting1 = If(controller.ToUpper = "TRUE", 1, 0)}
+                                ret.Add(instrumentName, detailsOfStock)
+                            Next
+                        Case 6
+                            For i = 1 To 2
+                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                Dim tradingSymbol As String = dt.Rows(i).Item(0)
+                                Dim instrumentName As String = Nothing
+                                If tradingSymbol.Contains("FUT") Then
+                                    instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                                Else
+                                    instrumentName = tradingSymbol
+                                End If
+                                Dim lotSize As Integer = dt.Rows(i).Item(1)
+                                Dim xlStockType As String = dt.Rows(i).Item(2)
+                                Dim controller As String = dt.Rows(i).Item(3)
+                                Dim stockTyp As Trade.TypeOfStock = Trade.TypeOfStock.None
+                                Select Case xlStockType
+                                    Case "Cash"
+                                        stockTyp = Trade.TypeOfStock.Cash
+                                    Case "Future"
+                                        stockTyp = Trade.TypeOfStock.Futures
+                                    Case Else
+                                        Throw New NotImplementedException
+                                End Select
+
+                                Dim detailsOfStock As StockDetails = New StockDetails With
+                                            {.StockName = instrumentName,
+                                             .LotSize = lotSize,
+                                             .EligibleToTakeTrade = True,
+                                             .StockType = stockTyp,
+                                             .Supporting1 = If(controller.ToUpper = "TRUE", 1, 0)}
+
                                 ret.Add(instrumentName, detailsOfStock)
                             Next
                         Case Else

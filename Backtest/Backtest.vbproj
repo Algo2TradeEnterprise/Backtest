@@ -119,6 +119,7 @@
     <Compile Include="Strategy Rule MIS\NiftyBankniftyPairStrategy.vb" />
     <Compile Include="Strategy Rule MIS\PairAnchorHKStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\PairChangePercentStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\PairChangePercentWithAdjustmentStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\PairDifferencePercentageStrategyRule.vb" />
   </ItemGroup>
   <ItemGroup>
