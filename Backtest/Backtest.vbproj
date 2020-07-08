@@ -115,6 +115,7 @@
     <Compile Include="Strategy Helper\StrategyRule.vb" />
     <Compile Include="Strategy Helper\Trade.vb" />
     <Compile Include="Strategy Rule CNC\PairBollingerDifferenceStrategyRule.vb" />
+    <Compile Include="Strategy Rule CNC\PairChangePercentCNCStrategyRule.vb" />
     <Compile Include="Strategy Rule CNC\PairDifferenceStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\NiftyBankniftyPairStrategy.vb" />
     <Compile Include="Strategy Rule MIS\PairAnchorHKStrategyRule.vb" />

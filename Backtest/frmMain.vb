@@ -631,7 +631,7 @@ Public Class frmMain
             Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
                                                               exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                               exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                              tradeStartTime:=TimeSpan.Parse("9:15:00"),
+                                                              tradeStartTime:=TimeSpan.Parse("9:16:00"),
                                                               lastTradeEntryTime:=TimeSpan.Parse("15:28:59"),
                                                               eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                               tickSize:=tick,
@@ -648,7 +648,7 @@ Public Class frmMain
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pair Stock List.csv")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Cash Future Pair Stock List.csv")
 
                     .AllowBothDirectionEntryAtSameTime = False
                     .TrailingStoploss = False
@@ -678,7 +678,7 @@ Public Class frmMain
                 End With
 
                 'Dim ruleData As FavourableFractalBreakoutStrategyRule2.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                Dim filename As String = String.Format("Difference")
+                Dim filename As String = String.Format("Pair Change Percentage CNC")
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using
