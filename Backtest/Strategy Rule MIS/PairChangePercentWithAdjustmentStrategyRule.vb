@@ -59,12 +59,13 @@ Public Class PairChangePercentWithAdjustmentStrategyRule
             Dim previousChangePayload As Payload = Nothing
             For Each runningPayload In _signalPayload
                 If runningPayload.Key >= previousTradingDay.Date Then
-                    Dim close As Decimal = Decimal.MinValue
-                    If runningPayload.Key.Date = previousTradingDay.Date Then
-                        close = prePreviousDayLastCandleClose
-                    ElseIf runningPayload.Key.Date = _tradingDate.Date Then
-                        close = previousDayLastCandleClose
-                    End If
+                    'Dim close As Decimal = Decimal.MinValue
+                    'If runningPayload.Key.Date = previousTradingDay.Date Then
+                    '    close = prePreviousDayLastCandleClose
+                    'ElseIf runningPayload.Key.Date = _tradingDate.Date Then
+                    '    close = previousDayLastCandleClose
+                    'End If
+                    Dim close As Decimal = firstCandleOfThePreviousDay.Close
                     If close <> Decimal.MinValue Then
                         Dim change As Payload = New Payload(Payload.CandleDataSource.Calculated) With
                         {
@@ -89,31 +90,49 @@ Public Class PairChangePercentWithAdjustmentStrategyRule
     Public Overrides Sub CompletePairProcessing()
         MyBase.CompletePairProcessing()
 
-        Dim myPair As PairChangePercentWithAdjustmentStrategyRule = Me.AnotherPairInstrument
-        If Me.ChangePercentagePayloads IsNot Nothing AndAlso Me.ChangePercentagePayloads.Count > 0 AndAlso
-            myPair.ChangePercentagePayloads IsNot Nothing AndAlso myPair.ChangePercentagePayloads.Count > 0 Then
-            Dim previousDiffPayload As Payload = Nothing
-            For Each runningPayload In Me.ChangePercentagePayloads.Keys
-                If myPair.ChangePercentagePayloads.ContainsKey(runningPayload) Then
-                    Dim diff As Payload = New Payload(Payload.CandleDataSource.Calculated) With
-                    {
-                     .PayloadDate = runningPayload,
-                     .Open = Me.ChangePercentagePayloads(runningPayload).Close - myPair.ChangePercentagePayloads(runningPayload).Close,
-                     .High = Me.ChangePercentagePayloads(runningPayload).Close - myPair.ChangePercentagePayloads(runningPayload).Close,
-                     .Low = Me.ChangePercentagePayloads(runningPayload).Close - myPair.ChangePercentagePayloads(runningPayload).Close,
-                     .Close = Me.ChangePercentagePayloads(runningPayload).Close - myPair.ChangePercentagePayloads(runningPayload).Close,
-                     .Volume = 1,
-                     .PreviousCandlePayload = previousDiffPayload
-                    }
+        If _controller Then
+            Dim myPair As PairChangePercentWithAdjustmentStrategyRule = Me.AnotherPairInstrument
+            If Me.ChangePercentagePayloads IsNot Nothing AndAlso Me.ChangePercentagePayloads.Count > 0 AndAlso
+                myPair.ChangePercentagePayloads IsNot Nothing AndAlso myPair.ChangePercentagePayloads.Count > 0 Then
+                Dim previousDiffPayload As Payload = Nothing
+                For Each runningPayload In Me.ChangePercentagePayloads.Keys
+                    If myPair.ChangePercentagePayloads.ContainsKey(runningPayload) Then
+                        Dim diff As Payload = New Payload(Payload.CandleDataSource.Calculated) With
+                        {
+                         .PayloadDate = runningPayload,
+                         .Open = Me.ChangePercentagePayloads(runningPayload).Close - myPair.ChangePercentagePayloads(runningPayload).Close,
+                         .High = Me.ChangePercentagePayloads(runningPayload).Close - myPair.ChangePercentagePayloads(runningPayload).Close,
+                         .Low = Me.ChangePercentagePayloads(runningPayload).Close - myPair.ChangePercentagePayloads(runningPayload).Close,
+                         .Close = Me.ChangePercentagePayloads(runningPayload).Close - myPair.ChangePercentagePayloads(runningPayload).Close,
+                         .Volume = 1,
+                         .PreviousCandlePayload = previousDiffPayload
+                        }
 
-                    If _diffPayloads Is Nothing Then _diffPayloads = New Dictionary(Of Date, Payload)
-                    _diffPayloads.Add(runningPayload, diff)
+                        If _diffPayloads Is Nothing Then _diffPayloads = New Dictionary(Of Date, Payload)
+                        _diffPayloads.Add(runningPayload, diff)
+                    End If
+                Next
+
+                If _diffPayloads IsNot Nothing AndAlso _diffPayloads.Count > 0 Then
+                    Indicator.BollingerBands.CalculateBollingerBands(50, Payload.PayloadFields.Close, 3, _diffPayloads, _firstBollingerHighPayloads, _firstBollingerLowPayloads, _firstSMAPayloads)
+                    Indicator.BollingerBands.CalculateBollingerBands(50, Payload.PayloadFields.Close, 3.5, _diffPayloads, _nextBollingerHighPayloads, _nextBollingerLowPayloads, _nextSMAPayloads)
+
+                    For Each runningPayload In _diffPayloads
+                        If runningPayload.Key.Date = _tradingDate.Date Then
+                            Dim diff As Decimal = runningPayload.Value.Close
+                            Dim plusSD As Decimal = _firstBollingerHighPayloads(runningPayload.Key)
+                            Dim minusSD As Decimal = _firstBollingerLowPayloads(runningPayload.Key)
+                            Dim sma As Decimal = _firstSMAPayloads(runningPayload.Key)
+
+                            Console.WriteLine(String.Format("{0},{1},{2},{3},{4},{5},{6}",
+                                                            runningPayload.Key.ToString("HH:mm:ss"),
+                                                            Me.ChangePercentagePayloads(runningPayload.Key).Close,
+                                                            myPair.ChangePercentagePayloads(runningPayload.Key).Close,
+                                                            diff, sma, plusSD, minusSD))
+                        End If
+                    Next
+                    Console.WriteLine("--------------------------------------")
                 End If
-            Next
-
-            If _diffPayloads IsNot Nothing AndAlso _diffPayloads.Count > 0 Then
-                Indicator.BollingerBands.CalculateBollingerBands(50, Payload.PayloadFields.Close, 3, _diffPayloads, _firstBollingerHighPayloads, _firstBollingerLowPayloads, _firstSMAPayloads)
-                Indicator.BollingerBands.CalculateBollingerBands(50, Payload.PayloadFields.Close, 3.5, _diffPayloads, _nextBollingerHighPayloads, _nextBollingerLowPayloads, _nextSMAPayloads)
             End If
         End If
     End Sub
@@ -321,6 +340,8 @@ Public Class PairChangePercentWithAdjustmentStrategyRule
                         If diff - entryDiff > 0 Then
                             If myChange - entryMyChange > myPairChange - entryMyPairChange Then
                                 ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, lastExecutedOrder.EntryDirection)
+
+                                Console.WriteLine(String.Format("Diff:{0}>Entry Diff{1},Banknifty:{2}>Hdfc:{3}. So adjustment on banknifty on {4}", diff, entryDiff, myChange - entryMyChange, myPairChange - entryMyPairChange, ret.Item2.ToString))
                             Else
                                 Dim direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
                                 If lastExecutedOrder.EntryDirection = Trade.TradeExecutionDirection.Buy Then
@@ -329,10 +350,14 @@ Public Class PairChangePercentWithAdjustmentStrategyRule
                                     direction = Trade.TradeExecutionDirection.Buy
                                 End If
                                 ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, direction)
+
+                                Console.WriteLine(String.Format("Diff:{0}>Entry Diff{1},Banknifty:{2}<Hdfc:{3}. So adjustment on hdfc on {4}", diff, entryDiff, myChange - entryMyChange, myPairChange - entryMyPairChange, ret.Item2.ToString))
                             End If
                         ElseIf diff - entryDiff < 0 Then
                             If myChange - entryMyChange < myPairChange - entryMyPairChange Then
                                 ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, lastExecutedOrder.EntryDirection)
+
+                                Console.WriteLine(String.Format("Diff:{0}<Entry Diff{1},Banknifty:{2}<Hdfc:{3}. So adjustment on banknifty on {4}", diff, entryDiff, myChange - entryMyChange, myPairChange - entryMyPairChange, ret.Item2.ToString))
                             Else
                                 Dim direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
                                 If lastExecutedOrder.EntryDirection = Trade.TradeExecutionDirection.Buy Then
@@ -341,6 +366,8 @@ Public Class PairChangePercentWithAdjustmentStrategyRule
                                     direction = Trade.TradeExecutionDirection.Buy
                                 End If
                                 ret = New Tuple(Of Boolean, Trade.TradeExecutionDirection)(True, direction)
+
+                                Console.WriteLine(String.Format("Diff:{0}<Entry Diff{1},Banknifty:{2}>Hdfc:{3}. So adjustment on hdfc on {4}", diff, entryDiff, myChange - entryMyChange, myPairChange - entryMyPairChange, ret.Item2.ToString))
                             End If
                         End If
                     End If

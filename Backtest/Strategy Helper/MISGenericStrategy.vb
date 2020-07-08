@@ -178,6 +178,9 @@ Namespace StrategyHelper
                                             stockName.Value.ModifyStoplossOrderDoneForTheMinute = False
                                             stockName.Value.ModifyTargetOrderDoneForTheMinute = False
                                         Next
+
+                                        'Dim pl As Decimal = Me.TotalPLAfterBrokerage(tradeCheckingDate)
+                                        'Console.WriteLine(String.Format("{0},{1}", potentialTickSignalTime.ToString("HH:mm:ss"), pl))
                                     End If
                                     For Each stockName In stockList.Keys
                                         _canceller.Token.ThrowIfCancellationRequested()
