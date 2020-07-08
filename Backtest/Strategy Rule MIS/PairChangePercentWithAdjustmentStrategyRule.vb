@@ -121,21 +121,21 @@ Public Class PairChangePercentWithAdjustmentStrategyRule
                 If _diffPayloads IsNot Nothing AndAlso _diffPayloads.Count > 0 Then
                     Indicator.BollingerBands.CalculateBollingerBands(50, Payload.PayloadFields.Close, 3, _diffPayloads, _firstBollingerHighPayloads, _firstBollingerLowPayloads, _firstSMAPayloads)
 
-                    For Each runningPayload In _diffPayloads
-                        If runningPayload.Key.Date = _tradingDate.Date Then
-                            Dim diff As Decimal = runningPayload.Value.Close
-                            Dim plusSD As Decimal = _firstBollingerHighPayloads(runningPayload.Key)
-                            Dim minusSD As Decimal = _firstBollingerLowPayloads(runningPayload.Key)
-                            Dim sma As Decimal = _firstSMAPayloads(runningPayload.Key)
+                    'For Each runningPayload In _diffPayloads
+                    '    If runningPayload.Key.Date = _tradingDate.Date Then
+                    '        Dim diff As Decimal = runningPayload.Value.Close
+                    '        Dim plusSD As Decimal = _firstBollingerHighPayloads(runningPayload.Key)
+                    '        Dim minusSD As Decimal = _firstBollingerLowPayloads(runningPayload.Key)
+                    '        Dim sma As Decimal = _firstSMAPayloads(runningPayload.Key)
 
-                            Console.WriteLine(String.Format("{0},{1},{2},{3},{4},{5},{6}",
-                                                            runningPayload.Key.ToString("HH:mm:ss"),
-                                                            Me.ChangePercentagePayloads(runningPayload.Key).Close,
-                                                            myPair.ChangePercentagePayloads(runningPayload.Key).Close,
-                                                            diff, sma, plusSD, minusSD))
-                        End If
-                    Next
-                    Console.WriteLine("--------------------------------------")
+                    '        Console.WriteLine(String.Format("{0},{1},{2},{3},{4},{5},{6}",
+                    '                                        runningPayload.Key.ToString("HH:mm:ss"),
+                    '                                        Me.ChangePercentagePayloads(runningPayload.Key).Close,
+                    '                                        myPair.ChangePercentagePayloads(runningPayload.Key).Close,
+                    '                                        diff, sma, plusSD, minusSD))
+                    '    End If
+                    'Next
+                    'Console.WriteLine("--------------------------------------")
                 End If
             End If
         End If
