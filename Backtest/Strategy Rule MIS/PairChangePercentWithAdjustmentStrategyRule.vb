@@ -339,20 +339,22 @@ Public Class PairChangePercentWithAdjustmentStrategyRule
                 Dim entryDiff As Decimal = currentTrade.Supporting2
                 Dim entryHighBollinger As Decimal = currentTrade.Supporting3
                 Dim entryLowBollinger As Decimal = currentTrade.Supporting4
-                Dim currentDiff As Decimal = _diffPayloads(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate).Close
-                Dim currentHighBollinger As Decimal = _firstBollingerHighPayloads(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate)
-                Dim currentLowBollinger As Decimal = _firstBollingerLowPayloads(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate)
-                If entryDiff > entryHighBollinger Then
-                    If currentDiff < currentLowBollinger Then
-                        ret = New Tuple(Of Boolean, String)(True, String.Format("Normal Exit at -SD"))
-                        Me.AnotherPairInstrument.ForceCancelTrade = True
-                        _exitDone = True
-                    End If
-                ElseIf entryDiff < entryLowBollinger Then
-                    If currentDiff > currentHighBollinger Then
-                        ret = New Tuple(Of Boolean, String)(True, String.Format("Normal Exit at +SD"))
-                        Me.AnotherPairInstrument.ForceCancelTrade = True
-                        _exitDone = True
+                If _diffPayloads.ContainsKey(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) Then
+                    Dim currentDiff As Decimal = _diffPayloads(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate).Close
+                    Dim currentHighBollinger As Decimal = _firstBollingerHighPayloads(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate)
+                    Dim currentLowBollinger As Decimal = _firstBollingerLowPayloads(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate)
+                    If entryDiff > entryHighBollinger Then
+                        If currentDiff < currentLowBollinger Then
+                            ret = New Tuple(Of Boolean, String)(True, String.Format("Normal Exit at -SD"))
+                            Me.AnotherPairInstrument.ForceCancelTrade = True
+                            _exitDone = True
+                        End If
+                    ElseIf entryDiff < entryLowBollinger Then
+                        If currentDiff > currentHighBollinger Then
+                            ret = New Tuple(Of Boolean, String)(True, String.Format("Normal Exit at +SD"))
+                            Me.AnotherPairInstrument.ForceCancelTrade = True
+                            _exitDone = True
+                        End If
                     End If
                 End If
             End If
