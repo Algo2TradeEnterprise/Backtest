@@ -33,6 +33,11 @@ Namespace StrategyHelper
         Public MaxLossOfThisStock As Decimal = Decimal.MinValue
         Public LotSize As Integer
 
+        Public ContractRollover As Boolean = False
+        Public BlankDayExit As Boolean = False
+        Public ForceCancellationDone As Boolean = False
+        Public ContractRolloverForceEntry As Boolean = False
+
         Public ForceTakeTrade As Boolean = False
         Public ForceCancelTrade As Boolean = False
 
@@ -41,8 +46,8 @@ Namespace StrategyHelper
 
         Protected ReadOnly _parentStrategy As Strategy
         Protected ReadOnly _tradingDate As Date
-        Protected ReadOnly _tradingSymbol As String
-        Protected ReadOnly _inputPayload As Dictionary(Of Date, Payload)
+        Protected _tradingSymbol As String
+        Protected _inputPayload As Dictionary(Of Date, Payload)
         Protected ReadOnly _cts As CancellationTokenSource
         Protected ReadOnly _entities As RuleEntities
 
@@ -91,6 +96,12 @@ Namespace StrategyHelper
         Public Overridable Async Function UpdateRequiredCollectionsAsync(ByVal currentTick As Payload) As Task
             Await Task.Delay(0).ConfigureAwait(False)
         End Function
+
+        Public Sub UpdateInputPayloadAndTradingSymbol(ByVal inputPayload As Dictionary(Of Date, Payload), ByVal tradingSymbol As String)
+            _inputPayload = inputPayload
+            _tradingSymbol = tradingSymbol
+        End Sub
+
 
         Public MustOverride Async Function IsTriggerReceivedForPlaceOrderAsync(ByVal currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
         Public MustOverride Async Function IsTriggerReceivedForExitOrderAsync(ByVal currentTick As Payload, ByVal currentTrade As Trade) As Task(Of Tuple(Of Boolean, String))

@@ -13,6 +13,7 @@ Public Class PairChangePercentCNCStrategyRule
     Private _firstSMAPayloads As Dictionary(Of Date, Decimal) = Nothing
     Private _firstBollingerHighPayloads As Dictionary(Of Date, Decimal) = Nothing
     Private _firstBollingerLowPayloads As Dictionary(Of Date, Decimal) = Nothing
+    Private _lastTrade As Trade = Nothing
 
     Private ReadOnly _controller As Boolean
     Private ReadOnly _stockType As Trade.TypeOfStock
@@ -145,67 +146,94 @@ Public Class PairChangePercentCNCStrategyRule
             If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
                 Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.CNC) AndAlso Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.CNC) AndAlso
                 currentMinuteCandlePayload.PayloadDate >= tradeStartTime AndAlso Me.EligibleToTakeTrade Then
-                Dim signalCandle As Payload = Nothing
-                Dim signal As Tuple(Of Boolean, Trade.TradeExecutionDirection) = GetEntrySignal(currentMinuteCandlePayload, currentTick)
-                If signal IsNot Nothing AndAlso signal.Item1 Then
-                    signalCandle = currentMinuteCandlePayload.PreviousCandlePayload
-                End If
-                If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
-                    Dim quantity As Integer = 1
-                    If _stockType = Trade.TypeOfStock.Cash Then
-                        If currentTick.Open > CType(Me.AnotherPairInstrument, PairChangePercentCNCStrategyRule).DummyCandle.Open Then
-                            quantity = Me.LotSize
-                        Else
-                            Dim multiplier As Decimal = CType(Me.AnotherPairInstrument, PairChangePercentCNCStrategyRule).DummyCandle.Open / currentTick.Open
-                            quantity = Math.Floor(multiplier * CType(Me.AnotherPairInstrument, PairChangePercentCNCStrategyRule).LotSize)
-                        End If
+                If Me.ContractRolloverForceEntry AndAlso _lastTrade IsNot Nothing Then
+                    Dim stoploss As Decimal = Decimal.MinValue
+                    Dim target As Decimal = Decimal.MinValue
+                    If _lastTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                        stoploss = currentTick.Open - 100000
+                        target = currentTick.Open + 100000
                     Else
-                        quantity = Me.LotSize
+                        stoploss = currentTick.Open + 100000
+                        target = currentTick.Open - 100000
                     End If
-                    Dim entryDiff As Decimal = _diffPayloads(signalCandle.PayloadDate).Close
-                    Dim entryHighBollinger As Decimal = _firstBollingerHighPayloads(signalCandle.PayloadDate)
-                    Dim entryLowBollinger As Decimal = _firstBollingerLowPayloads(signalCandle.PayloadDate)
-                    Dim remark As String = ""
-                    If entryDiff > entryHighBollinger Then
-                        remark = "+ SD"
-                    ElseIf entryDiff < entryLowBollinger Then
-                        remark = "- SD"
+                    parameter = New PlaceOrderParameters With {
+                                .EntryPrice = currentTick.Open,
+                                .EntryDirection = _lastTrade.EntryDirection,
+                                .Quantity = _lastTrade.Quantity,
+                                .Stoploss = stoploss,
+                                .Target = target,
+                                .Buffer = 0,
+                                .SignalCandle = _lastTrade.SignalCandle,
+                                .OrderType = Trade.TypeOfOrder.Market,
+                                .Supporting1 = _lastTrade.Supporting1,
+                                .Supporting2 = _lastTrade.Supporting2,
+                                .Supporting3 = _lastTrade.Supporting3,
+                                .Supporting4 = _lastTrade.Supporting4
+                            }
+                    Me.ContractRolloverForceEntry = False
+                Else
+                    Dim signalCandle As Payload = Nothing
+                    Dim signal As Tuple(Of Boolean, Trade.TradeExecutionDirection) = GetEntrySignal(currentMinuteCandlePayload, currentTick)
+                    If signal IsNot Nothing AndAlso signal.Item1 Then
+                        signalCandle = currentMinuteCandlePayload.PreviousCandlePayload
                     End If
+                    If signalCandle IsNot Nothing AndAlso signalCandle.PayloadDate < currentMinuteCandlePayload.PayloadDate Then
+                        Dim quantity As Integer = 1
+                        If _stockType = Trade.TypeOfStock.Cash Then
+                            If currentTick.Open > CType(Me.AnotherPairInstrument, PairChangePercentCNCStrategyRule).DummyCandle.Open Then
+                                quantity = Me.LotSize
+                            Else
+                                Dim multiplier As Decimal = CType(Me.AnotherPairInstrument, PairChangePercentCNCStrategyRule).DummyCandle.Open / currentTick.Open
+                                quantity = Math.Floor(multiplier * CType(Me.AnotherPairInstrument, PairChangePercentCNCStrategyRule).LotSize)
+                            End If
+                        Else
+                            quantity = Me.LotSize
+                        End If
+                        Dim entryDiff As Decimal = _diffPayloads(signalCandle.PayloadDate).Close
+                        Dim entryHighBollinger As Decimal = _firstBollingerHighPayloads(signalCandle.PayloadDate)
+                        Dim entryLowBollinger As Decimal = _firstBollingerLowPayloads(signalCandle.PayloadDate)
+                        Dim remark As String = ""
+                        If entryDiff > entryHighBollinger Then
+                            remark = "+ SD"
+                        ElseIf entryDiff < entryLowBollinger Then
+                            remark = "- SD"
+                        End If
 
-                    If signal.Item2 = Trade.TradeExecutionDirection.Buy Then
-                        parameter = New PlaceOrderParameters With {
-                                    .EntryPrice = currentTick.Open,
-                                    .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                    .Quantity = quantity,
-                                    .Stoploss = .EntryPrice - 100000,
-                                    .Target = .EntryPrice + 100000,
-                                    .Buffer = 0,
-                                    .SignalCandle = signalCandle,
-                                    .OrderType = Trade.TypeOfOrder.Market,
-                                    .Supporting1 = entryDiff,
-                                    .Supporting2 = entryHighBollinger,
-                                    .Supporting3 = entryLowBollinger,
-                                    .Supporting4 = remark
-                                }
-                        CType(Me.AnotherPairInstrument, PairChangePercentCNCStrategyRule).Direction = Trade.TradeExecutionDirection.Sell
-                        Me.AnotherPairInstrument.ForceTakeTrade = True
-                    ElseIf signal.Item2 = Trade.TradeExecutionDirection.Sell Then
-                        parameter = New PlaceOrderParameters With {
-                                    .EntryPrice = currentTick.Open,
-                                    .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                                    .Quantity = quantity,
-                                    .Stoploss = .EntryPrice + 100000,
-                                    .Target = .EntryPrice - 100000,
-                                    .Buffer = 0,
-                                    .SignalCandle = signalCandle,
-                                    .OrderType = Trade.TypeOfOrder.Market,
-                                    .Supporting1 = entryDiff,
-                                    .Supporting2 = entryHighBollinger,
-                                    .Supporting3 = entryLowBollinger,
-                                    .Supporting4 = remark
-                                }
-                        CType(Me.AnotherPairInstrument, PairChangePercentCNCStrategyRule).Direction = Trade.TradeExecutionDirection.Buy
-                        Me.AnotherPairInstrument.ForceTakeTrade = True
+                        If signal.Item2 = Trade.TradeExecutionDirection.Buy Then
+                            parameter = New PlaceOrderParameters With {
+                                        .EntryPrice = currentTick.Open,
+                                        .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                                        .Quantity = quantity,
+                                        .Stoploss = .EntryPrice - 100000,
+                                        .Target = .EntryPrice + 100000,
+                                        .Buffer = 0,
+                                        .SignalCandle = signalCandle,
+                                        .OrderType = Trade.TypeOfOrder.Market,
+                                        .Supporting1 = entryDiff,
+                                        .Supporting2 = entryHighBollinger,
+                                        .Supporting3 = entryLowBollinger,
+                                        .Supporting4 = remark
+                                    }
+                            CType(Me.AnotherPairInstrument, PairChangePercentCNCStrategyRule).Direction = Trade.TradeExecutionDirection.Sell
+                            Me.AnotherPairInstrument.ForceTakeTrade = True
+                        ElseIf signal.Item2 = Trade.TradeExecutionDirection.Sell Then
+                            parameter = New PlaceOrderParameters With {
+                                        .EntryPrice = currentTick.Open,
+                                        .EntryDirection = Trade.TradeExecutionDirection.Sell,
+                                        .Quantity = quantity,
+                                        .Stoploss = .EntryPrice + 100000,
+                                        .Target = .EntryPrice - 100000,
+                                        .Buffer = 0,
+                                        .SignalCandle = signalCandle,
+                                        .OrderType = Trade.TypeOfOrder.Market,
+                                        .Supporting1 = entryDiff,
+                                        .Supporting2 = entryHighBollinger,
+                                        .Supporting3 = entryLowBollinger,
+                                        .Supporting4 = remark
+                                    }
+                            CType(Me.AnotherPairInstrument, PairChangePercentCNCStrategyRule).Direction = Trade.TradeExecutionDirection.Buy
+                            Me.AnotherPairInstrument.ForceTakeTrade = True
+                        End If
                     End If
                 End If
             End If
@@ -229,18 +257,33 @@ Public Class PairChangePercentCNCStrategyRule
                 Dim entryDiff As Decimal = currentTrade.Supporting1
                 Dim entryHighBollinger As Decimal = currentTrade.Supporting2
                 Dim entryLowBollinger As Decimal = currentTrade.Supporting3
-                Dim currentDiff As Decimal = _diffPayloads(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate).Close
-                Dim currentHighBollinger As Decimal = _firstBollingerHighPayloads(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate)
-                Dim currentLowBollinger As Decimal = _firstBollingerLowPayloads(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate)
-                If entryDiff > entryHighBollinger Then
-                    If currentDiff < currentLowBollinger Then
-                        ret = New Tuple(Of Boolean, String)(True, String.Format("Normal Exit at -SD"))
-                        Me.AnotherPairInstrument.ForceCancelTrade = True
+                If _diffPayloads.ContainsKey(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) Then
+                    Dim currentDiff As Decimal = _diffPayloads(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate).Close
+                    Dim currentHighBollinger As Decimal = _firstBollingerHighPayloads(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate)
+                    Dim currentLowBollinger As Decimal = _firstBollingerLowPayloads(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate)
+                    If entryDiff > entryHighBollinger Then
+                        If currentDiff < currentLowBollinger Then
+                            ret = New Tuple(Of Boolean, String)(True, String.Format("Normal Exit at -SD"))
+                            Me.AnotherPairInstrument.ForceCancelTrade = True
+                        End If
+                    ElseIf entryDiff < entryLowBollinger Then
+                        If currentDiff > currentHighBollinger Then
+                            ret = New Tuple(Of Boolean, String)(True, String.Format("Normal Exit at +SD"))
+                            Me.AnotherPairInstrument.ForceCancelTrade = True
+                        End If
                     End If
-                ElseIf entryDiff < entryLowBollinger Then
-                    If currentDiff > currentHighBollinger Then
-                        ret = New Tuple(Of Boolean, String)(True, String.Format("Normal Exit at +SD"))
-                        Me.AnotherPairInstrument.ForceCancelTrade = True
+                Else
+                    'Throw New ApplicationException()
+                End If
+                If ret Is Nothing AndAlso (Me.ContractRollover OrElse Me.BlankDayExit) Then
+                    Dim currentMinutePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
+                    If currentMinutePayload.PayloadDate = _signalPayload.LastOrDefault.Key Then
+                        ret = New Tuple(Of Boolean, String)(True, If(Me.ContractRollover, "Contract Rollover Exit", "Blank Day Exit"))
+                        ForceCancellationDone = True
+                        If Me.BlankDayExit Then
+                            Me.AnotherPairInstrument.ForceCancelTrade = True
+                        End If
+                        _lastTrade = currentTrade
                     End If
                 End If
             End If

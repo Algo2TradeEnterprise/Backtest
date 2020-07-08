@@ -71,6 +71,7 @@ Namespace StrategyHelper
                         'First lets build the payload for all the stocks
                         Dim stockCount As Integer = 0
                         Dim eligibleStockCount As Integer = 0
+                        Dim commonNextTradingDay As Date = Cmn.GetNexTradingDay(Me.DatabaseTable, tradeCheckingDate)
                         For Each stock In stockList.Keys
                             _canceller.Token.ThrowIfCancellationRequested()
                             stockCount += 1
@@ -131,6 +132,36 @@ Namespace StrategyHelper
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
                                     stockRule.CompletePreProcessing()
                                     stocksRuleData.Add(stock, stockRule)
+
+                                    If stockList(stock).StockType <> Trade.TypeOfStock.Cash Then
+                                        Dim nextTradingDay As Date = Cmn.GetNexTradingDay(database, tradingSymbol, tradeCheckingDate)
+                                        If nextTradingDay <> Date.MinValue Then
+                                            Dim nextDayTradingSymbol As String = Cmn.GetCurrentTradingSymbol(database, nextTradingDay, stock)
+                                            If nextDayTradingSymbol IsNot Nothing AndAlso nextDayTradingSymbol <> tradingSymbol Then
+                                                stockList(stock).ContractRolloverSymbol = nextDayTradingSymbol
+                                                stocksRuleData(stock).ContractRollover = True
+                                                stocksRuleData(stock).BlankDayExit = False
+                                            ElseIf nextDayTradingSymbol Is Nothing Then
+                                                stocksRuleData(stock).ContractRollover = False
+                                                stocksRuleData(stock).BlankDayExit = True
+                                            End If
+                                        Else
+                                            If commonNextTradingDay <> Date.MinValue Then
+                                                Dim nextDayTradingSymbol As String = Cmn.GetCurrentTradingSymbol(database, commonNextTradingDay, stock)
+                                                If nextDayTradingSymbol IsNot Nothing AndAlso nextDayTradingSymbol <> tradingSymbol Then
+                                                    stockList(stock).ContractRolloverSymbol = nextDayTradingSymbol
+                                                    stocksRuleData(stock).ContractRollover = True
+                                                    stocksRuleData(stock).BlankDayExit = False
+                                                Else
+                                                    stocksRuleData(stock).ContractRollover = False
+                                                    stocksRuleData(stock).BlankDayExit = True
+                                                End If
+                                            Else
+                                                stocksRuleData(stock).ContractRollover = False
+                                                stocksRuleData(stock).BlankDayExit = True
+                                            End If
+                                        End If
+                                    End If
                                 End If
                             End If
                         Next
@@ -185,6 +216,28 @@ Namespace StrategyHelper
 
                                         If Not currentDayOneMinuteStocksPayload.ContainsKey(stockName) Then
                                             Continue For
+                                        End If
+
+                                        'Contract Rollover
+                                        If stockStrategyRule.ContractRollover AndAlso stockStrategyRule.ForceCancellationDone Then
+                                            Dim XDayOneMinutePayload As Dictionary(Of Date, Payload) = Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.Intraday_Futures, stockList(stockName).ContractRolloverSymbol, tradeCheckingDate.AddDays(-20), tradeCheckingDate)
+                                            Dim currentDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
+                                            For Each runningPayload In XDayOneMinutePayload.Keys
+                                                _canceller.Token.ThrowIfCancellationRequested()
+                                                If runningPayload.Date = tradeCheckingDate.Date Then
+                                                    If currentDayOneMinutePayload Is Nothing Then currentDayOneMinutePayload = New Dictionary(Of Date, Payload)
+                                                    currentDayOneMinutePayload.Add(runningPayload, XDayOneMinutePayload(runningPayload))
+                                                End If
+                                            Next
+                                            If currentDayOneMinutePayload IsNot Nothing AndAlso currentDayOneMinutePayload.Count > 0 Then
+                                                currentDayOneMinuteStocksPayload(stockName) = currentDayOneMinutePayload
+                                                stockStrategyRule.UpdateInputPayloadAndTradingSymbol(XDayOneMinutePayload, stockList(stockName).ContractRolloverSymbol)
+                                                'stockStrategyRule.CompletePreProcessing()
+                                                stockStrategyRule.ContractRollover = False
+                                                stockStrategyRule.BlankDayExit = False
+                                                stockStrategyRule.ForceCancellationDone = False
+                                                stockStrategyRule.ContractRolloverForceEntry = True
+                                            End If
                                         End If
 
                                         'Get the current minute candle from the stock collection for this stock for that day
