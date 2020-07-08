@@ -4,7 +4,8 @@
             If inputPayload IsNot Nothing AndAlso inputPayload.Count > 0 Then
                 Dim swingHighPayload As Dictionary(Of Date, Decimal) = Nothing
                 Dim swingLowPayload As Dictionary(Of Date, Decimal) = Nothing
-                Indicator.SwingHighLow.CalculateSwingHighLow(inputPayload, False, swingHighPayload, swingLowPayload)
+                Throw New NotImplementedException
+                'Indicator.SwingHighLow.CalculateSwingHighLow(inputPayload, False, swingHighPayload, swingLowPayload)
                 For Each runningPayload In inputPayload
                     Dim highLine As TrendLineVeriables = New TrendLineVeriables
                     Dim lowLine As TrendLineVeriables = New TrendLineVeriables
