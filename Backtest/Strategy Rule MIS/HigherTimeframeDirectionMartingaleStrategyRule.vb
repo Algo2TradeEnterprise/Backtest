@@ -20,7 +20,8 @@ Public Class HigherTimeframeDirectionMartingaleStrategyRule
     Private _atrPayload As Dictionary(Of Date, Decimal) = Nothing
 
     Private _xMinPayload As Dictionary(Of Date, Payload) = Nothing
-    Private _emaPayload As Dictionary(Of Date, Decimal) = Nothing
+    'Private _emaPayload As Dictionary(Of Date, Decimal) = Nothing
+    Private _xMinHKPayload As Dictionary(Of Date, Payload) = Nothing
 
     Private _slPoint As Decimal = Decimal.MinValue
 
@@ -67,7 +68,8 @@ Public Class HigherTimeframeDirectionMartingaleStrategyRule
 
         Dim exchangeStartTime As Date = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, _parentStrategy.ExchangeStartTime.Hours, _parentStrategy.ExchangeStartTime.Minutes, _parentStrategy.ExchangeStartTime.Seconds)
         _xMinPayload = Common.ConvertPayloadsToXMinutes(_inputPayload, _userInputs.HigherTimeframe, exchangeStartTime)
-        Indicator.EMA.CalculateEMA(13, Payload.PayloadFields.Close, _xMinPayload, _emaPayload)
+        'Indicator.EMA.CalculateEMA(13, Payload.PayloadFields.Close, _xMinPayload, _emaPayload)
+        Indicator.HeikenAshi.ConvertToHeikenAshi(_xMinPayload, _xMinHKPayload)
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -200,11 +202,23 @@ Public Class HigherTimeframeDirectionMartingaleStrategyRule
             If _xMinPayload.ContainsKey(currentXMin) Then
                 Dim htCandle As Payload = _xMinPayload(currentXMin)
                 If htCandle IsNot Nothing AndAlso htCandle.PreviousCandlePayload IsNot Nothing AndAlso htCandle.PreviousCandlePayload.PayloadDate.Date = _tradingDate.Date Then
-                    Dim ema As Decimal = _emaPayload(htCandle.PreviousCandlePayload.PayloadDate)
-                    If htCandle.PreviousCandlePayload.Close < ema Then
+                    'Dim ema As Decimal = _emaPayload(htCandle.PreviousCandlePayload.PayloadDate)
+                    'If htCandle.PreviousCandlePayload.Close < ema Then
+                    '    ret = Trade.TradeExecutionDirection.Sell
+                    'Else
+                    '    ret = Trade.TradeExecutionDirection.Buy
+                    'End If
+                    Dim htHKCandle As Payload = _xMinHKPayload(htCandle.PreviousCandlePayload.PayloadDate)
+                    If htHKCandle.CandleColor = Color.Green Then
+                        ret = Trade.TradeExecutionDirection.Buy
+                    ElseIf htHKCandle.CandleColor = Color.Red Then
                         ret = Trade.TradeExecutionDirection.Sell
                     Else
-                        ret = Trade.TradeExecutionDirection.Buy
+                        If htHKCandle.PreviousCandlePayload.CandleColor = Color.Green Then
+                            ret = Trade.TradeExecutionDirection.Buy
+                        ElseIf htHKCandle.PreviousCandlePayload.CandleColor = Color.Red Then
+                            ret = Trade.TradeExecutionDirection.Sell
+                        End If
                     End If
                 End If
             End If
