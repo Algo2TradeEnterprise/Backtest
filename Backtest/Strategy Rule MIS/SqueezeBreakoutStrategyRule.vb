@@ -155,9 +155,10 @@ Public Class SqueezeBreakoutStrategyRule
                         _bollingerLowPayload(candle.PayloadDate) < _atrLowPayload(candle.PayloadDate) Then
                         _signalCandle = candle
 
-                        Console.WriteLine(String.Format("{0},{1},{2}",
+                        Console.WriteLine(String.Format("{0},{1},{2},{3}",
                                                         _signalCandle.PayloadDate.ToString("dd-MMM-yyyy"),
                                                         _signalCandle.TradingSymbol,
+                                                        GetSqueezeStartTime(_signalCandle.PayloadDate).ToString("HH:mm:ss"),
                                                         _signalCandle.PayloadDate.ToString("HH:mm:ss")))
                     End If
                 End If
@@ -183,6 +184,23 @@ Public Class SqueezeBreakoutStrategyRule
             '    End If
             'End If
         End If
+        Return ret
+    End Function
+
+    Private Function GetSqueezeStartTime(ByVal endTime As Date) As Date
+        Dim ret As Date = Date.MinValue
+        For Each runningPayload In _signalPayload.OrderByDescending(Function(x)
+                                                                        Return x.Key
+                                                                    End Function)
+            If runningPayload.Key.Date = _tradingDate.Date AndAlso runningPayload.Key < endTime Then
+                If _bollingerHighPayload(runningPayload.Key) < _atrHighPayload(runningPayload.Key) AndAlso
+                    _bollingerLowPayload(runningPayload.Key) > _atrLowPayload(runningPayload.Key) Then
+                    ret = runningPayload.Key
+                Else
+                    Exit For
+                End If
+            End If
+        Next
         Return ret
     End Function
 
