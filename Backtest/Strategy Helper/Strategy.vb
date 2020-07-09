@@ -1038,7 +1038,7 @@ Namespace StrategyHelper
             Return ret
         End Function
 
-        Public Function GetCurrentXMinuteCandleTime(ByVal lowerTFTime As Date, ByVal higherTFPayload As Dictionary(Of Date, Payload)) As Date
+        Public Function GetCurrentXMinuteCandleTime(ByVal lowerTFTime As Date, ByVal higherTFPayload As Dictionary(Of Date, Payload), Optional ByVal timeframe As Integer = Integer.MinValue) As Date
             Dim ret As Date = Nothing
 
             If higherTFPayload IsNot Nothing AndAlso higherTFPayload.Count > 0 Then
@@ -1052,18 +1052,20 @@ Namespace StrategyHelper
                 '        Exit For
                 '    End If
                 'Next
+                Dim timeframeToCheck As Integer = Me.SignalTimeFrame
+                If timeframe <> Integer.MinValue Then timeframeToCheck = timeframe
 
-                If Me.ExchangeStartTime.Minutes Mod Me.SignalTimeFrame = 0 Then
+                If Me.ExchangeStartTime.Minutes Mod timeframeToCheck = 0 Then
                     ret = New Date(lowerTFTime.Year,
                                     lowerTFTime.Month,
                                     lowerTFTime.Day,
                                     lowerTFTime.Hour,
-                                    Math.Floor(lowerTFTime.Minute / Me.SignalTimeFrame) * Me.SignalTimeFrame, 0)
+                                    Math.Floor(lowerTFTime.Minute / timeframeToCheck) * timeframeToCheck, 0)
                 Else
                     Dim exchangeTime As Date = New Date(lowerTFTime.Year, lowerTFTime.Month, lowerTFTime.Day, Me.ExchangeStartTime.Hours, Me.ExchangeStartTime.Minutes, 0)
                     Dim currentTime As Date = New Date(lowerTFTime.Year, lowerTFTime.Month, lowerTFTime.Day, lowerTFTime.Hour, lowerTFTime.Minute, 0)
                     Dim timeDifference As Double = currentTime.Subtract(exchangeTime).TotalMinutes
-                    Dim adjustedTimeDifference As Integer = Math.Floor(timeDifference / Me.SignalTimeFrame) * Me.SignalTimeFrame
+                    Dim adjustedTimeDifference As Integer = Math.Floor(timeDifference / timeframeToCheck) * timeframeToCheck
                     ret = exchangeTime.AddMinutes(adjustedTimeDifference)
                     'Dim currentMinute As Date = exchangeTime.AddMinutes(adjustedTimeDifference)
                     'ret = New Date(lowerTFTime.Year,
