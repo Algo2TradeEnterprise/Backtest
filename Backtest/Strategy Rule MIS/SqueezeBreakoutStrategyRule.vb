@@ -154,6 +154,11 @@ Public Class SqueezeBreakoutStrategyRule
                     If _bollingerHighPayload(candle.PayloadDate) > _atrHighPayload(candle.PayloadDate) OrElse
                         _bollingerLowPayload(candle.PayloadDate) < _atrLowPayload(candle.PayloadDate) Then
                         _signalCandle = candle
+
+                        Console.WriteLine(String.Format("{0},{1},{2}",
+                                                        _signalCandle.PayloadDate.ToString("dd-MMM-yyyy"),
+                                                        _signalCandle.TradingSymbol,
+                                                        _signalCandle.PayloadDate.ToString("HH:mm:ss")))
                     End If
                 End If
             Else
@@ -164,19 +169,19 @@ Public Class SqueezeBreakoutStrategyRule
                 End If
             End If
 
-            If _signalCandle IsNot Nothing Then
-                Dim buyEntryPrice As Decimal = ConvertFloorCeling(_atrHighPayload(_signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
-                Dim sellEntryPrice As Decimal = ConvertFloorCeling(_atrLowPayload(_signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Floor)
-                Dim middlePrice As Decimal = (buyEntryPrice + sellEntryPrice) / 2
-                Dim range As Decimal = buyEntryPrice - middlePrice
-                If currentTick.Open >= middlePrice + range * 60 / 100 Then
-                    Dim stoploss As Decimal = ConvertFloorCeling(middlePrice, _parentStrategy.TickSize, RoundOfType.Floor)
-                    ret = New Tuple(Of Boolean, Decimal, Decimal, Payload, Trade.TradeExecutionDirection)(True, buyEntryPrice, stoploss, _signalCandle, Trade.TradeExecutionDirection.Buy)
-                ElseIf currentTick.Open <= middlePrice - range * 60 / 100 Then
-                    Dim stoploss As Decimal = ConvertFloorCeling(middlePrice, _parentStrategy.TickSize, RoundOfType.Celing)
-                    ret = New Tuple(Of Boolean, Decimal, Decimal, Payload, Trade.TradeExecutionDirection)(True, sellEntryPrice, stoploss, _signalCandle, Trade.TradeExecutionDirection.Sell)
-                End If
-            End If
+            'If _signalCandle IsNot Nothing Then
+            '    Dim buyEntryPrice As Decimal = ConvertFloorCeling(_atrHighPayload(_signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
+            '    Dim sellEntryPrice As Decimal = ConvertFloorCeling(_atrLowPayload(_signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Floor)
+            '    Dim middlePrice As Decimal = (buyEntryPrice + sellEntryPrice) / 2
+            '    Dim range As Decimal = buyEntryPrice - middlePrice
+            '    If currentTick.Open >= middlePrice + range * 60 / 100 Then
+            '        Dim stoploss As Decimal = ConvertFloorCeling(middlePrice, _parentStrategy.TickSize, RoundOfType.Floor)
+            '        ret = New Tuple(Of Boolean, Decimal, Decimal, Payload, Trade.TradeExecutionDirection)(True, buyEntryPrice, stoploss, _signalCandle, Trade.TradeExecutionDirection.Buy)
+            '    ElseIf currentTick.Open <= middlePrice - range * 60 / 100 Then
+            '        Dim stoploss As Decimal = ConvertFloorCeling(middlePrice, _parentStrategy.TickSize, RoundOfType.Celing)
+            '        ret = New Tuple(Of Boolean, Decimal, Decimal, Payload, Trade.TradeExecutionDirection)(True, sellEntryPrice, stoploss, _signalCandle, Trade.TradeExecutionDirection.Sell)
+            '    End If
+            'End If
         End If
         Return ret
     End Function
