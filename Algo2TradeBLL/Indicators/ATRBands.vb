@@ -1,6 +1,6 @@
 ﻿Namespace Indicator
     Public Module ATRBands
-        Public Sub CalculateATRBands(ByVal ATRShift As Integer, ByVal ATRPeriod As Integer, ByVal shiftField As Payload.PayloadFields, ByVal inputPayload As Dictionary(Of Date, Payload), ByRef outputHighPayload As Dictionary(Of Date, Decimal), ByRef outputLowPayload As Dictionary(Of Date, Decimal), Optional neglectValidation As Boolean = False)
+        Public Sub CalculateATRBands(ByVal ATRShift As Decimal, ByVal ATRPeriod As Integer, ByVal shiftField As Payload.PayloadFields, ByVal inputPayload As Dictionary(Of Date, Payload), ByRef outputHighPayload As Dictionary(Of Date, Decimal), ByRef outputLowPayload As Dictionary(Of Date, Decimal), Optional neglectValidation As Boolean = False)
             If inputPayload IsNot Nothing AndAlso inputPayload.Count > 0 Then
                 If Not neglectValidation AndAlso inputPayload.Count < 100 Then
                     Throw New ApplicationException("Can't Calculate ATR")

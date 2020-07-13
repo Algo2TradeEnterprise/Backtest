@@ -8,7 +8,7 @@ Public Class MultiTradeLossMakeupStrategyRule
 
 #Region "Entity"
     Enum ModeOfTarget
-        LossMakeup
+        LossMakeup = 1
         Normal
     End Enum
     Public Class StrategyRuleEntities
@@ -21,8 +21,10 @@ Public Class MultiTradeLossMakeupStrategyRule
     End Class
 #End Region
 
-    Private _atrPayload As Dictionary(Of Date, Decimal) = Nothing
-    Private _emaPayload As Dictionary(Of Date, Decimal) = Nothing
+    Private _atrHighPayload As Dictionary(Of Date, Decimal) = Nothing
+    Private _atrLowPayload As Dictionary(Of Date, Decimal) = Nothing
+    'Private _atrPayload As Dictionary(Of Date, Decimal) = Nothing
+    'Private _emaPayload As Dictionary(Of Date, Decimal) = Nothing
 
     Private ReadOnly _userInputs As StrategyRuleEntities
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
@@ -41,8 +43,9 @@ Public Class MultiTradeLossMakeupStrategyRule
     Public Overrides Sub CompletePreProcessing()
         MyBase.CompletePreProcessing()
 
-        Indicator.ATR.CalculateATR(14, _signalPayload, _atrPayload)
-        Indicator.EMA.CalculateEMA(13, Payload.PayloadFields.Close, _signalPayload, _emaPayload)
+        'Indicator.ATR.CalculateATR(14, _signalPayload, _atrPayload)
+        'Indicator.EMA.CalculateEMA(13, Payload.PayloadFields.Close, _signalPayload, _emaPayload)
+        Indicator.ATRBands.CalculateATRBands(0.3, 5, Payload.PayloadFields.Close, _signalPayload, _atrHighPayload, _atrLowPayload)
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -185,15 +188,72 @@ Public Class MultiTradeLossMakeupStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
     End Function
 
+    'Private Function GetSignal(ByVal currentCandle As Payload, ByVal currentTick As Payload, ByVal direction As Trade.TradeExecutionDirection) As Tuple(Of Boolean, Payload)
+    '    Dim ret As Tuple(Of Boolean, Payload) = Nothing
+    '    If currentCandle IsNot Nothing AndAlso currentCandle.PreviousCandlePayload IsNot Nothing AndAlso Not currentCandle.PreviousCandlePayload.DeadCandle Then
+    '        If Not _parentStrategy.IsTradeActive(currentCandle, Trade.TypeOfTrade.MIS) Then
+    '            Dim signalCandle As Payload = Nothing
+    '            Dim atr As Decimal = _atrPayload(currentCandle.PreviousCandlePayload.PayloadDate)
+    '            Dim ema As Decimal = _emaPayload(currentCandle.PreviousCandlePayload.PayloadDate)
+    '            If currentCandle.PreviousCandlePayload.Low < ema AndAlso currentCandle.PreviousCandlePayload.High > ema Then
+    '                If currentCandle.PreviousCandlePayload.CandleRange < atr AndAlso currentCandle.PreviousCandlePayload.CandleRange >= atr / 2 Then
+    '                    signalCandle = currentCandle.PreviousCandlePayload
+    '                End If
+    '            End If
+
+    '            Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentCandle, Trade.TypeOfTrade.MIS)
+    '            If signalCandle Is Nothing Then
+    '                If lastExecutedOrder IsNot Nothing Then signalCandle = lastExecutedOrder.SignalCandle
+    '            End If
+
+    '            If signalCandle IsNot Nothing Then
+    '                If direction = Trade.TradeExecutionDirection.Buy Then
+    '                    If Not (lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.EntryDirection = Trade.TradeExecutionDirection.Buy AndAlso
+    '                        lastExecutedOrder.SignalCandle.PayloadDate = signalCandle.PayloadDate) Then
+    '                        ret = New Tuple(Of Boolean, Payload)(True, signalCandle)
+    '                    End If
+    '                ElseIf direction = Trade.TradeExecutionDirection.Sell Then
+    '                    If Not (lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.EntryDirection = Trade.TradeExecutionDirection.Sell AndAlso
+    '                        lastExecutedOrder.SignalCandle.PayloadDate = signalCandle.PayloadDate) Then
+    '                        ret = New Tuple(Of Boolean, Payload)(True, signalCandle)
+    '                    End If
+    '                End If
+    '            End If
+    '        Else
+    '            Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentCandle, Trade.TypeOfTrade.MIS)
+    '            Dim signalCandle As Payload = lastExecutedOrder.SignalCandle
+
+    '            If signalCandle IsNot Nothing Then
+    '                If direction = Trade.TradeExecutionDirection.Buy Then
+    '                    If Not (lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.EntryDirection = Trade.TradeExecutionDirection.Buy AndAlso
+    '                        lastExecutedOrder.SignalCandle.PayloadDate = signalCandle.PayloadDate) Then
+    '                        ret = New Tuple(Of Boolean, Payload)(True, signalCandle)
+    '                    End If
+    '                ElseIf direction = Trade.TradeExecutionDirection.Sell Then
+    '                    If Not (lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.EntryDirection = Trade.TradeExecutionDirection.Sell AndAlso
+    '                        lastExecutedOrder.SignalCandle.PayloadDate = signalCandle.PayloadDate) Then
+    '                        ret = New Tuple(Of Boolean, Payload)(True, signalCandle)
+    '                    End If
+    '                End If
+    '            End If
+    '        End If
+    '    End If
+    '    Return ret
+    'End Function
+
     Private Function GetSignal(ByVal currentCandle As Payload, ByVal currentTick As Payload, ByVal direction As Trade.TradeExecutionDirection) As Tuple(Of Boolean, Payload)
         Dim ret As Tuple(Of Boolean, Payload) = Nothing
         If currentCandle IsNot Nothing AndAlso currentCandle.PreviousCandlePayload IsNot Nothing AndAlso Not currentCandle.PreviousCandlePayload.DeadCandle Then
             If Not _parentStrategy.IsTradeActive(currentCandle, Trade.TypeOfTrade.MIS) Then
                 Dim signalCandle As Payload = Nothing
-                Dim atr As Decimal = _atrPayload(currentCandle.PreviousCandlePayload.PayloadDate)
-                Dim ema As Decimal = _emaPayload(currentCandle.PreviousCandlePayload.PayloadDate)
-                If currentCandle.PreviousCandlePayload.Low < ema AndAlso currentCandle.PreviousCandlePayload.High > ema Then
-                    If currentCandle.PreviousCandlePayload.CandleRange < atr AndAlso currentCandle.PreviousCandlePayload.CandleRange >= atr / 2 Then
+                Dim atrHighBand As Decimal = _atrHighPayload(currentCandle.PreviousCandlePayload.PayloadDate)
+                Dim atrLowBand As Decimal = _atrLowPayload(currentCandle.PreviousCandlePayload.PayloadDate)
+                If currentCandle.PreviousCandlePayload.High <= atrHighBand Then
+                    If currentCandle.PreviousCandlePayload.Low + _parentStrategy.TickSize >= atrLowBand Then
+                        signalCandle = currentCandle.PreviousCandlePayload
+                    End If
+                ElseIf currentCandle.PreviousCandlePayload.Low >= atrLowBand Then
+                    If currentCandle.PreviousCandlePayload.High + _parentStrategy.TickSize <= atrHighBand Then
                         signalCandle = currentCandle.PreviousCandlePayload
                     End If
                 End If
