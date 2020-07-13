@@ -29,7 +29,7 @@ Namespace StrategyHelper
                        ByVal minimumEarnedCapitalToWithdraw As Decimal,
                        ByVal amountToBeWithdrawn As Decimal)
             MyBase.New(canceller, exchangeStartTime, exchangeEndTime, tradeStartTime, lastTradeEntryTime, eodExitTime, tickSize, marginMultiplier, timeframe, heikenAshiCandle, stockType, optionStockType, Trade.TypeOfTrade.MIS, databaseTable, dataSource, initialCapital, usableCapital, minimumEarnedCapitalToWithdraw, amountToBeWithdrawn)
-            Me.NumberOfTradesPerDay = Integer.MaxValue
+            'Me.NumberOfTradesPerDay = Integer.MaxValue
         End Sub
         Public Overrides Async Function TestStrategyAsync(startDate As Date, endDate As Date, filename As String) As Task
             If Not Me.ExitOnOverAllFixedTargetStoploss Then
@@ -120,7 +120,7 @@ Namespace StrategyHelper
                                     Dim tradingSymbol As String = currentDayOneMinutePayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
                                         Case 0
-                                            stockRule = New SmallRangeBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).SupportingDate)
+                                            stockRule = New TrendlineStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
@@ -592,39 +592,30 @@ Namespace StrategyHelper
                 If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
                     Dim counter As Integer = 0
                     For i = 0 To dt.Rows.Count - 1
-                        Dim rowDate As Date = dt.Rows(i).Item("Date")
-                        If rowDate.Date = tradingDate.Date Then
-                            Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
-                            Dim instrumentName As String = Nothing
-                            If tradingSymbol.Contains("FUT") Then
-                                instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
-                            Else
-                                instrumentName = tradingSymbol
-                            End If
-                            Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
-                            Dim slab As Decimal = dt.Rows(i).Item("Slab")
-                            Dim signalTime As Date = Date.ParseExact(dt.Rows(i).Item("Time"), "H:mm:ss", Nothing)
-                            Dim signalCandleTime As Date = New Date(tradingDate.Year, tradingDate.Month, tradingDate.Day, signalTime.Hour, signalTime.Minute, signalTime.Second)
-
-                            Dim detailsOfStock As StockDetails = New StockDetails With
-                                                {.StockName = instrumentName,
-                                                 .TradingSymbol = tradingSymbol,
-                                                 .LotSize = lotsize,
-                                                 .Slab = slab,
-                                                 .EligibleToTakeTrade = True,
-                                                 .SupportingDate = signalCandleTime}
-
-                            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                            ret.Add(instrumentName, detailsOfStock)
-
-                            counter += 1
-                            If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                        Dim tradingSymbol As String = dt.Rows(i).Item("Stock Name").ToString.Trim
+                        Dim instrumentName As String = Nothing
+                        If tradingSymbol.Contains("FUT") Then
+                            instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                        Else
+                            instrumentName = tradingSymbol
                         End If
-                    Next
 
-                    If ret IsNot Nothing AndAlso ret.Count > 0 Then
-                        CType(Me.RuleEntityData, SmallRangeBreakoutStrategyRule.StrategyRuleEntities).MaxLossPerTrade = (5000 / ret.Count) / Me.NumberOfTradesPerStockPerDay
-                    End If
+                        Dim lotsize As Integer = 1
+                        Dim slab As Decimal = 0
+
+                        Dim detailsOfStock As StockDetails = New StockDetails With
+                                            {.StockName = instrumentName,
+                                             .TradingSymbol = tradingSymbol,
+                                             .LotSize = lotsize,
+                                             .Slab = slab,
+                                             .EligibleToTakeTrade = True}
+
+                        If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                        ret.Add(instrumentName, detailsOfStock)
+
+                        counter += 1
+                        If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                    Next
                 End If
             End If
             Return ret
@@ -638,23 +629,12 @@ Namespace StrategyHelper
                     dt = csvHelper.GetDataTableFromCSV(1)
                 End Using
                 If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
-                    Dim tradingDate As Date = startDate
-                    While tradingDate <= endDate
-                        For i = 0 To dt.Rows.Count - 1
-                            Dim rowDate As Date = dt.Rows(i).Item("Date")
-                            If rowDate.Date = tradingDate.Date Then
-                                Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
-                                'If tradingSymbol.Contains("FUT") Then
-                                '    tradingSymbol = tradingSymbol.Remove(tradingSymbol.Count - 8)
-                                'End If
+                    For i = 0 To dt.Rows.Count - 1
+                        Dim tradingSymbol As String = dt.Rows(i).Item("Stock Name")
 
-                                If ret Is Nothing Then ret = New List(Of String)
-                                If Not ret.Contains(tradingSymbol.ToUpper) Then ret.Add(tradingSymbol.ToUpper)
-                            End If
-                        Next
-
-                        tradingDate = tradingDate.AddDays(1)
-                    End While
+                        If ret Is Nothing Then ret = New List(Of String)
+                        If Not ret.Contains(tradingSymbol.Trim.ToUpper) Then ret.Add(tradingSymbol.Trim.ToUpper)
+                    Next
                 End If
             End If
             Return ret

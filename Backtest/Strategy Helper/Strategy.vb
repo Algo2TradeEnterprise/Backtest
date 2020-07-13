@@ -144,7 +144,7 @@ Namespace StrategyHelper
         Public StockMaxProfitPerDay As Double = Decimal.MaxValue
         Public StockMaxLossPerDay As Double = Decimal.MinValue
         Public NumberOfTradesPerStockPerDay As Integer = Integer.MaxValue
-        Public NumberOfTradesPerDay As Integer = Integer.MaxValue
+        'Public NumberOfTradesPerDay As Integer = Integer.MaxValue
         Public AllowBothDirectionEntryAtSameTime As Boolean = False
         Public TickBasedStrategy As Boolean = False
         Public TrailingStoploss As Boolean = False
@@ -270,6 +270,31 @@ Namespace StrategyHelper
                 Return ret
             End Get
         End Property
+        Public ReadOnly Property StockNumberOfOpenExecutedTrades(ByVal currentDate As Date, ByVal stockTradingSymbol As String) As Integer
+            Get
+                Dim ret As Integer = 0
+                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentDate.Date) AndAlso TradesTaken(currentDate.Date).ContainsKey(stockTradingSymbol) Then
+                    Dim tradeList As List(Of Trade) = TradesTaken(currentDate.Date)(stockTradingSymbol).FindAll(Function(x)
+                                                                                                                    Return x.ExitCondition <> Trade.TradeExitCondition.Cancelled
+                                                                                                                End Function)
+                    If tradeList IsNot Nothing AndAlso tradeList.Count > 0 Then
+                        'Dim artnrGroups = From a In tradeList
+                        '                  Group a By Key = a.Tag Into Group
+                        '                  Select artnr = Key, numbersCount = Group.Count()
+
+                        'If artnrGroups IsNot Nothing AndAlso artnrGroups.Count > 0 Then
+                        '    ret = artnrGroups.Count
+                        'End If
+                        ret = tradeList.Count
+                    End If
+                End If
+                If StockNumberOfTradeBuffer IsNot Nothing AndAlso StockNumberOfTradeBuffer.ContainsKey(currentDate.Date) AndAlso
+                    StockNumberOfTradeBuffer(currentDate.Date).ContainsKey(stockTradingSymbol) Then
+                    ret += StockNumberOfTradeBuffer(currentDate.Date)(stockTradingSymbol)
+                End If
+                Return ret
+            End Get
+        End Property
         Public ReadOnly Property StockNumberOfStoplossTrades(ByVal currentDate As Date, ByVal stockTradingSymbol As String) As Integer
             Get
                 Dim ret As Integer = 0
@@ -322,6 +347,20 @@ Namespace StrategyHelper
                     If stockTrades IsNot Nothing AndAlso stockTrades.Count > 0 Then
                         For Each stock In stockTrades.Keys
                             ret += StockNumberOfTrades(currentDate, stock)
+                        Next
+                    End If
+                End If
+                Return ret
+            End Get
+        End Property
+        Public ReadOnly Property TotalNumberOfOpenExecutedTrades(ByVal currentDate As Date) As Integer
+            Get
+                Dim ret As Integer = 0
+                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentDate.Date) Then
+                    Dim stockTrades As Dictionary(Of String, List(Of Trade)) = TradesTaken(currentDate.Date)
+                    If stockTrades IsNot Nothing AndAlso stockTrades.Count > 0 Then
+                        For Each stock In stockTrades.Keys
+                            ret += StockNumberOfOpenExecutedTrades(currentDate, stock)
                         Next
                     End If
                 End If
@@ -904,7 +943,7 @@ Namespace StrategyHelper
             Dim calculator As New Calculator.BrokerageCalculator(_canceller)
 
             Dim quantity As Integer = 1
-            Dim previousQuantity As Integer = 1
+            Dim previousQuantity As Integer = 0
             For quantity = 1 To Integer.MaxValue
                 potentialBrokerage = New Calculator.BrokerageAttributes
                 Select Case typeOfStock

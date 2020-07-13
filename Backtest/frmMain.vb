@@ -317,7 +317,7 @@ Public Class frmMain
                     Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                     exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                     exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                                    tradeStartTime:=TimeSpan.Parse("9:16:00"),
+                                                                    tradeStartTime:=TimeSpan.Parse("9:20:00"),
                                                                     lastTradeEntryTime:=TimeSpan.Parse("14:29:59"),
                                                                     eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                                     tickSize:=tick,
@@ -335,22 +335,25 @@ Public Class frmMain
                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                         With backtestStrategy
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Low range second 5min candle.csv")
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "FO Stocks.csv")
 
                             .AllowBothDirectionEntryAtSameTime = False
                             .TrailingStoploss = False
                             .TickBasedStrategy = True
                             .RuleNumber = ruleNumber
 
-                            .RuleEntityData = New SmallRangeBreakoutStrategyRule.StrategyRuleEntities With
+                            .RuleEntityData = New TrendlineStrategyRule.StrategyRuleEntities With
                                             {
-                                                .MaxLossPerTrade = -125,
-                                                .TargetMultiplier = 4
+                                                .TargetMultiplier = 2,
+                                                .BuyStoplossLevel = 78.6,
+                                                .SellStoplossLevel = 23.6,
+                                                .MaxLossPerDay = 5000,
+                                                .MaxTradePerDay = 50
                                             }
 
-                            .NumberOfTradeableStockPerDay = 10
+                            .NumberOfTradeableStockPerDay = Integer.MaxValue
 
-                            .NumberOfTradesPerStockPerDay = 4
+                            .NumberOfTradesPerStockPerDay = 1
 
                             .StockMaxProfitPercentagePerDay = Decimal.MaxValue
                             .StockMaxLossPercentagePerDay = Decimal.MinValue
@@ -369,8 +372,8 @@ Public Class frmMain
                             .RealtimeTrailingPercentage = 50
                         End With
 
-                        Dim ruleData As SmallRangeBreakoutStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                        Dim filename As String = String.Format("Scnd Cndl Brkot")
+                        Dim ruleData As TrendlineStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                        Dim filename As String = String.Format("Otsd Trdln Cndl Brkot")
 
                         Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
                     End Using
