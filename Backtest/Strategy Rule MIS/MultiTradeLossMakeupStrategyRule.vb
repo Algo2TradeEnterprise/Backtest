@@ -12,8 +12,12 @@ Public Class MultiTradeLossMakeupStrategyRule
 
         Public MaxLossPerTrade As Decimal
         Public TargetMultiplier As Decimal
+        Public BreakevenMovement As Boolean
     End Class
 #End Region
+
+    Private _atrPayload As Dictionary(Of Date, Decimal) = Nothing
+    Private _emaPayload As Dictionary(Of Date, Decimal) = Nothing
 
     Private ReadOnly _userInputs As StrategyRuleEntities
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
@@ -30,7 +34,8 @@ Public Class MultiTradeLossMakeupStrategyRule
     Public Overrides Sub CompletePreProcessing()
         MyBase.CompletePreProcessing()
 
-
+        Indicator.ATR.CalculateATR(14, _signalPayload, _atrPayload)
+        Indicator.EMA.CalculateEMA(13, Payload.PayloadFields.Close, _signalPayload, _emaPayload)
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -43,7 +48,7 @@ Public Class MultiTradeLossMakeupStrategyRule
             currentMinuteCandlePayload.PayloadDate >= _tradeStartTime AndAlso Me.EligibleToTakeTrade Then
             If Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) AndAlso
                 Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) Then
-                Dim signal As Tuple(Of Boolean, Payload) = GetEntrySignal(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, Trade.TradeExecutionDirection.Buy)
+                Dim signal As Tuple(Of Boolean, Payload) = GetSignal(currentMinuteCandlePayload, currentTick, Trade.TradeExecutionDirection.Buy)
                 If signal IsNot Nothing AndAlso signal.Item1 Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2.High, RoundOfType.Floor)
                     Dim entryPrice As Decimal = signal.Item2.High + buffer
@@ -60,14 +65,15 @@ Public Class MultiTradeLossMakeupStrategyRule
                                     .Buffer = buffer,
                                     .SignalCandle = signal.Item2,
                                     .OrderType = Trade.TypeOfOrder.SL,
-                                    .Supporting1 = signal.Item2.PayloadDate.ToString("HH:mm:ss")
+                                    .Supporting1 = signal.Item2.PayloadDate.ToString("HH:mm:ss"),
+                                    .Supporting2 = entryPrice - stoploss
                                 }
                     End If
                 End If
             End If
             If Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) AndAlso
                 Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) Then
-                Dim signal As Tuple(Of Boolean, Payload) = GetEntrySignal(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, Trade.TradeExecutionDirection.Sell)
+                Dim signal As Tuple(Of Boolean, Payload) = GetSignal(currentMinuteCandlePayload, currentTick, Trade.TradeExecutionDirection.Sell)
                 If signal IsNot Nothing AndAlso signal.Item1 Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2.Low, RoundOfType.Floor)
                     Dim entryPrice As Decimal = signal.Item2.Low - buffer
@@ -84,7 +90,8 @@ Public Class MultiTradeLossMakeupStrategyRule
                                     .Buffer = buffer,
                                     .SignalCandle = signal.Item2,
                                     .OrderType = Trade.TypeOfOrder.SL,
-                                    .Supporting1 = signal.Item2.PayloadDate.ToString("HH:mm:ss")
+                                    .Supporting1 = signal.Item2.PayloadDate.ToString("HH:mm:ss"),
+                                    .Supporting2 = stoploss - entryPrice
                                 }
                     End If
                 End If
@@ -110,13 +117,7 @@ Public Class MultiTradeLossMakeupStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
-            If _parentStrategy.StockNumberOfTrades(_tradingDate.Date, _tradingSymbol) >= _parentStrategy.NumberOfTradesPerStockPerDay Then
-                ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
-            End If
-            If _parentStrategy.IsAnyTradeOfTheStockTargetReached(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS) Then
-                ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
-            End If
-            Dim signal As Tuple(Of Boolean, Payload) = GetEntrySignal(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, currentTrade.EntryDirection)
+            Dim signal As Tuple(Of Boolean, Payload) = GetSignal(currentMinuteCandlePayload, currentTick, currentTrade.EntryDirection)
             If signal IsNot Nothing AndAlso signal.Item1 Then
                 If currentTrade.SignalCandle.PayloadDate <> signal.Item2.PayloadDate Then
                     ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
@@ -129,6 +130,22 @@ Public Class MultiTradeLossMakeupStrategyRule
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
+        If _userInputs.BreakevenMovement AndAlso currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            Dim slPoint As Decimal = currentTrade.Supporting2
+            Dim triggerPrice As Decimal = Decimal.MinValue
+            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                If currentTick.Open >= currentTrade.EntryPrice + slPoint Then
+                    triggerPrice = currentTrade.EntryPrice + _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, Trade.TradeExecutionDirection.Buy, Me.LotSize, _parentStrategy.StockType)
+                End If
+            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                If currentTick.Open <= currentTrade.EntryPrice - slPoint Then
+                    triggerPrice = currentTrade.EntryPrice - _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, Trade.TradeExecutionDirection.Sell, Me.LotSize, _parentStrategy.StockType)
+                End If
+            End If
+            If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
+                ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, String.Format("({0})Breakeven at {1}", slPoint, currentTick.PayloadDate.ToString("HH:mm:ss")))
+            End If
+        End If
         Return ret
     End Function
 
@@ -146,10 +163,55 @@ Public Class MultiTradeLossMakeupStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
     End Function
 
-    Private Function GetEntrySignal(ByVal candle As Payload, ByVal currentTick As Payload, ByVal direction As Trade.TradeExecutionDirection) As Tuple(Of Boolean, Payload)
+    Private Function GetSignal(ByVal currentCandle As Payload, ByVal currentTick As Payload, ByVal direction As Trade.TradeExecutionDirection) As Tuple(Of Boolean, Payload)
         Dim ret As Tuple(Of Boolean, Payload) = Nothing
-        If _signalCandle IsNot Nothing Then
-            ret = New Tuple(Of Boolean, Payload)(True, _signalCandle)
+        If currentCandle IsNot Nothing AndAlso currentCandle.PreviousCandlePayload IsNot Nothing AndAlso Not currentCandle.PreviousCandlePayload.DeadCandle Then
+            If Not _parentStrategy.IsTradeActive(currentCandle, Trade.TypeOfTrade.MIS) Then
+                Dim signalCandle As Payload = Nothing
+                Dim atr As Decimal = _atrPayload(currentCandle.PreviousCandlePayload.PayloadDate)
+                Dim ema As Decimal = _emaPayload(currentCandle.PreviousCandlePayload.PayloadDate)
+                If currentCandle.PreviousCandlePayload.Low < ema AndAlso currentCandle.PreviousCandlePayload.High > ema Then
+                    If currentCandle.PreviousCandlePayload.CandleRange < atr AndAlso currentCandle.PreviousCandlePayload.CandleRange >= atr / 2 Then
+                        signalCandle = currentCandle.PreviousCandlePayload
+                    End If
+                End If
+
+                Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentCandle, Trade.TypeOfTrade.MIS)
+                If signalCandle Is Nothing Then
+                    If lastExecutedOrder IsNot Nothing Then signalCandle = lastExecutedOrder.SignalCandle
+                End If
+
+                If signalCandle IsNot Nothing Then
+                    If direction = Trade.TradeExecutionDirection.Buy Then
+                        If Not (lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.EntryDirection = Trade.TradeExecutionDirection.Buy AndAlso
+                            lastExecutedOrder.SignalCandle.PayloadDate = signalCandle.PayloadDate) Then
+                            ret = New Tuple(Of Boolean, Payload)(True, signalCandle)
+                        End If
+                    ElseIf direction = Trade.TradeExecutionDirection.Sell Then
+                        If Not (lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.EntryDirection = Trade.TradeExecutionDirection.Sell AndAlso
+                            lastExecutedOrder.SignalCandle.PayloadDate = signalCandle.PayloadDate) Then
+                            ret = New Tuple(Of Boolean, Payload)(True, signalCandle)
+                        End If
+                    End If
+                End If
+            Else
+                Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentCandle, Trade.TypeOfTrade.MIS)
+                Dim signalCandle As Payload = lastExecutedOrder.SignalCandle
+
+                If signalCandle IsNot Nothing Then
+                    If direction = Trade.TradeExecutionDirection.Buy Then
+                        If Not (lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.EntryDirection = Trade.TradeExecutionDirection.Buy AndAlso
+                            lastExecutedOrder.SignalCandle.PayloadDate = signalCandle.PayloadDate) Then
+                            ret = New Tuple(Of Boolean, Payload)(True, signalCandle)
+                        End If
+                    ElseIf direction = Trade.TradeExecutionDirection.Sell Then
+                        If Not (lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.EntryDirection = Trade.TradeExecutionDirection.Sell AndAlso
+                            lastExecutedOrder.SignalCandle.PayloadDate = signalCandle.PayloadDate) Then
+                            ret = New Tuple(Of Boolean, Payload)(True, signalCandle)
+                        End If
+                    End If
+                End If
+            End If
         End If
         Return ret
     End Function
