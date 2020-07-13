@@ -3639,7 +3639,7 @@ Public Class frmMain
                             tick = 0.05
                     End Select
 
-                    For tgtMul As Decimal = 2 To 2
+                    For tgtMul As Decimal = 4 To 4
                         For brkEvnMvmnt As Integer = 1 To 1
                             For tgtMd As Integer = 1 To 1
                                 Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
@@ -3675,7 +3675,8 @@ Public Class frmMain
                                                 .MaxLossPerTrade = -250,
                                                 .TargetMultiplier = tgtMul,
                                                 .BreakevenMovement = brkEvnMvmnt,
-                                                .TargetMode = tgtMd
+                                                .TargetMode = tgtMd,
+                                                .NumberOfLossTrade = 3
                                             }
 
                                         .NumberOfTradeableStockPerDay = 5
@@ -3685,8 +3686,8 @@ Public Class frmMain
                                         .StockMaxProfitPercentagePerDay = Decimal.MaxValue
                                         .StockMaxLossPercentagePerDay = Decimal.MinValue
 
-                                        .ExitOnStockFixedTargetStoploss = True
-                                        .StockMaxProfitPerDay = 500
+                                        .ExitOnStockFixedTargetStoploss = False
+                                        .StockMaxProfitPerDay = Decimal.MaxValue
                                         .StockMaxLossPerDay = Decimal.MinValue
 
                                         .ExitOnOverAllFixedTargetStoploss = False

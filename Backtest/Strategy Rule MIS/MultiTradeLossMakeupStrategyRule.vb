@@ -18,6 +18,7 @@ Public Class MultiTradeLossMakeupStrategyRule
         Public TargetMultiplier As Decimal
         Public BreakevenMovement As Boolean
         Public TargetMode As ModeOfTarget
+        Public NumberOfLossTrade As Integer
     End Class
 #End Region
 
@@ -55,7 +56,8 @@ Public Class MultiTradeLossMakeupStrategyRule
         Dim parameter1 As PlaceOrderParameters = Nothing
         Dim parameter2 As PlaceOrderParameters = Nothing
         If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
-            currentMinuteCandlePayload.PayloadDate >= _tradeStartTime AndAlso Me.EligibleToTakeTrade Then
+            currentMinuteCandlePayload.PayloadDate >= _tradeStartTime AndAlso Me.EligibleToTakeTrade AndAlso Not IsAnyTradeTargetReached(currentMinuteCandlePayload) AndAlso
+            GetLogicalNumberOfTrade(currentMinuteCandlePayload) >= Math.Abs(_userInputs.NumberOfLossTrade) * -1 Then
             If Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) AndAlso
                 Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) Then
                 Dim signal As Tuple(Of Boolean, Payload) = GetSignal(currentMinuteCandlePayload, currentTick, Trade.TradeExecutionDirection.Buy)
@@ -127,6 +129,12 @@ Public Class MultiTradeLossMakeupStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
+            If IsAnyTradeTargetReached(currentMinuteCandlePayload) Then
+                ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+            End If
+            If GetLogicalNumberOfTrade(currentMinuteCandlePayload) <= Math.Abs(_userInputs.NumberOfLossTrade) * -1 Then
+                ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+            End If
             Dim signal As Tuple(Of Boolean, Payload) = GetSignal(currentMinuteCandlePayload, currentTick, currentTrade.EntryDirection)
             If signal IsNot Nothing AndAlso signal.Item1 Then
                 If currentTrade.SignalCandle.PayloadDate <> signal.Item2.PayloadDate Then
@@ -307,5 +315,29 @@ Public Class MultiTradeLossMakeupStrategyRule
                                  End Function)
         End If
         Return ret
+    End Function
+
+    Private Function GetLogicalNumberOfTrade(ByVal candle As Payload) As Integer
+        Dim ret As Integer = 0
+        Dim closeTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(candle, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Close)
+        If closeTrades IsNot Nothing AndAlso closeTrades.Count > 0 Then
+            For Each runningTrade In closeTrades
+                If runningTrade.PLAfterBrokerage < 0 Then
+                    ret -= 1
+                ElseIf runningTrade.PLAfterBrokerage >= Math.Abs(_userInputs.MaxLossPerTrade) Then
+                    ret += 1
+                End If
+            Next
+        End If
+        Dim inprogressTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(candle, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Inprogress)
+        If inprogressTrades IsNot Nothing AndAlso inprogressTrades.Count > 0 Then
+            ret -= inprogressTrades.Count
+        End If
+        Return ret
+    End Function
+
+    Private Function IsAnyTradeTargetReached(ByVal candle As Payload) As Boolean
+        Return _parentStrategy.IsAnyTradeOfTheStockTargetReached(candle, Trade.TypeOfTrade.MIS) AndAlso
+            _parentStrategy.StockPLAfterBrokerage(_tradingDate, _tradingSymbol) >= Math.Abs(_userInputs.MaxLossPerTrade) * _userInputs.TargetMultiplier
     End Function
 End Class
