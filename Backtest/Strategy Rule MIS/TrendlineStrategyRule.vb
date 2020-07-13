@@ -96,15 +96,18 @@ Public Class TrendlineStrategyRule
 
             Dim signal As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection) = GetEntrySignal(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
             If signal IsNot Nothing AndAlso signal.Item1 Then
-                If signal.Item3 = Trade.TradeExecutionDirection.Buy Then
-                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2.High, RoundOfType.Floor)
-                    Dim entryPrice As Decimal = signal.Item2.High + buffer
-                    Dim stoploss As Decimal = ConvertFloorCeling(_buyStoplossPrice, _parentStrategy.TickSize, RoundOfType.Floor)
-                    Dim target As Decimal = entryPrice + ConvertFloorCeling((entryPrice - stoploss) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
-                    Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, stoploss, Math.Abs(_maxlossPerTrade) * -1, Trade.TypeOfStock.Cash)
+                Dim touchedCandle As Payload = GetLastTrendlineTouchCandle(signal.Item2, signal.Item3)
+                If touchedCandle IsNot Nothing Then
+                    If signal.Item3 = Trade.TradeExecutionDirection.Buy Then
+                        Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2.High, RoundOfType.Floor)
+                        Dim entryPrice As Decimal = signal.Item2.High + buffer
+                        'Dim stoploss As Decimal = ConvertFloorCeling(_buyStoplossPrice, _parentStrategy.TickSize, RoundOfType.Floor)
+                        Dim stoploss As Decimal = touchedCandle.Low - buffer
+                        Dim target As Decimal = entryPrice + ConvertFloorCeling((entryPrice - stoploss) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
+                        Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, stoploss, Math.Abs(_maxlossPerTrade) * -1, Trade.TypeOfStock.Cash)
 
-                    If quantity <> 0 AndAlso currentTick.Open < entryPrice Then
-                        parameter = New PlaceOrderParameters With {
+                        If quantity <> 0 AndAlso currentTick.Open < entryPrice Then
+                            parameter = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
                                     .EntryDirection = Trade.TradeExecutionDirection.Buy,
                                     .Quantity = quantity,
@@ -115,18 +118,19 @@ Public Class TrendlineStrategyRule
                                     .OrderType = Trade.TypeOfOrder.SL,
                                     .Supporting1 = signal.Item2.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = _highTrendLine(signal.Item2.PayloadDate),
-                                    .Supporting3 = GetLastTrendlineTouchCandle(signal.Item2, Trade.TradeExecutionDirection.Buy).PayloadDate.ToString("HH:mm:ss")
+                                    .Supporting3 = touchedCandle.PayloadDate.ToString("HH:mm:ss")
                                 }
-                    End If
-                ElseIf signal.Item3 = Trade.TradeExecutionDirection.Sell Then
-                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2.Low, RoundOfType.Floor)
-                    Dim entryPrice As Decimal = signal.Item2.Low - buffer
-                    Dim stoploss As Decimal = ConvertFloorCeling(_sellStoplossPrice, _parentStrategy.TickSize, RoundOfType.Celing)
-                    Dim target As Decimal = entryPrice - ConvertFloorCeling((stoploss - entryPrice) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
-                    Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, stoploss, entryPrice, Math.Abs(_maxlossPerTrade) * -1, Trade.TypeOfStock.Cash)
+                        End If
+                    ElseIf signal.Item3 = Trade.TradeExecutionDirection.Sell Then
+                        Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2.Low, RoundOfType.Floor)
+                        Dim entryPrice As Decimal = signal.Item2.Low - buffer
+                        'Dim stoploss As Decimal = ConvertFloorCeling(_sellStoplossPrice, _parentStrategy.TickSize, RoundOfType.Celing)
+                        Dim stoploss As Decimal = touchedCandle.High + buffer
+                        Dim target As Decimal = entryPrice - ConvertFloorCeling((stoploss - entryPrice) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
+                        Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, stoploss, entryPrice, Math.Abs(_maxlossPerTrade) * -1, Trade.TypeOfStock.Cash)
 
-                    If quantity <> 0 AndAlso currentTick.Open > entryPrice Then
-                        parameter = New PlaceOrderParameters With {
+                        If quantity <> 0 AndAlso currentTick.Open > entryPrice Then
+                            parameter = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
                                     .EntryDirection = Trade.TradeExecutionDirection.Sell,
                                     .Quantity = quantity,
@@ -137,8 +141,9 @@ Public Class TrendlineStrategyRule
                                     .OrderType = Trade.TypeOfOrder.SL,
                                     .Supporting1 = signal.Item2.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = _lowTrendLine(signal.Item2.PayloadDate),
-                                    .Supporting3 = GetLastTrendlineTouchCandle(signal.Item2, Trade.TradeExecutionDirection.Sell).PayloadDate.ToString("HH:mm:ss")
+                                    .Supporting3 = touchedCandle.PayloadDate.ToString("HH:mm:ss")
                                 }
+                        End If
                     End If
                 End If
             End If

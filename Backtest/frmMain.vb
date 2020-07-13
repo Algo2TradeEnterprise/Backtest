@@ -373,7 +373,7 @@ Public Class frmMain
                         End With
 
                         Dim ruleData As TrendlineStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                        Dim filename As String = String.Format("Otsd Trdln Cndl Brkot")
+                        Dim filename As String = String.Format("Otsd Trdln Cndl Brkot,TgtMul {0}", ruleData.TargetMultiplier)
 
                         Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
                     End Using
