@@ -344,7 +344,7 @@ Public Class frmMain
 
                             .RuleEntityData = New TrendlineStrategyRule.StrategyRuleEntities With
                                             {
-                                                .TargetMultiplier = 1,
+                                                .TargetMultiplier = 2,
                                                 .BuyStoplossLevel = 100,
                                                 .SellStoplossLevel = 0,
                                                 .MaxLossPerDay = 5000,
