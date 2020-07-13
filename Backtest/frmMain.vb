@@ -290,7 +290,7 @@ Public Class frmMain
 
             Select Case ruleNumber
                 Case 0
-#Region "Second Candle Breakout"
+#Region "Outside Trendline Candle Breakout"
                     Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
                     Dim database As Common.DataBaseTable = Common.DataBaseTable.None
                     Dim margin As Decimal = 0
@@ -344,9 +344,9 @@ Public Class frmMain
 
                             .RuleEntityData = New TrendlineStrategyRule.StrategyRuleEntities With
                                             {
-                                                .TargetMultiplier = 2,
-                                                .BuyStoplossLevel = 78.6,
-                                                .SellStoplossLevel = 23.6,
+                                                .TargetMultiplier = 1,
+                                                .BuyStoplossLevel = 100,
+                                                .SellStoplossLevel = 0,
                                                 .MaxLossPerDay = 5000,
                                                 .MaxTradePerDay = 50
                                             }
