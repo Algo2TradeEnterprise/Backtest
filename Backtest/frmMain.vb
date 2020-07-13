@@ -3641,7 +3641,7 @@ Public Class frmMain
 
                     For tgtMul As Decimal = 2 To 2
                         For brkEvnMvmnt As Integer = 1 To 1
-                            For tgtMd As Integer = 1 To 2
+                            For tgtMd As Integer = 1 To 1
                                 Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                                 exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                                 exchangeEndTime:=TimeSpan.Parse("15:29:59"),
@@ -3678,7 +3678,7 @@ Public Class frmMain
                                                 .TargetMode = tgtMd
                                             }
 
-                                        .NumberOfTradeableStockPerDay = 1
+                                        .NumberOfTradeableStockPerDay = 5
 
                                         .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
