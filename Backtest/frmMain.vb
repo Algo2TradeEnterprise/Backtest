@@ -3671,10 +3671,11 @@ Public Class frmMain
                                             {
                                                 .MaxLossPerTrade = -250,
                                                 .TargetMultiplier = 2,
-                                                .BreakevenMovement = True
+                                                .BreakevenMovement = True,
+                                                .TargetMode = MultiTradeLossMakeupStrategyRule.ModeOfTarget.LossMakeup
                                             }
 
-                            .NumberOfTradeableStockPerDay = 5
+                            .NumberOfTradeableStockPerDay = 1
 
                             .NumberOfTradesPerStockPerDay = Integer.MaxValue
 

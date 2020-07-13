@@ -7,12 +7,17 @@ Public Class MultiTradeLossMakeupStrategyRule
     Inherits StrategyRule
 
 #Region "Entity"
+    Enum ModeOfTarget
+        LossMakeup
+        Normal
+    End Enum
     Public Class StrategyRuleEntities
         Inherits RuleEntities
 
         Public MaxLossPerTrade As Decimal
         Public TargetMultiplier As Decimal
         Public BreakevenMovement As Boolean
+        Public TargetMode As ModeOfTarget
     End Class
 #End Region
 
@@ -29,6 +34,8 @@ Public Class MultiTradeLossMakeupStrategyRule
                    ByVal entities As RuleEntities)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _userInputs = _entities
+
+        If _userInputs.TargetMode = ModeOfTarget.LossMakeup Then _userInputs.BreakevenMovement = False
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -123,6 +130,21 @@ Public Class MultiTradeLossMakeupStrategyRule
                     ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                 End If
             End If
+        ElseIf _userInputs.TargetMode = ModeOfTarget.LossMakeup AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            Dim pl As Decimal = GetExitPL(currentMinuteCandlePayload)
+            If pl < 0 Then
+                If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                    Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, Math.Abs(_userInputs.MaxLossPerTrade), Trade.TradeExecutionDirection.Buy, Trade.TypeOfStock.Cash)
+                    If currentTick.Open >= target Then
+                        ret = New Tuple(Of Boolean, String)(True, "Target")
+                    End If
+                ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                    Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, Math.Abs(_userInputs.MaxLossPerTrade), Trade.TradeExecutionDirection.Sell, Trade.TypeOfStock.Cash)
+                    If currentTick.Open <= target Then
+                        ret = New Tuple(Of Boolean, String)(True, "Target")
+                    End If
+                End If
+            End If
         End If
         Return ret
     End Function
@@ -212,6 +234,17 @@ Public Class MultiTradeLossMakeupStrategyRule
                     End If
                 End If
             End If
+        End If
+        Return ret
+    End Function
+
+    Private Function GetExitPL(ByVal candle As Payload) As Decimal
+        Dim ret As Decimal = 0
+        Dim exitTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(candle, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Close)
+        If exitTrades IsNot Nothing AndAlso exitTrades.Count > 0 Then
+            ret = exitTrades.Sum(Function(x)
+                                     Return x.PLAfterBrokerage
+                                 End Function)
         End If
         Return ret
     End Function
