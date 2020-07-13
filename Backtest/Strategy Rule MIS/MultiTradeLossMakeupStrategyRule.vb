@@ -19,6 +19,7 @@ Public Class MultiTradeLossMakeupStrategyRule
         Public BreakevenMovement As Boolean
         Public TargetMode As ModeOfTarget
         Public NumberOfLossTrade As Integer
+        Public MultipleTradeInASignal As Boolean
     End Class
 #End Region
 
@@ -129,6 +130,12 @@ Public Class MultiTradeLossMakeupStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
+            If Not _userInputs.MultipleTradeInASignal Then
+                Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS)
+                If lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.SignalCandle.PayloadDate = currentTrade.SignalCandle.PayloadDate Then
+                    ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                End If
+            End If
             If IsAnyTradeTargetReached(currentMinuteCandlePayload) Then
                 ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
             End If
@@ -272,32 +279,36 @@ Public Class MultiTradeLossMakeupStrategyRule
                 End If
 
                 If signalCandle IsNot Nothing Then
-                    If direction = Trade.TradeExecutionDirection.Buy Then
-                        If Not (lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.EntryDirection = Trade.TradeExecutionDirection.Buy AndAlso
+                    If _userInputs.MultipleTradeInASignal OrElse (lastExecutedOrder Is Nothing OrElse lastExecutedOrder.SignalCandle.PayloadDate <> signalCandle.PayloadDate) Then
+                        If direction = Trade.TradeExecutionDirection.Buy Then
+                            If Not (lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.EntryDirection = Trade.TradeExecutionDirection.Buy AndAlso
                             lastExecutedOrder.SignalCandle.PayloadDate = signalCandle.PayloadDate) Then
-                            ret = New Tuple(Of Boolean, Payload)(True, signalCandle)
-                        End If
-                    ElseIf direction = Trade.TradeExecutionDirection.Sell Then
-                        If Not (lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.EntryDirection = Trade.TradeExecutionDirection.Sell AndAlso
+                                ret = New Tuple(Of Boolean, Payload)(True, signalCandle)
+                            End If
+                        ElseIf direction = Trade.TradeExecutionDirection.Sell Then
+                            If Not (lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.EntryDirection = Trade.TradeExecutionDirection.Sell AndAlso
                             lastExecutedOrder.SignalCandle.PayloadDate = signalCandle.PayloadDate) Then
-                            ret = New Tuple(Of Boolean, Payload)(True, signalCandle)
+                                ret = New Tuple(Of Boolean, Payload)(True, signalCandle)
+                            End If
                         End If
                     End If
                 End If
             Else
-                Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentCandle, Trade.TypeOfTrade.MIS)
-                Dim signalCandle As Payload = lastExecutedOrder.SignalCandle
+                If _userInputs.MultipleTradeInASignal Then
+                    Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentCandle, Trade.TypeOfTrade.MIS)
+                    Dim signalCandle As Payload = lastExecutedOrder.SignalCandle
 
-                If signalCandle IsNot Nothing Then
-                    If direction = Trade.TradeExecutionDirection.Buy Then
-                        If Not (lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.EntryDirection = Trade.TradeExecutionDirection.Buy AndAlso
+                    If signalCandle IsNot Nothing Then
+                        If direction = Trade.TradeExecutionDirection.Buy Then
+                            If Not (lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.EntryDirection = Trade.TradeExecutionDirection.Buy AndAlso
                             lastExecutedOrder.SignalCandle.PayloadDate = signalCandle.PayloadDate) Then
-                            ret = New Tuple(Of Boolean, Payload)(True, signalCandle)
-                        End If
-                    ElseIf direction = Trade.TradeExecutionDirection.Sell Then
-                        If Not (lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.EntryDirection = Trade.TradeExecutionDirection.Sell AndAlso
+                                ret = New Tuple(Of Boolean, Payload)(True, signalCandle)
+                            End If
+                        ElseIf direction = Trade.TradeExecutionDirection.Sell Then
+                            If Not (lastExecutedOrder IsNot Nothing AndAlso lastExecutedOrder.EntryDirection = Trade.TradeExecutionDirection.Sell AndAlso
                             lastExecutedOrder.SignalCandle.PayloadDate = signalCandle.PayloadDate) Then
-                            ret = New Tuple(Of Boolean, Payload)(True, signalCandle)
+                                ret = New Tuple(Of Boolean, Payload)(True, signalCandle)
+                            End If
                         End If
                     End If
                 End If

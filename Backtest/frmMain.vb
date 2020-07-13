@@ -3676,7 +3676,8 @@ Public Class frmMain
                                                 .TargetMultiplier = tgtMul,
                                                 .BreakevenMovement = brkEvnMvmnt,
                                                 .TargetMode = tgtMd,
-                                                .NumberOfLossTrade = 3
+                                                .NumberOfLossTrade = 3,
+                                                .MultipleTradeInASignal = False
                                             }
 
                                         .NumberOfTradeableStockPerDay = 5
