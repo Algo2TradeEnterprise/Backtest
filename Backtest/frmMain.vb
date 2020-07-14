@@ -2555,7 +2555,7 @@ Public Class frmMain
                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                         With backtestStrategy
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pre Market Cash Stocks.csv")
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Cash Stock.csv")
 
                             .AllowBothDirectionEntryAtSameTime = False
                             .TrailingStoploss = False
@@ -2565,7 +2565,7 @@ Public Class frmMain
                             .RuleEntityData = New HKReversalSingleTradeStrategyRule.StrategyRuleEntities With
                                             {
                                                 .MaxLossPerTrade = -500,
-                                                .TargetMultiplier = 200
+                                                .TargetMultiplier = 2
                                             }
 
                             .NumberOfTradeableStockPerDay = 20
@@ -2575,15 +2575,15 @@ Public Class frmMain
                             .StockMaxProfitPercentagePerDay = Decimal.MaxValue
                             .StockMaxLossPercentagePerDay = Decimal.MinValue
 
-                            .ExitOnStockFixedTargetStoploss = False
-                            .StockMaxProfitPerDay = Decimal.MaxValue
+                            .ExitOnStockFixedTargetStoploss = True
+                            .StockMaxProfitPerDay = 1000
                             .StockMaxLossPerDay = Decimal.MinValue
 
                             .ExitOnOverAllFixedTargetStoploss = False
-                            .OverAllProfitPerDay = 500
+                            .OverAllProfitPerDay = Decimal.MaxValue
                             .OverAllLossPerDay = Decimal.MinValue
 
-                            .TypeOfMTMTrailing = Strategy.MTMTrailingType.FixedSlabTrailing
+                            .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
                             .MTMSlab = 500
                             .MovementSlab = .MTMSlab / 2
                             .RealtimeTrailingPercentage = 50
