@@ -154,6 +154,7 @@
     <Compile Include="Strategy Rule MIS\BNFMartingaleStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\MartingaleStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\LossMakeupNeutralSlabStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\MomentumReversalModifiedStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\MomentumReversalStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\MultiTradeLossMakeupStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\NeutralSlabMartingaleStrategyRule.vb" />
