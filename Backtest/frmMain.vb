@@ -344,7 +344,7 @@ Public Class frmMain
 
                             .RuleEntityData = New TrendlineStrategyRule.StrategyRuleEntities With
                                             {
-                                                .TargetMultiplier = 2,
+                                                .TargetMultiplier = 1,
                                                 .BuyStoplossLevel = 100,
                                                 .SellStoplossLevel = 0,
                                                 .MaxLossPerDay = 5000,
@@ -362,9 +362,9 @@ Public Class frmMain
                             .StockMaxProfitPerDay = Decimal.MaxValue
                             .StockMaxLossPerDay = Decimal.MinValue
 
-                            .ExitOnOverAllFixedTargetStoploss = False
+                            .ExitOnOverAllFixedTargetStoploss = True
                             .OverAllProfitPerDay = Decimal.MaxValue
-                            .OverAllLossPerDay = Decimal.MinValue
+                            .OverAllLossPerDay = -10000
 
                             .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
                             .MTMSlab = Math.Abs(.OverAllLossPerDay)
