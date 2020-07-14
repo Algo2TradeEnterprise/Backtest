@@ -96,13 +96,15 @@ Public Class TrendlineStrategyRule
 
             Dim signal As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection) = GetEntrySignal(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
             If signal IsNot Nothing AndAlso signal.Item1 Then
-                Dim touchedCandle As Payload = GetLastTrendlineTouchCandle(signal.Item2, signal.Item3)
+                'Dim touchedCandle As Payload = GetLastTrendlineTouchCandle(signal.Item2, signal.Item3)
+                Dim touchedCandle As Payload = GetLastOutsideTrendlineCloseCandle(signal.Item2, signal.Item3)
                 If touchedCandle IsNot Nothing Then
                     If signal.Item3 = Trade.TradeExecutionDirection.Buy Then
                         Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2.High, RoundOfType.Floor)
                         Dim entryPrice As Decimal = signal.Item2.High + buffer
                         'Dim stoploss As Decimal = ConvertFloorCeling(_buyStoplossPrice, _parentStrategy.TickSize, RoundOfType.Floor)
-                        Dim stoploss As Decimal = touchedCandle.Low - buffer
+                        'Dim stoploss As Decimal = touchedCandle.Low - buffer
+                        Dim stoploss As Decimal = signal.Item2.Low - buffer
                         Dim target As Decimal = entryPrice + ConvertFloorCeling((entryPrice - stoploss) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
                         Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, stoploss, Math.Abs(_maxlossPerTrade) * -1, Trade.TypeOfStock.Cash)
 
@@ -125,7 +127,8 @@ Public Class TrendlineStrategyRule
                         Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2.Low, RoundOfType.Floor)
                         Dim entryPrice As Decimal = signal.Item2.Low - buffer
                         'Dim stoploss As Decimal = ConvertFloorCeling(_sellStoplossPrice, _parentStrategy.TickSize, RoundOfType.Celing)
-                        Dim stoploss As Decimal = touchedCandle.High + buffer
+                        'Dim stoploss As Decimal = touchedCandle.High + buffer
+                        Dim stoploss As Decimal = signal.Item2.High + buffer
                         Dim target As Decimal = entryPrice - ConvertFloorCeling((stoploss - entryPrice) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
                         Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, stoploss, entryPrice, Math.Abs(_maxlossPerTrade) * -1, Trade.TypeOfStock.Cash)
 
@@ -193,19 +196,63 @@ Public Class TrendlineStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
     End Function
 
+    'Private Function GetEntrySignal(ByVal candle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)
+    '    Dim ret As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection) = Nothing
+    '    If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then
+    '        Dim highTrendline As Decimal = _highTrendLine(candle.PayloadDate)
+    '        Dim lowTrendline As Decimal = _lowTrendLine(candle.PayloadDate)
+    '        If candle.Low > highTrendline Then
+    '            Dim lastCandle As Payload = GetLastTrendlineTouchCandle(candle, Trade.TradeExecutionDirection.Buy)
+    '            If lastCandle IsNot Nothing AndAlso candle.Close >= lastCandle.High Then
+    '                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, candle, Trade.TradeExecutionDirection.Buy)
+    '            End If
+    '        ElseIf candle.High < lowTrendline Then
+    '            Dim lastCandle As Payload = GetLastTrendlineTouchCandle(candle, Trade.TradeExecutionDirection.Sell)
+    '            If lastCandle IsNot Nothing AndAlso candle.Close <= lastCandle.Low Then
+    '                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, candle, Trade.TradeExecutionDirection.Sell)
+    '            End If
+    '        End If
+    '    End If
+    '    Return ret
+    'End Function
+
+    'Private Function GetLastTrendlineTouchCandle(ByVal signalCandle As Payload, ByVal direction As Trade.TradeExecutionDirection) As Payload
+    '    Dim ret As Payload = Nothing
+    '    For Each runningPayload In _signalPayload.OrderByDescending(Function(x)
+    '                                                                    Return x.Key
+    '                                                                End Function)
+    '        If runningPayload.Key.Date = _tradingDate.Date AndAlso runningPayload.Key <= signalCandle.PayloadDate Then
+    '            If direction = Trade.TradeExecutionDirection.Buy Then
+    '                Dim trendline As Decimal = _highTrendLine(runningPayload.Key)
+    '                If runningPayload.Value.Low < trendline Then
+    '                    ret = runningPayload.Value
+    '                    Exit For
+    '                End If
+    '            ElseIf direction = Trade.TradeExecutionDirection.Sell Then
+    '                Dim trendline As Decimal = _lowTrendLine(runningPayload.Key)
+    '                If runningPayload.Value.High > trendline Then
+    '                    ret = runningPayload.Value
+    '                    Exit For
+    '                End If
+    '            End If
+    '        End If
+    '    Next
+    '    Return ret
+    'End Function
+
     Private Function GetEntrySignal(ByVal candle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)
         Dim ret As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection) = Nothing
         If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then
             Dim highTrendline As Decimal = _highTrendLine(candle.PayloadDate)
             Dim lowTrendline As Decimal = _lowTrendLine(candle.PayloadDate)
-            If candle.Low > highTrendline Then
-                Dim lastCandle As Payload = GetLastTrendlineTouchCandle(candle, Trade.TradeExecutionDirection.Buy)
-                If lastCandle IsNot Nothing AndAlso candle.Close >= lastCandle.High Then
+            If candle.Low < highTrendline AndAlso candle.Close > highTrendline Then
+                Dim lastCandle As Payload = GetLastOutsideTrendlineCloseCandle(candle, Trade.TradeExecutionDirection.Buy)
+                If lastCandle IsNot Nothing Then
                     ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, candle, Trade.TradeExecutionDirection.Buy)
                 End If
-            ElseIf candle.High < lowTrendline Then
-                Dim lastCandle As Payload = GetLastTrendlineTouchCandle(candle, Trade.TradeExecutionDirection.Sell)
-                If lastCandle IsNot Nothing AndAlso candle.Close <= lastCandle.Low Then
+            ElseIf candle.High > lowTrendline AndAlso candle.Close < lowTrendline Then
+                Dim lastCandle As Payload = GetLastOutsideTrendlineCloseCandle(candle, Trade.TradeExecutionDirection.Sell)
+                If lastCandle IsNot Nothing Then
                     ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, candle, Trade.TradeExecutionDirection.Sell)
                 End If
             End If
@@ -213,21 +260,21 @@ Public Class TrendlineStrategyRule
         Return ret
     End Function
 
-    Private Function GetLastTrendlineTouchCandle(ByVal signalCandle As Payload, ByVal direction As Trade.TradeExecutionDirection) As Payload
+    Private Function GetLastOutsideTrendlineCloseCandle(ByVal signalCandle As Payload, ByVal direction As Trade.TradeExecutionDirection) As Payload
         Dim ret As Payload = Nothing
         For Each runningPayload In _signalPayload.OrderByDescending(Function(x)
                                                                         Return x.Key
                                                                     End Function)
-            If runningPayload.Key.Date = _tradingDate.Date AndAlso runningPayload.Key <= signalCandle.PayloadDate Then
+            If runningPayload.Key.Date = _tradingDate.Date AndAlso runningPayload.Key < signalCandle.PayloadDate Then
                 If direction = Trade.TradeExecutionDirection.Buy Then
                     Dim trendline As Decimal = _highTrendLine(runningPayload.Key)
-                    If runningPayload.Value.Low < trendline Then
+                    If runningPayload.Value.Close > trendline Then
                         ret = runningPayload.Value
                         Exit For
                     End If
                 ElseIf direction = Trade.TradeExecutionDirection.Sell Then
                     Dim trendline As Decimal = _lowTrendLine(runningPayload.Key)
-                    If runningPayload.Value.High > trendline Then
+                    If runningPayload.Value.Close < trendline Then
                         ret = runningPayload.Value
                         Exit For
                     End If
@@ -236,5 +283,4 @@ Public Class TrendlineStrategyRule
         Next
         Return ret
     End Function
-
 End Class
