@@ -1,8 +1,6 @@
-﻿Imports System.IO
-Imports Utilities.DAL
+﻿Imports Utilities.DAL
 Imports Algo2TradeBLL
 Imports System.Threading
-Imports Utilities.Strings
 Imports Backtest.StrategyHelper
 
 Public Class DataFetcher
@@ -50,56 +48,49 @@ Public Class DataFetcher
         _startDate = startDate
         _endDate = endDate
         _stockType = stockType
-        _directoryName = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0} CANDLE DATA", strategyName.ToUpper))
+        _directoryName = Nothing
         _optionStockType = optionStockType
     End Sub
 
     Public Async Function GetCandleData(ByVal tradingSymbol As String, ByVal startDate As Date, ByVal endDate As Date) As Task(Of Dictionary(Of Date, Payload))
         Dim ret As Dictionary(Of Date, Payload) = Nothing
-        If Not Directory.Exists(_directoryName) Then
-            Directory.CreateDirectory(_directoryName)
+        If GlobalVar.DataCollection Is Nothing Then
+            GlobalVar.DataCollection = New Dictionary(Of String, DataTable)
             _cts.Token.ThrowIfCancellationRequested()
             Dim success As Boolean = Await GetAllData().ConfigureAwait(False)
             If Not success Then Throw New ApplicationException("Unable to fetch any data from database")
         End If
-        If Directory.Exists(_directoryName) Then
-            Dim filename As String = Path.Combine(_directoryName, String.Format("{0}.xml", tradingSymbol))
-            If File.Exists(filename) Then
-                Dim ds As DataSet = New DataSet()
-                _cts.Token.ThrowIfCancellationRequested()
-                ds.ReadXml(filename, XmlReadMode.InferSchema)
-                _cts.Token.ThrowIfCancellationRequested()
-                If ds IsNot Nothing AndAlso ds.Tables.Count > 0 Then
-                    Dim tempdt As DataTable = ds.Tables(0)
-                    If tempdt IsNot Nothing AndAlso tempdt.Rows.Count > 0 Then
-                        _cts.Token.ThrowIfCancellationRequested()
-                        Dim rows As DataRow() = tempdt.Select(String.Format("SnapshotDateTime>=#{0}# AND SnapshotDateTime<=#{1}#",
-                                                                            startDate.Date.ToString("yyyy-MM-dd HH:mm:ss"),
-                                                                            endDate.AddDays(1).Date.ToString("yyyy-MM-dd HH:mm:ss")))
-                        _cts.Token.ThrowIfCancellationRequested()
-                        If rows IsNot Nothing Then
-                            Dim dt As DataTable = New DataTable()
-                            dt.Columns.Add("Open")
-                            dt.Columns.Add("Low")
-                            dt.Columns.Add("High")
-                            dt.Columns.Add("Close")
-                            dt.Columns.Add("Volume")
-                            dt.Columns.Add("SnapshotDateTime")
-                            dt.Columns.Add("TradingSymbol")
-                            For Each runningRow In rows
-                                _cts.Token.ThrowIfCancellationRequested()
-                                dt.Rows.Add(runningRow.Item("Open"),
-                                            runningRow.Item("Low"),
-                                            runningRow.Item("High"),
-                                            runningRow.Item("Close"),
-                                            runningRow.Item("Volume"),
-                                            runningRow.Item("SnapshotDateTime"),
-                                            runningRow.Item("TradingSymbol"))
-                            Next
+        If GlobalVar.DataCollection IsNot Nothing AndAlso GlobalVar.DataCollection.Count > 0 Then
+            If GlobalVar.DataCollection.ContainsKey(tradingSymbol) Then
+                Dim tempdt As DataTable = GlobalVar.DataCollection(tradingSymbol)
+                If tempdt IsNot Nothing AndAlso tempdt.Rows.Count > 0 Then
+                    _cts.Token.ThrowIfCancellationRequested()
+                    Dim rows As DataRow() = tempdt.Select(String.Format("SnapshotDateTime>=#{0}# AND SnapshotDateTime<=#{1}#",
+                                                                        startDate.Date.ToString("yyyy-MM-dd HH:mm:ss"),
+                                                                        endDate.AddDays(1).Date.ToString("yyyy-MM-dd HH:mm:ss")))
+                    _cts.Token.ThrowIfCancellationRequested()
+                    If rows IsNot Nothing Then
+                        Dim dt As DataTable = New DataTable()
+                        dt.Columns.Add("Open")
+                        dt.Columns.Add("Low")
+                        dt.Columns.Add("High")
+                        dt.Columns.Add("Close")
+                        dt.Columns.Add("Volume")
+                        dt.Columns.Add("SnapshotDateTime")
+                        dt.Columns.Add("TradingSymbol")
+                        For Each runningRow In rows
                             _cts.Token.ThrowIfCancellationRequested()
-                            If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
-                                ret = Common.ConvertDataTableToPayload(dt, 0, 1, 2, 3, 4, 5, 6)
-                            End If
+                            dt.Rows.Add(runningRow.Item("Open"),
+                                        runningRow.Item("Low"),
+                                        runningRow.Item("High"),
+                                        runningRow.Item("Close"),
+                                        runningRow.Item("Volume"),
+                                        runningRow.Item("SnapshotDateTime"),
+                                        runningRow.Item("TradingSymbol"))
+                        Next
+                        _cts.Token.ThrowIfCancellationRequested()
+                        If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
+                            ret = Common.ConvertDataTableToPayload(dt, 0, 1, 2, 3, 4, 5, 6)
                         End If
                     End If
                 End If
@@ -154,9 +145,8 @@ Public Class DataFetcher
                     If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
                         OnHeartbeat(String.Format("Writing data to xml #{0}/{1}", counter, _uniqueInstrumentList.Count))
                         Dim instrumentName As String = dt.Rows(0).Item("TradingSymbol")
-                        Dim filename As String = Path.Combine(_directoryName, String.Format("{0}.xml", instrumentName))
                         _cts.Token.ThrowIfCancellationRequested()
-                        dt.WriteXml(filename)
+                        GlobalVar.DataCollection.Add(instrumentName, dt)
                         _cts.Token.ThrowIfCancellationRequested()
                         ret = True
                     End If

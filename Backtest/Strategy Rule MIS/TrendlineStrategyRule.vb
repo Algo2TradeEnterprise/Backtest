@@ -150,10 +150,10 @@ Public Class TrendlineStrategyRule
                     End If
                 End If
             End If
-        Else
-            If totalTrades >= _userInputs.MaxTradePerDay Then
-                Console.WriteLine(String.Format("Trade neglected. Count:{0}, {1}", totalTrades, _tradingSymbol))
-            End If
+            'Else
+            '    If totalTrades >= _userInputs.MaxTradePerDay Then
+            '        Console.WriteLine(String.Format("Trade neglected. Count:{0}, {1}", totalTrades, _tradingSymbol))
+            '    End If
         End If
         If parameter IsNot Nothing Then
             ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
