@@ -144,7 +144,7 @@ Public Class BothDirectionMultiTradesStrategyRule
                 hkCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
                 If lastExitTrade IsNot Nothing Then
                     Dim buyLevel As Decimal = GetPriceForHK(hkCandle, Trade.TradeExecutionDirection.Buy)
-                    If lastExitTrade.ExitPrice - buyLevel >= Math.Abs(lastExitTrade.PLPoint) Then
+                    If lastExitTrade.ExitPrice - buyLevel >= Math.Abs(lastExitTrade.PLPoint) * 1.5 Then
                         ret = New Tuple(Of Boolean, Payload)(True, hkCandle)
                     End If
                 Else
@@ -154,7 +154,7 @@ Public Class BothDirectionMultiTradesStrategyRule
                 hkCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
                 If lastExitTrade IsNot Nothing Then
                     Dim sellLevel As Decimal = GetPriceForHK(hkCandle, Trade.TradeExecutionDirection.Sell)
-                    If sellLevel - lastExitTrade.ExitPrice >= Math.Abs(lastExitTrade.PLPoint) Then
+                    If sellLevel - lastExitTrade.ExitPrice >= Math.Abs(lastExitTrade.PLPoint) * 1.5 Then
                         ret = New Tuple(Of Boolean, Payload)(True, hkCandle)
                     End If
                 Else

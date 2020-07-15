@@ -752,6 +752,9 @@ Namespace StrategyHelper
             Dim previousRunningTrades As List(Of Trade) = GetSpecificTrades(currentPayload, currentTrade.SquareOffType, Trade.TradeExecutionStatus.Inprogress)
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                 If currentPayload.High >= currentTrade.EntryPrice Then
+                    Dim pl As Decimal = TotalPLAfterBrokerage(currentPayload.PayloadDate.Date)
+                    Console.WriteLine(String.Format("{0},{1}", currentPayload.PayloadDate.ToString("HH:mm:ss"), pl))
+
                     If Not AllowBothDirectionEntryAtSameTime AndAlso previousRunningTrades IsNot Nothing AndAlso previousRunningTrades.Count > 0 Then
                         For Each previousRunningTrade In previousRunningTrades
                             If previousRunningTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
@@ -780,6 +783,9 @@ Namespace StrategyHelper
                 End If
             ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
                 If currentPayload.Low <= currentTrade.EntryPrice Then
+                    Dim pl As Decimal = TotalPLAfterBrokerage(currentPayload.PayloadDate.Date)
+                    Console.WriteLine(String.Format("{0},{1}", currentPayload.PayloadDate.ToString("HH:mm:ss"), pl))
+
                     If Not AllowBothDirectionEntryAtSameTime AndAlso previousRunningTrades IsNot Nothing AndAlso previousRunningTrades.Count > 0 Then
                         For Each previousRunningTrade In previousRunningTrades
                             If previousRunningTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
