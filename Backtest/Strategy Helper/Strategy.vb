@@ -1232,15 +1232,26 @@ Namespace StrategyHelper
             Return ret
         End Function
 
-        Public Function GetLastExitTradeOfTheStock(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TypeOfTrade) As Trade
+        Public Function GetLastExitTradeOfTheStock(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TypeOfTrade, Optional ByVal direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None) As Trade
             Dim ret As Trade = Nothing
             'If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentMinutePayload.PayloadDate.Date) AndAlso TradesTaken(currentMinutePayload.PayloadDate.Date).ContainsKey(currentMinutePayload.TradingSymbol) Then
             If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
                 Dim completeTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Close)
                 If completeTrades IsNot Nothing AndAlso completeTrades.Count > 0 Then
-                    ret = completeTrades.OrderBy(Function(x)
-                                                     Return x.ExitTime
-                                                 End Function).LastOrDefault
+                    If direction = Trade.TradeExecutionDirection.None Then
+                        ret = completeTrades.OrderBy(Function(x)
+                                                         Return x.ExitTime
+                                                     End Function).LastOrDefault
+                    Else
+                        Dim directionBasedTrades As List(Of Trade) = completeTrades.FindAll(Function(x)
+                                                                                                Return x.EntryDirection = direction
+                                                                                            End Function)
+                        If directionBasedTrades IsNot Nothing AndAlso directionBasedTrades.Count > 0 Then
+                            ret = directionBasedTrades.OrderBy(Function(x)
+                                                                   Return x.ExitTime
+                                                               End Function).LastOrDefault
+                        End If
+                    End If
                 End If
             End If
             Return ret

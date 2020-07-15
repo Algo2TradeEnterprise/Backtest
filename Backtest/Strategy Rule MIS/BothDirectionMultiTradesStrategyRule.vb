@@ -64,7 +64,8 @@ Public Class BothDirectionMultiTradesStrategyRule
                         parameterList.Add(parameter)
                     Next
                 End If
-            ElseIf sellActiveTrades < _maxSingleDirectionTradeCount Then
+            End If
+            If sellActiveTrades < _maxSingleDirectionTradeCount Then
                 Dim signal As Tuple(Of Boolean, Payload) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick, Trade.TradeExecutionDirection.Sell)
                 If signal IsNot Nothing AndAlso signal.Item1 Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2.Open, RoundOfType.Floor)
@@ -138,14 +139,27 @@ Public Class BothDirectionMultiTradesStrategyRule
         Dim ret As Tuple(Of Boolean, Payload) = Nothing
         If candle IsNot Nothing AndAlso Not candle.DeadCandle Then
             Dim hkCandle As Payload = _hkPayload(candle.PayloadDate)
+            Dim lastExitTrade As Trade = _parentStrategy.GetLastExitTradeOfTheStock(candle, Trade.TypeOfTrade.MIS, direction)
             If direction = Trade.TradeExecutionDirection.Buy AndAlso
                 hkCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
-
-                ret = New Tuple(Of Boolean, Payload)(True, hkCandle)
+                If lastExitTrade IsNot Nothing Then
+                    Dim buyLevel As Decimal = GetPriceForHK(hkCandle, Trade.TradeExecutionDirection.Buy)
+                    If lastExitTrade.ExitPrice - buyLevel >= Math.Abs(lastExitTrade.PLPoint) Then
+                        ret = New Tuple(Of Boolean, Payload)(True, hkCandle)
+                    End If
+                Else
+                    ret = New Tuple(Of Boolean, Payload)(True, hkCandle)
+                End If
             ElseIf direction = Trade.TradeExecutionDirection.Sell AndAlso
                 hkCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
-
-                ret = New Tuple(Of Boolean, Payload)(True, hkCandle)
+                If lastExitTrade IsNot Nothing Then
+                    Dim sellLevel As Decimal = GetPriceForHK(hkCandle, Trade.TradeExecutionDirection.Sell)
+                    If sellLevel - lastExitTrade.ExitPrice >= Math.Abs(lastExitTrade.PLPoint) Then
+                        ret = New Tuple(Of Boolean, Payload)(True, hkCandle)
+                    End If
+                Else
+                    ret = New Tuple(Of Boolean, Payload)(True, hkCandle)
+                End If
             End If
         End If
         Return ret
