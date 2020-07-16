@@ -1,6 +1,7 @@
 ﻿Namespace StrategyHelper
     Public Class StockDetails
         Public StockName As String
+        Public TradingSymbol As String
         Public ContractRolloverSymbol As String
         Public LotSize As Integer
         Public EligibleToTakeTrade As Boolean
@@ -20,5 +21,7 @@
         Public Supporting5 As Decimal
         Public Supporting6 As Decimal
         Public StockType As Trade.TypeOfStock = Trade.TypeOfStock.None
+        Public OptionStock As Boolean
+        Public Controller As Boolean
     End Class
 End Namespace

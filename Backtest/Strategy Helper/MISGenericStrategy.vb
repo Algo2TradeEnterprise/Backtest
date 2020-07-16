@@ -95,7 +95,7 @@ Namespace StrategyHelper
                             Dim XDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             Dim currentDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             If Me.DataSource = SourceOfData.Database Then
-                                XDayOneMinutePayload = Cmn.GetRawPayload(database, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate)
+                                XDayOneMinutePayload = Cmn.GetRawPayloadForSpecificTradingSymbol(database, stockList(stock).TradingSymbol, tradeCheckingDate.AddDays(-7), tradeCheckingDate, stockList(stock).OptionStock)
                             ElseIf Me.DataSource = SourceOfData.Live Then
                                 XDayOneMinutePayload = Await Cmn.GetHistoricalDataAsync(database, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate).ConfigureAwait(False)
                             End If
@@ -132,6 +132,10 @@ Namespace StrategyHelper
                                             stockRule = New PairDifferencePercentageStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, _canceller, stockList(stock).Supporting1)
                                         Case 6
                                             stockRule = New PairChangePercentWithAdjustmentStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, _canceller, stockList(stock).Supporting1, stockList(stock).StockType)
+                                        Case 7
+                                            stockRule = New PairChangePercentWithAdjustmentStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, _canceller, stockList(stock).Supporting1, stockList(stock).StockType)
+                                        Case 8
+                                            stockRule = New PivotDirectionBasedStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, _canceller, stockList(stock).Controller)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
@@ -142,13 +146,16 @@ Namespace StrategyHelper
                                 End If
                             End If
                         Next
-                        If stocksRuleData IsNot Nothing AndAlso stocksRuleData.Count > 0 Then
+                        If stocksRuleData IsNot Nothing AndAlso stocksRuleData.Count = 2 Then
                             stocksRuleData.FirstOrDefault.Value.AnotherPairInstrument = stocksRuleData.LastOrDefault.Value
                             stocksRuleData.LastOrDefault.Value.AnotherPairInstrument = stocksRuleData.FirstOrDefault.Value
 
                             For Each stockRule In stocksRuleData.Values
                                 stockRule.CompletePairProcessing()
                             Next
+                        Else
+                            tradeCheckingDate = tradeCheckingDate.AddDays(1)
+                            Continue While
                         End If
                         '---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -670,6 +677,8 @@ Namespace StrategyHelper
 
                                 ret.Add(instrumentName, detailsOfStock)
                             Next
+                        Case 8
+                            ret = PivotDirectionBasedStrategyRule.GetTodaysStock(tradingDate, dt, Cmn)
                         Case Else
                             Dim counter As Integer = 0
                             For i = 1 To dt.Rows.Count - 1

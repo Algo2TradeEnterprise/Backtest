@@ -122,6 +122,7 @@
     <Compile Include="Strategy Rule MIS\PairChangePercentStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\PairChangePercentWithAdjustmentStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\PairDifferencePercentageStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\PivotDirectionBasedStrategyRule.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="frmMain.resx">
