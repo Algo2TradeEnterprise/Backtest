@@ -111,6 +111,8 @@ Namespace StrategyHelper
                                     Select Case RuleNumber
                                         Case 0
                                             stockRule = New OptionLadderStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, stockList(stock).Controller, _canceller)
+                                        Case 1
+                                            stockRule = New TopGainerLosserOfEverySlabStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, stockList(stock).Controller, _canceller)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
@@ -615,6 +617,27 @@ Namespace StrategyHelper
                                                 .LotSize = lotSize,
                                                 .Controller = controller,
                                                 .OptionStock = optionStock,
+                                                .EligibleToTakeTrade = True}
+                                    ret.Add(detailsOfStock.StockName, detailsOfStock)
+                                End If
+                            Next
+                        Case 1
+                            For i = 0 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i).Item("Date")
+                                If rowDate.Date = tradingDate.Date Then
+                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
+                                    Dim lotSize As Integer = dt.Rows(i).Item("Lot Size")
+                                    Dim controller As Boolean = False
+                                    If tradingSymbol.ToUpper = "NIFTY BANK" Then
+                                        controller = True
+                                    End If
+
+                                    Dim detailsOfStock As StockDetails = New StockDetails With
+                                               {.StockName = tradingSymbol,
+                                                .LotSize = lotSize,
+                                                .Controller = controller,
+                                                .OptionStock = False,
                                                 .EligibleToTakeTrade = True}
                                     ret.Add(detailsOfStock.StockName, detailsOfStock)
                                 End If
