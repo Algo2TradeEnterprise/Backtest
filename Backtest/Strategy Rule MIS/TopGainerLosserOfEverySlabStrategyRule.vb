@@ -106,29 +106,10 @@ Public Class TopGainerLosserOfEverySlabStrategyRule
                         Me.GainLossPerData.ContainsKey(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) Then
                         If Me.GainLossPerData(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) > _changePer Then
                             _lastDirection = Trade.TradeExecutionDirection.Buy
-                            Dim topGainers As List(Of TopGainerLosserOfEverySlabStrategyRule) = GetTopGainerStocks(currentMinuteCandlePayload, 2)
-                            If topGainers IsNot Nothing AndAlso topGainers.Count > 0 Then
-                                For Each runningGainer In topGainers
-                                    runningGainer.Direction = Trade.TradeExecutionDirection.Buy
-                                    runningGainer.ForceTakeTrade = True
-                                    runningGainer.EligibleToTakeTrade = True
-                                Next
-                            End If
-                            Dim topLosser As List(Of TopGainerLosserOfEverySlabStrategyRule) = GetTopLosserStocks(currentMinuteCandlePayload, 1)
-                            If topLosser IsNot Nothing AndAlso topLosser.Count > 0 Then
-                                For Each runningLosser In topLosser
-                                    runningLosser.Direction = Trade.TradeExecutionDirection.Sell
-                                    runningLosser.ForceTakeTrade = True
-                                    runningLosser.EligibleToTakeTrade = True
-                                Next
-                            End If
-                            _firstTimeEntry = False
-                        ElseIf Me.GainLossPerData(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) < _changePer * -1 Then
-                            _lastDirection = Trade.TradeExecutionDirection.Sell
                             Dim topGainers As List(Of TopGainerLosserOfEverySlabStrategyRule) = GetTopGainerStocks(currentMinuteCandlePayload, 1)
                             If topGainers IsNot Nothing AndAlso topGainers.Count > 0 Then
                                 For Each runningGainer In topGainers
-                                    runningGainer.Direction = Trade.TradeExecutionDirection.Buy
+                                    runningGainer.Direction = Trade.TradeExecutionDirection.Sell
                                     runningGainer.ForceTakeTrade = True
                                     runningGainer.EligibleToTakeTrade = True
                                 Next
@@ -136,7 +117,26 @@ Public Class TopGainerLosserOfEverySlabStrategyRule
                             Dim topLosser As List(Of TopGainerLosserOfEverySlabStrategyRule) = GetTopLosserStocks(currentMinuteCandlePayload, 2)
                             If topLosser IsNot Nothing AndAlso topLosser.Count > 0 Then
                                 For Each runningLosser In topLosser
-                                    runningLosser.Direction = Trade.TradeExecutionDirection.Sell
+                                    runningLosser.Direction = Trade.TradeExecutionDirection.Buy
+                                    runningLosser.ForceTakeTrade = True
+                                    runningLosser.EligibleToTakeTrade = True
+                                Next
+                            End If
+                            _firstTimeEntry = False
+                        ElseIf Me.GainLossPerData(currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate) < _changePer * -1 Then
+                            _lastDirection = Trade.TradeExecutionDirection.Sell
+                            Dim topGainers As List(Of TopGainerLosserOfEverySlabStrategyRule) = GetTopGainerStocks(currentMinuteCandlePayload, 2)
+                            If topGainers IsNot Nothing AndAlso topGainers.Count > 0 Then
+                                For Each runningGainer In topGainers
+                                    runningGainer.Direction = Trade.TradeExecutionDirection.Sell
+                                    runningGainer.ForceTakeTrade = True
+                                    runningGainer.EligibleToTakeTrade = True
+                                Next
+                            End If
+                            Dim topLosser As List(Of TopGainerLosserOfEverySlabStrategyRule) = GetTopLosserStocks(currentMinuteCandlePayload, 1)
+                            If topLosser IsNot Nothing AndAlso topLosser.Count > 0 Then
+                                For Each runningLosser In topLosser
+                                    runningLosser.Direction = Trade.TradeExecutionDirection.Buy
                                     runningLosser.ForceTakeTrade = True
                                     runningLosser.EligibleToTakeTrade = True
                                 Next
@@ -173,18 +173,18 @@ Public Class TopGainerLosserOfEverySlabStrategyRule
                                     runningInstrument.ForceCancelTrade = True
                                 Next
                             End If
-                            Dim topGainers As List(Of TopGainerLosserOfEverySlabStrategyRule) = GetTopGainerStocks(currentMinuteCandlePayload, 1)
+                            Dim topGainers As List(Of TopGainerLosserOfEverySlabStrategyRule) = GetTopGainerStocks(currentMinuteCandlePayload, 2)
                             If topGainers IsNot Nothing AndAlso topGainers.Count > 0 Then
                                 For Each runningGainer In topGainers
-                                    runningGainer.Direction = Trade.TradeExecutionDirection.Buy
+                                    runningGainer.Direction = Trade.TradeExecutionDirection.Sell
                                     runningGainer.ForceTakeTrade = True
                                     runningGainer.EligibleToTakeTrade = True
                                 Next
                             End If
-                            Dim topLosser As List(Of TopGainerLosserOfEverySlabStrategyRule) = GetTopLosserStocks(currentMinuteCandlePayload, 2)
+                            Dim topLosser As List(Of TopGainerLosserOfEverySlabStrategyRule) = GetTopLosserStocks(currentMinuteCandlePayload, 1)
                             If topLosser IsNot Nothing AndAlso topLosser.Count > 0 Then
                                 For Each runningLosser In topLosser
-                                    runningLosser.Direction = Trade.TradeExecutionDirection.Sell
+                                    runningLosser.Direction = Trade.TradeExecutionDirection.Buy
                                     runningLosser.ForceTakeTrade = True
                                     runningLosser.EligibleToTakeTrade = True
                                 Next
@@ -202,18 +202,18 @@ Public Class TopGainerLosserOfEverySlabStrategyRule
                                     runningInstrument.ForceCancelTrade = True
                                 Next
                             End If
-                            Dim topGainers As List(Of TopGainerLosserOfEverySlabStrategyRule) = GetTopGainerStocks(currentMinuteCandlePayload, 2)
+                            Dim topGainers As List(Of TopGainerLosserOfEverySlabStrategyRule) = GetTopGainerStocks(currentMinuteCandlePayload, 1)
                             If topGainers IsNot Nothing AndAlso topGainers.Count > 0 Then
                                 For Each runningGainer In topGainers
-                                    runningGainer.Direction = Trade.TradeExecutionDirection.Buy
+                                    runningGainer.Direction = Trade.TradeExecutionDirection.Sell
                                     runningGainer.ForceTakeTrade = True
                                     runningGainer.EligibleToTakeTrade = True
                                 Next
                             End If
-                            Dim topLosser As List(Of TopGainerLosserOfEverySlabStrategyRule) = GetTopLosserStocks(currentMinuteCandlePayload, 1)
+                            Dim topLosser As List(Of TopGainerLosserOfEverySlabStrategyRule) = GetTopLosserStocks(currentMinuteCandlePayload, 2)
                             If topLosser IsNot Nothing AndAlso topLosser.Count > 0 Then
                                 For Each runningLosser In topLosser
-                                    runningLosser.Direction = Trade.TradeExecutionDirection.Sell
+                                    runningLosser.Direction = Trade.TradeExecutionDirection.Buy
                                     runningLosser.ForceTakeTrade = True
                                     runningLosser.EligibleToTakeTrade = True
                                 Next
