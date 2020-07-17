@@ -108,7 +108,7 @@ Public Class TopGainerLooserStrategyRule
                     Dim gainer2 As TopGainerLooserStrategyRule = GetTopGainerStocks(currentMinuteCandlePayload, 2)
                     gainer2.EligibleToTakeTrade = True
                     gainer2.ForceTakeTrade = True
-                    gainer2.Direction = Trade.TradeExecutionDirection.Sell
+                    gainer2.Direction = Trade.TradeExecutionDirection.Buy
 
                     Dim looser1 As TopGainerLooserStrategyRule = GetTopLosserStocks(currentMinuteCandlePayload, 1)
                     looser1.EligibleToTakeTrade = True
@@ -118,7 +118,7 @@ Public Class TopGainerLooserStrategyRule
                     Dim looser2 As TopGainerLooserStrategyRule = GetTopLosserStocks(currentMinuteCandlePayload, 2)
                     looser2.EligibleToTakeTrade = True
                     looser2.ForceTakeTrade = True
-                    looser2.Direction = Trade.TradeExecutionDirection.Buy
+                    looser2.Direction = Trade.TradeExecutionDirection.Sell
 
                     _firstTimeEntry = False
                 End If
