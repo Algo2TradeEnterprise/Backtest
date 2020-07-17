@@ -170,6 +170,7 @@
     <Compile Include="Strategy Rule MIS\SqueezeBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\StochasticDivergenceStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\SupertrendCutReversalStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\SupertrendCutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\TwoThirdStrategyRule.vb" />
   </ItemGroup>
   <ItemGroup>
