@@ -113,6 +113,8 @@ Namespace StrategyHelper
                                             stockRule = New OptionLadderStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, stockList(stock).Controller, _canceller)
                                         Case 1
                                             stockRule = New TopGainerLosserOfEverySlabStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, stockList(stock).Controller, _canceller)
+                                        Case 2
+                                            stockRule = New TopGainerLooserStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, stockList(stock).Controller, _canceller)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
@@ -624,7 +626,7 @@ Namespace StrategyHelper
                                     ret.Add(detailsOfStock.StockName, detailsOfStock)
                                 End If
                             Next
-                        Case 1
+                        Case 1, 2
                             For i = 0 To dt.Rows.Count - 1
                                 Dim rowDate As Date = dt.Rows(i).Item("Date")
                                 If rowDate.Date = tradingDate.Date Then
