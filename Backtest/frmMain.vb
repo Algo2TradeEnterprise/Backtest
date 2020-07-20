@@ -4271,7 +4271,7 @@ Public Class frmMain
                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                         With backtestStrategy
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Cash Stock.csv")
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Dummy Stock Data.csv")
 
                             .AllowBothDirectionEntryAtSameTime = True
                             .TrailingStoploss = False
@@ -4280,7 +4280,7 @@ Public Class frmMain
 
                             .RuleEntityData = Nothing
 
-                            .NumberOfTradeableStockPerDay = 1
+                            .NumberOfTradeableStockPerDay = Integer.MaxValue
 
                             .NumberOfTradesPerStockPerDay = Integer.MaxValue
 

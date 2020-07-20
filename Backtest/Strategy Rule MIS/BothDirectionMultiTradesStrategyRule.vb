@@ -186,7 +186,7 @@ Public Class BothDirectionMultiTradesStrategyRule
 
     Private Function GetStoploss(ByVal signalCandle As Payload) As Decimal
         If _slPoint = Decimal.MinValue Then
-            _slPoint = ConvertFloorCeling(GetHighestATROfTheDay(signalCandle) * 1.5, _parentStrategy.TickSize, RoundOfType.Floor)
+            _slPoint = ConvertFloorCeling(GetHighestATROfTheDay(signalCandle) * 1.5, _parentStrategy.TickSize, RoundOfType.Celing)
             Return _slPoint
         Else
             Return _slPoint
