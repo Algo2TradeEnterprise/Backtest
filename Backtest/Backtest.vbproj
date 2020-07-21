@@ -135,6 +135,7 @@
     <Compile Include="Strategy Rule MIS\BollingerCloseStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\BothDirectionMultiTradesHKStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\BothDirectionMultiTradesStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\DayHLSwingTrendlineStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\EmaSmaCrossoverStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\HigherTimeframeDirectionMartingaleStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\HighestLowestPointAnchorSatelliteStrategyRule.vb" />

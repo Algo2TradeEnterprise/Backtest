@@ -93,7 +93,7 @@ Namespace StrategyHelper
                             Dim currentDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             If Me.DataSource = SourceOfData.Database Then
                                 'XDayOneMinutePayload = Cmn.GetRawPayload(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate)
-                                XDayOneMinutePayload = Await dataFtchr.GetCandleData(stockList(stock).TradingSymbol, tradeCheckingDate.AddDays(-8), tradeCheckingDate).ConfigureAwait(False)
+                                XDayOneMinutePayload = Await dataFtchr.GetCandleData(stockList(stock).TradingSymbol, tradeCheckingDate.AddDays(-4), tradeCheckingDate).ConfigureAwait(False)
                             ElseIf Me.DataSource = SourceOfData.Live Then
                                 XDayOneMinutePayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate).ConfigureAwait(False)
                             End If
@@ -209,6 +209,8 @@ Namespace StrategyHelper
                                             stockRule = New SupertrendCutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 44
                                             stockRule = New BothDirectionMultiTradesStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case 45
+                                            stockRule = New DayHLSwingTrendlineStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
