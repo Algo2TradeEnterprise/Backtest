@@ -10,6 +10,8 @@ Public Class DayHLSwingTrendlineStrategyRule
     Private _atrPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _highTrendlinePayload As Dictionary(Of Date, TrendLineVeriables) = Nothing
     Private _lowTrendlinePayload As Dictionary(Of Date, TrendLineVeriables) = Nothing
+    Private _slPoint As Decimal = Decimal.MinValue
+    Private _targetPoint As Decimal = Decimal.MinValue
     Private _quantity As Integer = Integer.MinValue
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
@@ -35,8 +37,8 @@ Public Class DayHLSwingTrendlineStrategyRule
         Dim ret As Tuple(Of Boolean, List(Of PlaceOrderParameters)) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
-        Dim parameter As PlaceOrderParameters = Nothing
-
+        Dim parameter1 As PlaceOrderParameters = Nothing
+        Dim parameter2 As PlaceOrderParameters = Nothing
         If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
             Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS) AndAlso Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS) AndAlso
             currentMinuteCandlePayload.PayloadDate >= _tradeStartTime AndAlso Me.EligibleToTakeTrade Then
@@ -44,21 +46,43 @@ Public Class DayHLSwingTrendlineStrategyRule
             Dim signalCandle As Payload = Nothing
             Dim signal As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection, Date, Date) = GetSignalCandle(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
             If signal IsNot Nothing AndAlso signal.Item1 Then
-                signalCandle = signal.Item2
-                If _quantity = Integer.MinValue Then
-                    Dim atr As Decimal = GetHighestATROfTheDay(signalCandle)
-                    _quantity = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, currentTick.Open, currentTick.Open - atr, -500, Trade.TypeOfStock.Cash)
+                Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS)
+                If lastExecutedOrder Is Nothing Then
+                    signalCandle = signal.Item2
+                    If _quantity = Integer.MinValue Then
+                        _slPoint = ConvertFloorCeling(GetHighestATROfTheDay(signalCandle), _parentStrategy.TickSize, RoundOfType.Floor)
+                        _quantity = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, currentTick.Open, currentTick.Open - _slPoint, -500, Trade.TypeOfStock.Cash)
+                        _targetPoint = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, currentTick.Open, _quantity, 500, Trade.TradeExecutionDirection.Buy, Trade.TypeOfStock.Cash) - currentTick.Open
+                    End If
+                Else
+                    If lastExecutedOrder.EntryDirection <> signal.Item3 Then
+                        signalCandle = signal.Item2
+                    End If
                 End If
             End If
 
-            If signalCandle IsNot Nothing AndAlso _quantity <> 0 Then
+                If signalCandle IsNot Nothing AndAlso _quantity <> 0 Then
                 If signal.Item3 = Trade.TradeExecutionDirection.Buy Then
                     Dim entryPrice As Decimal = currentTick.Open
                     Dim stoploss As Decimal = entryPrice - 1000000
                     Dim target As Decimal = entryPrice + 1000000
                     Dim quantity As Integer = _quantity
 
-                    parameter = New PlaceOrderParameters With {
+                    parameter1 = New PlaceOrderParameters With {
+                                .EntryPrice = entryPrice,
+                                .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                                .Quantity = quantity,
+                                .Stoploss = stoploss,
+                                .Target = entryPrice + _targetPoint,
+                                .Buffer = 0,
+                                .SignalCandle = signalCandle,
+                                .OrderType = Trade.TypeOfOrder.Market,
+                                .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                                .Supporting2 = signal.Item4.ToString("HH:mm:ss"),
+                                .Supporting3 = signal.Item5.ToString("HH:mm:ss")
+                            }
+
+                    parameter2 = New PlaceOrderParameters With {
                                 .EntryPrice = entryPrice,
                                 .EntryDirection = Trade.TradeExecutionDirection.Buy,
                                 .Quantity = quantity,
@@ -77,7 +101,21 @@ Public Class DayHLSwingTrendlineStrategyRule
                     Dim target As Decimal = entryPrice - 1000000
                     Dim quantity As Integer = _quantity
 
-                    parameter = New PlaceOrderParameters With {
+                    parameter1 = New PlaceOrderParameters With {
+                                .EntryPrice = entryPrice,
+                                .EntryDirection = Trade.TradeExecutionDirection.Sell,
+                                .Quantity = quantity,
+                                .Stoploss = stoploss,
+                                .Target = entryPrice - _targetPoint,
+                                .Buffer = 0,
+                                .SignalCandle = signalCandle,
+                                .OrderType = Trade.TypeOfOrder.Market,
+                                .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                                .Supporting2 = signal.Item4.ToString("HH:mm:ss"),
+                                .Supporting3 = signal.Item5.ToString("HH:mm:ss")
+                            }
+
+                    parameter2 = New PlaceOrderParameters With {
                                 .EntryPrice = entryPrice,
                                 .EntryDirection = Trade.TradeExecutionDirection.Sell,
                                 .Quantity = quantity,
@@ -93,9 +131,19 @@ Public Class DayHLSwingTrendlineStrategyRule
                 End If
             End If
         End If
-        If parameter IsNot Nothing Then
-            ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
+        Dim parameters As List(Of PlaceOrderParameters) = Nothing
+        If parameter1 IsNot Nothing Then
+            parameters = New List(Of PlaceOrderParameters)
+            parameters.Add(parameter1)
         End If
+        If parameter2 IsNot Nothing Then
+            If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
+            parameters.Add(parameter2)
+        End If
+        If parameters IsNot Nothing AndAlso parameters.Count > 0 Then
+            ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, parameters)
+        End If
+        Return ret
         Return ret
     End Function
 
@@ -117,6 +165,35 @@ Public Class DayHLSwingTrendlineStrategyRule
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
+        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            Dim triggerPrice As Decimal = Decimal.MinValue
+            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                Dim plPoint As Decimal = currentTick.Open - currentTrade.EntryPrice
+                If plPoint > _targetPoint Then
+                    Dim multiplier As Integer = Math.Floor(plPoint / _targetPoint)
+                    If multiplier = 1 Then
+                        Dim brkevnPnt As Decimal = _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, currentTrade.LotSize, currentTrade.StockType)
+                        triggerPrice = currentTrade.EntryPrice + brkevnPnt
+                    ElseIf multiplier > 1 Then
+                        triggerPrice = currentTrade.EntryPrice + (_targetPoint * (multiplier - 1))
+                    End If
+                End If
+            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                Dim plPoint As Decimal = currentTrade.EntryPrice - currentTick.Open
+                If plPoint > _targetPoint Then
+                    Dim multiplier As Integer = Math.Floor(plPoint / _targetPoint)
+                    If multiplier = 1 Then
+                        Dim brkevnPnt As Decimal = _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, currentTrade.LotSize, currentTrade.StockType)
+                        triggerPrice = currentTrade.EntryPrice - brkevnPnt
+                    ElseIf multiplier > 1 Then
+                        triggerPrice = currentTrade.EntryPrice - (_targetPoint * (multiplier - 1))
+                    End If
+                End If
+            End If
+            If triggerPrice <> Decimal.MinValue AndAlso currentTrade.PotentialStopLoss <> triggerPrice Then
+                ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, Math.Abs(triggerPrice - currentTrade.EntryPrice))
+            End If
+        End If
         Return ret
     End Function
 
