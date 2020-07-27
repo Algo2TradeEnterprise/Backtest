@@ -4440,7 +4440,7 @@ Public Class frmMain
                             .TickBasedStrategy = True
                             .RuleNumber = ruleNumber
 
-                            .RuleEntityData = New FibonacciBacktestStrategyRule.StrategyRuleEntities With {.Multiplier = 0.5}
+                            .RuleEntityData = New FibonacciBacktestStrategyRule.StrategyRuleEntities With {.Multiplier = 1}
 
                             .NumberOfTradeableStockPerDay = 1
 
