@@ -14,7 +14,7 @@ Public Class SwingAtDayHLStrategyRule
         Public ATRMultiplier As Decimal
         Public TargetMultiplier As Decimal
         Public BreakevenMovement As Boolean
-        Public BreakevenPoint As Decimal
+        Public BreakevenTargetMultiplier As Decimal
         Public NumberOfTradeOnEachDirection As Integer
     End Class
 #End Region
@@ -62,7 +62,7 @@ Public Class SwingAtDayHLStrategyRule
 
             If signalCandle IsNot Nothing Then
                 Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2, RoundOfType.Floor)
-                If signal.Item3 = Trade.TradeExecutionDirection.Buy Then
+                If signal.Item5 = Trade.TradeExecutionDirection.Buy Then
                     Dim entryPrice As Decimal = signal.Item2
                     Dim stoploss As Decimal = signal.Item3
                     Dim target As Decimal = entryPrice + ConvertFloorCeling((entryPrice - stoploss) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
@@ -78,10 +78,11 @@ Public Class SwingAtDayHLStrategyRule
                                 .SignalCandle = signalCandle,
                                 .OrderType = Trade.TypeOfOrder.SL,
                                 .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
-                                .Supporting2 = signal.Item4.ToString("HH:mm:ss"),
-                                .Supporting3 = signal.Item5.ToString("HH:mm:ss")
+                                .Supporting2 = signal.Item6.ToString("HH:mm:ss"),
+                                .Supporting3 = signal.Item7.ToString("HH:mm:ss"),
+                                .Supporting4 = ConvertFloorCeling(entryPrice - stoploss, _parentStrategy.TickSize, RoundOfType.Floor)
                             }
-                ElseIf signal.Item3 = Trade.TradeExecutionDirection.Sell Then
+                ElseIf signal.Item5 = Trade.TradeExecutionDirection.Sell Then
                     Dim entryPrice As Decimal = signal.Item2
                     Dim stoploss As Decimal = signal.Item3
                     Dim target As Decimal = entryPrice - ConvertFloorCeling((stoploss - entryPrice) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
@@ -97,8 +98,9 @@ Public Class SwingAtDayHLStrategyRule
                                 .SignalCandle = signalCandle,
                                 .OrderType = Trade.TypeOfOrder.SL,
                                 .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
-                                .Supporting2 = signal.Item4.ToString("HH:mm:ss"),
-                                .Supporting3 = signal.Item5.ToString("HH:mm:ss")
+                                .Supporting2 = signal.Item6.ToString("HH:mm:ss"),
+                                .Supporting3 = signal.Item7.ToString("HH:mm:ss"),
+                                .Supporting4 = ConvertFloorCeling(stoploss - entryPrice, _parentStrategy.TickSize, RoundOfType.Floor)
                             }
                 End If
             End If
@@ -115,12 +117,23 @@ Public Class SwingAtDayHLStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
             Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
-            Dim signal As Tuple(Of Boolean, Decimal, Decimal, Payload, Trade.TradeExecutionDirection, Date, Date) = GetEntrySignal(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
-            If signal IsNot Nothing AndAlso signal.Item1 Then
-                If currentTrade.EntryDirection <> signal.Item3 OrElse
+            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                If currentMinuteCandlePayload.PreviousCandlePayload.Close < currentTrade.PotentialStopLoss Then
+                    ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                End If
+            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                If currentMinuteCandlePayload.PreviousCandlePayload.Close > currentTrade.PotentialStopLoss Then
+                    ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                End If
+            End If
+            If ret Is Nothing Then
+                Dim signal As Tuple(Of Boolean, Decimal, Decimal, Payload, Trade.TradeExecutionDirection, Date, Date) = GetEntrySignal(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
+                If signal IsNot Nothing AndAlso signal.Item1 Then
+                    If currentTrade.EntryDirection <> signal.Item3 OrElse
                     currentTrade.EntryPrice <> signal.Item2 OrElse
                     currentTrade.SignalCandle.PayloadDate <> signal.Item4.PayloadDate Then
-                    ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                        ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                    End If
                 End If
             End If
         End If
@@ -130,17 +143,18 @@ Public Class SwingAtDayHLStrategyRule
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
-        If _userInputs.BreakevenMovement AndAlso _userInputs.BreakevenPoint <> Decimal.MinValue AndAlso
+        If _userInputs.BreakevenMovement AndAlso _userInputs.BreakevenTargetMultiplier <> Decimal.MinValue AndAlso
             currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-
             Dim triggerPrice As Decimal = Decimal.MinValue
+            Dim slPoint As Decimal = currentTrade.Supporting4
+            Dim targetPoint As Decimal = ConvertFloorCeling(slPoint * _userInputs.BreakevenTargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy AndAlso currentTrade.PotentialStopLoss < currentTrade.EntryPrice Then
-                If currentTick.Open >= currentTrade.EntryPrice + _userInputs.BreakevenPoint Then
+                If currentTick.Open >= currentTrade.EntryPrice + targetPoint Then
                     Dim brkevnPnt As Decimal = _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, currentTrade.LotSize, currentTrade.StockType)
                     triggerPrice = currentTrade.EntryPrice + brkevnPnt
                 End If
             ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell AndAlso currentTrade.PotentialStopLoss > currentTrade.EntryPrice Then
-                If currentTick.Open <= currentTrade.EntryPrice - _userInputs.BreakevenPoint Then
+                If currentTick.Open <= currentTrade.EntryPrice - targetPoint Then
                     Dim brkevnPnt As Decimal = _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, currentTrade.LotSize, currentTrade.StockType)
                     triggerPrice = currentTrade.EntryPrice - brkevnPnt
                 End If

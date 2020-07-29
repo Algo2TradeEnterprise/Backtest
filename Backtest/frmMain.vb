@@ -4514,7 +4514,7 @@ Public Class frmMain
                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                         With backtestStrategy
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Cash Stock.csv")
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Cash Stock Modified Price Range.csv")
 
                             .AllowBothDirectionEntryAtSameTime = False
                             .TrailingStoploss = False
@@ -4522,14 +4522,14 @@ Public Class frmMain
                             .RuleNumber = ruleNumber
 
                             .RuleEntityData = New SwingAtDayHLStrategyRule.StrategyRuleEntities With
-                                              {.ATRMultiplier = 1.5,
+                                              {.ATRMultiplier = 2,
                                                .MaxLossPerTrade = -500,
                                                .TargetMultiplier = 3,
-                                               .BreakevenPoint = 1.5,
                                                .BreakevenMovement = False,
+                                               .BreakevenTargetMultiplier = 1.5,
                                                .NumberOfTradeOnEachDirection = 2}
 
-                            .NumberOfTradeableStockPerDay = 1
+                            .NumberOfTradeableStockPerDay = 20
 
                             .NumberOfTradesPerStockPerDay = 4
 
