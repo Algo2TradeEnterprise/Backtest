@@ -45,17 +45,17 @@ Public Class SwingAtDayHLStrategyRule
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
         Dim ret As Tuple(Of Boolean, List(Of PlaceOrderParameters)) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
-        Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
+        Dim currentMinuteCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         Dim parameter As PlaceOrderParameters = Nothing
-        If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
+        If currentMinuteCandle IsNot Nothing AndAlso currentMinuteCandle.PreviousCandlePayload IsNot Nothing AndAlso
             Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS) AndAlso Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS) AndAlso
-            GetNumberOfTrades(currentMinuteCandlePayload, Trade.TradeExecutionDirection.Buy) < _userInputs.NumberOfTradeOnEachDirection AndAlso
-            GetNumberOfTrades(currentMinuteCandlePayload, Trade.TradeExecutionDirection.Sell) < _userInputs.NumberOfTradeOnEachDirection AndAlso
-            currentMinuteCandlePayload.PayloadDate >= _tradeStartTime AndAlso Me.EligibleToTakeTrade Then
+            GetNumberOfTrades(currentMinuteCandle, Trade.TradeExecutionDirection.Buy) < _userInputs.NumberOfTradeOnEachDirection AndAlso
+            GetNumberOfTrades(currentMinuteCandle, Trade.TradeExecutionDirection.Sell) < _userInputs.NumberOfTradeOnEachDirection AndAlso
+            currentMinuteCandle.PayloadDate >= _tradeStartTime AndAlso Me.EligibleToTakeTrade Then
             Dim signalCandle As Payload = Nothing
-            Dim signal As Tuple(Of Boolean, Decimal, Decimal, Payload, Trade.TradeExecutionDirection, Date, Date) = GetEntrySignal(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
+            Dim signal As Tuple(Of Boolean, Decimal, Decimal, Payload, Trade.TradeExecutionDirection, Date, Date) = GetEntrySignal(currentMinuteCandle, currentTick)
             If signal IsNot Nothing AndAlso signal.Item1 Then
-                If GetNumberOfTrades(currentMinuteCandlePayload, signal.Item5) < _userInputs.NumberOfTradeOnEachDirection Then
+                If GetNumberOfTrades(currentMinuteCandle, signal.Item5) < _userInputs.NumberOfTradeOnEachDirection Then
                     signalCandle = signal.Item4
                 End If
             End If
@@ -78,8 +78,8 @@ Public Class SwingAtDayHLStrategyRule
                                 .SignalCandle = signalCandle,
                                 .OrderType = Trade.TypeOfOrder.SL,
                                 .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
-                                .Supporting2 = signal.Item6.ToString("HH:mm:ss"),
-                                .Supporting3 = signal.Item7.ToString("HH:mm:ss"),
+                                .Supporting2 = signal.Item6.ToString("dd-MM-yyyy HH:mm:ss"),
+                                .Supporting3 = signal.Item7.ToString("dd-MM-yyyy HH:mm:ss"),
                                 .Supporting4 = ConvertFloorCeling(entryPrice - stoploss, _parentStrategy.TickSize, RoundOfType.Floor)
                             }
                 ElseIf signal.Item5 = Trade.TradeExecutionDirection.Sell Then
@@ -98,8 +98,8 @@ Public Class SwingAtDayHLStrategyRule
                                 .SignalCandle = signalCandle,
                                 .OrderType = Trade.TypeOfOrder.SL,
                                 .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
-                                .Supporting2 = signal.Item6.ToString("HH:mm:ss"),
-                                .Supporting3 = signal.Item7.ToString("HH:mm:ss"),
+                                .Supporting2 = signal.Item6.ToString("dd-MM-yyyy HH:mm:ss"),
+                                .Supporting3 = signal.Item7.ToString("dd-MM-yyyy HH:mm:ss"),
                                 .Supporting4 = ConvertFloorCeling(stoploss - entryPrice, _parentStrategy.TickSize, RoundOfType.Floor)
                             }
                 End If
@@ -116,18 +116,18 @@ Public Class SwingAtDayHLStrategyRule
         Dim ret As Tuple(Of Boolean, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
-            Dim currentMinuteCandlePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
+            Dim currentMinuteCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                If currentMinuteCandlePayload.PreviousCandlePayload.Close < currentTrade.PotentialStopLoss Then
+                If currentMinuteCandle.PreviousCandlePayload.Close < currentTrade.PotentialStopLoss Then
                     ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                 End If
             ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                If currentMinuteCandlePayload.PreviousCandlePayload.Close > currentTrade.PotentialStopLoss Then
+                If currentMinuteCandle.PreviousCandlePayload.Close > currentTrade.PotentialStopLoss Then
                     ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                 End If
             End If
             If ret Is Nothing Then
-                Dim signal As Tuple(Of Boolean, Decimal, Decimal, Payload, Trade.TradeExecutionDirection, Date, Date) = GetEntrySignal(currentMinuteCandlePayload.PreviousCandlePayload, currentTick)
+                Dim signal As Tuple(Of Boolean, Decimal, Decimal, Payload, Trade.TradeExecutionDirection, Date, Date) = GetEntrySignal(currentMinuteCandle, currentTick)
                 If signal IsNot Nothing AndAlso signal.Item1 Then
                     If currentTrade.EntryDirection <> signal.Item3 OrElse
                     currentTrade.EntryPrice <> signal.Item2 OrElse
@@ -180,9 +180,10 @@ Public Class SwingAtDayHLStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
     End Function
 
-    Private Function GetEntrySignal(ByVal candle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Decimal, Payload, Trade.TradeExecutionDirection, Date, Date)
+    Private Function GetEntrySignal(ByVal currentCandle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Decimal, Payload, Trade.TradeExecutionDirection, Date, Date)
         Dim ret As Tuple(Of Boolean, Decimal, Decimal, Payload, Trade.TradeExecutionDirection, Date, Date) = Nothing
-        If candle IsNot Nothing Then
+        If currentCandle IsNot Nothing AndAlso currentCandle.PreviousCandlePayload IsNot Nothing Then
+            Dim candle As Payload = currentCandle.PreviousCandlePayload
             Dim swing As Indicator.Swing = _swingPayload(candle.PayloadDate)
             If swing IsNot Nothing AndAlso swing.SwingHighTime.Date = _tradingDate.Date Then
                 Dim lowestCandle As Payload = GetLowestCandleOfTheDay(candle)
@@ -203,6 +204,32 @@ Public Class SwingAtDayHLStrategyRule
                     Dim stoploss As Decimal = highestCandle.High + buffer
                     If stoploss - entry < _atrPayload(candle.PayloadDate) * _userInputs.ATRMultiplier Then
                         ret = New Tuple(Of Boolean, Decimal, Decimal, Payload, Trade.TradeExecutionDirection, Date, Date)(True, entry, stoploss, candle, Trade.TradeExecutionDirection.Sell, swing.SwingLowTime, highestCandle.PayloadDate)
+                    End If
+                End If
+            End If
+            If ret Is Nothing Then
+                Dim lastExitTrade As Trade = _parentStrategy.GetLastExitTradeOfTheStock(candle, Trade.TypeOfTrade.MIS)
+                If lastExitTrade IsNot Nothing AndAlso lastExitTrade.ExitCondition = Trade.TradeExitCondition.StopLoss Then
+                    Dim exitCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(lastExitTrade.ExitTime, _signalPayload))
+                    If exitCandle.PayloadDate = currentCandle.PayloadDate Then
+                        Dim swingTime As Date = Date.ParseExact(lastExitTrade.Supporting2, "dd-MM-yyyy HH:mm:ss", Nothing)
+                        Dim hlCandleTime As Date = Date.ParseExact(lastExitTrade.Supporting3, "dd-MM-yyyy HH:mm:ss", Nothing)
+                        Dim swingData As Indicator.Swing = _swingPayload(lastExitTrade.SignalCandle.PayloadDate)
+                        Dim hlCandle As Payload = _signalPayload(hlCandleTime)
+                        Dim buffer As Decimal = lastExitTrade.EntryBuffer
+                        If lastExitTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                            If swingData.SwingHighTime = swingTime Then
+                                Dim entry As Decimal = swingData.SwingHigh + buffer
+                                Dim stoploss As Decimal = hlCandle.Low - buffer
+                                ret = New Tuple(Of Boolean, Decimal, Decimal, Payload, Trade.TradeExecutionDirection, Date, Date)(True, entry, stoploss, lastExitTrade.SignalCandle, Trade.TradeExecutionDirection.Buy, swingData.SwingHighTime, hlCandle.PayloadDate)
+                            End If
+                        ElseIf lastExitTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                            If swingData.SwingLowTime = swingTime Then
+                                Dim entry As Decimal = swingData.SwingLow - buffer
+                                Dim stoploss As Decimal = hlCandle.High + buffer
+                                ret = New Tuple(Of Boolean, Decimal, Decimal, Payload, Trade.TradeExecutionDirection, Date, Date)(True, entry, stoploss, lastExitTrade.SignalCandle, Trade.TradeExecutionDirection.Sell, swingData.SwingLowTime, hlCandle.PayloadDate)
+                            End If
+                        End If
                     End If
                 End If
             End If
