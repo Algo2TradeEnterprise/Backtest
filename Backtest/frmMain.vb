@@ -4493,7 +4493,13 @@ Public Class frmMain
                             tick = 0.05
                     End Select
 
-                    Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+                    For tgtMul As Decimal = 2 To 3
+                        For brkevn As Integer = 0 To 1
+                            For ovrlPrft As Decimal = 1000 To 3000 Step 1000
+                                For ovrlLs As Decimal = -1000 To -3000 Step -1000
+                                    If Math.Abs(ovrlLs) > ovrlPrft Then Continue For
+
+                                    Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                     exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                     exchangeEndTime:=TimeSpan.Parse("15:29:59"),
                                                                     tradeStartTime:=TimeSpan.Parse("9:16:00"),
@@ -4511,54 +4517,58 @@ Public Class frmMain
                                                                     usableCapital:=Decimal.MaxValue / 2,
                                                                     minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
                                                                     amountToBeWithdrawn:=0)
-                        AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+                                        AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                        With backtestStrategy
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Cash Stock Modified Price Range.csv")
+                                        With backtestStrategy
+                                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Cash Stock Modified Price Range.csv")
 
-                            .AllowBothDirectionEntryAtSameTime = False
-                            .TrailingStoploss = False
-                            .TickBasedStrategy = False
-                            .RuleNumber = ruleNumber
+                                            .AllowBothDirectionEntryAtSameTime = False
+                                            .TrailingStoploss = False
+                                            .TickBasedStrategy = False
+                                            .RuleNumber = ruleNumber
 
-                            .RuleEntityData = New SwingAtDayHLStrategyRule.StrategyRuleEntities With
-                                              {.ATRMultiplier = 1.5,
-                                               .MaxLossPerTrade = -500,
-                                               .TargetMultiplier = 3,
-                                               .BreakevenMovement = False,
-                                               .BreakevenTargetMultiplier = 1.5,
-                                               .NumberOfTradeOnEachDirection = 2}
+                                            .RuleEntityData = New SwingAtDayHLStrategyRule.StrategyRuleEntities With
+                                                              {.ATRMultiplier = 1.5,
+                                                               .MaxLossPerTrade = -500,
+                                                               .TargetMultiplier = tgtMul,
+                                                               .BreakevenMovement = brkevn,
+                                                               .BreakevenTargetMultiplier = tgtMul / 2,
+                                                               .NumberOfTradeOnEachDirection = 2}
 
-                            .NumberOfTradeableStockPerDay = Integer.MaxValue
+                                            .NumberOfTradeableStockPerDay = Integer.MaxValue
 
-                            .NumberOfTradesPerStockPerDay = 4
+                                            .NumberOfTradesPerStockPerDay = 4
 
-                            .StockMaxProfitPercentagePerDay = Decimal.MaxValue
-                            .StockMaxLossPercentagePerDay = Decimal.MinValue
+                                            .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                                            .StockMaxLossPercentagePerDay = Decimal.MinValue
 
-                            .ExitOnStockFixedTargetStoploss = False
-                            .StockMaxProfitPerDay = Decimal.MaxValue
-                            .StockMaxLossPerDay = Decimal.MinValue
+                                            .ExitOnStockFixedTargetStoploss = False
+                                            .StockMaxProfitPerDay = Decimal.MaxValue
+                                            .StockMaxLossPerDay = Decimal.MinValue
 
-                            .ExitOnOverAllFixedTargetStoploss = False
-                            .OverAllProfitPerDay = Decimal.MaxValue
-                            .OverAllLossPerDay = Decimal.MinValue
+                                            .ExitOnOverAllFixedTargetStoploss = True
+                                            .OverAllProfitPerDay = ovrlPrft
+                                            .OverAllLossPerDay = ovrlLs
 
-                            .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
-                            .MTMSlab = Math.Abs(.OverAllLossPerDay)
-                            .MovementSlab = .MTMSlab / 2
-                            .RealtimeTrailingPercentage = 50
-                        End With
+                                            .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+                                            .MTMSlab = Math.Abs(.OverAllLossPerDay)
+                                            .MovementSlab = .MTMSlab / 2
+                                            .RealtimeTrailingPercentage = 50
+                                        End With
 
-                        Dim ruleData As SwingAtDayHLStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                        Dim filename As String = String.Format("SwngDyHL,ATRMul {0},TgtMul {1},Brkevn {2},NmbrOfTrdEchDrctn {3}",
-                                                               ruleData.ATRMultiplier,
-                                                               ruleData.TargetMultiplier,
-                                                               ruleData.BreakevenMovement,
-                                                               ruleData.NumberOfTradeOnEachDirection)
+                                        Dim ruleData As SwingAtDayHLStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                                        Dim filename As String = String.Format("SwngDyHL,TgtMul {0},Brkevn {1},OvrlPrft {2},OvrlLs {3}",
+                                                                               ruleData.TargetMultiplier,
+                                                                               ruleData.BreakevenMovement,
+                                                                               backtestStrategy.OverAllProfitPerDay,
+                                                                               backtestStrategy.OverAllLossPerDay)
 
-                        Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-                    End Using
+                                        Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                                    End Using
+                                Next
+                            Next
+                        Next
+                    Next
 #End Region
                 Case Else
                     Throw New NotImplementedException
