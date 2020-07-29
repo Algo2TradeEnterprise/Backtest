@@ -6,8 +6,19 @@ Imports Utilities.Numbers.NumberManipulation
 Public Class FibonacciOpeningRangeBreakoutStrategyRule
     Inherits StrategyRule
 
-    Private ReadOnly _targetLevel As Decimal = 38.2 / 100
-    Private ReadOnly _stoplossLevel As Decimal = 50 / 100
+#Region "Entity"
+    Public Class StrategyRuleEntities
+        Inherits RuleEntities
+
+        Public TargetLevel As Decimal
+        Public StoplossLevel As Decimal
+        Public MaxLossPerTrade As Decimal
+    End Class
+#End Region
+
+    Private ReadOnly _targetLevel As Decimal
+    Private ReadOnly _stoplossLevel As Decimal
+    Private ReadOnly _userInputs As StrategyRuleEntities
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -17,6 +28,9 @@ Public Class FibonacciOpeningRangeBreakoutStrategyRule
                    ByVal canceller As CancellationTokenSource,
                    ByVal entities As RuleEntities)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
+        _userInputs = _entities
+        _targetLevel = _userInputs.TargetLevel / 100
+        _stoplossLevel = _userInputs.StoplossLevel / 100
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -44,7 +58,7 @@ Public Class FibonacciOpeningRangeBreakoutStrategyRule
                     Dim entryPrice As Decimal = signalCandle.High + buffer
                     Dim stoploss As Decimal = signalCandle.High - ConvertFloorCeling(signalCandle.CandleRange * _stoplossLevel, _parentStrategy.TickSize, RoundOfType.Floor)
                     Dim target As Decimal = signalCandle.High + ConvertFloorCeling(signalCandle.CandleRange * _targetLevel, _parentStrategy.TickSize, RoundOfType.Floor)
-                    Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, stoploss, -1000, Trade.TypeOfStock.Cash)
+                    Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, stoploss, Math.Abs(_userInputs.MaxLossPerTrade) * -1, Trade.TypeOfStock.Cash)
 
                     parameter = New PlaceOrderParameters With {
                                 .EntryPrice = entryPrice,
@@ -62,7 +76,7 @@ Public Class FibonacciOpeningRangeBreakoutStrategyRule
                     Dim entryPrice As Decimal = signalCandle.Low - buffer
                     Dim stoploss As Decimal = signalCandle.Low + ConvertFloorCeling(signalCandle.CandleRange * _stoplossLevel, _parentStrategy.TickSize, RoundOfType.Floor)
                     Dim target As Decimal = signalCandle.Low - ConvertFloorCeling(signalCandle.CandleRange * _targetLevel, _parentStrategy.TickSize, RoundOfType.Floor)
-                    Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, stoploss, entryPrice, -1000, Trade.TypeOfStock.Cash)
+                    Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, stoploss, entryPrice, Math.Abs(_userInputs.MaxLossPerTrade) * -1, Trade.TypeOfStock.Cash)
 
                     parameter = New PlaceOrderParameters With {
                                 .EntryPrice = entryPrice,

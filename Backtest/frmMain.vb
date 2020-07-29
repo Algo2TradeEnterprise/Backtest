@@ -4595,7 +4595,9 @@ Public Class frmMain
                             tick = 0.05
                     End Select
 
-                    Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+                    Dim trgtLvls As List(Of Decimal) = New List(Of Decimal) From {38.2, 50, 61.8}
+                    For Each trgt In trgtLvls
+                        Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                     exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                     exchangeEndTime:=TimeSpan.Parse("15:29:59"),
                                                                     tradeStartTime:=TimeSpan.Parse("9:16:00"),
@@ -4613,43 +4615,48 @@ Public Class frmMain
                                                                     usableCapital:=Decimal.MaxValue / 2,
                                                                     minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
                                                                     amountToBeWithdrawn:=0)
-                        AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+                            AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                        With backtestStrategy
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Cash Stock Modified Price Range.csv")
+                            With backtestStrategy
+                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Cash Stock Modified Price Range.csv")
 
-                            .AllowBothDirectionEntryAtSameTime = False
-                            .TrailingStoploss = False
-                            .TickBasedStrategy = True
-                            .RuleNumber = ruleNumber
+                                .AllowBothDirectionEntryAtSameTime = False
+                                .TrailingStoploss = False
+                                .TickBasedStrategy = True
+                                .RuleNumber = ruleNumber
 
-                            .RuleEntityData = Nothing
+                                .RuleEntityData = New FibonacciOpeningRangeBreakoutStrategyRule.StrategyRuleEntities With
+                                              {.MaxLossPerTrade = -1000,
+                                               .StoplossLevel = 50,
+                                               .TargetLevel = trgt}
 
-                            .NumberOfTradeableStockPerDay = 10
+                                .NumberOfTradeableStockPerDay = 10
 
-                            .NumberOfTradesPerStockPerDay = 1
+                                .NumberOfTradesPerStockPerDay = 1
 
-                            .StockMaxProfitPercentagePerDay = Decimal.MaxValue
-                            .StockMaxLossPercentagePerDay = Decimal.MinValue
+                                .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                                .StockMaxLossPercentagePerDay = Decimal.MinValue
 
-                            .ExitOnStockFixedTargetStoploss = False
-                            .StockMaxProfitPerDay = Decimal.MaxValue
-                            .StockMaxLossPerDay = Decimal.MinValue
+                                .ExitOnStockFixedTargetStoploss = False
+                                .StockMaxProfitPerDay = Decimal.MaxValue
+                                .StockMaxLossPerDay = Decimal.MinValue
 
-                            .ExitOnOverAllFixedTargetStoploss = False
-                            .OverAllProfitPerDay = Decimal.MaxValue
-                            .OverAllLossPerDay = Decimal.MinValue
+                                .ExitOnOverAllFixedTargetStoploss = False
+                                .OverAllProfitPerDay = Decimal.MaxValue
+                                .OverAllLossPerDay = Decimal.MinValue
 
-                            .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
-                            .MTMSlab = Math.Abs(.OverAllLossPerDay)
-                            .MovementSlab = .MTMSlab / 2
-                            .RealtimeTrailingPercentage = 50
-                        End With
+                                .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+                                .MTMSlab = Math.Abs(.OverAllLossPerDay)
+                                .MovementSlab = .MTMSlab / 2
+                                .RealtimeTrailingPercentage = 50
+                            End With
 
-                        Dim filename As String = String.Format("Fibonacci Opening Range Breakout")
+                            Dim ruleData As FibonacciOpeningRangeBreakoutStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                            Dim filename As String = String.Format("Fibonacci Opening Range Breakout,TrgtLvl {0}", Math.Floor(ruleData.TargetLevel))
 
-                        Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-                    End Using
+                            Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                        End Using
+                    Next
 #End Region
                 Case Else
                     Throw New NotImplementedException
