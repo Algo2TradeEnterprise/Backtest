@@ -144,7 +144,6 @@ Public Class DayHLSwingTrendlineStrategyRule
             ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, parameters)
         End If
         Return ret
-        Return ret
     End Function
 
     Public Overrides Async Function IsTriggerReceivedForExitOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, String))
