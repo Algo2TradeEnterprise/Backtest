@@ -4522,14 +4522,14 @@ Public Class frmMain
                             .RuleNumber = ruleNumber
 
                             .RuleEntityData = New SwingAtDayHLStrategyRule.StrategyRuleEntities With
-                                              {.ATRMultiplier = 2,
+                                              {.ATRMultiplier = 1.5,
                                                .MaxLossPerTrade = -500,
                                                .TargetMultiplier = 3,
                                                .BreakevenMovement = False,
                                                .BreakevenTargetMultiplier = 1.5,
                                                .NumberOfTradeOnEachDirection = 2}
 
-                            .NumberOfTradeableStockPerDay = 20
+                            .NumberOfTradeableStockPerDay = Integer.MaxValue
 
                             .NumberOfTradesPerStockPerDay = 4
 
