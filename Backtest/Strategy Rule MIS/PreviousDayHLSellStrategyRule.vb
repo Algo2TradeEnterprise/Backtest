@@ -70,23 +70,27 @@ Public Class PreviousDayHLSellStrategyRule
             If currentMinuteCandlePayload IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
                 currentMinuteCandlePayload.PayloadDate >= tradeStartTime AndAlso Me.EligibleToTakeTrade Then
                 If _firstTime Then
-                    For Each runningInstruments In Me.DependentInstrument
-                        runningInstruments.EligibleToTakeTrade = True
-                        runningInstruments.ForceTakeTrade = True
-                    Next
+                    If Me.DependentInstrument IsNot Nothing AndAlso Me.DependentInstrument.Count > 0 Then
+                        For Each runningInstruments In Me.DependentInstrument
+                            runningInstruments.EligibleToTakeTrade = True
+                            runningInstruments.ForceTakeTrade = True
+                        Next
+                    End If
                     _firstTime = False
                 End If
                 If _buyLevel = Decimal.MinValue OrElse _sellLevel = Decimal.MinValue Then
-                    For Each runningInstruments In Me.DependentInstrument
-                        If CType(runningInstruments, PreviousDayHLSellStrategyRule).StoplossLevel <> Decimal.MinValue AndAlso
-                        CType(runningInstruments, PreviousDayHLSellStrategyRule).DummyCandle IsNot Nothing Then
-                            If CType(runningInstruments, PreviousDayHLSellStrategyRule).DummyCandle.TradingSymbol.EndsWith("CE") Then
-                                _buyLevel = CType(runningInstruments, PreviousDayHLSellStrategyRule).StoplossLevel
-                            ElseIf CType(runningInstruments, PreviousDayHLSellStrategyRule).DummyCandle.TradingSymbol.EndsWith("PE") Then
-                                _sellLevel = CType(runningInstruments, PreviousDayHLSellStrategyRule).StoplossLevel
+                    If Me.DependentInstrument IsNot Nothing AndAlso Me.DependentInstrument.Count > 0 Then
+                        For Each runningInstruments In Me.DependentInstrument
+                            If CType(runningInstruments, PreviousDayHLSellStrategyRule).StoplossLevel <> Decimal.MinValue AndAlso
+                            CType(runningInstruments, PreviousDayHLSellStrategyRule).DummyCandle IsNot Nothing Then
+                                If CType(runningInstruments, PreviousDayHLSellStrategyRule).DummyCandle.TradingSymbol.EndsWith("CE") Then
+                                    _buyLevel = CType(runningInstruments, PreviousDayHLSellStrategyRule).StoplossLevel
+                                ElseIf CType(runningInstruments, PreviousDayHLSellStrategyRule).DummyCandle.TradingSymbol.EndsWith("PE") Then
+                                    _sellLevel = CType(runningInstruments, PreviousDayHLSellStrategyRule).StoplossLevel
+                                End If
                             End If
-                        End If
-                    Next
+                        Next
+                    End If
                 Else
                     If Not _parentStrategy.IsTradeOpen(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS) AndAlso
                         Not _parentStrategy.IsTradeActive(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS) Then
