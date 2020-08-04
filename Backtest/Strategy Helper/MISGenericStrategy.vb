@@ -1436,6 +1436,7 @@ Namespace StrategyHelper
                                     End If
                                     Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
                                     Dim slab As Decimal = dt.Rows(i).Item("Slab")
+                                    Dim targetToStoplossMul As Decimal = dt.Rows(i).Item("Target To Stoploss Multiplier")
 
                                     Dim eodPayload As Dictionary(Of Date, Payload) = Cmn.GetRawPayload(Common.DataBaseTable.EOD_Cash, tradingSymbol, tradingDate.AddDays(-100), tradingDate.AddDays(-1))
                                     If eodPayload IsNot Nothing AndAlso eodPayload.Count > 0 Then
@@ -1457,6 +1458,7 @@ Namespace StrategyHelper
                                                  .LotSize = lotsize,
                                                  .Slab = slab,
                                                  .Supporting1 = direction,
+                                                 .Supporting2 = targetToStoplossMul,
                                                  .EligibleToTakeTrade = True}
 
                                             If stockDetails Is Nothing Then stockDetails = New List(Of StockDetails)
@@ -1467,7 +1469,9 @@ Namespace StrategyHelper
                             Next
                             If stockDetails IsNot Nothing AndAlso stockDetails.Count > 0 Then
                                 Dim counter As Integer = 0
-                                For Each runningStock In stockDetails
+                                For Each runningStock In stockDetails.OrderBy(Function(x)
+                                                                                  Return x.Supporting2
+                                                                              End Function)
                                     If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
                                     ret.Add(runningStock.StockName, runningStock)
 
