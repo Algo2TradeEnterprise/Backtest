@@ -168,6 +168,7 @@
     <Compile Include="Strategy Rule MIS\NeutralSlabMartingaleStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\OutsideVWAPStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\PairAnchorHKStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\PreviousDayHKTrendBollingerStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\PreviousDayHKTrendStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\ReversalHHLLBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\SmallOpeningRangeBreakoutStrategyRule.vb" />
