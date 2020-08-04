@@ -249,7 +249,7 @@ Public Class PreviousDayHKTrendBollingerStrategyRule
                     ret = ret + buffer
                 End If
             ElseIf direction = Trade.TradeExecutionDirection.Sell Then
-                ret = ConvertFloorCeling(candle.Low, _parentStrategy.TickSize, RoundOfType.Celing)
+                ret = ConvertFloorCeling(candle.Low, _parentStrategy.TickSize, RoundOfType.Floor)
                 If ret = Math.Round(candle.Low, 2) Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(candle.Low, RoundOfType.Floor)
                     ret = ret - buffer
