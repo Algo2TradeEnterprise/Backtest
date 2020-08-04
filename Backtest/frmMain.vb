@@ -4714,10 +4714,11 @@ Public Class frmMain
                             .RuleEntityData = New PreviousDayHKTrendStrategyRule.StrategyRuleEntities With
                                             {
                                                 .MaxLossPerTrade = -500,
-                                                .TargetMultiplier = 3
+                                                .TargetMultiplier = 3,
+                                                .BreakevenMovement = True
                                             }
 
-                            .NumberOfTradeableStockPerDay = 5
+                            .NumberOfTradeableStockPerDay = 10
 
                             .NumberOfTradesPerStockPerDay = 3
 

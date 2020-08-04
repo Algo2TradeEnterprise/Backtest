@@ -12,6 +12,7 @@ Public Class PreviousDayHKTrendStrategyRule
 
         Public TargetMultiplier As Decimal
         Public MaxLossPerTrade As Decimal
+        Public BreakevenMovement As Boolean
     End Class
 #End Region
 
@@ -91,7 +92,7 @@ Public Class PreviousDayHKTrendStrategyRule
                     _quantity = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, signal.Item2, signal.Item2 - _slPoint, _userInputs.MaxLossPerTrade, Trade.TypeOfStock.Cash)
                     _targetPoint = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, signal.Item2, _quantity, Math.Abs(_userInputs.MaxLossPerTrade * _userInputs.TargetMultiplier), Trade.TradeExecutionDirection.Buy, Trade.TypeOfStock.Cash) - signal.Item2
                 ElseIf lastExecutedOrder IsNot Nothing Then
-                    If signal.Item3.PayloadDate <> lastExecutedOrder.SignalCandle.PayloadDate Then
+                    If Val(lastExecutedOrder.Supporting2) <> signal.Item2 Then
                         signalCandle = signal.Item3
                     End If
                 End If
@@ -102,10 +103,8 @@ Public Class PreviousDayHKTrendStrategyRule
                 Dim targetPoint As Decimal = _targetPoint
                 Dim quantity As Integer = _quantity
                 If signal.Item4 = Trade.TradeExecutionDirection.Buy Then
-                    Dim entryPrice As Decimal = signal.Item2
-
                     parameter = New PlaceOrderParameters With {
-                                    .EntryPrice = entryPrice,
+                                    .EntryPrice = currentTick.Open,
                                     .EntryDirection = Trade.TradeExecutionDirection.Buy,
                                     .Quantity = quantity,
                                     .Stoploss = .EntryPrice - slPoint,
@@ -113,13 +112,12 @@ Public Class PreviousDayHKTrendStrategyRule
                                     .Buffer = 0,
                                     .SignalCandle = signalCandle,
                                     .OrderType = Trade.TypeOfOrder.Market,
-                                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss")
+                                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                                    .Supporting2 = signal.Item2
                                 }
                 ElseIf signal.Item4 = Trade.TradeExecutionDirection.Sell Then
-                    Dim entryPrice As Decimal = signal.Item2
-
                     parameter = New PlaceOrderParameters With {
-                                    .EntryPrice = entryPrice,
+                                    .EntryPrice = currentTick.Open,
                                     .EntryDirection = Trade.TradeExecutionDirection.Sell,
                                     .Quantity = quantity,
                                     .Stoploss = .EntryPrice + slPoint,
@@ -127,7 +125,8 @@ Public Class PreviousDayHKTrendStrategyRule
                                     .Buffer = 0,
                                     .SignalCandle = signalCandle,
                                     .OrderType = Trade.TypeOfOrder.Market,
-                                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss")
+                                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                                    .Supporting2 = signal.Item2
                                 }
                 End If
             End If
@@ -152,6 +151,25 @@ Public Class PreviousDayHKTrendStrategyRule
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
+        If _userInputs.BreakevenMovement AndAlso currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            Dim triggerPrice As Decimal = Decimal.MinValue
+            Dim slPoint As Decimal = _slPoint
+            Dim targetPoint As Decimal = ConvertFloorCeling(slPoint * 2, _parentStrategy.TickSize, RoundOfType.Floor)
+            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy AndAlso currentTrade.PotentialStopLoss < currentTrade.EntryPrice Then
+                If currentTick.Open >= currentTrade.EntryPrice + targetPoint Then
+                    Dim brkevnPnt As Decimal = _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, currentTrade.LotSize, currentTrade.StockType)
+                    triggerPrice = currentTrade.EntryPrice + brkevnPnt
+                End If
+            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell AndAlso currentTrade.PotentialStopLoss > currentTrade.EntryPrice Then
+                If currentTick.Open <= currentTrade.EntryPrice - targetPoint Then
+                    Dim brkevnPnt As Decimal = _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, currentTrade.LotSize, currentTrade.StockType)
+                    triggerPrice = currentTrade.EntryPrice - brkevnPnt
+                End If
+            End If
+            If triggerPrice <> Decimal.MinValue AndAlso currentTrade.PotentialStopLoss <> triggerPrice Then
+                ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, _slPoint)
+            End If
+        End If
         Return ret
     End Function
 
@@ -176,12 +194,12 @@ Public Class PreviousDayHKTrendStrategyRule
             If _direction = Trade.TradeExecutionDirection.Buy Then
                 Dim lowestLow As Decimal = GetLowestLow(currentCandle, currentTick)
                 If currentTick.Open >= lowestLow + atr Then
-                    ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection)(True, currentTick.Open, currentCandle.PreviousCandlePayload, Trade.TradeExecutionDirection.Buy)
+                    ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection)(True, lowestLow, currentCandle.PreviousCandlePayload, Trade.TradeExecutionDirection.Buy)
                 End If
             ElseIf _direction = Trade.TradeExecutionDirection.Sell Then
                 Dim highestHigh As Decimal = GetHighestHigh(currentCandle, currentTick)
                 If currentTick.Open <= highestHigh - atr Then
-                    ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection)(True, currentTick.Open, currentCandle.PreviousCandlePayload, Trade.TradeExecutionDirection.Sell)
+                    ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection)(True, highestHigh, currentCandle.PreviousCandlePayload, Trade.TradeExecutionDirection.Sell)
                 End If
             End If
         End If
