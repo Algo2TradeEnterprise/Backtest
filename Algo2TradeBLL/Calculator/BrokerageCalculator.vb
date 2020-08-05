@@ -56,12 +56,18 @@ Namespace Calculator
                     If jString IsNot Nothing Then
                         Dim multiplierMap As String = Utilities.Strings.GetTextBetween("COMMODITY_MULTIPLIER_MAP=", "}", jString)
                         If multiplierMap IsNot Nothing Then
+                            If multiplierMap.EndsWith(",") Then
+                                multiplierMap = multiplierMap.Substring(0, multiplierMap.Count - 1)
+                            End If
                             multiplierMap = multiplierMap & "}"
                             GlobalVar.MultiplierMap = Utilities.Strings.JsonDeserialize(multiplierMap)
                         End If
 
                         Dim groupMap As String = Utilities.Strings.GetTextBetween("COMMODITY_GROUP_MAP=", "}", jString)
                         If groupMap IsNot Nothing Then
+                            If groupMap.EndsWith(",") Then
+                                groupMap = groupMap.Substring(0, groupMap.Count - 1)
+                            End If
                             groupMap = groupMap & "}"
                             GlobalVar.GroupMap = Utilities.Strings.JsonDeserialize(groupMap)
                         End If
@@ -119,8 +125,9 @@ Namespace Calculator
             Dim etc As Decimal = Math.Round(0.0000325 * turnover, 2)
             Dim cc As Decimal = 0
             Dim stax As Decimal = Math.Round(0.18 * (brokerage + etc), 2)
-            Dim sebi_charges As Decimal = Math.Round(turnover * 0.000001, 2)
-            Dim total_tax As Decimal = Math.Round(brokerage + stt_total + etc + cc + stax + sebi_charges, 2)
+            Dim sebi_charges As Decimal = Math.Round(turnover * 0.0000005, 2)
+            Dim stamp_charges As Decimal = Math.Round(bp * qty * 0.00015, 2)
+            Dim total_tax As Decimal = Math.Round(brokerage + stt_total + etc + cc + stax + sebi_charges + stamp_charges, 2)
             Dim breakeven As Decimal = Math.Round(total_tax / qty, 2)
             Dim net_profit As Decimal = Math.Round(((sp - bp) * qty) - total_tax, 2)
 
@@ -135,6 +142,7 @@ Namespace Calculator
                         .Clearing = 0,
                         .GST = stax,
                         .SEBI = sebi_charges,
+                        .StampDuty = stamp_charges,
                         .TotalTax = total_tax,
                         .BreakevenPoints = breakeven,
                         .NetProfitLoss = net_profit
@@ -152,8 +160,9 @@ Namespace Calculator
             Dim stt_total As Decimal = Math.Round(sp * qty * 0.0001, 2)
             Dim etc As Decimal = Math.Round(0.000019 * turnover, 2)
             Dim stax As Decimal = Math.Round(0.18 * (brokerage + etc), 2)
-            Dim sebi_charges As Decimal = Math.Round(turnover * 0.000001, 2)
-            Dim total_tax As Decimal = Math.Round(brokerage + stt_total + etc + stax + sebi_charges, 2)
+            Dim sebi_charges As Decimal = Math.Round(turnover * 0.0000005, 2)
+            Dim stamp_charges As Decimal = Math.Round(bp * qty * 0.00002, 2)
+            Dim total_tax As Decimal = Math.Round(brokerage + stt_total + etc + stax + sebi_charges + stamp_charges, 2)
             Dim breakeven As Decimal = Math.Round(total_tax / qty, 2)
             Dim net_profit As Decimal = Math.Round(((sp - bp) * qty) - total_tax, 2)
 
@@ -167,6 +176,7 @@ Namespace Calculator
                         .ExchangeFees = etc,
                         .GST = stax,
                         .SEBI = sebi_charges,
+                        .StampDuty = stamp_charges,
                         .TotalTax = total_tax,
                         .BreakevenPoints = breakeven,
                         .NetProfitLoss = net_profit
@@ -223,11 +233,12 @@ Namespace Calculator
                 etc = Math.Round(0.000005 * turnover, 2)
             End If
             Dim stax As Decimal = Math.Round(0.18 * (brokerage + etc), 2)
-            Dim sebi_charges As Decimal = Math.Round(turnover * 0.000001, 2)
+            Dim sebi_charges As Decimal = Math.Round(turnover * 0.0000005, 2)
             If commodity_group = "a" Then
                 sebi_charges = Math.Round(turnover * 0.0000001, 2)
             End If
-            Dim total_tax As Decimal = Math.Round(brokerage + ctt + etc + stax + sebi_charges, 2)
+            Dim stamp_charges As Decimal = Math.Round(bp * qty * commodity_value * 0.00002, 2)
+            Dim total_tax As Decimal = Math.Round(brokerage + ctt + etc + stax + sebi_charges + stamp_charges, 2)
             Dim breakeven As Decimal = Math.Round(total_tax / (qty * commodity_value), 2)
             Dim net_profit As Decimal = Math.Round(((sp - bp) * qty * commodity_value) - total_tax, 2)
 
@@ -242,6 +253,7 @@ Namespace Calculator
                         .Clearing = cc,
                         .GST = stax,
                         .SEBI = sebi_charges,
+                        .StampDuty = stamp_charges,
                         .TotalTax = total_tax,
                         .BreakevenPoints = breakeven,
                         .NetProfitLoss = net_profit
@@ -260,8 +272,9 @@ Namespace Calculator
             Dim cc As Decimal = 0
             Dim total_trans_charge As Decimal = etc + cc
             Dim stax As Decimal = Math.Round(0.18 * (brokerage + total_trans_charge), 2)
-            Dim sebi_charges As Decimal = Math.Round(turnover * 0.000001, 2)
-            Dim total_tax As Decimal = Math.Round(brokerage + total_trans_charge + stax + sebi_charges, 2)
+            Dim sebi_charges As Decimal = Math.Round(turnover * 0.0000005, 2)
+            Dim stamp_charges As Decimal = Math.Round(bp * qty * 1000 * 0.000001, 2)
+            Dim total_tax As Decimal = Math.Round(brokerage + total_trans_charge + stax + sebi_charges + stamp_charges, 2)
             Dim breakeven As Decimal = Math.Round(total_tax / (qty * 1000), 4)
             Dim pips As Decimal = Math.Ceiling(breakeven / 0.0025)
             Dim net_profit As Decimal = Math.Round(((sp - bp) * qty * 1000) - total_tax, 2)
@@ -276,6 +289,7 @@ Namespace Calculator
                         .Clearing = cc,
                         .GST = stax,
                         .SEBI = sebi_charges,
+                        .StampDuty = stamp_charges,
                         .TotalTax = total_tax,
                         .BreakevenPoints = breakeven,
                         .NetProfitLoss = net_profit
