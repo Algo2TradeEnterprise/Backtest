@@ -129,6 +129,7 @@
     <Compile Include="Strategy Helper\Trade.vb" />
     <Compile Include="Strategy Rule MIS\MathematicalStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\PreviousDayHKTrendGapStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\PreviousDayHKTrendGapStrategyRule2.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="frmMain.resx">

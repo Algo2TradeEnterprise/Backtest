@@ -121,6 +121,8 @@ Namespace StrategyHelper
                                     Select Case RuleNumber
                                         Case 0
                                             stockRule = New PreviousDayHKTrendGapStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
+                                        Case 1
+                                            stockRule = New PreviousDayHKTrendGapStrategyRule2(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
@@ -594,7 +596,7 @@ Namespace StrategyHelper
                 End Using
                 If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
                     Select Case Me.RuleNumber
-                        Case 0
+                        Case 0, 1
                             Dim stockList As List(Of StockDetails) = Nothing
                             For i = 0 To dt.Rows.Count - 1
                                 Dim rowDate As Date = dt.Rows(i).Item("Date")
