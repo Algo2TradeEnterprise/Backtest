@@ -1,9 +1,9 @@
-﻿Imports Backtest.StrategyHelper
+﻿Imports Algo2TradeBLL
 Imports System.Threading
-Imports Algo2TradeBLL
+Imports Backtest.StrategyHelper
 Imports Utilities.Numbers.NumberManipulation
 
-Public Class MathematicalStrategyRule
+Public MustInherit Class MathematicalStrategyRule
     Inherits StrategyRule
 
 #Region "Entity"
@@ -15,6 +15,7 @@ Public Class MathematicalStrategyRule
         Slab = 1
         Breakeven
         MaximizeRiskReward
+        None
     End Enum
     Public Class StrategyRuleEntities
         Inherits RuleEntities
@@ -25,7 +26,7 @@ Public Class MathematicalStrategyRule
         Public BreakevenTargetMultiplier As Decimal
     End Class
 
-    Private Class EntryDetails
+    Protected Class EntryDetails
         Public EntryPrice As Decimal = Decimal.MinValue
         Public StoplossPrice As Decimal = Decimal.MinValue
         Public TargetPrice As Decimal = Decimal.MinValue
@@ -70,7 +71,7 @@ Public Class MathematicalStrategyRule
                 Dim slPoint As Decimal = Decimal.MinValue
                 Dim trgtPoint As Decimal = Decimal.MinValue
 
-                If _userInputs.TargetType = TypeOfTarget.INR Then
+                If _userInputs.TargetType = TypeOfTarget.PL Then
                     If stoploss <> Decimal.MinValue Then
                         slPoint = Math.Abs(entryPrice - stoploss)
                         trgtPoint = ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
@@ -241,12 +242,14 @@ Public Class MathematicalStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
     End Function
 
-    Private Function GetEntrySignal(ByVal currentCandle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, EntryDetails, Payload, Trade.TradeExecutionDirection, Trade.TypeOfOrder, String)
-        'Condition,EntryDetails,SignalCandle,Direction,OrderType,Remark
-        Dim ret As Tuple(Of Boolean, EntryDetails, Payload, Trade.TradeExecutionDirection, Trade.TypeOfOrder, String) = Nothing
-        If currentCandle IsNot Nothing AndAlso currentCandle.PreviousCandlePayload IsNot Nothing Then
+    Protected MustOverride Function GetEntrySignal(ByVal currentCandle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, EntryDetails, Payload, Trade.TradeExecutionDirection, Trade.TypeOfOrder, String)
 
-        End If
-        Return ret
-    End Function
+    'Private Function GetEntrySignal(ByVal currentCandle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, EntryDetails, Payload, Trade.TradeExecutionDirection, Trade.TypeOfOrder, String)
+    '    'Condition,EntryDetails,SignalCandle,Direction,OrderType,Remark
+    '    Dim ret As Tuple(Of Boolean, EntryDetails, Payload, Trade.TradeExecutionDirection, Trade.TypeOfOrder, String) = Nothing
+    '    If currentCandle IsNot Nothing AndAlso currentCandle.PreviousCandlePayload IsNot Nothing Then
+
+    '    End If
+    '    Return ret
+    'End Function
 End Class
