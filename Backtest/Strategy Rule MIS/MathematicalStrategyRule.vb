@@ -11,14 +11,25 @@ Public Class MathematicalStrategyRule
         PL = 1
         INR
     End Enum
+    Enum TypeOfStoplossMovement
+        Slab = 1
+        Breakeven
+        MaximizeRiskReward
+    End Enum
     Public Class StrategyRuleEntities
         Inherits RuleEntities
 
         Public TargetType As TypeOfTarget
         Public TargetMultiplier As Decimal
-        Public BreakevenMovement As Boolean
-        Public BreakevenTargetMultiplier As Boolean
-        Public SlabMovement As Boolean
+        Public StoplossMovementType As TypeOfStoplossMovement
+        Public BreakevenTargetMultiplier As Decimal
+    End Class
+
+    Private Class EntryDetails
+        Public EntryPrice As Decimal = Decimal.MinValue
+        Public StoplossPrice As Decimal = Decimal.MinValue
+        Public TargetPrice As Decimal = Decimal.MinValue
+        Public Quantity As Integer = Integer.MinValue
     End Class
 #End Region
 
@@ -46,50 +57,68 @@ Public Class MathematicalStrategyRule
         If currentMinuteCandle IsNot Nothing AndAlso currentMinuteCandle.PreviousCandlePayload IsNot Nothing AndAlso currentMinuteCandle.PayloadDate >= _tradeStartTime AndAlso Me.EligibleToTakeTrade AndAlso
             Not _parentStrategy.IsTradeOpen(currentMinuteCandle, Trade.TypeOfTrade.MIS) AndAlso Not _parentStrategy.IsTradeActive(currentMinuteCandle, Trade.TypeOfTrade.MIS) Then
             Dim signalCandle As Payload = Nothing
-            Dim signal As Tuple(Of Boolean, Decimal, Decimal, Integer, Payload, Trade.TradeExecutionDirection, Trade.TypeOfOrder, String) = GetEntrySignal(currentMinuteCandle, currentTick)
-            If signal IsNot Nothing AndAlso signal.Item1 Then
-                signalCandle = signal.Item5
+            Dim signal As Tuple(Of Boolean, EntryDetails, Payload, Trade.TradeExecutionDirection, Trade.TypeOfOrder, String) = GetEntrySignal(currentMinuteCandle, currentTick)
+            If signal IsNot Nothing AndAlso signal.Item1 AndAlso signal.Item2 IsNot Nothing Then
+                signalCandle = signal.Item3
             End If
 
             If signalCandle IsNot Nothing Then
-                Dim entryPrice As Decimal = signal.Item2
-                Dim stoploss As Decimal = signal.Item3
-                Dim quantity As Integer = signal.Item4
-                Dim slPoint As Decimal = Math.Abs(entryPrice - stoploss)
-                Dim targetPoint As Decimal = ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
+                Dim entryPrice As Decimal = signal.Item2.EntryPrice
+                Dim stoploss As Decimal = signal.Item2.StoplossPrice
+                Dim target As Decimal = signal.Item2.TargetPrice
+                Dim quantity As Integer = signal.Item2.Quantity
+                Dim slPoint As Decimal = Decimal.MinValue
+                Dim trgtPoint As Decimal = Decimal.MinValue
+
                 If _userInputs.TargetType = TypeOfTarget.INR Then
-                    Dim pl As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, entryPrice, entryPrice - slPoint, quantity, Me.LotSize, _parentStrategy.StockType)
-                    Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, quantity, Math.Abs(pl * _userInputs.TargetMultiplier), Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
-                    targetPoint = target - entryPrice
+                    If stoploss <> Decimal.MinValue Then
+                        slPoint = Math.Abs(entryPrice - stoploss)
+                        trgtPoint = ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
+                    ElseIf target <> Decimal.MinValue Then
+                        trgtPoint = Math.Abs(entryPrice - target)
+                        slPoint = ConvertFloorCeling(trgtPoint / _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
+                    End If
+                ElseIf _userInputs.TargetType = TypeOfTarget.INR Then
+                    If stoploss <> Decimal.MinValue Then
+                        slPoint = Math.Abs(entryPrice - stoploss)
+                        Dim pl As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, entryPrice, entryPrice - slPoint, quantity, Me.LotSize, _parentStrategy.StockType)
+                        target = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, quantity, Math.Abs(pl * _userInputs.TargetMultiplier), Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
+                        trgtPoint = target - entryPrice
+                    ElseIf target <> Decimal.MinValue Then
+                        trgtPoint = Math.Abs(entryPrice - target)
+                        Dim pl As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, entryPrice, entryPrice + trgtPoint, quantity, Me.LotSize, _parentStrategy.StockType)
+                        stoploss = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, quantity, Math.Abs(pl / _userInputs.TargetMultiplier) * -1, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
+                        slPoint = entryPrice - stoploss
+                    End If
                 End If
 
-                If quantity > 0 Then
-                    If signal.Item6 = Trade.TradeExecutionDirection.Buy Then
+                If quantity > 0 AndAlso slPoint <> Decimal.MinValue AndAlso trgtPoint <> Decimal.MinValue Then
+                    If signal.Item4 = Trade.TradeExecutionDirection.Buy Then
                         parameter = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
                                     .EntryDirection = Trade.TradeExecutionDirection.Buy,
                                     .Quantity = quantity,
                                     .Stoploss = .EntryPrice - slPoint,
-                                    .Target = .EntryPrice + targetPoint,
+                                    .Target = .EntryPrice + trgtPoint,
                                     .Buffer = 0,
                                     .SignalCandle = signalCandle,
-                                    .OrderType = signal.Item7,
+                                    .OrderType = signal.Item5,
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
-                                    .Supporting2 = signal.Rest,
+                                    .Supporting2 = signal.Item6,
                                     .Supporting3 = slPoint
                                 }
-                    ElseIf signal.Item6 = Trade.TradeExecutionDirection.Sell Then
+                    ElseIf signal.Item4 = Trade.TradeExecutionDirection.Sell Then
                         parameter = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
                                     .EntryDirection = Trade.TradeExecutionDirection.Sell,
                                     .Quantity = quantity,
                                     .Stoploss = .EntryPrice + slPoint,
-                                    .Target = .EntryPrice - targetPoint,
+                                    .Target = .EntryPrice - trgtPoint,
                                     .Buffer = 0,
                                     .SignalCandle = signalCandle,
-                                    .OrderType = signal.Item7,
+                                    .OrderType = signal.Item5,
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
-                                    .Supporting2 = signal.Rest,
+                                    .Supporting2 = signal.Item6,
                                     .Supporting3 = slPoint
                                 }
                     End If
@@ -107,10 +136,10 @@ Public Class MathematicalStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
             Dim currentMinuteCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
-            Dim signal As Tuple(Of Boolean, Decimal, Decimal, Integer, Payload, Trade.TradeExecutionDirection, Trade.TypeOfOrder, String) = GetEntrySignal(currentMinuteCandle, currentTick)
-            If signal IsNot Nothing AndAlso signal.Item1 Then
-                If currentTrade.EntryPrice <> signal.Item2 OrElse
-                    currentTrade.SignalCandle.PayloadDate <> signal.Item5.PayloadDate Then
+            Dim signal As Tuple(Of Boolean, EntryDetails, Payload, Trade.TradeExecutionDirection, Trade.TypeOfOrder, String) = GetEntrySignal(currentMinuteCandle, currentTick)
+            If signal IsNot Nothing AndAlso signal.Item1 AndAlso signal.Item2 IsNot Nothing Then
+                If currentTrade.EntryPrice <> signal.Item2.EntryPrice OrElse
+                    currentTrade.SignalCandle.PayloadDate <> signal.Item3.PayloadDate Then
                     ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                 End If
             End If
@@ -122,7 +151,7 @@ Public Class MathematicalStrategyRule
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-            If _userInputs.SlabMovement Then
+            If _userInputs.StoplossMovementType = TypeOfStoplossMovement.Slab Then
                 Dim slPoint As Decimal = currentTrade.Supporting3
                 If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                     Dim plPoint As Decimal = currentTick.Open - currentTrade.EntryPrice
@@ -157,7 +186,7 @@ Public Class MathematicalStrategyRule
                         End If
                     End If
                 End If
-            ElseIf _userInputs.BreakevenMovement Then
+            ElseIf _userInputs.StoplossMovementType = TypeOfStoplossMovement.Breakeven Then
                 Dim slPoint As Decimal = currentTrade.Supporting3
                 Dim targetPoint As Decimal = slPoint * _userInputs.BreakevenTargetMultiplier
                 Dim triggerPrice As Decimal = Decimal.MinValue
@@ -174,6 +203,24 @@ Public Class MathematicalStrategyRule
                 End If
                 If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
                     ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, String.Format("Breakeven at {0}", currentTick.PayloadDate.ToString("HH:mm:ss")))
+                End If
+            ElseIf _userInputs.StoplossMovementType = TypeOfStoplossMovement.MaximizeRiskReward Then
+                Dim currentMinuteCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
+                If currentMinuteCandle.PayloadDate > currentTrade.EntryTime Then
+                    Dim slPoint As Decimal = currentTrade.Supporting3
+                    Dim triggerPrice As Decimal = Decimal.MinValue
+                    If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                        If currentMinuteCandle.PreviousCandlePayload.Close > currentTrade.EntryPrice Then
+                            triggerPrice = currentTrade.EntryPrice - ConvertFloorCeling(slPoint / 2, _parentStrategy.TickSize, RoundOfType.Celing)
+                        End If
+                    ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                        If currentMinuteCandle.PreviousCandlePayload.Close < currentTrade.EntryPrice Then
+                            triggerPrice = currentTrade.EntryPrice + ConvertFloorCeling(slPoint / 2, _parentStrategy.TickSize, RoundOfType.Celing)
+                        End If
+                    End If
+                    If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
+                        ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, String.Format("Moved at {0}", currentTick.PayloadDate.ToString("HH:mm:ss")))
+                    End If
                 End If
             End If
         End If
@@ -194,9 +241,9 @@ Public Class MathematicalStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
     End Function
 
-    Private Function GetEntrySignal(ByVal currentCandle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Decimal, Integer, Payload, Trade.TradeExecutionDirection, Trade.TypeOfOrder, String)
-        'Condition,EntryPrice,StoplossPrice,Quantity,SignalCandle,Direction,OrderType,Remark
-        Dim ret As Tuple(Of Boolean, Decimal, Decimal, Integer, Payload, Trade.TradeExecutionDirection, Trade.TypeOfOrder, String) = Nothing
+    Private Function GetEntrySignal(ByVal currentCandle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, EntryDetails, Payload, Trade.TradeExecutionDirection, Trade.TypeOfOrder, String)
+        'Condition,EntryDetails,SignalCandle,Direction,OrderType,Remark
+        Dim ret As Tuple(Of Boolean, EntryDetails, Payload, Trade.TradeExecutionDirection, Trade.TypeOfOrder, String) = Nothing
         If currentCandle IsNot Nothing AndAlso currentCandle.PreviousCandlePayload IsNot Nothing Then
 
         End If
