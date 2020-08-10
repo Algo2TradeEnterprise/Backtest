@@ -66,7 +66,8 @@ Public Class Stock_NiftyTrendHKBreakoutStrategyRule
             Not _parentStrategy.IsAnyTradeOfTheStockTargetReached(currentCandle, Trade.TypeOfTrade.MIS) Then
             Dim hkCandle As Payload = _hkPayload(currentCandle.PreviousCandlePayload.PayloadDate)
             If _niftyTrendPayload.ContainsKey(currentCandle.PreviousCandlePayload.PayloadDate) AndAlso
-                _niftyTrendPayload(currentCandle.PreviousCandlePayload.PayloadDate) > _minNiftyChangePer AndAlso currentTick.Open > _currentDayOpen Then
+                _niftyTrendPayload(currentCandle.PreviousCandlePayload.PayloadDate) > _minNiftyChangePer AndAlso
+                currentCandle.PreviousCandlePayload.Close > _currentDayOpen Then
                 If Math.Round(hkCandle.Open, 2) = Math.Round(hkCandle.High, 2) Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentTick.Open, RoundOfType.Floor)
                     Dim entryPrice As Decimal = GetEntryPrice(hkCandle, Trade.TradeExecutionDirection.Buy)
@@ -79,7 +80,8 @@ Public Class Stock_NiftyTrendHKBreakoutStrategyRule
                     ret = New Tuple(Of Boolean, EntryDetails, Payload, Trade.TradeExecutionDirection, Trade.TypeOfOrder, String)(True, entryData, hkCandle, Trade.TradeExecutionDirection.Buy, Trade.TypeOfOrder.SL, "")
                 End If
             ElseIf _niftyTrendPayload.ContainsKey(currentCandle.PreviousCandlePayload.PayloadDate) AndAlso
-                _niftyTrendPayload(currentCandle.PreviousCandlePayload.PayloadDate) < _minNiftyChangePer AndAlso currentTick.Open < _currentDayOpen Then
+                _niftyTrendPayload(currentCandle.PreviousCandlePayload.PayloadDate) < _minNiftyChangePer AndAlso
+                currentCandle.PreviousCandlePayload.Close < _currentDayOpen Then
                 If Math.Round(hkCandle.Open, 2) = Math.Round(hkCandle.Low, 2) Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentTick.Open, RoundOfType.Floor)
                     Dim entryPrice As Decimal = GetEntryPrice(hkCandle, Trade.TradeExecutionDirection.Sell)
