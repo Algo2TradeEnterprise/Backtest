@@ -132,6 +132,7 @@
     <Compile Include="Strategy Rule MIS\PreviousDayHKTrendGapStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\PreviousDayHKTrendGapStrategyRule2.vb" />
     <Compile Include="Strategy Rule MIS\Stock_NiftyTrendHKBreakoutStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\Stock_NiftyTrendVWAPStrategyRule.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="frmMain.resx">

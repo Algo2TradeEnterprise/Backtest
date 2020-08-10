@@ -4,10 +4,11 @@ Imports Backtest.StrategyHelper
 Imports Utilities.Numbers.NumberManipulation
 Imports System.IO
 
-Public Class Stock_NiftyTrendHKBreakoutStrategyRule
+Public Class Stock_NiftyTrendVWAPStrategyRule
     Inherits MathematicalStrategyRule
 
-    Private _hkPayload As Dictionary(Of Date, Payload) = Nothing
+    Private _atrPayload As Dictionary(Of Date, Decimal) = Nothing
+    Private _vwapPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _currentDayOpen As Decimal = Decimal.MinValue
     Private _niftyTrendPayload As Dictionary(Of Date, Decimal) = Nothing
     Private ReadOnly _minNiftyChangePer As Decimal = 0
@@ -57,63 +58,55 @@ Public Class Stock_NiftyTrendHKBreakoutStrategyRule
                                                                          Return y.Key
                                                                      End Function).FirstOrDefault.Value.Open
 
-        Indicator.HeikenAshi.ConvertToHeikenAshi(_signalPayload, _hkPayload)
+        Indicator.ATR.CalculateATR(14, _signalPayload, _atrPayload)
+        Indicator.VWAP.CalculateVWAP(_signalPayload, _vwapPayload)
     End Sub
 
     Protected Overrides Function GetEntrySignal(currentCandle As Payload, currentTick As Payload) As Tuple(Of Boolean, EntryDetails, Payload, Trade.TradeExecutionDirection, Trade.TypeOfOrder, String)
         Dim ret As Tuple(Of Boolean, EntryDetails, Payload, Trade.TradeExecutionDirection, Trade.TypeOfOrder, String) = Nothing
         If currentCandle IsNot Nothing AndAlso currentCandle.PreviousCandlePayload IsNot Nothing AndAlso
             Not _parentStrategy.IsAnyTradeOfTheStockTargetReached(currentCandle, Trade.TypeOfTrade.MIS) Then
-            Dim hkCandle As Payload = _hkPayload(currentCandle.PreviousCandlePayload.PayloadDate)
             If _niftyTrendPayload.ContainsKey(currentCandle.PreviousCandlePayload.PayloadDate) AndAlso
                 _niftyTrendPayload(currentCandle.PreviousCandlePayload.PayloadDate) > _minNiftyChangePer AndAlso
-                currentCandle.PreviousCandlePayload.Close > _currentDayOpen Then
-                If Math.Round(hkCandle.Open, 2) = Math.Round(hkCandle.High, 2) Then
+                currentCandle.PreviousCandlePayload.Close < _currentDayOpen Then
+                If currentCandle.PreviousCandlePayload.Close > _vwapPayload(currentCandle.PreviousCandlePayload.PayloadDate) Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentTick.Open, RoundOfType.Floor)
-                    Dim entryPrice As Decimal = GetEntryPrice(hkCandle, Trade.TradeExecutionDirection.Buy)
-                    Dim stoploss As Decimal = GetEntryPrice(hkCandle, Trade.TradeExecutionDirection.Sell)
+                    Dim entryPrice As Decimal = currentTick.Open
 
-                    Dim slPoint As Decimal = entryPrice - stoploss
+                    Dim slPoint As Decimal = ConvertFloorCeling(GetHighestATR(currentCandle.PreviousCandlePayload), _parentStrategy.TickSize, RoundOfType.Celing)
                     Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, entryPrice - slPoint, -500, Trade.TypeOfStock.Cash)
 
                     Dim entryData As EntryDetails = New EntryDetails With {.EntryPrice = entryPrice, .Quantity = quantity, .StoplossPrice = entryPrice - slPoint}
-                    ret = New Tuple(Of Boolean, EntryDetails, Payload, Trade.TradeExecutionDirection, Trade.TypeOfOrder, String)(True, entryData, hkCandle, Trade.TradeExecutionDirection.Buy, Trade.TypeOfOrder.SL, "")
+                    ret = New Tuple(Of Boolean, EntryDetails, Payload, Trade.TradeExecutionDirection, Trade.TypeOfOrder, String)(True, entryData, currentCandle.PreviousCandlePayload, Trade.TradeExecutionDirection.Buy, Trade.TypeOfOrder.Market, "")
                 End If
             ElseIf _niftyTrendPayload.ContainsKey(currentCandle.PreviousCandlePayload.PayloadDate) AndAlso
                 _niftyTrendPayload(currentCandle.PreviousCandlePayload.PayloadDate) < _minNiftyChangePer AndAlso
-                currentCandle.PreviousCandlePayload.Close < _currentDayOpen Then
-                If Math.Round(hkCandle.Open, 2) = Math.Round(hkCandle.Low, 2) Then
+                currentCandle.PreviousCandlePayload.Close > _currentDayOpen Then
+                If currentCandle.PreviousCandlePayload.Close < _vwapPayload(currentCandle.PreviousCandlePayload.PayloadDate) Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentTick.Open, RoundOfType.Floor)
-                    Dim entryPrice As Decimal = GetEntryPrice(hkCandle, Trade.TradeExecutionDirection.Sell)
-                    Dim stoploss As Decimal = GetEntryPrice(hkCandle, Trade.TradeExecutionDirection.Buy)
+                    Dim entryPrice As Decimal = currentTick.Open
 
-                    Dim slPoint As Decimal = stoploss - entryPrice
+                    Dim slPoint As Decimal = ConvertFloorCeling(GetHighestATR(currentCandle.PreviousCandlePayload), _parentStrategy.TickSize, RoundOfType.Celing)
                     Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, entryPrice - slPoint, -500, Trade.TypeOfStock.Cash)
 
                     Dim entryData As EntryDetails = New EntryDetails With {.EntryPrice = entryPrice, .Quantity = quantity, .StoplossPrice = entryPrice + slPoint}
-                    ret = New Tuple(Of Boolean, EntryDetails, Payload, Trade.TradeExecutionDirection, Trade.TypeOfOrder, String)(True, entryData, hkCandle, Trade.TradeExecutionDirection.Sell, Trade.TypeOfOrder.SL, "")
+                    ret = New Tuple(Of Boolean, EntryDetails, Payload, Trade.TradeExecutionDirection, Trade.TypeOfOrder, String)(True, entryData, currentCandle.PreviousCandlePayload, Trade.TradeExecutionDirection.Sell, Trade.TypeOfOrder.Market, "")
                 End If
             End If
         End If
         Return ret
     End Function
 
-    Private Function GetEntryPrice(ByVal candle As Payload, ByVal direction As Trade.TradeExecutionDirection) As Decimal
+    Private Function GetHighestATR(ByVal signalCandle As Payload) As Decimal
         Dim ret As Decimal = Decimal.MinValue
-        If candle IsNot Nothing AndAlso direction <> Trade.TradeExecutionDirection.None Then
-            If direction = Trade.TradeExecutionDirection.Buy Then
-                ret = ConvertFloorCeling(candle.High, _parentStrategy.TickSize, RoundOfType.Celing)
-                If ret = Math.Round(candle.High, 2) Then
-                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(candle.High, RoundOfType.Floor)
-                    ret = ret + buffer
-                End If
-            ElseIf direction = Trade.TradeExecutionDirection.Sell Then
-                ret = ConvertFloorCeling(candle.Low, _parentStrategy.TickSize, RoundOfType.Floor)
-                If ret = Math.Round(candle.Low, 2) Then
-                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(candle.Low, RoundOfType.Floor)
-                    ret = ret - buffer
-                End If
-            End If
+        If _atrPayload IsNot Nothing AndAlso _atrPayload.Count > 0 Then
+            ret = _atrPayload.Max(Function(x)
+                                      If x.Key.Date = _tradingDate.Date AndAlso x.Key <= signalCandle.PayloadDate Then
+                                          Return x.Value
+                                      Else
+                                          Return Decimal.MinValue
+                                      End If
+                                  End Function)
         End If
         Return ret
     End Function
