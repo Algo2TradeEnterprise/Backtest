@@ -37,7 +37,8 @@ Public Class BollingerTouchFavourableBreakoutStrategyRule
                 For i = 0 To dt.Rows.Count - 1
                     Dim rowDateTime As Date = dt.Rows(i).Item("Date")
                     If rowDateTime.Date = _tradingDate.Date Then
-                        Dim trend As Decimal = dt.Rows(i).Item("Trend %")
+                        'Dim trend As Decimal = dt.Rows(i).Item("Previous Day Close Trend %")
+                        Dim trend As Decimal = dt.Rows(i).Item("Current Day Open Trend %")
 
                         If _niftyTrendPayload Is Nothing Then _niftyTrendPayload = New Dictionary(Of Date, Decimal)
                         _niftyTrendPayload.Add(rowDateTime, trend)
@@ -56,7 +57,8 @@ Public Class BollingerTouchFavourableBreakoutStrategyRule
 
     Protected Overrides Function GetEntrySignal(currentCandle As Payload, currentTick As Payload) As Tuple(Of Boolean, EntryDetails, Payload, Trade.TradeExecutionDirection, Trade.TypeOfOrder, String)
         Dim ret As Tuple(Of Boolean, EntryDetails, Payload, Trade.TradeExecutionDirection, Trade.TypeOfOrder, String) = Nothing
-        If currentCandle IsNot Nothing AndAlso currentCandle.PreviousCandlePayload IsNot Nothing Then
+        If currentCandle IsNot Nothing AndAlso currentCandle.PreviousCandlePayload IsNot Nothing AndAlso
+            Not _parentStrategy.IsAnyTradeOfTheStockTargetReached(currentCandle, Trade.TypeOfTrade.MIS) Then
             If currentCandle.PreviousCandlePayload.Low < _bollingerLowPayload(currentCandle.PreviousCandlePayload.PayloadDate) Then
                 If _niftyTrendPayload.ContainsKey(currentCandle.PreviousCandlePayload.PayloadDate) AndAlso
                     _niftyTrendPayload(currentCandle.PreviousCandlePayload.PayloadDate) >= _minNiftyChangePer Then

@@ -520,7 +520,7 @@ Public Class frmMain
 
                             .NumberOfTradeableStockPerDay = 10
 
-                            .NumberOfTradesPerStockPerDay = 1
+                            .NumberOfTradesPerStockPerDay = 2
 
                             .StockMaxProfitPercentagePerDay = Decimal.MaxValue
                             .StockMaxLossPercentagePerDay = Decimal.MinValue
@@ -548,11 +548,11 @@ Public Class frmMain
                     Throw New NotImplementedException
             End Select
 
-            'Delete Directory
-            Dim directoryName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("STRATEGY{0} CANDLE DATA", ruleNumber))
-            If Directory.Exists(directoryName) Then
-                Directory.Delete(directoryName, True)
-            End If
+            ''Delete Directory
+            'Dim directoryName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("STRATEGY{0} CANDLE DATA", ruleNumber))
+            'If Directory.Exists(directoryName) Then
+            '    Directory.Delete(directoryName, True)
+            'End If
         Catch cex As OperationCanceledException
             ''Delete Directory
             'Dim directoryName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("STRATEGY{0} CANDLE DATA", ruleNumber))
