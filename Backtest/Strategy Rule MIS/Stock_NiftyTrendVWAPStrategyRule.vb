@@ -69,7 +69,7 @@ Public Class Stock_NiftyTrendVWAPStrategyRule
             If _niftyTrendPayload.ContainsKey(currentCandle.PreviousCandlePayload.PayloadDate) AndAlso
                 _niftyTrendPayload(currentCandle.PreviousCandlePayload.PayloadDate) > _minNiftyChangePer AndAlso
                 currentCandle.PreviousCandlePayload.Close < _currentDayOpen Then
-                If currentCandle.PreviousCandlePayload.Close > _vwapPayload(currentCandle.PreviousCandlePayload.PayloadDate) Then
+                If currentCandle.PreviousCandlePayload.Low > _vwapPayload(currentCandle.PreviousCandlePayload.PayloadDate) Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentTick.Open, RoundOfType.Floor)
                     Dim entryPrice As Decimal = currentTick.Open
 
@@ -82,7 +82,7 @@ Public Class Stock_NiftyTrendVWAPStrategyRule
             ElseIf _niftyTrendPayload.ContainsKey(currentCandle.PreviousCandlePayload.PayloadDate) AndAlso
                 _niftyTrendPayload(currentCandle.PreviousCandlePayload.PayloadDate) < _minNiftyChangePer AndAlso
                 currentCandle.PreviousCandlePayload.Close > _currentDayOpen Then
-                If currentCandle.PreviousCandlePayload.Close < _vwapPayload(currentCandle.PreviousCandlePayload.PayloadDate) Then
+                If currentCandle.PreviousCandlePayload.High < _vwapPayload(currentCandle.PreviousCandlePayload.PayloadDate) Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentTick.Open, RoundOfType.Floor)
                     Dim entryPrice As Decimal = currentTick.Open
 
