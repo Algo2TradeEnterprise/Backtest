@@ -459,6 +459,91 @@ Public Class frmMain
                         Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
                     End Using
 #End Region
+                Case 2
+#Region "Bollinger Touch Favourable Breakout"
+                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
+                    Dim database As Common.DataBaseTable = Common.DataBaseTable.None
+                    Dim margin As Decimal = 0
+                    Dim tick As Decimal = 0
+                    Select Case stockType
+                        Case Trade.TypeOfStock.Cash
+                            database = Common.DataBaseTable.Intraday_Cash
+                            margin = 15
+                            tick = 0.05
+                        Case Trade.TypeOfStock.Commodity
+                            database = Common.DataBaseTable.Intraday_Commodity
+                            margin = 70
+                            tick = 1
+                        Case Trade.TypeOfStock.Currency
+                            database = Common.DataBaseTable.Intraday_Currency
+                            margin = 98
+                            tick = 0.0025
+                        Case Trade.TypeOfStock.Futures
+                            database = Common.DataBaseTable.Intraday_Futures
+                            margin = 50
+                            tick = 0.05
+                    End Select
+
+                    Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+                                                                    exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                    exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                    tradeStartTime:=TimeSpan.Parse("9:16:00"),
+                                                                    lastTradeEntryTime:=TimeSpan.Parse("14:44:59"),
+                                                                    eodExitTime:=TimeSpan.Parse("15:15:00"),
+                                                                    tickSize:=tick,
+                                                                    marginMultiplier:=margin,
+                                                                    timeframe:=1,
+                                                                    heikenAshiCandle:=False,
+                                                                    stockType:=stockType,
+                                                                    optionStockType:=Trade.TypeOfStock.None,
+                                                                    databaseTable:=database,
+                                                                    dataSource:=sourceData,
+                                                                    initialCapital:=Decimal.MaxValue / 2,
+                                                                    usableCapital:=Decimal.MaxValue / 2,
+                                                                    minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                                    amountToBeWithdrawn:=0)
+                        AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+
+                        With backtestStrategy
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Cash Stock Modified Price Range.csv")
+
+                            .AllowBothDirectionEntryAtSameTime = False
+                            .TrailingStoploss = False
+                            .TickBasedStrategy = True
+                            .RuleNumber = ruleNumber
+
+                            .RuleEntityData = New MathematicalStrategyRule.StrategyRuleEntities With
+                                                  {.TargetType = MathematicalStrategyRule.TypeOfTarget.INR,
+                                                   .TargetMultiplier = 2,
+                                                   .StoplossMovementType = MathematicalStrategyRule.TypeOfStoplossMovement.None,
+                                                   .BreakevenTargetMultiplier = 1}
+
+                            .NumberOfTradeableStockPerDay = 10
+
+                            .NumberOfTradesPerStockPerDay = 1
+
+                            .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                            .StockMaxLossPercentagePerDay = Decimal.MinValue
+
+                            .ExitOnStockFixedTargetStoploss = False
+                            .StockMaxProfitPerDay = Decimal.MaxValue
+                            .StockMaxLossPerDay = Decimal.MinValue
+
+                            .ExitOnOverAllFixedTargetStoploss = False
+                            .OverAllProfitPerDay = Decimal.MaxValue
+                            .OverAllLossPerDay = Decimal.MinValue
+
+                            .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+                            .MTMSlab = 500
+                            .MovementSlab = .MTMSlab / 2
+                            .RealtimeTrailingPercentage = 50
+                        End With
+
+                        Dim filename As String = String.Format("Bollinger Touch Favourable Breakout")
+
+                        Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                    End Using
+#End Region
                 Case Else
                     Throw New NotImplementedException
             End Select
