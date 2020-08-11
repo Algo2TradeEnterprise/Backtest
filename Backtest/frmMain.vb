@@ -414,6 +414,16 @@ Public Class frmMain
                                         {
                                          .InitialCapital = 10000
                                         }
+                        Case 2
+                            .RuleEntityData = New BelowFractalLowSingleStrategyRule.StrategyRuleEntities With
+                                        {
+                                         .InitialCapital = 10000
+                                        }
+                        Case 3
+                            .RuleEntityData = New BelowFractalLowMultiStrategyRule.StrategyRuleEntities With
+                                        {
+                                         .InitialCapital = 10000
+                                        }
                     End Select
 
                     .NumberOfTradeableStockPerDay = 1
@@ -430,6 +440,10 @@ Public Class frmMain
                         filename = String.Format("At Previous Swing Low CNC EOD Output")
                     Case 1
                         filename = String.Format("At Previous Swing High CNC EOD Output")
+                    Case 2
+                        filename = String.Format("Below Fractal Low Single CNC EOD Output")
+                    Case 3
+                        filename = String.Format("Below Fractal Low Multi CNC EOD Output")
                     Case Else
                         Throw New NotImplementedException
                 End Select

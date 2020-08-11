@@ -114,6 +114,8 @@
     <Compile Include="Strategy Helper\StrategyOutput.vb" />
     <Compile Include="Strategy Helper\StrategyRule.vb" />
     <Compile Include="Strategy Helper\Trade.vb" />
+    <Compile Include="Strategy Rule CNC\BelowFractalLowMultiStrategyRule.vb" />
+    <Compile Include="Strategy Rule CNC\BelowFractalLowSingleStrategyRule.vb" />
     <Compile Include="Strategy Rule CNC\PreviousCandleLowStrategyRule.vb" />
     <Compile Include="Strategy Rule CNC\PreviousCandleSwingHighStrategyRule.vb" />
     <Compile Include="Strategy Rule CNC\PreviousDayLowStrategyRule.vb" />
