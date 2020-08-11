@@ -294,15 +294,18 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
+            Dim tfList As List(Of Integer) = New List(Of Integer) From {120, 60, 30}
+
+            For Each runningTF In tfList
+                Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
                                                             exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                             exchangeEndTime:=TimeSpan.Parse("15:29:59"),
                                                             tradeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                            lastTradeEntryTime:=TimeSpan.Parse("15:29:59"),
+                                                            lastTradeEntryTime:=TimeSpan.Parse("15:30:00"),
                                                             eodExitTime:=TimeSpan.Parse("15:29:59"),
                                                             tickSize:=tick,
                                                             marginMultiplier:=margin,
-                                                            timeframe:=180,
+                                                            timeframe:=runningTF,
                                                             heikenAshiCandle:=False,
                                                             stockType:=stockType,
                                                             databaseTable:=database,
@@ -311,31 +314,32 @@ Public Class frmMain
                                                             usableCapital:=Decimal.MaxValue / 2,
                                                             minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
                                                             amountToBeWithdrawn:=5000)
-                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+                    AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                With backtestStrategy
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "")
+                    With backtestStrategy
+                        .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "")
 
-                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+                        .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                    .RuleEntityData = New PreviousCandleSwingHighStrategyRule.StrategyRuleEntities With
-                                        {
-                                         .InitialCapital = 10000
-                                        }
+                        .RuleEntityData = New BelowFractalLowStrategyRule.StrategyRuleEntities With
+                                            {
+                                             .InitialCapital = 10000
+                                            }
 
-                    .NumberOfTradeableStockPerDay = 1
+                        .NumberOfTradeableStockPerDay = 1
 
-                    .NumberOfTradesPerDay = Integer.MaxValue
-                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
+                        .NumberOfTradesPerDay = Integer.MaxValue
+                        .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
-                    .TickBasedStrategy = True
-                End With
+                        .TickBasedStrategy = True
+                    End With
 
-                Dim ruleData As PreviousCandleSwingHighStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                Dim filename As String = String.Format("At Previous Candle Swing High CNC Output")
+                    'Dim ruleData As PreviousCandleSwingHighStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                    Dim filename As String = String.Format("Below Fractal Low Tick CNC Output, TF {0}", backtestStrategy.SignalTimeFrame)
 
-                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-            End Using
+                    Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                End Using
+            Next
         Catch ex As Exception
             MsgBox(ex.ToString, MsgBoxStyle.Critical)
         Finally

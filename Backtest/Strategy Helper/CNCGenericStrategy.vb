@@ -108,6 +108,8 @@ Namespace StrategyHelper
                                             Throw New NotImplementedException
                                         Case 1
                                             stockRule = New PreviousCandleSwingHighStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case 4
+                                            stockRule = New BelowFractalLowStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
