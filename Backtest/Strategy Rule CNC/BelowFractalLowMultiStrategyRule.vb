@@ -133,9 +133,10 @@ Public Class BelowFractalLowMultiStrategyRule
             Else
                 Dim multiplier As Integer = lastTrade.Supporting4
                 iteration = Val(lastTrade.Supporting1)
+                entryPrice = lastTrade.EntryPrice
                 While True
                     multiplier = multiplier * 2
-                    entryPrice = Utilities.Numbers.ConvertFloorCeling(lastTrade.EntryPrice - atr * multiplier, _parentStrategy.TickSize, Utilities.Numbers.NumberManipulation.RoundOfType.Floor)
+                    entryPrice = Utilities.Numbers.ConvertFloorCeling(entryPrice - atr * multiplier, _parentStrategy.TickSize, Utilities.Numbers.NumberManipulation.RoundOfType.Floor)
                     If candle.Low <= entryPrice Then
                         iteration = iteration + 1
                         quantity = GetQuantity(iteration, entryPrice)
