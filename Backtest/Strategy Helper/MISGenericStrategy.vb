@@ -221,6 +221,8 @@ Namespace StrategyHelper
                                             stockRule = New PreviousDayHKTrendStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                         Case 50
                                             stockRule = New PreviousDayHKTrendBollingerStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
+                                        Case 51
+                                            stockRule = New EMAAttractionStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select

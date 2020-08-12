@@ -136,6 +136,7 @@
     <Compile Include="Strategy Rule MIS\BothDirectionMultiTradesHKStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\BothDirectionMultiTradesStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\DayHLSwingTrendlineStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\EMAAttractionStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\EmaSmaCrossoverStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\FibonacciBacktestStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\FibonacciOpeningRangeBreakoutStrategyRule.vb" />
