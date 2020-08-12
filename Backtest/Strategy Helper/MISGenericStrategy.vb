@@ -223,6 +223,8 @@ Namespace StrategyHelper
                                             stockRule = New PreviousDayHKTrendBollingerStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                         Case 51
                                             stockRule = New EMAAttractionStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case 52
+                                            stockRule = New BuyBelowFractalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
@@ -1526,6 +1528,45 @@ Namespace StrategyHelper
                                     If counter = Me.NumberOfTradeableStockPerDay Then Exit For
                                 End If
                             Next
+                        Case 52
+                            Dim stockDetails As List(Of BuyBelowFractalStrategyRule.OptionInstumentDetails) = Nothing
+                            For i = 0 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i).Item("Date")
+                                If rowDate.Date = tradingDate.Date Then
+                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
+                                    Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
+                                    Dim instrumentType As String = dt.Rows(i).Item("Puts_Calls")
+                                    Dim close As Decimal = dt.Rows(i).Item("Previous Day Close")
+                                    Dim volume As Decimal = dt.Rows(i).Item("Previous Day Volume")
+                                    Dim detailsOfStock As BuyBelowFractalStrategyRule.OptionInstumentDetails = New BuyBelowFractalStrategyRule.OptionInstumentDetails With
+                                                {.TradingSymbol = tradingSymbol, .LotSize = lotsize, .InstrumentType = instrumentType, .Close = close, .Volume = volume}
+
+                                    If stockDetails Is Nothing Then stockDetails = New List(Of BuyBelowFractalStrategyRule.OptionInstumentDetails)
+                                    stockDetails.Add(detailsOfStock)
+                                End If
+                            Next
+                            If stockDetails IsNot Nothing AndAlso stockDetails.Count > 0 Then
+                                Dim peStocks As List(Of BuyBelowFractalStrategyRule.OptionInstumentDetails) = stockDetails.FindAll(Function(x)
+                                                                                                                                       Return x.InstrumentType = "PE"
+                                                                                                                                   End Function)
+                                Dim ceStocks As List(Of BuyBelowFractalStrategyRule.OptionInstumentDetails) = stockDetails.FindAll(Function(x)
+                                                                                                                                       Return x.InstrumentType = "CE"
+                                                                                                                                   End Function)
+                                If peStocks IsNot Nothing AndAlso peStocks.Count > 0 AndAlso ceStocks IsNot Nothing AndAlso ceStocks.Count > 0 Then
+                                    Dim peVolStock As BuyBelowFractalStrategyRule.OptionInstumentDetails = peStocks.OrderByDescending(Function(x)
+                                                                                                                                          Return x.Volume
+                                                                                                                                      End Function).FirstOrDefault
+                                    Dim ceVolStock As BuyBelowFractalStrategyRule.OptionInstumentDetails = ceStocks.OrderByDescending(Function(x)
+                                                                                                                                          Return x.Volume
+                                                                                                                                      End Function).FirstOrDefault
+
+                                    Dim detailsOfStock1 As StockDetails = New StockDetails With {.StockName = peVolStock.TradingSymbol, .TradingSymbol = peVolStock.TradingSymbol, .LotSize = peVolStock.LotSize, .EligibleToTakeTrade = True}
+                                    Dim detailsOfStock2 As StockDetails = New StockDetails With {.StockName = ceVolStock.TradingSymbol, .TradingSymbol = ceVolStock.TradingSymbol, .LotSize = ceVolStock.LotSize, .EligibleToTakeTrade = True}
+                                    ret = New Dictionary(Of String, StockDetails)
+                                    ret.Add(detailsOfStock1.TradingSymbol, detailsOfStock1)
+                                    ret.Add(detailsOfStock2.TradingSymbol, detailsOfStock2)
+                                End If
+                            End If
                         Case Else
                             Dim counter As Integer = 0
                             For i = 0 To dt.Rows.Count - 1
