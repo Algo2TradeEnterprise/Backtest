@@ -64,7 +64,8 @@ Public Class BuyBelowFractalStrategyRule
                                     .OrderType = Trade.TypeOfOrder.Market,
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = fractalLow,
-                                    .Supporting3 = fractalHigh
+                                    .Supporting3 = fractalHigh,
+                                    .Supporting4 = _parentStrategy.StockNumberOfTrades(_tradingDate, _tradingSymbol) + 1
                                 }
                 End If
             End If

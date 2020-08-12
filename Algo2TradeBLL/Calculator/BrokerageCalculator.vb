@@ -182,6 +182,38 @@ Namespace Calculator
                         .NetProfitLoss = net_profit
                     }
         End Sub
+        Public Sub FO_Options(ByVal Buy As Double, ByVal Sell As Double, ByVal Quantity As Integer, ByRef Output As BrokerageAttributes)
+            Dim bp As Decimal = Buy
+            Dim sp As Decimal = Sell
+            Dim qty As Integer = Quantity
+
+            Dim turnover As Decimal = Math.Round((bp + sp) * qty, 2)
+            Dim brokerage As Decimal = 40
+            Dim stt_total As Decimal = Math.Round(sp * qty * 0.0005, 2)
+            Dim etc As Decimal = Math.Round(0.0005 * turnover, 2)
+            Dim stax As Decimal = Math.Round(0.18 * (brokerage + etc), 2)
+            Dim sebi_charges As Decimal = Math.Round(turnover * 0.0000005, 2)
+            Dim stamp_charges As Decimal = Math.Round(bp * qty * 0.00003, 2)
+            Dim total_tax As Decimal = Math.Round(brokerage + stt_total + etc + stax + sebi_charges + stamp_charges, 2)
+            Dim breakeven As Decimal = Math.Round(total_tax / qty, 2)
+            Dim net_profit As Decimal = Math.Round(((sp - bp) * qty) - total_tax, 2)
+
+            Output = New BrokerageAttributes With {
+                        .Buy = bp,
+                        .Sell = sp,
+                        .Quantity = qty,
+                        .Turnover = turnover,
+                        .Brokerage = brokerage,
+                        .STT = stt_total,
+                        .ExchangeFees = etc,
+                        .GST = stax,
+                        .SEBI = sebi_charges,
+                        .StampDuty = stamp_charges,
+                        .TotalTax = total_tax,
+                        .BreakevenPoints = breakeven,
+                        .NetProfitLoss = net_profit
+                    }
+        End Sub
         Public Sub Commodity_MCX(ByVal item As String, ByVal Buy As Double, ByVal Sell As Double, ByVal Quantity As Integer, ByRef Output As BrokerageAttributes)
             If GlobalVar.MultiplierMap Is Nothing OrElse GlobalVar.GroupMap Is Nothing Then
                 Dim task = GetCommodityMultiplier()

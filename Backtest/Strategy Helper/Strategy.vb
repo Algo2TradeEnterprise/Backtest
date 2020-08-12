@@ -899,7 +899,11 @@ Namespace StrategyHelper
                 Case Trade.TypeOfStock.Commodity
                     calculator.Commodity_MCX(stockName, buyPrice, sellPrice, quantity / lotSize, potentialBrokerage)
                 Case Trade.TypeOfStock.Futures
-                    calculator.FO_Futures(buyPrice, sellPrice, quantity, potentialBrokerage)
+                    If Me.OptionStockType = Trade.TypeOfStock.Futures Then
+                        calculator.FO_Options(buyPrice, sellPrice, quantity, potentialBrokerage)
+                    Else
+                        calculator.FO_Futures(buyPrice, sellPrice, quantity, potentialBrokerage)
+                    End If
             End Select
 
             Return potentialBrokerage.NetProfitLoss
@@ -922,7 +926,11 @@ Namespace StrategyHelper
                     Case Trade.TypeOfStock.Currency
                         Throw New ApplicationException("Not Implemented")
                     Case Trade.TypeOfStock.Futures
-                        calculator.FO_Futures(buyPrice, sellPrice, quantity, potentialBrokerage)
+                        If Me.OptionStockType = Trade.TypeOfStock.Futures Then
+                            calculator.FO_Options(buyPrice, sellPrice, quantity, potentialBrokerage)
+                        Else
+                            calculator.FO_Futures(buyPrice, sellPrice, quantity, potentialBrokerage)
+                        End If
                 End Select
 
                 If NetProfitLossOfTrade > 0 Then
