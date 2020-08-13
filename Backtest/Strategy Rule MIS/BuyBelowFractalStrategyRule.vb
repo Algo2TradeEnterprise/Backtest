@@ -8,6 +8,7 @@ Public Class BuyBelowFractalStrategyRule
 
     Private _fractalHighPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _fractalLowPayload As Dictionary(Of Date, Decimal) = Nothing
+    Private _firstCandleOfTheDay As Payload = Nothing
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -21,6 +22,13 @@ Public Class BuyBelowFractalStrategyRule
 
     Public Overrides Sub CompletePreProcessing()
         MyBase.CompletePreProcessing()
+
+        For Each runningPayload In _signalPayload
+            If runningPayload.Key.Date = _tradingDate.Date AndAlso runningPayload.Value.PreviousCandlePayload.PayloadDate.Date <> _tradingDate.Date Then
+                _firstCandleOfTheDay = runningPayload.Value
+                Exit For
+            End If
+        Next
 
         Indicator.FractalBands.CalculateFractal(_signalPayload, _fractalHighPayload, _fractalLowPayload)
     End Sub
@@ -36,8 +44,16 @@ Public Class BuyBelowFractalStrategyRule
             currentMinuteCandle.PayloadDate >= _tradeStartTime AndAlso Me.EligibleToTakeTrade Then
             Dim fractalLow As Decimal = _fractalLowPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
             Dim fractalHigh As Decimal = _fractalHighPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
+            If _firstCandleOfTheDay IsNot Nothing Then
+                If _fractalLowPayload(_firstCandleOfTheDay.PreviousCandlePayload.PayloadDate) = fractalLow Then
+                    fractalLow = Decimal.MinValue
+                Else
+                    _firstCandleOfTheDay = Nothing
+                End If
+            End If
+
             Dim signalCandle As Payload = Nothing
-            If currentMinuteCandle.PreviousCandlePayload.Close < fractalLow Then
+            If fractalLow <> Decimal.MinValue AndAlso currentMinuteCandle.PreviousCandlePayload.Close < fractalLow Then
                 Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandle, Trade.TypeOfTrade.MIS)
                 If lastExecutedOrder IsNot Nothing Then
                     If lastExecutedOrder.Supporting2 <> fractalLow AndAlso lastExecutedOrder.Supporting3 <> fractalHigh Then
