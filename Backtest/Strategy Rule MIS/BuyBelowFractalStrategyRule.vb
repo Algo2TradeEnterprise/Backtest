@@ -141,15 +141,4 @@ Public Class BuyBelowFractalStrategyRule
         End If
         Return ret
     End Function
-
-#Region "Stock Selection"
-    Public Class OptionInstumentDetails
-        Public TradingSymbol As String
-        Public LotSize As Integer
-        Public InstrumentType As String
-        Public Close As Decimal
-        Public Volume As Long
-    End Class
-#End Region
-
 End Class
