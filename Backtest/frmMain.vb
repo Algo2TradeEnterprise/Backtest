@@ -4941,7 +4941,7 @@ Public Class frmMain
                             tick = 0.0025
                         Case Trade.TypeOfStock.Futures
                             database = Common.DataBaseTable.Intraday_Futures
-                            margin = 4
+                            margin = 1
                             tick = 0.05
                     End Select
 
@@ -4966,7 +4966,15 @@ Public Class frmMain
                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                         With backtestStrategy
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "BANKNIFTY Lower Price Options With Volume.csv")
+                            '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Sort Top 2 with price filter remove having pos SD.csv")
+                            '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Sort CE PE with price filter remove having pos SD.csv")
+                            '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Volume Sort CE PE With Current Day Open Price Filter.csv")
+                            '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Volume Sort Top 2 With Current Day Open Price Filter.csv")
+                            '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Volume Sort Top 2 With Previous Day Close Price Filter.csv")
+                            '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Volume Sort CE PE With Previous Day Close Price Filter.csv")
+                            '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Previous Day ATR Sort Top 2 with price filter remove having pos SD.csv")
+                            '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Previous Day ATR Sort CE PE with price filter remove having pos SD.csv")
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Volume Sort Top 2 With Previous Day Close Price 20 Filter.csv")
 
                             .AllowBothDirectionEntryAtSameTime = False
                             .TrailingStoploss = False
@@ -4996,7 +5004,24 @@ Public Class frmMain
                             .RealtimeTrailingPercentage = 50
                         End With
 
-                        Dim filename As String = String.Format("Buy Below Fractal Strategy")
+                        'Dim filename As String = String.Format("ATR Sort Top 2 with price filter remove having pos SD Normal")
+                        'Dim filename As String = String.Format("ATR Sort CE PE with price filter remove having pos SD Normal")
+                        'Dim filename As String = String.Format("Volume Sort CE PE With Current Day Open Price Filter Normal")
+                        'Dim filename As String = String.Format("Volume Sort Top 2 With Current Day Open Price Filter Normal")
+                        'Dim filename As String = String.Format("Volume Sort Top 2 With Previous Day Close Price Filter Normal")
+                        'Dim filename As String = String.Format("Volume Sort CE PE With Previous Day Close Price Filter Normal")
+                        'Dim filename As String = String.Format("Previous Day ATR Sort Top 2 with price filter remove having pos SD Normal")
+                        'Dim filename As String = String.Format("Previous Day ATR Sort CE PE with price filter remove having pos SD Normal")
+
+                        'Dim filename As String = String.Format("ATR Sort Top 2 with price filter remove having pos SD Target Adjust")
+                        'Dim filename As String = String.Format("ATR Sort CE PE with price filter remove having pos SD Target Adjust")
+                        'Dim filename As String = String.Format("Volume Sort CE PE With Current Day Open Price Filter Target Adjust")
+                        'Dim filename As String = String.Format("Volume Sort Top 2 With Current Day Open Price Filter Target Adjust")
+                        'Dim filename As String = String.Format("Volume Sort Top 2 With Previous Day Close Price Filter Target Adjust")
+                        'Dim filename As String = String.Format("Volume Sort CE PE With Previous Day Close Price Filter Target Adjust")
+                        'Dim filename As String = String.Format("Previous Day ATR Sort Top 2 with price filter remove having pos SD Target Adjust")
+                        'Dim filename As String = String.Format("Previous Day ATR Sort CE PE with price filter remove having pos SD Target Adjust")
+                        Dim filename As String = String.Format("Volume Sort Top 2 With Previous Day Close Price 20 Filter Target Adjust")
 
                         Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
                     End Using

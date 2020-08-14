@@ -68,6 +68,12 @@ Public Class BuyBelowFractalStrategyRule
                 Dim entryPrice As Decimal = currentTick.Open
                 Dim targetPrice As Decimal = fractalHigh
                 Dim quantity As Integer = CalculateQuantity(currentMinuteCandle, entryPrice, targetPrice)
+                If quantity * entryPrice / 4 > 10000 Then
+                    While quantity * entryPrice / 4 > 10000
+                        targetPrice += _parentStrategy.TickSize
+                        quantity = CalculateQuantity(currentMinuteCandle, entryPrice, targetPrice)
+                    End While
+                End If
                 If quantity > 0 Then
                     parameter = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
