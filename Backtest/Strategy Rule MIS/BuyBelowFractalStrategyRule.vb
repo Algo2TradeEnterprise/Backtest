@@ -6,10 +6,19 @@ Imports Utilities.Numbers.NumberManipulation
 Public Class BuyBelowFractalStrategyRule
     Inherits StrategyRule
 
+#Region "Entity"
+    Public Class StrategyRuleEntities
+        Inherits RuleEntities
+
+        Public AdjustTarget As Boolean
+    End Class
+#End Region
+
     Private _fractalHighPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _fractalLowPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _firstCandleOfTheDay As Payload = Nothing
 
+    Private ReadOnly _userInputs As StrategyRuleEntities
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
                    ByVal parentStrategy As Strategy,
@@ -18,6 +27,7 @@ Public Class BuyBelowFractalStrategyRule
                    ByVal canceller As CancellationTokenSource,
                    ByVal entities As RuleEntities)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
+        _userInputs = _entities
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -68,8 +78,8 @@ Public Class BuyBelowFractalStrategyRule
                 Dim entryPrice As Decimal = currentTick.Open
                 Dim targetPrice As Decimal = fractalHigh
                 Dim quantity As Integer = CalculateQuantity(currentMinuteCandle, entryPrice, targetPrice)
-                If quantity * entryPrice / 4 > 10000 Then
-                    While quantity * entryPrice / 4 > 10000
+                If _userInputs.AdjustTarget AndAlso quantity * entryPrice > 30000 Then
+                    While quantity * entryPrice > 30000
                         targetPrice += _parentStrategy.TickSize
                         quantity = CalculateQuantity(currentMinuteCandle, entryPrice, targetPrice)
                     End While
