@@ -351,7 +351,7 @@ Public Class frmMain
                                             .TickBasedStrategy = True
                                             .RuleNumber = ruleNumber
 
-                                            .RuleEntityData = New BuyBelowFractalStrategyRule.StrategyRuleEntities With {.AdjustTarget = False}
+                                            .RuleEntityData = New BuyBelowFractalStrategyRule.StrategyRuleEntities With {.AdjustTarget = targetAdjustment}
 
                                             .NumberOfTradeableStockPerDay = 2
 
@@ -379,18 +379,18 @@ Public Class frmMain
 
                                         Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
                                     End Using
+
+                                    'Delete Directory
+                                    Dim directoryName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("STRATEGY{0} CANDLE DATA", ruleNumber))
+                                    If Directory.Exists(directoryName) Then
+                                        Directory.Delete(directoryName, True)
+                                    End If
                                 End If
                             Next
                         Next
                     Next
                 Next
             Next
-
-            'Delete Directory
-            Dim directoryName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("STRATEGY{0} CANDLE DATA", ruleNumber))
-            If Directory.Exists(directoryName) Then
-                Directory.Delete(directoryName, True)
-            End If
         Catch cex As OperationCanceledException
             ''Delete Directory
             'Dim directoryName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("STRATEGY{0} CANDLE DATA", ruleNumber))
