@@ -351,7 +351,11 @@ Public Class frmMain
                                             .TickBasedStrategy = True
                                             .RuleNumber = ruleNumber
 
-                                            .RuleEntityData = New BuyBelowFractalStrategyRule.StrategyRuleEntities With {.AdjustTarget = targetAdjustment}
+                                            .RuleEntityData = New BuyBelowFractalStrategyRule.StrategyRuleEntities With
+                                                              {.MaxProfitPerStock = 500,
+                                                               .AdjustTarget = targetAdjustment,
+                                                               .AdjustTargetForTurnover = 35000,
+                                                               .QuantityFromFractalLow = False}
 
                                             .NumberOfTradeableStockPerDay = 2
 

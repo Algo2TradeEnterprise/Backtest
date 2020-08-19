@@ -10,7 +10,10 @@ Public Class BuyBelowFractalStrategyRule
     Public Class StrategyRuleEntities
         Inherits RuleEntities
 
+        Public MaxProfitPerStock As Decimal
         Public AdjustTarget As Boolean
+        Public AdjustTargetForTurnover As Decimal
+        Public QuantityFromFractalLow As Boolean
     End Class
 #End Region
 
@@ -63,7 +66,7 @@ Public Class BuyBelowFractalStrategyRule
             End If
 
             Dim signalCandle As Payload = Nothing
-            If fractalLow <> Decimal.MinValue AndAlso currentMinuteCandle.PreviousCandlePayload.Close < fractalLow Then
+            If fractalLow <> Decimal.MinValue AndAlso currentMinuteCandle.PreviousCandlePayload.Close < fractalLow AndAlso fractalHigh > fractalLow Then
                 Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandle, Trade.TypeOfTrade.MIS)
                 If lastExecutedOrder IsNot Nothing Then
                     If lastExecutedOrder.Supporting2 <> fractalLow AndAlso lastExecutedOrder.Supporting3 <> fractalHigh Then
@@ -76,14 +79,16 @@ Public Class BuyBelowFractalStrategyRule
 
             If signalCandle IsNot Nothing Then
                 Dim entryPrice As Decimal = currentTick.Open
+                If _userInputs.QuantityFromFractalLow Then entryPrice = fractalLow
                 Dim targetPrice As Decimal = fractalHigh
                 Dim quantity As Integer = CalculateQuantity(currentMinuteCandle, entryPrice, targetPrice)
-                If _userInputs.AdjustTarget AndAlso quantity * entryPrice > 30000 Then
-                    While quantity * entryPrice > 30000
+                If _userInputs.AdjustTarget AndAlso quantity * entryPrice > _userInputs.AdjustTargetForTurnover Then
+                    While quantity * entryPrice > _userInputs.AdjustTargetForTurnover
                         targetPrice += _parentStrategy.TickSize
                         quantity = CalculateQuantity(currentMinuteCandle, entryPrice, targetPrice)
                     End While
                 End If
+                entryPrice = currentTick.Open
                 If quantity > 0 Then
                     parameter = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
@@ -125,7 +130,7 @@ Public Class BuyBelowFractalStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
             Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, Trade.TypeOfTrade.MIS)
-            Dim price As Decimal = lastExecutedTrade.PotentialTarget
+            Dim price As Decimal = CalculateTargetPrice(currentTick, lastExecutedTrade.EntryPrice)
             If currentTrade.PotentialTarget <> price Then
                 ret = New Tuple(Of Boolean, Decimal, String)(True, price, price - currentTrade.EntryPrice)
             End If
@@ -150,10 +155,29 @@ Public Class BuyBelowFractalStrategyRule
                 unrealizedPL += _parentStrategy.CalculatePL(_tradingSymbol, runningTrade.EntryPrice, targetPrice, runningTrade.Quantity, runningTrade.LotSize, Trade.TypeOfStock.Futures)
             Next
         End If
-        Dim plToAchive As Decimal = 500 - unrealizedPL
+        Dim plToAchive As Decimal = _userInputs.MaxProfitPerStock - unrealizedPL
         If plToAchive > 0 Then
             Dim qty As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, targetPrice, plToAchive, Trade.TypeOfStock.Futures)
             ret = Math.Ceiling(qty / Me.LotSize) * Me.LotSize
+        End If
+        Return ret
+    End Function
+
+    Private Function CalculateTargetPrice(ByVal candle As Payload, ByVal entryPrice As Decimal) As Decimal
+        Dim ret As Decimal = Decimal.MinValue
+        Dim inProgressTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(candle, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Inprogress)
+        If inProgressTrades IsNot Nothing AndAlso inProgressTrades.Count > 0 Then
+            For target As Decimal = entryPrice To Decimal.MaxValue Step _parentStrategy.TickSize
+                Dim totalPl As Decimal = 0
+                For Each runningTrade In inProgressTrades
+                    totalPl += _parentStrategy.CalculatePL(_tradingSymbol, runningTrade.EntryPrice, target, runningTrade.Quantity, runningTrade.LotSize, Trade.TypeOfStock.Futures)
+                Next
+
+                If totalPl >= _userInputs.MaxProfitPerStock Then
+                    ret = target
+                    Exit For
+                End If
+            Next
         End If
         Return ret
     End Function
