@@ -5066,8 +5066,7 @@ Public Class frmMain
                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                         With backtestStrategy
-                            '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Previous Day Strong HK Stocks.csv")
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pre Market Stock 16_08_20 to 20_08_20.csv")
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Previous Day Strong HK Stocks.csv")
 
                             .AllowBothDirectionEntryAtSameTime = False
                             .TrailingStoploss = False

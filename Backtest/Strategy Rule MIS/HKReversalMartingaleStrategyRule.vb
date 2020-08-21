@@ -24,7 +24,7 @@ Public Class HKReversalMartingaleStrategyRule
     Private _targetPoint As Decimal = Decimal.MinValue
     Private _quantity As Integer = Integer.MinValue
 
-    Private _direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
+    Private ReadOnly _direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
     Private ReadOnly _userInputs As StrategyRuleEntities
 
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
