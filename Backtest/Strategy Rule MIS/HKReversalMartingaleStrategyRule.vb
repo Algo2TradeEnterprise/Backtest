@@ -111,7 +111,8 @@ Public Class HKReversalMartingaleStrategyRule
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = _slReamrk,
                                     .Supporting3 = ConvertFloorCeling(GetHighestATR(signalCandle), _parentStrategy.TickSize, RoundOfType.Celing),
-                                    .Supporting4 = ConvertFloorCeling(signalCandle.CandleRange, _parentStrategy.TickSize, RoundOfType.Celing)
+                                    .Supporting4 = ConvertFloorCeling(signalCandle.CandleRange, _parentStrategy.TickSize, RoundOfType.Celing),
+                                    .Supporting5 = _parentStrategy.StockNumberOfTrades(_tradingDate, _tradingSymbol) + 1
                                 }
                 ElseIf signal.Item4 = Trade.TradeExecutionDirection.Sell Then
                     parameter = New PlaceOrderParameters With {
@@ -126,7 +127,8 @@ Public Class HKReversalMartingaleStrategyRule
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
                                     .Supporting2 = _slReamrk,
                                     .Supporting3 = ConvertFloorCeling(GetHighestATR(signalCandle), _parentStrategy.TickSize, RoundOfType.Celing),
-                                    .Supporting4 = ConvertFloorCeling(signalCandle.CandleRange, _parentStrategy.TickSize, RoundOfType.Celing)
+                                    .Supporting4 = ConvertFloorCeling(signalCandle.CandleRange, _parentStrategy.TickSize, RoundOfType.Celing),
+                                    .Supporting5 = _parentStrategy.StockNumberOfTrades(_tradingDate, _tradingSymbol) + 1
                                 }
                 End If
             End If
