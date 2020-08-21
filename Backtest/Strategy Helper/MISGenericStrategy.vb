@@ -227,6 +227,8 @@ Namespace StrategyHelper
                                             stockRule = New BuyBelowFractalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 53
                                             stockRule = New HKReversalMartingaleStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
+                                        Case 54
+                                            stockRule = New HKReversalAdaptiveMartingaleStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
@@ -1622,27 +1624,51 @@ Namespace StrategyHelper
                                 For Each runningStock In stockDetails.OrderByDescending(Function(x)
                                                                                             Return x.Supporting2
                                                                                         End Function)
-                                    runningStock.Supporting1 = 1
+                                    If runningStock.Supporting2 >= 0.5 Then
+                                        runningStock.Supporting1 = -1
 
-                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                    ret.Add(runningStock.StockName, runningStock)
+                                        If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                        ret.Add(runningStock.StockName, runningStock)
 
-                                    counter += 1
-                                    If counter >= Me.NumberOfTradeableStockPerDay / 2 Then Exit For
+                                        counter += 1
+                                        If counter >= Me.NumberOfTradeableStockPerDay / 2 Then Exit For
+                                    End If
                                 Next
+
+                                Dim remainingStockCount As Integer = Me.NumberOfTradeableStockPerDay - counter
 
                                 counter = 0
                                 For Each runningStock In stockDetails.OrderBy(Function(x)
                                                                                   Return x.Supporting2
                                                                               End Function)
-                                    runningStock.Supporting1 = -1
+                                    If runningStock.Supporting2 <= -0.5 Then
+                                        runningStock.Supporting1 = 1
 
-                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                    ret.Add(runningStock.StockName, runningStock)
+                                        If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                        ret.Add(runningStock.StockName, runningStock)
 
-                                    counter += 1
-                                    If counter >= Me.NumberOfTradeableStockPerDay / 2 Then Exit For
+                                        counter += 1
+                                        If counter >= remainingStockCount Then Exit For
+                                    End If
                                 Next
+
+                                If ret IsNot Nothing AndAlso ret.Count < Me.NumberOfTradeableStockPerDay Then
+                                    remainingStockCount = Me.NumberOfTradeableStockPerDay - ret.Count
+                                    counter = 0
+                                    For Each runningStock In stockDetails.OrderByDescending(Function(x)
+                                                                                                Return x.Supporting2
+                                                                                            End Function)
+                                        If runningStock.Supporting2 >= 0.5 AndAlso Not ret.ContainsKey(runningStock.StockName) Then
+                                            runningStock.Supporting1 = -1
+
+                                            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                            ret.Add(runningStock.StockName, runningStock)
+
+                                            counter += 1
+                                            If counter >= remainingStockCount Then Exit For
+                                        End If
+                                    Next
+                                End If
                             End If
                         Case Else
                             Dim counter As Integer = 0
