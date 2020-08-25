@@ -16,6 +16,7 @@ Public Class MultiIndicatorStrategyRule
     End Class
 #End Region
 
+    Private _smaPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _emaPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _rsiPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _vwapPayload As Dictionary(Of Date, Decimal) = Nothing
@@ -43,6 +44,7 @@ Public Class MultiIndicatorStrategyRule
     Public Overrides Sub CompletePreProcessing()
         MyBase.CompletePreProcessing()
 
+        Indicator.SMA.CalculateSMA(20, Payload.PayloadFields.Volume, _signalPayload, _smaPayload)
         Indicator.EMA.CalculateEMA(20, Payload.PayloadFields.Close, _signalPayload, _emaPayload)
         Indicator.RSI.CalculateRSI(14, _signalPayload, _rsiPayload)
         Indicator.VWAP.CalculateVWAP(_signalPayload, _vwapPayload)
@@ -267,40 +269,40 @@ Public Class MultiIndicatorStrategyRule
             If signalCandle.High > _weeklyHigh Then
                 Dim lastestCandle As Payload = GetCurrentDayCandle(signalCandle)
                 If signalCandle.Close > lastestCandle.PreviousCandlePayload.High Then
-                    Dim lastestPayload As Dictionary(Of Date, Payload) = Utilities.Strings.DeepClone(Of Dictionary(Of Date, Payload))(_eodPayload)
-                    lastestPayload.Add(lastestCandle.PayloadDate, lastestCandle)
+                    Dim latestPayload As Dictionary(Of Date, Payload) = Utilities.Strings.DeepClone(Of Dictionary(Of Date, Payload))(_eodPayload)
+                    latestPayload.Add(lastestCandle.PayloadDate, lastestCandle)
 
-                    Dim smaVol20 As Decimal = GetIndicatorLatestValue(lastestPayload, IndicatorType.SMA_Volume_20).Item1
-                    'If lastestCandle.Volume > smaVol20 + 500000 Then
-                    Dim emaCls20 As Decimal = GetIndicatorLatestValue(lastestPayload, IndicatorType.EMA_Close_20).Item1
-                    If signalCandle.Close > emaCls20 Then
-                        Dim emaCls50 As Decimal = GetIndicatorLatestValue(lastestPayload, IndicatorType.EMA_Close_50).Item1
-                        If emaCls20 > emaCls50 Then
-                            Dim macd As Tuple(Of Decimal, Decimal) = GetIndicatorLatestValue(lastestPayload, IndicatorType.MACD_26_12_9)
-                            If macd.Item1 > macd.Item2 Then
-                                Dim cci As Decimal = GetIndicatorLatestValue(lastestPayload, IndicatorType.CCI_20).Item1
-                                If cci > 100 Then
-                                    If _rsiPayload(signalCandle.PayloadDate) > 60 Then
-                                        If signalCandle.High / lastestCandle.Low <= 1.015 Then
-                                            If lastestCandle.Close >= 100 Then
-                                                If signalCandle.Close > _vwapPayload(signalCandle.PayloadDate) Then
-                                                    If signalCandle.Close > signalCandle.Open Then
-                                                        Dim remark As String = String.Format("5 Minute High({0})>Weekly High({1}).{2}5 Minute Close({3})>1 Day Ago High({4}).{5}Latest Volume({6})>Latest SMA Volume_20({7})+500000.{8}5 Minute Close({9})>Latest EMA Close_20({10}).{11}Latest EMA Close_20({12})>Latest EMA Close_50({13}).{14}Latest MACD Line({15})>Latest MACD Signal({16}).{17}Latest CCI({18})>100.{19}5 Minute RSI({20})>60.{21}5 Minute High({22})/Latest Low({23})<=1.015.{24}Latest Close({25})>=100.{26}5 Minute Close({27})>5 Minute VWAP({28}).{29}5 Minute Close({30})>5 Minute Open({31}).",
-                                                                                            signalCandle.High, _weeklyHigh,
-                                                                                            vbNewLine, signalCandle.Close, lastestCandle.PreviousCandlePayload.High,
-                                                                                            vbNewLine, lastestCandle.Volume, smaVol20,
-                                                                                            vbNewLine, signalCandle.Close, emaCls20,
-                                                                                            vbNewLine, emaCls20, emaCls50,
-                                                                                            vbNewLine, macd.Item1, macd.Item2,
-                                                                                            vbNewLine, cci,
-                                                                                            vbNewLine, _rsiPayload(signalCandle.PayloadDate),
-                                                                                            vbNewLine, signalCandle.High, lastestCandle.Low,
-                                                                                            vbNewLine, lastestCandle.Close,
-                                                                                            vbNewLine, signalCandle.Close, _vwapPayload(signalCandle.PayloadDate),
-                                                                                            vbNewLine, signalCandle.Close, signalCandle.Open)
+                    If signalCandle.Volume > _smaPayload(signalCandle.PayloadDate) Then
+                        Dim emaCls20 As Decimal = GetIndicatorLatestValue(latestPayload, IndicatorType.EMA_Close_20).Item1
+                        If signalCandle.Close > emaCls20 Then
+                            Dim emaCls50 As Decimal = GetIndicatorLatestValue(latestPayload, IndicatorType.EMA_Close_50).Item1
+                            If _emaPayload(signalCandle.PayloadDate) > emaCls50 Then
+                                Dim macd As Tuple(Of Decimal, Decimal) = GetIndicatorLatestValue(latestPayload, IndicatorType.MACD_26_12_9)
+                                If macd.Item1 > macd.Item2 Then
+                                    Dim cci As Decimal = GetIndicatorLatestValue(latestPayload, IndicatorType.CCI_20).Item1
+                                    If cci > 100 Then
+                                        If _rsiPayload(signalCandle.PayloadDate) > 60 Then
+                                            If signalCandle.High / lastestCandle.Low <= 1.015 Then
+                                                If signalCandle.Close >= 100 Then
+                                                    If signalCandle.Close > _vwapPayload(signalCandle.PayloadDate) Then
+                                                        If signalCandle.Close > signalCandle.Open Then
+                                                            Dim remark As String = String.Format("5 Minute High({0})>Weekly High({1}).{2}5 Minute Close({3})>1 Day Ago High({4}).{5}5 Minute Volume({6})>5 Minute SMA Volume_20({7}).{8}5 Minute Close({9})>Latest EMA Close_20({10}).{11}5 Minute EMA Close_20({12})>Latest EMA Close_50({13}).{14}Latest MACD Line({15})>Latest MACD Signal({16}).{17}Latest CCI({18})>100.{19}5 Minute RSI({20})>60.{21}5 Minute High({22})/Latest Low({23})<=1.015.{24}Latest Close({25})>=100.{26}5 Minute Close({27})>5 Minute VWAP({28}).{29}5 Minute Close({30})>5 Minute Open({31}).",
+                                                                                                signalCandle.High, _weeklyHigh,
+                                                                                                vbNewLine, signalCandle.Close, lastestCandle.PreviousCandlePayload.High,
+                                                                                                vbNewLine, signalCandle.Volume, _smaPayload(signalCandle.PayloadDate),
+                                                                                                vbNewLine, signalCandle.Close, emaCls20,
+                                                                                                vbNewLine, _emaPayload(signalCandle.PayloadDate), emaCls50,
+                                                                                                vbNewLine, macd.Item1, macd.Item2,
+                                                                                                vbNewLine, cci,
+                                                                                                vbNewLine, _rsiPayload(signalCandle.PayloadDate),
+                                                                                                vbNewLine, signalCandle.High, lastestCandle.Low,
+                                                                                                vbNewLine, lastestCandle.Close,
+                                                                                                vbNewLine, signalCandle.Close, _vwapPayload(signalCandle.PayloadDate),
+                                                                                                vbNewLine, signalCandle.Close, signalCandle.Open)
 
-                                                        Dim buffer As Decimal = CalculateBuffer(signalCandle.High)
-                                                        ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection, String)(True, signalCandle.High + buffer, signalCandle, Trade.TradeExecutionDirection.Buy, remark)
+                                                            Dim buffer As Decimal = CalculateBuffer(signalCandle.High)
+                                                            ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection, String)(True, signalCandle.High + buffer, signalCandle, Trade.TradeExecutionDirection.Buy, remark)
+                                                        End If
                                                     End If
                                                 End If
                                             End If
@@ -310,45 +312,44 @@ Public Class MultiIndicatorStrategyRule
                             End If
                         End If
                     End If
-                    'End If
                 End If
             ElseIf signalCandle.Low < _weeklyLow Then
                 Dim lastestCandle As Payload = GetCurrentDayCandle(signalCandle)
                 If signalCandle.Close < lastestCandle.PreviousCandlePayload.Low Then
-                    Dim lastestPayload As Dictionary(Of Date, Payload) = Utilities.Strings.DeepClone(Of Dictionary(Of Date, Payload))(_eodPayload)
-                    lastestPayload.Add(lastestCandle.PayloadDate, lastestCandle)
+                    Dim latestPayload As Dictionary(Of Date, Payload) = Utilities.Strings.DeepClone(Of Dictionary(Of Date, Payload))(_eodPayload)
+                    latestPayload.Add(lastestCandle.PayloadDate, lastestCandle)
 
-                    Dim smaVol20 As Decimal = GetIndicatorLatestValue(lastestPayload, IndicatorType.SMA_Volume_20).Item1
-                    'If lastestCandle.Volume > smaVol20 + 500000 Then
-                    Dim emaCls20 As Decimal = GetIndicatorLatestValue(lastestPayload, IndicatorType.EMA_Close_20).Item1
-                    If signalCandle.Close < emaCls20 Then
-                        Dim emaCls50 As Decimal = GetIndicatorLatestValue(lastestPayload, IndicatorType.EMA_Close_50).Item1
-                        If emaCls20 < emaCls50 Then
-                            Dim macd As Tuple(Of Decimal, Decimal) = GetIndicatorLatestValue(lastestPayload, IndicatorType.MACD_26_12_9)
-                            If macd.Item1 < macd.Item2 Then
-                                Dim cci As Decimal = GetIndicatorLatestValue(lastestPayload, IndicatorType.CCI_20).Item1
-                                If cci < -100 Then
-                                    If _rsiPayload(signalCandle.PayloadDate) < 40 Then
-                                        If lastestCandle.High / signalCandle.Low <= 1.015 Then
-                                            If lastestCandle.Close >= 100 Then
-                                                If signalCandle.Close < _vwapPayload(signalCandle.PayloadDate) Then
-                                                    If signalCandle.Close < signalCandle.Open Then
-                                                        Dim remark As String = String.Format("5 Minute Low({0})<Weekly Low({1}).{2}5 Minute Close({3})<1 Day Ago Low({4}).{5}Latest Volume({6})>Latest SMA Volume_20({7})+500000.{8}5 Minute Close({9})<Latest EMA Close_20({10}).{11}Latest EMA Close_20({12})<Latest EMA Close_50({13}).{14}Latest MACD Line({15})<Latest MACD Signal({16}).{17}Latest CCI({18})<-100.{19}5 Minute RSI({20})<40.{21}Latest High({22})/5 Minute Low({23})<=1.015.{24}Latest Close({25})>=100.{26}5 Minute Close({27})<5 Minute VWAP({28}).{29}5 Minute Close({30})<5 Minute Open({31}).",
-                                                                                            signalCandle.Low, _weeklyLow,
-                                                                                            vbNewLine, signalCandle.Close, lastestCandle.PreviousCandlePayload.Low,
-                                                                                            vbNewLine, lastestCandle.Volume, smaVol20,
-                                                                                            vbNewLine, signalCandle.Close, emaCls20,
-                                                                                            vbNewLine, emaCls20, emaCls50,
-                                                                                            vbNewLine, macd.Item1, macd.Item2,
-                                                                                            vbNewLine, cci,
-                                                                                            vbNewLine, _rsiPayload(signalCandle.PayloadDate),
-                                                                                            vbNewLine, lastestCandle.High, signalCandle.Low,
-                                                                                            vbNewLine, lastestCandle.Close,
-                                                                                            vbNewLine, signalCandle.Close, _vwapPayload(signalCandle.PayloadDate),
-                                                                                            vbNewLine, signalCandle.Close, signalCandle.Open)
+                    If signalCandle.Volume > _smaPayload(signalCandle.PayloadDate) Then
+                        Dim emaCls20 As Decimal = GetIndicatorLatestValue(latestPayload, IndicatorType.EMA_Close_20).Item1
+                        If signalCandle.Close < emaCls20 Then
+                            Dim emaCls50 As Decimal = GetIndicatorLatestValue(latestPayload, IndicatorType.EMA_Close_50).Item1
+                            If _emaPayload(signalCandle.PayloadDate) < emaCls50 Then
+                                Dim macd As Tuple(Of Decimal, Decimal) = GetIndicatorLatestValue(latestPayload, IndicatorType.MACD_26_12_9)
+                                If macd.Item1 < macd.Item2 Then
+                                    Dim cci As Decimal = GetIndicatorLatestValue(latestPayload, IndicatorType.CCI_20).Item1
+                                    If cci < -100 Then
+                                        If _rsiPayload(signalCandle.PayloadDate) < 40 Then
+                                            If lastestCandle.High / signalCandle.Low <= 1.015 Then
+                                                If lastestCandle.Close >= 100 Then
+                                                    If signalCandle.Close < _vwapPayload(signalCandle.PayloadDate) Then
+                                                        If signalCandle.Close < signalCandle.Open Then
+                                                            Dim remark As String = String.Format("5 Minute Low({0})<Weekly Low({1}).{2}5 Minute Close({3})<1 Day Ago Low({4}).{5}5 Minute Volume({6})>5 Minute SMA Volume_20({7}).{8}5 Minute Close({9})<Latest EMA Close_20({10}).{11}5 Minute EMA Close_20({12})<Latest EMA Close_50({13}).{14}Latest MACD Line({15})<Latest MACD Signal({16}).{17}Latest CCI({18})<-100.{19}5 Minute RSI({20})<40.{21}Latest High({22})/5 Minute Low({23})<=1.015.{24}Latest Close({25})>=100.{26}5 Minute Close({27})<5 Minute VWAP({28}).{29}5 Minute Close({30})<5 Minute Open({31}).",
+                                                                                                signalCandle.Low, _weeklyLow,
+                                                                                                vbNewLine, signalCandle.Close, lastestCandle.PreviousCandlePayload.Low,
+                                                                                                vbNewLine, signalCandle.Volume, _smaPayload(signalCandle.PayloadDate),
+                                                                                                vbNewLine, signalCandle.Close, emaCls20,
+                                                                                                vbNewLine, _emaPayload(signalCandle.PayloadDate), emaCls50,
+                                                                                                vbNewLine, macd.Item1, macd.Item2,
+                                                                                                vbNewLine, cci,
+                                                                                                vbNewLine, _rsiPayload(signalCandle.PayloadDate),
+                                                                                                vbNewLine, lastestCandle.High, signalCandle.Low,
+                                                                                                vbNewLine, lastestCandle.Close,
+                                                                                                vbNewLine, signalCandle.Close, _vwapPayload(signalCandle.PayloadDate),
+                                                                                                vbNewLine, signalCandle.Close, signalCandle.Open)
 
-                                                        Dim buffer As Decimal = CalculateBuffer(signalCandle.Low)
-                                                        ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection, String)(True, signalCandle.Low - buffer, signalCandle, Trade.TradeExecutionDirection.Sell, remark)
+                                                            Dim buffer As Decimal = CalculateBuffer(signalCandle.Low)
+                                                            ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection, String)(True, signalCandle.Low - buffer, signalCandle, Trade.TradeExecutionDirection.Sell, remark)
+                                                        End If
                                                     End If
                                                 End If
                                             End If
@@ -358,7 +359,6 @@ Public Class MultiIndicatorStrategyRule
                             End If
                         End If
                     End If
-                    'End If
                 End If
             End If
         End If
@@ -411,10 +411,6 @@ Public Class MultiIndicatorStrategyRule
     Private Function GetIndicatorLatestValue(ByVal inputPayload As Dictionary(Of Date, Payload), ByVal typeOfIndicator As IndicatorType) As Tuple(Of Decimal, Decimal)
         Dim ret As Tuple(Of Decimal, Decimal) = Nothing
         Select Case typeOfIndicator
-            Case IndicatorType.SMA_Volume_20
-                Dim smaPayload As Dictionary(Of Date, Decimal) = Nothing
-                Indicator.SMA.CalculateSMA(20, Payload.PayloadFields.Volume, inputPayload, smaPayload)
-                ret = New Tuple(Of Decimal, Decimal)(smaPayload.LastOrDefault.Value, Decimal.MinValue)
             Case IndicatorType.EMA_Close_20
                 Dim emaPayload As Dictionary(Of Date, Decimal) = Nothing
                 Indicator.EMA.CalculateEMA(20, Payload.PayloadFields.Close, inputPayload, emaPayload)
@@ -439,7 +435,6 @@ Public Class MultiIndicatorStrategyRule
     End Function
 
     Enum IndicatorType
-        SMA_Volume_20
         EMA_Close_20
         EMA_Close_50
         MACD_26_12_9
