@@ -69,10 +69,10 @@ Public Class MultiIndicatorStrategyRule
                 counter += 1
                 If counter >= 10 Then Exit For
             Next
-            _weeklyHigh = weeklySubPayload.Max(Function(x)
+            _weeklyHigh = weeklySubPayload.Min(Function(x)
                                                    Return x.Value.High
                                                End Function)
-            _weeklyLow = weeklySubPayload.Min(Function(x)
+            _weeklyLow = weeklySubPayload.Max(Function(x)
                                                   Return x.Value.Low
                                               End Function)
         Else
