@@ -28,7 +28,7 @@ Module ExcelModifier
                 excelWriter.SetActiveSheet("Data")
                 Dim rowCout As Long = excelWriter.GetLastRow
                 Dim columnCout As Long = excelWriter.GetLastCol
-                Dim range As String = excelWriter.GetNamedRange(1, rowCout - 1, 1, columnCout - 1)
+                Dim range As String = excelWriter.GetNamedRange(1, rowCout - 1, 1, columnCout - 1 - 5)
                 Console.WriteLine("Creating Pivot Table")
                 Dim pivotValue As Dictionary(Of String, Utilities.DAL.ExcelHelper.XLFunction) = New Dictionary(Of String, ExcelHelper.XLFunction)
                 pivotValue.Add("PL After Brokerage", ExcelHelper.XLFunction.Sum)
