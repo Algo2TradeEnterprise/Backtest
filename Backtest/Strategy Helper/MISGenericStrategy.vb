@@ -579,17 +579,26 @@ Namespace StrategyHelper
                 End Using
                 If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
                     For i = 0 To dt.Rows.Count - 1
-                        Dim tradingSymbol As String = dt.Rows(i).Item("Symbol")
-                        Dim lotsize As Integer = 1
+                        Dim rowDate As Date = dt.Rows(i).Item("Date")
+                        If rowDate.Date = tradingDate.Date Then
+                            Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
+                            Dim instrumentName As String = Nothing
+                            If tradingSymbol.Contains("FUT") Then
+                                instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                            Else
+                                instrumentName = tradingSymbol
+                            End If
+                            Dim lotsize As Integer = 1
 
-                        Dim detailsOfStock As StockDetails = New StockDetails With
-                                                            {.StockName = tradingSymbol,
-                                                             .TradingSymbol = tradingSymbol,
-                                                             .LotSize = lotsize,
-                                                             .EligibleToTakeTrade = True}
+                            Dim detailsOfStock As StockDetails = New StockDetails With
+                                        {.StockName = instrumentName,
+                                         .TradingSymbol = tradingSymbol,
+                                         .LotSize = lotsize,
+                                         .EligibleToTakeTrade = True}
 
-                        If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                        ret.Add(detailsOfStock.TradingSymbol, detailsOfStock)
+                            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                            ret.Add(instrumentName, detailsOfStock)
+                        End If
                     Next
                 End If
             End If
