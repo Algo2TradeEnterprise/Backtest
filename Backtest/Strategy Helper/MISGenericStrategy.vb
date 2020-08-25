@@ -55,15 +55,6 @@ Namespace StrategyHelper
                 Next
                 PrintArrayToExcel(filename, tradesFileName, capitalFileName)
             Else
-                Dim strategyName As String = String.Format("Strategy{0}", Me.RuleNumber)
-                OnHeartbeat("Getting unique instrument list")
-                Dim allInstrumentList As List(Of String) = GetUniqueInstrumentList(startDate, endDate)
-                Dim dataFtchr As DataFetcher = New DataFetcher(_canceller, My.Settings.ServerName, allInstrumentList, startDate.AddDays(-25), endDate, Me.StockType, Me.OptionStockType, strategyName)
-                AddHandler dataFtchr.Heartbeat, AddressOf OnHeartbeat
-                AddHandler dataFtchr.WaitingFor, AddressOf OnWaitingFor
-                AddHandler dataFtchr.DocumentRetryStatus, AddressOf OnDocumentRetryStatus
-                AddHandler dataFtchr.DocumentDownloadComplete, AddressOf OnDocumentDownloadComplete
-
                 If File.Exists(tradesFileName) Then File.Delete(tradesFileName)
                 If File.Exists(capitalFileName) Then File.Delete(capitalFileName)
                 Dim totalPL As Decimal = 0
@@ -92,8 +83,7 @@ Namespace StrategyHelper
                             Dim XDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             Dim currentDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             If Me.DataSource = SourceOfData.Database Then
-                                'XDayOneMinutePayload = Cmn.GetRawPayload(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate)
-                                XDayOneMinutePayload = Await dataFtchr.GetCandleData(stockList(stock).TradingSymbol, tradeCheckingDate.AddDays(-4), tradeCheckingDate).ConfigureAwait(False)
+                                XDayOneMinutePayload = Cmn.GetRawPayload(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-20), tradeCheckingDate)
                             ElseIf Me.DataSource = SourceOfData.Live Then
                                 XDayOneMinutePayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate).ConfigureAwait(False)
                             End If
@@ -118,7 +108,7 @@ Namespace StrategyHelper
                                     Dim stockRule As StrategyRule = Nothing
 
                                     Dim tradingSymbol As String = currentDayOneMinutePayload.LastOrDefault.Value.TradingSymbol
-                                    stockRule = New BuyBelowFractalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                    stockRule = New MultiIndicatorStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
                                     stockRule.CompletePreProcessing()
@@ -589,51 +579,18 @@ Namespace StrategyHelper
                 End Using
                 If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
                     For i = 0 To dt.Rows.Count - 1
-                        Dim rowDate As Date = dt.Rows(i).Item("Date")
-                        If rowDate.Date = tradingDate.Date Then
-                            Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
-                            Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
+                        Dim tradingSymbol As String = dt.Rows(i).Item("Symbol")
+                        Dim lotsize As Integer = 1
 
-                            Dim detailsOfStock As StockDetails = New StockDetails With
-                                                                {.StockName = tradingSymbol,
-                                                                 .TradingSymbol = tradingSymbol,
-                                                                 .LotSize = lotsize,
-                                                                 .EligibleToTakeTrade = True}
+                        Dim detailsOfStock As StockDetails = New StockDetails With
+                                                            {.StockName = tradingSymbol,
+                                                             .TradingSymbol = tradingSymbol,
+                                                             .LotSize = lotsize,
+                                                             .EligibleToTakeTrade = True}
 
-                            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                            ret.Add(detailsOfStock.TradingSymbol, detailsOfStock)
-                        End If
+                        If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                        ret.Add(detailsOfStock.TradingSymbol, detailsOfStock)
                     Next
-                End If
-            End If
-            Return ret
-        End Function
-
-        Public Function GetUniqueInstrumentList(ByVal startDate As Date, ByVal endDate As Date) As List(Of String)
-            Dim ret As List(Of String) = Nothing
-            If Me.StockFileName IsNot Nothing Then
-                Dim dt As DataTable = Nothing
-                Using csvHelper As New Utilities.DAL.CSVHelper(Me.StockFileName, ",", _canceller)
-                    dt = csvHelper.GetDataTableFromCSV(1)
-                End Using
-                If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
-                    Dim tradingDate As Date = startDate
-                    While tradingDate <= endDate
-                        For i = 0 To dt.Rows.Count - 1
-                            Dim rowDate As Date = dt.Rows(i).Item("Date")
-                            If rowDate.Date = tradingDate.Date Then
-                                Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
-                                'If tradingSymbol.Contains("FUT") Then
-                                '    tradingSymbol = tradingSymbol.Remove(tradingSymbol.Count - 8)
-                                'End If
-
-                                If ret Is Nothing Then ret = New List(Of String)
-                                If Not ret.Contains(tradingSymbol.ToUpper) Then ret.Add(tradingSymbol.ToUpper)
-                            End If
-                        Next
-
-                        tradingDate = tradingDate.AddDays(1)
-                    End While
                 End If
             End If
             Return ret

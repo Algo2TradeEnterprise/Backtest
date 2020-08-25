@@ -127,8 +127,7 @@
     <Compile Include="Strategy Helper\StrategyOutput.vb" />
     <Compile Include="Strategy Helper\StrategyRule.vb" />
     <Compile Include="Strategy Helper\Trade.vb" />
-    <Compile Include="Strategy Rule MIS\BuyBelowFractalStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\LimitBuyBelowFractalStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\MultiIndicatorStrategyRule.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="frmMain.resx">
