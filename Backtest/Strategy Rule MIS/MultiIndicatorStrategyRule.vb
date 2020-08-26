@@ -12,7 +12,7 @@ Public Class MultiIndicatorStrategyRule
 
         Public MaxLossPerTrade As Decimal
         Public TargetMultiplier As Decimal
-        Public StoplossPercentage As Decimal
+        'Public StoplossPercentage As Decimal
     End Class
 #End Region
 
@@ -106,8 +106,8 @@ Public Class MultiIndicatorStrategyRule
             If signalCandle IsNot Nothing Then
                 Dim buffer As Decimal = CalculateBuffer(signal.Item2)
                 Dim entryPrice As Decimal = signal.Item2
-                'Dim slPoint As Decimal = ConvertFloorCeling(entryPrice * _userInputs.StoplossPercentage / 100, _parentStrategy.TickSize, RoundOfType.Floor)
-                Dim slPoint As Decimal = ConvertFloorCeling(signal.Item6, _parentStrategy.TickSize, RoundOfType.Celing)
+                Dim slPer As Decimal = signal.Item6
+                Dim slPoint As Decimal = ConvertFloorCeling(entryPrice * slPer / 100, _parentStrategy.TickSize, RoundOfType.Floor)
                 Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, entryPrice - slPoint, Math.Abs(_userInputs.MaxLossPerTrade / 2) * -1, _parentStrategy.StockType)
                 Dim targetPoint As Decimal = ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
 
@@ -213,28 +213,16 @@ Public Class MultiIndicatorStrategyRule
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy AndAlso currentTick.Open >= currentTrade.EntryPrice + targetPoint Then
                 Dim gain As Decimal = currentTick.Open - currentTrade.EntryPrice
                 Dim extraGain As Decimal = gain - targetPoint
-                Dim multiplier As Integer = Math.Floor(extraGain / movementPoint)
-                Dim triggerPrice As Decimal = Decimal.MinValue
-                If multiplier = 0 Then
-                    Dim brkevnPnt As Decimal = _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, currentTrade.LotSize, currentTrade.StockType)
-                    triggerPrice = currentTrade.EntryPrice + brkevnPnt
-                ElseIf multiplier > 0 Then
-                    triggerPrice = currentTrade.EntryPrice + (movementPoint * multiplier)
-                End If
+                Dim multiplier As Integer = Math.Floor(extraGain / movementPoint) + 1
+                Dim triggerPrice As Decimal = (currentTrade.EntryPrice - slPoint) + (movementPoint * multiplier)
                 If triggerPrice <> Decimal.MinValue AndAlso currentTrade.PotentialStopLoss < triggerPrice Then
                     ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, String.Format("Move {0}", multiplier))
                 End If
             ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell AndAlso currentTick.Open <= currentTrade.EntryPrice - targetPoint Then
                 Dim gain As Decimal = currentTrade.EntryPrice - currentTick.Open
                 Dim extraGain As Decimal = gain - targetPoint
-                Dim multiplier As Integer = Math.Floor(extraGain / movementPoint)
-                Dim triggerPrice As Decimal = Decimal.MinValue
-                If multiplier = 0 Then
-                    Dim brkevnPnt As Decimal = _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, currentTrade.LotSize, currentTrade.StockType)
-                    triggerPrice = currentTrade.EntryPrice - brkevnPnt
-                ElseIf multiplier > 0 Then
-                    triggerPrice = currentTrade.EntryPrice - (movementPoint * multiplier)
-                End If
+                Dim multiplier As Integer = Math.Floor(extraGain / movementPoint) + 1
+                Dim triggerPrice As Decimal = (currentTrade.EntryPrice + slPoint) - (movementPoint * multiplier)
                 If triggerPrice <> Decimal.MinValue AndAlso currentTrade.PotentialStopLoss > triggerPrice Then
                     ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, String.Format("Move {0}", multiplier))
                 End If
@@ -287,11 +275,11 @@ Public Class MultiIndicatorStrategyRule
                                     Dim cci As Decimal = GetIndicatorLatestValue(latestPayload, IndicatorType.CCI_20).Item1
                                     If cci > 100 Then
                                         If _rsiPayload(signalCandle.PayloadDate) > 60 Then
-                                            If signalCandle.High / lastestCandle.Low <= 1 Then
+                                            If (signalCandle.High / lastestCandle.Low) - 1 <= 1 Then
                                                 If signalCandle.Close >= 100 Then
                                                     If signalCandle.Close > _vwapPayload(signalCandle.PayloadDate) Then
                                                         If signalCandle.Close > signalCandle.Open Then
-                                                            Dim remark As String = String.Format("5 Minute High({0})>Weekly High({1}).{2}5 Minute Close({3})>1 Day Ago High({4}).{5}5 Minute Volume({6})>5 Minute SMA Volume_20({7}).{8}5 Minute Close({9})>Latest EMA Close_20({10}).{11}5 Minute EMA Close_20({12})>Latest EMA Close_50({13}).{14}Latest MACD Line({15})>Latest MACD Signal({16}).{17}Latest CCI({18})>100.{19}5 Minute RSI({20})>60.{21}5 Minute High({22})/Latest Low({23})<=1.015.{24}Latest Close({25})>=100.{26}5 Minute Close({27})>5 Minute VWAP({28}).{29}5 Minute Close({30})>5 Minute Open({31}).",
+                                                            Dim remark As String = String.Format("5 Minute High({0})>Weekly High({1}).{2}5 Minute Close({3})>1 Day Ago High({4}).{5}5 Minute Volume({6})>5 Minute SMA Volume_20({7}).{8}5 Minute Close({9})>Latest EMA Close_20({10}).{11}5 Minute EMA Close_20({12})>Latest EMA Close_50({13}).{14}Latest MACD Line({15})>Latest MACD Signal({16}).{17}Latest CCI({18})>100.{19}5 Minute RSI({20})>60.{21}(5 Minute High({22})/Latest Low({23}))-1<=1.015.{24}Latest Close({25})>=100.{26}5 Minute Close({27})>5 Minute VWAP({28}).{29}5 Minute Close({30})>5 Minute Open({31}).",
                                                                                                 signalCandle.High, _weeklyHigh,
                                                                                                 vbNewLine, signalCandle.Close, lastestCandle.PreviousCandlePayload.High,
                                                                                                 vbNewLine, signalCandle.Volume, _smaPayload(signalCandle.PayloadDate),
@@ -306,7 +294,7 @@ Public Class MultiIndicatorStrategyRule
                                                                                                 vbNewLine, signalCandle.Close, signalCandle.Open)
 
                                                             Dim buffer As Decimal = CalculateBuffer(signalCandle.High)
-                                                            ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection, String, Decimal)(True, signalCandle.High + buffer, signalCandle, Trade.TradeExecutionDirection.Buy, remark, signalCandle.High / lastestCandle.Low)
+                                                            ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection, String, Decimal)(True, signalCandle.High + buffer, signalCandle, Trade.TradeExecutionDirection.Buy, remark, (signalCandle.High / lastestCandle.Low) - 1)
                                                         End If
                                                     End If
                                                 End If
@@ -334,11 +322,11 @@ Public Class MultiIndicatorStrategyRule
                                     Dim cci As Decimal = GetIndicatorLatestValue(latestPayload, IndicatorType.CCI_20).Item1
                                     If cci < -100 Then
                                         If _rsiPayload(signalCandle.PayloadDate) < 40 Then
-                                            If lastestCandle.High / signalCandle.Low <= 1 Then
+                                            If (lastestCandle.High / signalCandle.Low) - 1 <= 1 Then
                                                 If lastestCandle.Close >= 100 Then
                                                     If signalCandle.Close < _vwapPayload(signalCandle.PayloadDate) Then
                                                         If signalCandle.Close < signalCandle.Open Then
-                                                            Dim remark As String = String.Format("5 Minute Low({0})<Weekly Low({1}).{2}5 Minute Close({3})<1 Day Ago Low({4}).{5}5 Minute Volume({6})>5 Minute SMA Volume_20({7}).{8}5 Minute Close({9})<Latest EMA Close_20({10}).{11}5 Minute EMA Close_20({12})<Latest EMA Close_50({13}).{14}Latest MACD Line({15})<Latest MACD Signal({16}).{17}Latest CCI({18})<-100.{19}5 Minute RSI({20})<40.{21}Latest High({22})/5 Minute Low({23})<=1.015.{24}Latest Close({25})>=100.{26}5 Minute Close({27})<5 Minute VWAP({28}).{29}5 Minute Close({30})<5 Minute Open({31}).",
+                                                            Dim remark As String = String.Format("5 Minute Low({0})<Weekly Low({1}).{2}5 Minute Close({3})<1 Day Ago Low({4}).{5}5 Minute Volume({6})>5 Minute SMA Volume_20({7}).{8}5 Minute Close({9})<Latest EMA Close_20({10}).{11}5 Minute EMA Close_20({12})<Latest EMA Close_50({13}).{14}Latest MACD Line({15})<Latest MACD Signal({16}).{17}Latest CCI({18})<-100.{19}5 Minute RSI({20})<40.{21}(Latest High({22})/5 Minute Low({23}))-1<=1.{24}Latest Close({25})>=100.{26}5 Minute Close({27})<5 Minute VWAP({28}).{29}5 Minute Close({30})<5 Minute Open({31}).",
                                                                                                 signalCandle.Low, _weeklyLow,
                                                                                                 vbNewLine, signalCandle.Close, lastestCandle.PreviousCandlePayload.Low,
                                                                                                 vbNewLine, signalCandle.Volume, _smaPayload(signalCandle.PayloadDate),
@@ -353,7 +341,7 @@ Public Class MultiIndicatorStrategyRule
                                                                                                 vbNewLine, signalCandle.Close, signalCandle.Open)
 
                                                             Dim buffer As Decimal = CalculateBuffer(signalCandle.Low)
-                                                            ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection, String, Decimal)(True, signalCandle.Low - buffer, signalCandle, Trade.TradeExecutionDirection.Sell, remark, signalCandle.High / lastestCandle.Low)
+                                                            ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection, String, Decimal)(True, signalCandle.Low - buffer, signalCandle, Trade.TradeExecutionDirection.Sell, remark, (signalCandle.High / lastestCandle.Low) - 1)
                                                         End If
                                                     End If
                                                 End If

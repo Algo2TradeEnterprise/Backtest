@@ -341,8 +341,7 @@ Public Class frmMain
 
                     .RuleEntityData = New MultiIndicatorStrategyRule.StrategyRuleEntities With
                                                           {.MaxLossPerTrade = -500,
-                                                           .StoplossPercentage = 1,
-                                                           .TargetMultiplier = 1.7}
+                                                           .TargetMultiplier = 1.1}
 
                     .NumberOfTradeableStockPerDay = Integer.MaxValue
 
