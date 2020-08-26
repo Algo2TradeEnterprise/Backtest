@@ -92,7 +92,7 @@ Public Class MultiIndicatorStrategyRule
             Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS) AndAlso Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS) AndAlso
             currentMinuteCandle.PayloadDate >= _tradeStartTime AndAlso Me.EligibleToTakeTrade AndAlso currentMinuteCandle.PayloadDate <= _lastTradeEntryTime Then
             Dim signalCandle As Payload = Nothing
-            Dim signal As Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection, String) = GetSignalCandle(currentMinuteCandle, currentTick)
+            Dim signal As Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection, String, Decimal) = GetSignalCandle(currentMinuteCandle, currentTick)
             If signal IsNot Nothing AndAlso signal.Item1 Then
                 Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandle, Trade.TypeOfTrade.MIS)
                 If lastExecutedOrder IsNot Nothing Then
@@ -106,7 +106,8 @@ Public Class MultiIndicatorStrategyRule
             If signalCandle IsNot Nothing Then
                 Dim buffer As Decimal = CalculateBuffer(signal.Item2)
                 Dim entryPrice As Decimal = signal.Item2
-                Dim slPoint As Decimal = ConvertFloorCeling(entryPrice * _userInputs.StoplossPercentage / 100, _parentStrategy.TickSize, RoundOfType.Floor)
+                'Dim slPoint As Decimal = ConvertFloorCeling(entryPrice * _userInputs.StoplossPercentage / 100, _parentStrategy.TickSize, RoundOfType.Floor)
+                Dim slPoint As Decimal = ConvertFloorCeling(signal.Item6, _parentStrategy.TickSize, RoundOfType.Celing)
                 Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, entryPrice - slPoint, Math.Abs(_userInputs.MaxLossPerTrade / 2) * -1, _parentStrategy.StockType)
                 Dim targetPoint As Decimal = ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
 
@@ -189,7 +190,7 @@ Public Class MultiIndicatorStrategyRule
         Dim currentMinuteCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
             If currentMinuteCandle.PayloadDate <= _lastTradeEntryTime Then
-                Dim signal As Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection, String) = GetSignalCandle(currentMinuteCandle, currentTick)
+                Dim signal As Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection, String, Decimal) = GetSignalCandle(currentMinuteCandle, currentTick)
                 If signal IsNot Nothing AndAlso signal.Item1 Then
                     If currentTrade.SignalCandle.PayloadDate <> signal.Item3.PayloadDate Then
                         ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
@@ -266,8 +267,8 @@ Public Class MultiIndicatorStrategyRule
         Return ret
     End Function
 
-    Private Function GetSignalCandle(ByVal currentCandle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection, String)
-        Dim ret As Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection, String) = Nothing
+    Private Function GetSignalCandle(ByVal currentCandle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection, String, Decimal)
+        Dim ret As Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection, String, Decimal) = Nothing
         If currentCandle IsNot Nothing AndAlso currentCandle.PreviousCandlePayload IsNot Nothing Then
             Dim signalCandle As Payload = currentCandle.PreviousCandlePayload
             If signalCandle.High > _weeklyHigh Then
@@ -286,7 +287,7 @@ Public Class MultiIndicatorStrategyRule
                                     Dim cci As Decimal = GetIndicatorLatestValue(latestPayload, IndicatorType.CCI_20).Item1
                                     If cci > 100 Then
                                         If _rsiPayload(signalCandle.PayloadDate) > 60 Then
-                                            If signalCandle.High / lastestCandle.Low <= 1.015 Then
+                                            If signalCandle.High / lastestCandle.Low <= 1 Then
                                                 If signalCandle.Close >= 100 Then
                                                     If signalCandle.Close > _vwapPayload(signalCandle.PayloadDate) Then
                                                         If signalCandle.Close > signalCandle.Open Then
@@ -305,7 +306,7 @@ Public Class MultiIndicatorStrategyRule
                                                                                                 vbNewLine, signalCandle.Close, signalCandle.Open)
 
                                                             Dim buffer As Decimal = CalculateBuffer(signalCandle.High)
-                                                            ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection, String)(True, signalCandle.High + buffer, signalCandle, Trade.TradeExecutionDirection.Buy, remark)
+                                                            ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection, String, Decimal)(True, signalCandle.High + buffer, signalCandle, Trade.TradeExecutionDirection.Buy, remark, signalCandle.High / lastestCandle.Low)
                                                         End If
                                                     End If
                                                 End If
@@ -333,7 +334,7 @@ Public Class MultiIndicatorStrategyRule
                                     Dim cci As Decimal = GetIndicatorLatestValue(latestPayload, IndicatorType.CCI_20).Item1
                                     If cci < -100 Then
                                         If _rsiPayload(signalCandle.PayloadDate) < 40 Then
-                                            If lastestCandle.High / signalCandle.Low <= 1.015 Then
+                                            If lastestCandle.High / signalCandle.Low <= 1 Then
                                                 If lastestCandle.Close >= 100 Then
                                                     If signalCandle.Close < _vwapPayload(signalCandle.PayloadDate) Then
                                                         If signalCandle.Close < signalCandle.Open Then
@@ -352,7 +353,7 @@ Public Class MultiIndicatorStrategyRule
                                                                                                 vbNewLine, signalCandle.Close, signalCandle.Open)
 
                                                             Dim buffer As Decimal = CalculateBuffer(signalCandle.Low)
-                                                            ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection, String)(True, signalCandle.Low - buffer, signalCandle, Trade.TradeExecutionDirection.Sell, remark)
+                                                            ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection, String, Decimal)(True, signalCandle.Low - buffer, signalCandle, Trade.TradeExecutionDirection.Sell, remark, signalCandle.High / lastestCandle.Low)
                                                         End If
                                                     End If
                                                 End If
