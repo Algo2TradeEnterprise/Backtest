@@ -27,7 +27,7 @@ Public Class MultiIndicatorStrategyRule
     Private _weeklyHigh As Decimal = Decimal.MinValue
     Private _weeklyLow As Decimal = Decimal.MinValue
 
-    Private ReadOnly _lastSignalEntryTime As Date
+    Private ReadOnly _lastTradeEntryTime As Date
     Private ReadOnly _userInputs As StrategyRuleEntities
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -38,7 +38,7 @@ Public Class MultiIndicatorStrategyRule
                    ByVal entities As RuleEntities)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _userInputs = _entities
-        _lastSignalEntryTime = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, 12, 0, 0)
+        _lastTradeEntryTime = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, _parentStrategy.LastTradeEntryTime.Hours, _parentStrategy.LastTradeEntryTime.Minutes, _parentStrategy.LastTradeEntryTime.Seconds)
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -90,7 +90,7 @@ Public Class MultiIndicatorStrategyRule
         Dim parameter2 As PlaceOrderParameters = Nothing
         If currentMinuteCandle IsNot Nothing AndAlso currentMinuteCandle.PreviousCandlePayload IsNot Nothing AndAlso
             Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS) AndAlso Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS) AndAlso
-            currentMinuteCandle.PayloadDate >= _tradeStartTime AndAlso Me.EligibleToTakeTrade AndAlso currentMinuteCandle.PreviousCandlePayload.PayloadDate <= _lastSignalEntryTime Then
+            currentMinuteCandle.PayloadDate >= _tradeStartTime AndAlso Me.EligibleToTakeTrade AndAlso currentMinuteCandle.PayloadDate <= _lastTradeEntryTime Then
             Dim signalCandle As Payload = Nothing
             Dim signal As Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection, String) = GetSignalCandle(currentMinuteCandle, currentTick)
             If signal IsNot Nothing AndAlso signal.Item1 Then
@@ -187,12 +187,16 @@ Public Class MultiIndicatorStrategyRule
         Dim ret As Tuple(Of Boolean, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         Dim currentMinuteCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
-        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open AndAlso currentMinuteCandle.PreviousCandlePayload.PayloadDate <= _lastSignalEntryTime Then
-            Dim signal As Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection, String) = GetSignalCandle(currentMinuteCandle, currentTick)
-            If signal IsNot Nothing AndAlso signal.Item1 Then
-                If currentTrade.SignalCandle.PayloadDate <> signal.Item3.PayloadDate Then
-                    ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
+            If currentMinuteCandle.PayloadDate <= _lastTradeEntryTime Then
+                Dim signal As Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection, String) = GetSignalCandle(currentMinuteCandle, currentTick)
+                If signal IsNot Nothing AndAlso signal.Item1 Then
+                    If currentTrade.SignalCandle.PayloadDate <> signal.Item3.PayloadDate Then
+                        ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                    End If
                 End If
+            Else
+                ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
             End If
         End If
         Return ret

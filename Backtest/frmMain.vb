@@ -315,7 +315,7 @@ Public Class frmMain
                                                             exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                             exchangeEndTime:=TimeSpan.Parse("15:29:59"),
                                                             tradeStartTime:=TimeSpan.Parse("9:20:00"),
-                                                            lastTradeEntryTime:=TimeSpan.Parse("12:05:30"),
+                                                            lastTradeEntryTime:=TimeSpan.Parse("11:59:00"),
                                                             eodExitTime:=TimeSpan.Parse("15:05:00"),
                                                             tickSize:=tick,
                                                             marginMultiplier:=margin,
