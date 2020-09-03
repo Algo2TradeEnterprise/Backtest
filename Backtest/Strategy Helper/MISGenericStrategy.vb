@@ -83,7 +83,7 @@ Namespace StrategyHelper
                             Dim XDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             Dim currentDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             If Me.DataSource = SourceOfData.Database Then
-                                XDayOneMinutePayload = Cmn.GetRawPayload(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-20), tradeCheckingDate)
+                                XDayOneMinutePayload = Cmn.GetRawPayloadForSpecificTradingSymbol(Me.DatabaseTable, stockList(stock).TradingSymbol, tradeCheckingDate.AddDays(-20), tradeCheckingDate)
                             ElseIf Me.DataSource = SourceOfData.Live Then
                                 XDayOneMinutePayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-7), tradeCheckingDate).ConfigureAwait(False)
                             End If
@@ -108,7 +108,7 @@ Namespace StrategyHelper
                                     Dim stockRule As StrategyRule = Nothing
 
                                     Dim tradingSymbol As String = currentDayOneMinutePayload.LastOrDefault.Value.TradingSymbol
-                                    stockRule = New MultiIndicatorStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                    stockRule = New InsideBarStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
                                     stockRule.CompletePreProcessing()
@@ -588,16 +588,21 @@ Namespace StrategyHelper
                             Else
                                 instrumentName = tradingSymbol
                             End If
-                            Dim lotsize As Integer = 1
+                            Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
+                            Dim preClose As Decimal = dt.Rows(i).Item("Previous Day Close")
 
-                            Dim detailsOfStock As StockDetails = New StockDetails With
+                            If preClose > 250 AndAlso preClose < 3500 Then
+                                Dim detailsOfStock As StockDetails = New StockDetails With
                                         {.StockName = instrumentName,
                                          .TradingSymbol = tradingSymbol,
                                          .LotSize = lotsize,
                                          .EligibleToTakeTrade = True}
 
-                            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                            ret.Add(instrumentName, detailsOfStock)
+                                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                ret.Add(instrumentName, detailsOfStock)
+
+                                If ret.Count >= Me.NumberOfTradeableStockPerDay Then Exit For
+                            End If
                         End If
                     Next
                 End If
