@@ -99,7 +99,7 @@ Namespace StrategyHelper
                                     End If
                                 Next
                                 'Add all these payloads into the stock collections
-                                If currentDayOneMinutePayload IsNot Nothing AndAlso currentDayOneMinutePayload.Count > 0 Then
+                                If currentDayOneMinutePayload IsNot Nothing AndAlso currentDayOneMinutePayload.Count > 150 Then
                                     If currentDayOneMinuteStocksPayload Is Nothing Then currentDayOneMinuteStocksPayload = New Dictionary(Of String, Dictionary(Of Date, Payload))
                                     currentDayOneMinuteStocksPayload.Add(stock, currentDayOneMinutePayload)
                                     If XDayOneMinuteStocksPayload Is Nothing Then XDayOneMinuteStocksPayload = New Dictionary(Of String, Dictionary(Of Date, Payload))
@@ -110,13 +110,7 @@ Namespace StrategyHelper
                                     Dim tradingSymbol As String = currentDayOneMinutePayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
                                         Case 0
-                                            stockRule = New OptionLadderStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, stockList(stock).Controller, _canceller)
-                                        Case 1
-                                            stockRule = New TopGainerLosserOfEverySlabStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, stockList(stock).Controller, _canceller)
-                                        Case 2
-                                            stockRule = New TopGainerLooserStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, stockList(stock).Controller, _canceller)
-                                        Case 3
-                                            stockRule = New PreviousDayHLSellStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, stockList(stock).Controller, _canceller)
+                                            stockRule = New AjitJhaOptionStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, stockList(stock).Controller, _canceller)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
@@ -401,7 +395,7 @@ Namespace StrategyHelper
                                                                 End Select
                                                                 Dim runningTrade As Trade = New Trade(originatingStrategy:=Me,
                                                                                                       tradingSymbol:=runningTick.TradingSymbol,
-                                                                                                      stockType:=Me.StockType,
+                                                                                                      stockType:=Trade.TypeOfStock.Futures,
                                                                                                       orderType:=runningOrder.OrderType,
                                                                                                       tradingDate:=runningTick.PayloadDate,
                                                                                                       entryDirection:=runningOrder.EntryDirection,
@@ -490,7 +484,7 @@ Namespace StrategyHelper
                                                                 End Select
                                                                 Dim runningTrade As Trade = New Trade(originatingStrategy:=Me,
                                                                                                       tradingSymbol:=runningTick.TradingSymbol,
-                                                                                                      stockType:=Me.StockType,
+                                                                                                      stockType:=Trade.TypeOfStock.Futures,
                                                                                                       orderType:=runningOrder.OrderType,
                                                                                                       tradingDate:=runningTick.PayloadDate,
                                                                                                       entryDirection:=runningOrder.EntryDirection,
@@ -605,109 +599,32 @@ Namespace StrategyHelper
                     dt = csvHelper.GetDataTableFromCSV(1)
                 End Using
                 If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
-                    Select Case Me.RuleNumber
-                        Case 0
-                            For i = 0 To dt.Rows.Count - 1
-                                Dim rowDate As Date = dt.Rows(i).Item("Date")
-                                If rowDate.Date = tradingDate.Date Then
-                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
-                                    Dim lotSize As Integer = dt.Rows(i).Item("Lot Size")
-                                    Dim controller As Boolean = dt.Rows(i).Item("Controller")
-                                    Dim optionStock As Boolean = False
-                                    If tradingSymbol.EndsWith("CE") OrElse tradingSymbol.EndsWith("PE") Then
-                                        optionStock = True
-                                    End If
+                    For i = 0 To dt.Rows.Count - 1
+                        Dim rowDate As Date = dt.Rows(i).Item("Date")
+                        If rowDate.Date = tradingDate.Date Then
+                            Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
+                            Dim lotSize As Integer = dt.Rows(i).Item("Lot Size")
 
-                                    Dim detailsOfStock As StockDetails = New StockDetails With
-                                               {.StockName = tradingSymbol,
-                                                .LotSize = lotSize,
-                                                .Controller = controller,
-                                                .OptionStock = optionStock,
-                                                .EligibleToTakeTrade = True}
-                                    ret.Add(detailsOfStock.StockName, detailsOfStock)
-                                End If
-                            Next
-                        Case 1, 2
-                            For i = 0 To dt.Rows.Count - 1
-                                Dim rowDate As Date = dt.Rows(i).Item("Date")
-                                If rowDate.Date = tradingDate.Date Then
-                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
-                                    Dim lotSize As Integer = dt.Rows(i).Item("Lot Size")
-                                    Dim controller As Boolean = False
-                                    If tradingSymbol.ToUpper = "NIFTY BANK" Then
-                                        controller = True
-                                    End If
+                            Dim detailsOfStock As StockDetails = New StockDetails With
+                                       {.StockName = tradingSymbol,
+                                        .LotSize = lotSize,
+                                        .Controller = False,
+                                        .OptionStock = True,
+                                        .EligibleToTakeTrade = True}
 
-                                    Dim detailsOfStock As StockDetails = New StockDetails With
-                                               {.StockName = tradingSymbol,
-                                                .LotSize = lotSize,
-                                                .Controller = controller,
-                                                .OptionStock = False,
-                                                .EligibleToTakeTrade = True}
-                                    ret.Add(detailsOfStock.StockName, detailsOfStock)
-                                End If
-                            Next
-                        Case 3
-                            Dim stockData As List(Of StockDetails) = Nothing
-                            Dim mainStock As StockDetails = Nothing
-                            For i = 0 To dt.Rows.Count - 1
-                                Dim rowDate As Date = dt.Rows(i).Item("Date")
-                                If rowDate.Date = tradingDate.Date Then
-                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
-                                    Dim lotSize As Integer = dt.Rows(i).Item("Lot Size")
-                                    Dim controller As Boolean = False
-                                    Dim optionStock As Boolean = False
-                                    Dim strikePrice As Decimal = 0
-                                    If tradingSymbol.EndsWith("FUT") Then
-                                        controller = True
-                                    ElseIf tradingSymbol.EndsWith("CE") OrElse tradingSymbol.EndsWith("PE") Then
-                                        optionStock = True
-                                        If tradingSymbol.EndsWith("CE") Then
-                                            Dim strikeData As String = Utilities.Strings.GetTextBetween("BANKNIFTY", "CE", tradingSymbol)
-                                            strikePrice = strikeData.Substring(5)
-                                        ElseIf tradingSymbol.EndsWith("PE") Then
-                                            Dim strikeData As String = Utilities.Strings.GetTextBetween("BANKNIFTY", "PE", tradingSymbol)
-                                            strikePrice = strikeData.Substring(5)
-                                        End If
-                                    End If
-                                    Dim detailsOfStock As StockDetails = New StockDetails With
-                                               {.StockName = tradingSymbol,
-                                                .LotSize = lotSize,
-                                                .Controller = controller,
-                                                .OptionStock = optionStock,
-                                                .EligibleToTakeTrade = True,
-                                                .Supporting1 = strikePrice}
-                                    If stockData Is Nothing Then stockData = New List(Of StockDetails)
-                                    stockData.Add(detailsOfStock)
-                                    If controller Then mainStock = detailsOfStock
-                                End If
-                            Next
-                            If stockData IsNot Nothing AndAlso stockData.Count > 0 AndAlso mainStock IsNot Nothing Then
-                                Dim eodPayload As Dictionary(Of Date, Payload) = Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.EOD_Futures, mainStock.StockName, tradingDate.AddDays(-5), tradingDate)
-                                If eodPayload IsNot Nothing And eodPayload.Count > 0 AndAlso
-                                    eodPayload.ContainsKey(tradingDate.Date) AndAlso eodPayload(tradingDate.Date).PreviousCandlePayload IsNot Nothing Then
-                                    Dim candle As Payload = eodPayload(tradingDate.Date).PreviousCandlePayload
-                                    Dim buyStock As StockDetails = stockData.FindAll(Function(x)
-                                                                                         Return x.StockName.EndsWith("CE") AndAlso x.Supporting1 >= candle.High
-                                                                                     End Function).OrderBy(Function(x)
-                                                                                                               Return x.Supporting1
-                                                                                                           End Function).FirstOrDefault
-                                    Dim sellStock As StockDetails = stockData.FindAll(Function(x)
-                                                                                          Return x.StockName.EndsWith("PE") AndAlso x.Supporting1 <= candle.Low
-                                                                                      End Function).OrderByDescending(Function(x)
-                                                                                                                          Return x.Supporting1
-                                                                                                                      End Function).FirstOrDefault
-
-                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                    ret.Add(mainStock.StockName, mainStock)
-                                    ret.Add(buyStock.StockName, buyStock)
-                                    ret.Add(sellStock.StockName, sellStock)
-                                End If
+                            If ret Is Nothing Then
+                                ret = New Dictionary(Of String, StockDetails)
+                                Dim controllerStock As StockDetails = New StockDetails With
+                                       {.StockName = "NIFTY BANK",
+                                        .LotSize = lotSize,
+                                        .Controller = True,
+                                        .OptionStock = False,
+                                        .EligibleToTakeTrade = True}
+                                ret.Add(controllerStock.StockName, controllerStock)
                             End If
-                    End Select
+                            ret.Add(detailsOfStock.StockName, detailsOfStock)
+                        End If
+                    Next
                 End If
             End If
             Return ret
