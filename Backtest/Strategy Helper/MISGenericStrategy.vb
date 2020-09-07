@@ -121,6 +121,7 @@ Namespace StrategyHelper
                                 End If
                             End If
                         Next
+                        Dim dependentInstrumentAvailable As Boolean = False
                         If stocksRuleData IsNot Nothing AndAlso stocksRuleData.Count > 0 Then
                             Dim dependentInstrument As List(Of StrategyRule) = Nothing
                             For Each stockRule In stocksRuleData.Values
@@ -130,16 +131,19 @@ Namespace StrategyHelper
                                 End If
                             Next
 
-                            For Each stockRule In stocksRuleData.Values
-                                If stockRule.Controller Then
-                                    stockRule.DependentInstrument = dependentInstrument
-                                    stockRule.CompletePairProcessing()
-                                End If
-                            Next
+                            If dependentInstrument IsNot Nothing AndAlso dependentInstrument.Count > 0 Then
+                                dependentInstrumentAvailable = True
+                                For Each stockRule In stocksRuleData.Values
+                                    If stockRule.Controller Then
+                                        stockRule.DependentInstrument = dependentInstrument
+                                        stockRule.CompletePairProcessing()
+                                    End If
+                                Next
+                            End If
                         End If
                         '---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-                        If currentDayOneMinuteStocksPayload IsNot Nothing AndAlso currentDayOneMinuteStocksPayload.Count > 0 Then
+                        If dependentInstrumentAvailable AndAlso currentDayOneMinuteStocksPayload IsNot Nothing AndAlso currentDayOneMinuteStocksPayload.Count > 0 Then
                             OnHeartbeat(String.Format("Checking Trade on {0}", tradeCheckingDate.ToShortDateString))
                             _canceller.Token.ThrowIfCancellationRequested()
                             Dim eodTime As Date = New Date(tradeCheckingDate.Year, tradeCheckingDate.Month, tradeCheckingDate.Day, Me.EODExitTime.Hours, Me.EODExitTime.Minutes, Me.EODExitTime.Seconds)

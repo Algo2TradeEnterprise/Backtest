@@ -76,8 +76,7 @@ Public Class AjitJhaOptionStrategyRule
                 If signalCandle IsNot Nothing AndAlso signalCandle.PreviousCandlePayload IsNot Nothing AndAlso
                     signalCandle.PreviousCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
                     signalCandle.PreviousCandlePayload.PreviousCandlePayload.PayloadDate.Date = _tradingDate.Date Then
-                    If (Me.Direction = Trade.TradeExecutionDirection.Buy AndAlso signalCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish) OrElse
-                        (Me.Direction = Trade.TradeExecutionDirection.Sell AndAlso signalCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish) Then
+                    If signalCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
                         Dim entryPrice As Decimal = ConvertFloorCeling(signalCandle.High, _parentStrategy.TickSize, RoundOfType.Celing)
                         Dim stoploss As Decimal = ConvertFloorCeling(Math.Min(signalCandle.PreviousCandlePayload.Low, signalCandle.PreviousCandlePayload.PreviousCandlePayload.Low), _parentStrategy.TickSize, RoundOfType.Floor)
                         Dim buffer As Decimal = CalculateBuffer(entryPrice)
