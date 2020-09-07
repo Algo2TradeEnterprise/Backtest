@@ -605,6 +605,8 @@ Namespace StrategyHelper
 
                             If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
                             ret.Add(detailsOfStock.TradingSymbol, detailsOfStock)
+
+                            If ret.Count >= Me.NumberOfTradeableStockPerDay Then Exit For
                         End If
                     Next
                 End If
