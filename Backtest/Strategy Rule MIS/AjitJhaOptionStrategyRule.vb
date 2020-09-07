@@ -104,13 +104,16 @@ Public Class AjitJhaOptionStrategyRule
 
                                 ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
                             Else
-                                Console.WriteLine(String.Format("{0}: Unable to take trade. Entry={1}, Stoploss:{2}, Quantity:{3}, Signal Candle:{4}",
-                                                                Me.TradingSymbol, entryPrice, stoploss, quantity, signalCandle.PayloadDate.ToString("HH:mm:ss")))
+                                Console.WriteLine(String.Format("{0}: Unable to take trade for quntity. Entry={1}, Stoploss={2}, Quantity={3}, Signal Candle={4}, Direction={5}, Condition={6}",
+                                                                Me.TradingSymbol, entryPrice, stoploss, quantity, signalCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss"), Me.Direction.ToString, Me.Remarks))
                             End If
                         Else
-                            Console.WriteLine(String.Format("{0}: Unable to take trade. Entry={1}, Stoploss:{2}, Signal Candle:{3}",
-                                                                Me.TradingSymbol, entryPrice, stoploss, signalCandle.PayloadDate.ToString("HH:mm:ss")))
+                            Console.WriteLine(String.Format("{0}: Unable to take trade for expiry. Entry={1}, Stoploss={2}, Signal Candle={3}, Direction={4}, Condition={5}",
+                                                                Me.TradingSymbol, entryPrice, stoploss, signalCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss"), Me.Direction, Me.Remarks))
                         End If
+                    Else
+                        Console.WriteLine(String.Format("{0}: Unable to take trade for weak candle. Signal Candle={1}, Direction={2}, Condition={3}",
+                                                                Me.TradingSymbol, signalCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss"), Me.Direction, Me.Remarks))
                     End If
                 End If
                 Me.ForceTakeTrade = False
@@ -217,7 +220,7 @@ Public Class AjitJhaOptionStrategyRule
                         If signalCandle.PreviousCandlePayload.CandleColor = Color.Red OrElse
                             signalCandle.PreviousCandlePayload.PreviousCandlePayload.CandleColor = Color.Red Then
                             condition = "Condition 1"
-                        ElseIf signalCandle.PreviousCandlePayload.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish OrElse
+                        ElseIf signalCandle.PreviousCandlePayload.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish AndAlso
                             signalCandle.PreviousCandlePayload.PreviousCandlePayload.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
                             condition = "Condition 2"
                         End If
@@ -236,6 +239,9 @@ Public Class AjitJhaOptionStrategyRule
                         Dim stoploss As Decimal = ConvertFloorCeling(Math.Min(signalCandle.PreviousCandlePayload.Low, signalCandle.PreviousCandlePayload.PreviousCandlePayload.Low), _parentStrategy.TickSize, RoundOfType.Floor) - buffer
                         If entryPrice - stoploss < entryPrice * 0.7 / 100 Then
                             ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, String)(True, entryPrice, Trade.TradeExecutionDirection.Buy, condition)
+                        Else
+                            Console.WriteLine(String.Format("Neglected because of bigger stoploss. Signal Candle:{0}, Direction:BUY, Condition:{1}",
+                                                            signalCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss"), condition))
                         End If
                     End If
                 ElseIf signalCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
@@ -245,7 +251,7 @@ Public Class AjitJhaOptionStrategyRule
                         If signalCandle.PreviousCandlePayload.CandleColor = Color.Green OrElse
                             signalCandle.PreviousCandlePayload.PreviousCandlePayload.CandleColor = Color.Green Then
                             condition = "Condition 1"
-                        ElseIf signalCandle.PreviousCandlePayload.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish OrElse
+                        ElseIf signalCandle.PreviousCandlePayload.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish AndAlso
                             signalCandle.PreviousCandlePayload.PreviousCandlePayload.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
                             condition = "Condition 2"
                         End If
@@ -264,6 +270,9 @@ Public Class AjitJhaOptionStrategyRule
                         Dim stoploss As Decimal = ConvertFloorCeling(Math.Max(signalCandle.PreviousCandlePayload.High, signalCandle.PreviousCandlePayload.PreviousCandlePayload.High), _parentStrategy.TickSize, RoundOfType.Celing) + buffer
                         If stoploss - entryPrice < entryPrice * 0.7 / 100 Then
                             ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, String)(True, entryPrice, Trade.TradeExecutionDirection.Sell, condition)
+                        Else
+                            Console.WriteLine(String.Format("Neglected because of bigger stoploss. Signal Candle:{0}, Direction:SELL, Condition:{1}",
+                                                            signalCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss"), condition))
                         End If
                     End If
                 End If
