@@ -118,7 +118,7 @@ Namespace StrategyHelper
                                     Dim stockRule As StrategyRule = Nothing
 
                                     Dim tradingSymbol As String = currentDayOneMinutePayload.LastOrDefault.Value.TradingSymbol
-                                    stockRule = New BuyBelowFractalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                    stockRule = New BuyBelowFractalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).SupportingDate)
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
                                     stockRule.CompletePreProcessing()
@@ -593,11 +593,14 @@ Namespace StrategyHelper
                         If rowDate.Date = tradingDate.Date Then
                             Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
                             Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
+                            Dim signalTime As Date = Date.ParseExact(dt.Rows(i).Item("Time"), "HH:mm:ss", Nothing)
+                            signalTime = New Date(tradingDate.Year, tradingDate.Month, tradingDate.Day, signalTime.Hour, signalTime.Minute, signalTime.Second)
 
                             Dim detailsOfStock As StockDetails = New StockDetails With
                                                                 {.StockName = tradingSymbol,
                                                                  .TradingSymbol = tradingSymbol,
                                                                  .LotSize = lotsize,
+                                                                 .SupportingDate = signalTime,
                                                                  .EligibleToTakeTrade = True}
 
                             If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)

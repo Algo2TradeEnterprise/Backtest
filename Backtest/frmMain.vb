@@ -311,90 +311,69 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            Dim sortList As List(Of String) = New List(Of String) From {"Volume", "ATR"}
-            Dim filterList As List(Of String) = New List(Of String) From {"No", "Volume"}
-            Dim priceFilterList As List(Of String) = New List(Of String) From {"PreviousClose", "CurrentOpen"}
-            Dim stockTypeList As List(Of String) = New List(Of String) From {"CEPE", "Top2"}
-            For Each runningSort In sortList
-                For Each runningFilter In filterList
-                    For Each runningPriceFilter In priceFilterList
-                        For Each runningStockType In stockTypeList
-                            For targetAdjustment As Integer = 0 To 1
-                                Dim potentialStockFilename As String = String.Format("{0} Sort {1} Filter {2} {3}", runningSort, runningFilter, runningPriceFilter, runningStockType)
-                                Dim filepath As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.csv", potentialStockFilename))
-                                If File.Exists(filepath) Then
-                                    Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
-                                                                                    exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                                                    exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                                                    tradeStartTime:=TimeSpan.Parse("9:16:00"),
-                                                                                    lastTradeEntryTime:=TimeSpan.Parse("14:29:59"),
-                                                                                    eodExitTime:=TimeSpan.Parse("15:15:00"),
-                                                                                    tickSize:=tick,
-                                                                                    marginMultiplier:=margin,
-                                                                                    timeframe:=1,
-                                                                                    heikenAshiCandle:=False,
-                                                                                    stockType:=stockType,
-                                                                                    optionStockType:=Trade.TypeOfStock.Futures,
-                                                                                    databaseTable:=database,
-                                                                                    dataSource:=sourceData,
-                                                                                    initialCapital:=Decimal.MaxValue / 2,
-                                                                                    usableCapital:=Decimal.MaxValue / 2,
-                                                                                    minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
-                                                                                    amountToBeWithdrawn:=0)
-                                        AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+            Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+                                                            exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                            exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                            tradeStartTime:=TimeSpan.Parse("9:16:00"),
+                                                            lastTradeEntryTime:=TimeSpan.Parse("14:44:59"),
+                                                            eodExitTime:=TimeSpan.Parse("15:15:00"),
+                                                            tickSize:=tick,
+                                                            marginMultiplier:=margin,
+                                                            timeframe:=1,
+                                                            heikenAshiCandle:=False,
+                                                            stockType:=stockType,
+                                                            optionStockType:=Trade.TypeOfStock.Futures,
+                                                            databaseTable:=database,
+                                                            dataSource:=sourceData,
+                                                            initialCapital:=Decimal.MaxValue / 2,
+                                                            usableCapital:=Decimal.MaxValue / 2,
+                                                            minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                            amountToBeWithdrawn:=0)
+                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                                        With backtestStrategy
-                                            .StockFileName = filepath
+                With backtestStrategy
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "")
 
-                                            .AllowBothDirectionEntryAtSameTime = False
-                                            .TrailingStoploss = False
-                                            .TickBasedStrategy = True
-                                            .RuleNumber = ruleNumber
+                    .AllowBothDirectionEntryAtSameTime = False
+                    .TrailingStoploss = False
+                    .TickBasedStrategy = True
+                    .RuleNumber = ruleNumber
 
-                                            .RuleEntityData = New BuyBelowFractalStrategyRule.StrategyRuleEntities With
-                                                              {.MaxProfitPerStock = 500,
-                                                               .AdjustTarget = targetAdjustment,
-                                                               .AdjustTargetForTurnover = 35000,
-                                                               .QuantityFromFractalLow = False}
+                    .RuleEntityData = New BuyBelowFractalStrategyRule.StrategyRuleEntities With
+                                      {.MaxProfitPerStock = 500,
+                                       .AdjustTarget = False,
+                                       .AdjustTargetForTurnover = 35000}
 
-                                            .NumberOfTradeableStockPerDay = 2
+                    .NumberOfTradeableStockPerDay = 2
 
-                                            .NumberOfTradesPerStockPerDay = Integer.MaxValue
+                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
-                                            .StockMaxProfitPercentagePerDay = Decimal.MaxValue
-                                            .StockMaxLossPercentagePerDay = Decimal.MinValue
+                    .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                    .StockMaxLossPercentagePerDay = Decimal.MinValue
 
-                                            .ExitOnStockFixedTargetStoploss = False
-                                            .StockMaxProfitPerDay = Decimal.MaxValue
-                                            .StockMaxLossPerDay = Decimal.MinValue
+                    .ExitOnStockFixedTargetStoploss = False
+                    .StockMaxProfitPerDay = Decimal.MaxValue
+                    .StockMaxLossPerDay = Decimal.MinValue
 
-                                            .ExitOnOverAllFixedTargetStoploss = False
-                                            .OverAllProfitPerDay = Decimal.MaxValue
-                                            .OverAllLossPerDay = Decimal.MinValue
+                    .ExitOnOverAllFixedTargetStoploss = False
+                    .OverAllProfitPerDay = Decimal.MaxValue
+                    .OverAllLossPerDay = Decimal.MinValue
 
-                                            .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
-                                            .MTMSlab = Math.Abs(.OverAllLossPerDay)
-                                            .MovementSlab = .MTMSlab / 2
-                                            .RealtimeTrailingPercentage = 50
-                                        End With
+                    .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+                    .MTMSlab = Math.Abs(.OverAllLossPerDay)
+                    .MovementSlab = .MTMSlab / 2
+                    .RealtimeTrailingPercentage = 50
+                End With
 
-                                        Dim ruleData As BuyBelowFractalStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                                        Dim filename As String = String.Format("{0},AdjustTarget {1}", potentialStockFilename, ruleData.AdjustTarget)
+                Dim ruleData As BuyBelowFractalStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                Dim filename As String = String.Format("Buy Below Fractal At The Money Options")
 
-                                        Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-                                    End Using
+                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+            End Using
 
-                                    'Delete Directory
-                                    Dim directoryName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("STRATEGY{0} CANDLE DATA", ruleNumber))
-                                    If Directory.Exists(directoryName) Then
-                                        Directory.Delete(directoryName, True)
-                                    End If
-                                End If
-                            Next
-                        Next
-                    Next
-                Next
-            Next
+            'Delete Directory
+            Dim directoryName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("STRATEGY{0} CANDLE DATA", ruleNumber))
+            If Directory.Exists(directoryName) Then Directory.Delete(directoryName, True)
         Catch cex As OperationCanceledException
             ''Delete Directory
             'Dim directoryName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("STRATEGY{0} CANDLE DATA", ruleNumber))

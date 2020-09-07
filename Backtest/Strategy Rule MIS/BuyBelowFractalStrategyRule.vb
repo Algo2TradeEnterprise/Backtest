@@ -13,7 +13,6 @@ Public Class BuyBelowFractalStrategyRule
         Public MaxProfitPerStock As Decimal
         Public AdjustTarget As Boolean
         Public AdjustTargetForTurnover As Decimal
-        Public QuantityFromFractalLow As Boolean
     End Class
 #End Region
 
@@ -21,6 +20,7 @@ Public Class BuyBelowFractalStrategyRule
     Private _fractalLowPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _firstCandleOfTheDay As Payload = Nothing
 
+    Private ReadOnly _signalTime As Date
     Private ReadOnly _userInputs As StrategyRuleEntities
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -28,9 +28,11 @@ Public Class BuyBelowFractalStrategyRule
                    ByVal tradingDate As Date,
                    ByVal tradingSymbol As String,
                    ByVal canceller As CancellationTokenSource,
-                   ByVal entities As RuleEntities)
+                   ByVal entities As RuleEntities,
+                   ByVal signalTime As Date)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _userInputs = _entities
+        _signalTime = signalTime
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -54,7 +56,7 @@ Public Class BuyBelowFractalStrategyRule
         If currentMinuteCandle IsNot Nothing AndAlso currentMinuteCandle.PreviousCandlePayload IsNot Nothing AndAlso
             Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS) AndAlso
             Not _parentStrategy.IsAnyTradeOfTheStockTargetReached(currentMinuteCandle, Trade.TypeOfTrade.MIS) AndAlso
-            currentMinuteCandle.PayloadDate >= _tradeStartTime AndAlso Me.EligibleToTakeTrade Then
+            currentMinuteCandle.PayloadDate >= _tradeStartTime AndAlso currentMinuteCandle.PayloadDate > _signalTime AndAlso Me.EligibleToTakeTrade Then
             Dim fractalLow As Decimal = _fractalLowPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
             Dim fractalHigh As Decimal = _fractalHighPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
             If _firstCandleOfTheDay IsNot Nothing Then
@@ -79,7 +81,6 @@ Public Class BuyBelowFractalStrategyRule
 
             If signalCandle IsNot Nothing Then
                 Dim entryPrice As Decimal = currentTick.Open
-                If _userInputs.QuantityFromFractalLow Then entryPrice = fractalLow
                 Dim targetPrice As Decimal = fractalHigh
                 Dim quantity As Integer = CalculateQuantity(currentMinuteCandle, entryPrice, targetPrice)
                 If _userInputs.AdjustTarget AndAlso quantity * entryPrice > _userInputs.AdjustTargetForTurnover Then
