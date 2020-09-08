@@ -5221,7 +5221,11 @@ Public Class frmMain
                             tick = 0.05
                     End Select
 
-                    Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+                    For overallLoss As Decimal = 5000 To 20000 Step 5000
+                        For overallProfitMul As Decimal = 2 To 4 Step 0.5
+                            If overallLoss * overallProfitMul > 40000 Then Continue For
+
+                            Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                     exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                     exchangeEndTime:=TimeSpan.Parse("15:29:59"),
                                                                     tradeStartTime:=TimeSpan.Parse("9:16:00"),
@@ -5239,62 +5243,63 @@ Public Class frmMain
                                                                     usableCapital:=Decimal.MaxValue / 2,
                                                                     minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
                                                                     amountToBeWithdrawn:=0)
-                        AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+                                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                        With backtestStrategy
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Cash Stock Modified Price Range.csv")
+                                With backtestStrategy
+                                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Cash Stock Modified Price Range.csv")
 
-                            .AllowBothDirectionEntryAtSameTime = False
-                            .TrailingStoploss = False
-                            .TickBasedStrategy = True
-                            .RuleNumber = ruleNumber
+                                    .AllowBothDirectionEntryAtSameTime = False
+                                    .TrailingStoploss = False
+                                    .TickBasedStrategy = True
+                                    .RuleNumber = ruleNumber
 
-                            .RuleEntityData = New BollingerTouchStrategyRule.StrategyRuleEntities With
-                                            {
-                                                .MaxLossPerTrade = -500,
-                                                .TargetMultiplier = 100,
-                                                .BreakevenMovement = False
-                                            }
+                                    .RuleEntityData = New BollingerTouchStrategyRule.StrategyRuleEntities With
+                                                    {
+                                                        .MaxLossPerTrade = -500,
+                                                        .TargetMultiplier = 4
+                                                    }
 
-                            .NumberOfTradeableStockPerDay = 10
+                                    .NumberOfTradeableStockPerDay = 20
 
-                            .NumberOfTradesPerStockPerDay = 1
+                                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
-                            .StockMaxProfitPercentagePerDay = Decimal.MaxValue
-                            .StockMaxLossPercentagePerDay = Decimal.MinValue
+                                    .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                                    .StockMaxLossPercentagePerDay = Decimal.MinValue
 
-                            .ExitOnStockFixedTargetStoploss = False
-                            .StockMaxProfitPerDay = Decimal.MaxValue
-                            .StockMaxLossPerDay = Decimal.MinValue
+                                    .ExitOnStockFixedTargetStoploss = True
+                                    .StockMaxProfitPerDay = 2000
+                                    .StockMaxLossPerDay = -1000
 
-                            .ExitOnOverAllFixedTargetStoploss = False
-                            .OverAllProfitPerDay = Decimal.MaxValue
-                            .OverAllLossPerDay = Decimal.MinValue
+                                    .ExitOnOverAllFixedTargetStoploss = True
+                                    .OverAllProfitPerDay = overallLoss * overallProfitMul
+                                    .OverAllLossPerDay = overallLoss * -1
 
-                            .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
-                            .MTMSlab = Math.Abs(.OverAllLossPerDay)
-                            .MovementSlab = .MTMSlab / 2
-                            .RealtimeTrailingPercentage = 50
-                        End With
+                                    .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+                                    .MTMSlab = Math.Abs(.OverAllLossPerDay)
+                                    .MovementSlab = .MTMSlab / 2
+                                    .RealtimeTrailingPercentage = 50
+                                End With
 
-                        Dim ruleData As BollingerTouchStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                        Dim filename As String = String.Format("Blngr Tch Strtgy,MxLsTrd {0},TgtMul {1},Brkevn {2}",
-                                                               ruleData.MaxLossPerTrade,
-                                                               ruleData.TargetMultiplier,
-                                                               ruleData.BreakevenMovement)
+                                Dim ruleData As BollingerTouchStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                                Dim filename As String = String.Format("Blngr Tch Strtgy,StkPrft {0},OvrlPrft {1},OvrlLs {2}",
+                                                                       backtestStrategy.StockMaxProfitPerDay,
+                                                                       backtestStrategy.OverAllProfitPerDay,
+                                                                       backtestStrategy.OverAllLossPerDay)
 
-                        Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-                    End Using
+                                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                            End Using
+                        Next
+                    Next
 #End Region
                 Case Else
                     Throw New NotImplementedException
             End Select
 
-            'Delete Directory
-            Dim directoryName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("STRATEGY{0} CANDLE DATA", ruleNumber))
-            If Directory.Exists(directoryName) Then
-                Directory.Delete(directoryName, True)
-            End If
+            ''Delete Directory
+            'Dim directoryName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("STRATEGY{0} CANDLE DATA", ruleNumber))
+            'If Directory.Exists(directoryName) Then
+            '    Directory.Delete(directoryName, True)
+            'End If
         Catch cex As OperationCanceledException
             ''Delete Directory
             'Dim directoryName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("STRATEGY{0} CANDLE DATA", ruleNumber))

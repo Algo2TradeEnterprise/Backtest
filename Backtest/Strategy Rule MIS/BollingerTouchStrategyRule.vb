@@ -13,7 +13,6 @@ Public Class BollingerTouchStrategyRule
 
         Public MaxLossPerTrade As Decimal
         Public TargetMultiplier As Decimal
-        Public BreakevenMovement As Boolean
     End Class
 #End Region
 
@@ -52,7 +51,14 @@ Public Class BollingerTouchStrategyRule
             Dim signalCandle As Payload = Nothing
             Dim signal As Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection) = GetEntrySignal(currentMinuteCandle, currentTick)
             If signal IsNot Nothing AndAlso signal.Item1 Then
-                signalCandle = signal.Item3
+                Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandle, Trade.TypeOfTrade.MIS)
+                If lastExecutedOrder IsNot Nothing Then
+                    If lastExecutedOrder.SignalCandle.PayloadDate <> signal.Item3.PayloadDate Then
+                        signalCandle = signal.Item3
+                    End If
+                Else
+                        signalCandle = signal.Item3
+                End If
             End If
 
             If signalCandle IsNot Nothing Then
@@ -60,40 +66,44 @@ Public Class BollingerTouchStrategyRule
                 If signal.Item4 = Trade.TradeExecutionDirection.Buy Then
                     Dim entryPrice As Decimal = signalCandle.High + buffer
                     Dim stoplossPrice As Decimal = signalCandle.Low - buffer
-                    Dim slPoint As Decimal = entryPrice - stoplossPrice
-                    Dim targetPoint As Decimal = ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
                     Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, stoplossPrice, Math.Abs(_userInputs.MaxLossPerTrade) * -1, _parentStrategy.StockType)
+                    Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, quantity, Math.Abs(_userInputs.MaxLossPerTrade) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
 
                     parameter = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
                                     .EntryDirection = Trade.TradeExecutionDirection.Buy,
                                     .Quantity = quantity,
                                     .Stoploss = stoplossPrice,
-                                    .Target = .EntryPrice + targetPoint,
+                                    .Target = target,
                                     .Buffer = buffer,
                                     .SignalCandle = signalCandle,
                                     .OrderType = Trade.TypeOfOrder.SL,
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
-                                    .Supporting2 = slPoint
+                                    .Supporting2 = signalCandle.CandleRange,
+                                    .Supporting3 = Math.Round(_atrPayload(signalCandle.PayloadDate), 4),
+                                    .Supporting4 = Math.Round(_bollingerHighPayload(signalCandle.PayloadDate), 4),
+                                    .Supporting5 = Math.Round(_bollingerLowPayload(signalCandle.PayloadDate), 4)
                                 }
                 ElseIf signal.Item4 = Trade.TradeExecutionDirection.Sell Then
                     Dim entryPrice As Decimal = signalCandle.Low - buffer
                     Dim stoplossPrice As Decimal = signalCandle.High + buffer
-                    Dim slPoint As Decimal = stoplossPrice - entryPrice
-                    Dim targetPoint As Decimal = ConvertFloorCeling(slPoint * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
                     Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, stoplossPrice, entryPrice, Math.Abs(_userInputs.MaxLossPerTrade) * -1, _parentStrategy.StockType)
+                    Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, quantity, Math.Abs(_userInputs.MaxLossPerTrade) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
 
                     parameter = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
                                     .EntryDirection = Trade.TradeExecutionDirection.Sell,
                                     .Quantity = quantity,
                                     .Stoploss = stoplossPrice,
-                                    .Target = .EntryPrice - targetPoint,
+                                    .Target = target,
                                     .Buffer = buffer,
                                     .SignalCandle = signalCandle,
                                     .OrderType = Trade.TypeOfOrder.SL,
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
-                                    .Supporting2 = slPoint
+                                    .Supporting2 = signalCandle.CandleRange,
+                                    .Supporting3 = Math.Round(_atrPayload(signalCandle.PayloadDate), 4),
+                                    .Supporting4 = Math.Round(_bollingerHighPayload(signalCandle.PayloadDate), 4),
+                                    .Supporting5 = Math.Round(_bollingerLowPayload(signalCandle.PayloadDate), 4)
                                 }
                 End If
             End If
@@ -123,22 +133,6 @@ Public Class BollingerTouchStrategyRule
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
-        If _userInputs.BreakevenMovement AndAlso currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-            Dim slPoint As Decimal = currentTrade.Supporting2
-            Dim triggerPrice As Decimal = Decimal.MinValue
-            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                If currentTick.Open >= currentTrade.EntryPrice + slPoint Then
-                    triggerPrice = currentTrade.EntryPrice + _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, Trade.TradeExecutionDirection.Buy, Me.LotSize, _parentStrategy.StockType)
-                End If
-            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                If currentTick.Open <= currentTrade.EntryPrice - slPoint Then
-                    triggerPrice = currentTrade.EntryPrice - _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, Trade.TradeExecutionDirection.Sell, Me.LotSize, _parentStrategy.StockType)
-                End If
-            End If
-            If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
-                ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, String.Format("Breakeven at {1}", slPoint, currentTick.PayloadDate.ToString("HH:mm:ss")))
-            End If
-        End If
         Return ret
     End Function
 
@@ -162,7 +156,7 @@ Public Class BollingerTouchStrategyRule
             Dim signalCandle As Payload = currentCandle.PreviousCandlePayload
             While signalCandle IsNot Nothing
                 If signalCandle.PayloadDate.Date <> _tradingDate.Date Then Exit While
-                If signalCandle.CandleRange <= _atrPayload(signalCandle.PayloadDate) Then
+                If signalCandle.CandleRange <= _atrPayload(signalCandle.PayloadDate) * 2 / 3 Then
                     Dim takeTrade As Boolean = False
                     If signalCandle.High >= _bollingerHighPayload(signalCandle.PayloadDate) AndAlso signalCandle.Low <= _bollingerHighPayload(signalCandle.PayloadDate) Then
                         takeTrade = True
