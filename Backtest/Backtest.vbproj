@@ -133,6 +133,7 @@
     <Compile Include="Strategy Rule MIS\AnchorSatelliteLossMakeupHKStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\AnchorSatelliteLossMakeupStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\BollingerCloseStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\BollingerTouchStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\BothDirectionMultiTradesHKStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\BothDirectionMultiTradesStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\BuyBelowFractalStrategyRule.vb" />
