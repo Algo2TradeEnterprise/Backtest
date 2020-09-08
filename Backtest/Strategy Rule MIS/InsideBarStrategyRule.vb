@@ -147,7 +147,7 @@ Public Class InsideBarStrategyRule
                 If currentXMinuteCandle.PreviousCandlePayload.Close > currentXMinuteCandle.PreviousCandlePayload.Open Then
                     If currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.High - currentXMinuteCandle.PreviousCandlePayload.Close >= 2 AndAlso
                         currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.High - currentXMinuteCandle.PreviousCandlePayload.Close < 4 Then
-                        If currentXMinuteCandle.PreviousCandlePayload.Close >= pivot.Pivot Then
+                        If currentXMinuteCandle.PreviousCandlePayload.Close >= pivot.Resistance1 Then
                             If currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.Close - currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.Low >= 3 Then
                                 If currentXMinuteCandle.Open >= currentXMinuteCandle.PreviousCandlePayload.Close Then
                                     Dim tickTime As Date = New Date(currentXMinuteCandle.PayloadDate.Year, currentXMinuteCandle.PayloadDate.Month, currentXMinuteCandle.PayloadDate.Day,
