@@ -318,8 +318,7 @@ Public Class frmMain
                                               {
                                                .TargetMultiplier = 2,
                                                .MaxLossPerTrade = -2000,
-                                               .OptionMaxStoplossPoint = 60,
-                                               .SpotMaxStoplossPercentage = 1,
+                                               .SpotMaxStoplossPercentage = 0.7,
                                                .OptionMinStoplossPointOnExpiry = 10
                                               }
 
