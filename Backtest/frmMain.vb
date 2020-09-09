@@ -263,7 +263,7 @@ Public Class frmMain
 
             Select Case ruleNumber
                 Case 0
-#Region "Ajit Jha Option Ladder"
+#Region "Ajit Jha Option Strategy"
                     Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
                     Dim database As Common.DataBaseTable = Common.DataBaseTable.None
                     Dim margin As Decimal = 0
@@ -345,6 +345,93 @@ Public Class frmMain
                         End With
 
                         Dim filename As String = String.Format("Ajit Jha Option Strategy Output")
+
+                        Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                    End Using
+#End Region
+                Case 1
+#Region "Ajit Jha Option Multi Exit Strategy"
+                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
+                    Dim database As Common.DataBaseTable = Common.DataBaseTable.None
+                    Dim margin As Decimal = 0
+                    Dim tick As Decimal = 0
+                    Select Case stockType
+                        Case Trade.TypeOfStock.Cash
+                            database = Common.DataBaseTable.Intraday_Cash
+                            margin = 1
+                            tick = 0.05
+                        Case Trade.TypeOfStock.Commodity
+                            database = Common.DataBaseTable.Intraday_Commodity
+                            margin = 1
+                            tick = 1
+                        Case Trade.TypeOfStock.Currency
+                            database = Common.DataBaseTable.Intraday_Currency
+                            margin = 1
+                            tick = 0.0025
+                        Case Trade.TypeOfStock.Futures
+                            database = Common.DataBaseTable.Intraday_Futures
+                            margin = 1
+                            tick = 0.05
+                    End Select
+
+                    Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+                                                                    exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                    exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                    tradeStartTime:=TimeSpan.Parse("9:16:00"),
+                                                                    lastTradeEntryTime:=TimeSpan.Parse("14:29:59"),
+                                                                    eodExitTime:=TimeSpan.Parse("15:15:00"),
+                                                                    tickSize:=tick,
+                                                                    marginMultiplier:=margin,
+                                                                    timeframe:=5,
+                                                                    heikenAshiCandle:=False,
+                                                                    stockType:=stockType,
+                                                                    databaseTable:=database,
+                                                                    dataSource:=sourceData,
+                                                                    initialCapital:=Decimal.MaxValue / 2,
+                                                                    usableCapital:=Decimal.MaxValue / 2,
+                                                                    minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                                    amountToBeWithdrawn:=0)
+                        AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+
+                        With backtestStrategy
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "BANKNIFTY Option Stocklist.csv")
+
+                            .AllowBothDirectionEntryAtSameTime = False
+                            .TrailingStoploss = False
+                            .TickBasedStrategy = False
+                            .RuleNumber = ruleNumber
+
+                            .RuleEntityData = New AjitJhaOptionMultiExitStrategyRule.StrategyRuleEntities With
+                                              {
+                                               .MaxLossPerTrade = -1500,
+                                               .OptionMaxStoplossPoint = 60,
+                                               .SpotMaxStoplossPercentage = 1,
+                                               .OptionMinStoplossPointOnExpiry = 10,
+                                               .TargetToMaxStoplossMultiplier = 2 / 3
+                                              }
+
+                            .NumberOfTradeableStockPerDay = Integer.MaxValue
+
+                            .NumberOfTradesPerStockPerDay = Integer.MaxValue
+
+                            .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                            .StockMaxLossPercentagePerDay = Decimal.MinValue
+
+                            .ExitOnStockFixedTargetStoploss = False
+                            .StockMaxProfitPerDay = Decimal.MaxValue
+                            .StockMaxLossPerDay = Decimal.MinValue
+
+                            .ExitOnOverAllFixedTargetStoploss = False
+                            .OverAllProfitPerDay = Decimal.MaxValue
+                            .OverAllLossPerDay = Decimal.MinValue
+
+                            .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+                            .MTMSlab = Math.Abs(.OverAllLossPerDay)
+                            .MovementSlab = .MTMSlab / 2
+                            .RealtimeTrailingPercentage = 50
+                        End With
+
+                        Dim filename As String = String.Format("Ajit Jha Option Multi Exit Strategy Output")
 
                         Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
                     End Using
