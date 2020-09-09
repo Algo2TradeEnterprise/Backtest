@@ -90,7 +90,8 @@ Public Class AjitJhaOptionStrategyRule
                 If signalCandle IsNot Nothing AndAlso signalCandle.PreviousCandlePayload IsNot Nothing AndAlso
                     signalCandle.PreviousCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
                     signalCandle.PreviousCandlePayload.PreviousCandlePayload.PayloadDate.Date = _tradingDate.Date Then
-                    If signalCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
+                    Dim candleBuffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Low, RoundOfType.Floor)
+                    If signalCandle.Open >= signalCandle.Low - candleBuffer AndAlso signalCandle.Open <= signalCandle.Low + candleBuffer Then
                         Dim entryPrice As Decimal = ConvertFloorCeling(signalCandle.High, _parentStrategy.TickSize, RoundOfType.Celing)
                         Dim stoploss As Decimal = ConvertFloorCeling(Math.Min(signalCandle.PreviousCandlePayload.Low, signalCandle.PreviousCandlePayload.PreviousCandlePayload.Low), _parentStrategy.TickSize, RoundOfType.Floor)
                         Dim buffer As Decimal = CalculateBuffer(entryPrice)
@@ -104,17 +105,17 @@ Public Class AjitJhaOptionStrategyRule
                             If quantity > 0 Then
                                 Dim parameter As PlaceOrderParameters = Nothing
                                 parameter = New PlaceOrderParameters With {
-                                    .EntryPrice = entryPrice,
-                                    .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                    .Quantity = quantity,
-                                    .Stoploss = stoploss,
-                                    .Target = target,
-                                    .Buffer = buffer,
-                                    .SignalCandle = signalCandle,
-                                    .OrderType = Trade.TypeOfOrder.SL,
-                                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
-                                    .Supporting2 = Me.Remarks
-                                }
+                                                .EntryPrice = entryPrice,
+                                                .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                                                .Quantity = quantity,
+                                                .Stoploss = stoploss,
+                                                .Target = target,
+                                                .Buffer = buffer,
+                                                .SignalCandle = signalCandle,
+                                                .OrderType = Trade.TypeOfOrder.SL,
+                                                .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                                                .Supporting2 = Me.Remarks
+                                            }
 
                                 ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
                             Else
@@ -177,16 +178,24 @@ Public Class AjitJhaOptionStrategyRule
                 If runningInstrument.DummyCandle IsNot Nothing Then
                     Dim lastTrade As Trade = _parentStrategy.GetLastTradeOfTheStock(runningInstrument.DummyCandle, Trade.TypeOfTrade.MIS)
                     If lastTrade IsNot Nothing Then
-                        If lastTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-                            Dim signal As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, String) = GetEntrySignal(currentMinuteCandle, currentTick)
-                            If signal IsNot Nothing AndAlso signal.Item1 Then
-                                If signal.Item3 = Trade.TradeExecutionDirection.Buy AndAlso lastTrade.TradingSymbol.EndsWith("PE") Then
-                                    runningInstrument.ForceCancelTrade = True
-                                ElseIf signal.Item3 = Trade.TradeExecutionDirection.Sell AndAlso lastTrade.TradingSymbol.EndsWith("CE") Then
-                                    runningInstrument.ForceCancelTrade = True
-                                End If
-                            End If
-                        ElseIf lastTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
+                        'If lastTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                        '    Dim signal As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, String) = GetEntrySignal(currentMinuteCandle, currentTick)
+                        '    If signal IsNot Nothing AndAlso signal.Item1 Then
+                        '        If signal.Item3 = Trade.TradeExecutionDirection.Buy AndAlso lastTrade.TradingSymbol.EndsWith("PE") Then
+                        '            runningInstrument.ForceCancelTrade = True
+                        '        ElseIf signal.Item3 = Trade.TradeExecutionDirection.Sell AndAlso lastTrade.TradingSymbol.EndsWith("CE") Then
+                        '            runningInstrument.ForceCancelTrade = True
+                        '        End If
+                        '    End If
+                        'ElseIf lastTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
+                        '    Dim hkCandle As Payload = _hkPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
+                        '    If hkCandle.CandleColor = Color.Green AndAlso lastTrade.TradingSymbol.EndsWith("PE") Then
+                        '        runningInstrument.ForceCancelTrade = True
+                        '    ElseIf hkCandle.CandleColor = Color.Red AndAlso lastTrade.TradingSymbol.EndsWith("CE") Then
+                        '        runningInstrument.ForceCancelTrade = True
+                        '    End If
+                        'End If
+                        If lastTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
                             Dim hkCandle As Payload = _hkPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
                             If hkCandle.CandleColor = Color.Green AndAlso lastTrade.TradingSymbol.EndsWith("PE") Then
                                 runningInstrument.ForceCancelTrade = True
@@ -224,7 +233,7 @@ Public Class AjitJhaOptionStrategyRule
             If signalCandle IsNot Nothing AndAlso signalCandle.PreviousCandlePayload IsNot Nothing AndAlso
                 signalCandle.PreviousCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
                 signalCandle.PreviousCandlePayload.PreviousCandlePayload.PayloadDate.Date = _tradingDate.Date Then
-                If signalCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
+                If CInt(signalCandle.Open) = CInt(signalCandle.Low) Then
                     Dim condition As String = Nothing
                     If signalCandle.Close > _emaPayload(signalCandle.PayloadDate) AndAlso
                         signalCandle.PreviousCandlePayload.Close < _emaPayload(signalCandle.PreviousCandlePayload.PayloadDate) Then
@@ -255,7 +264,7 @@ Public Class AjitJhaOptionStrategyRule
                                                             signalCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss"), condition))
                         End If
                     End If
-                ElseIf signalCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
+                ElseIf CInt(signalCandle.Open) = CInt(signalCandle.High) Then
                     Dim condition As String = Nothing
                     If signalCandle.Close < _emaPayload(signalCandle.PayloadDate) AndAlso
                         signalCandle.PreviousCandlePayload.Close > _emaPayload(signalCandle.PreviousCandlePayload.PayloadDate) Then
