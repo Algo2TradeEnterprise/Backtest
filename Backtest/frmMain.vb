@@ -314,7 +314,14 @@ Public Class frmMain
                             .TickBasedStrategy = False
                             .RuleNumber = ruleNumber
 
-                            .RuleEntityData = Nothing
+                            .RuleEntityData = New AjitJhaOptionStrategyRule.StrategyRuleEntities With
+                                              {
+                                               .TargetMultiplier = 2,
+                                               .MaxLossPerTrade = -2000,
+                                               .OptionMaxStoplossPoint = 60,
+                                               .SpotMaxStoplossPercentage = 1,
+                                               .OptionMinStoplossPointOnExpiry = 10
+                                              }
 
                             .NumberOfTradeableStockPerDay = Integer.MaxValue
 

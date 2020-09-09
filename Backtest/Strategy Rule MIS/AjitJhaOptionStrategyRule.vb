@@ -6,6 +6,18 @@ Imports Utilities.Numbers
 Public Class AjitJhaOptionStrategyRule
     Inherits StrategyRule
 
+#Region "Entity"
+    Public Class StrategyRuleEntities
+        Inherits RuleEntities
+
+        Public SpotMaxStoplossPercentage As Decimal
+        Public OptionMaxStoplossPoint As Decimal
+        Public OptionMinStoplossPointOnExpiry As Decimal
+        Public TargetMultiplier As Decimal
+        Public MaxLossPerTrade As Decimal
+    End Class
+#End Region
+
     Public Direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
     Public Remarks As String = Nothing
 
@@ -17,6 +29,8 @@ Public Class AjitJhaOptionStrategyRule
 
     Private ReadOnly _tradeStartTime As Date = Date.MinValue
     Public ReadOnly Property DummyCandle As Payload = Nothing
+
+    Private ReadOnly _userInputs As StrategyRuleEntities
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
                    ByVal parentStrategy As Strategy,
@@ -27,6 +41,7 @@ Public Class AjitJhaOptionStrategyRule
                    ByVal canceller As CancellationTokenSource)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, entities, controller, canceller)
         _tradeStartTime = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, _parentStrategy.TradeStartTime.Hours, _parentStrategy.TradeStartTime.Minutes, _parentStrategy.TradeStartTime.Seconds)
+        _userInputs = _entities
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -76,43 +91,44 @@ Public Class AjitJhaOptionStrategyRule
                 If signalCandle IsNot Nothing AndAlso signalCandle.PreviousCandlePayload IsNot Nothing AndAlso
                     signalCandle.PreviousCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
                     signalCandle.PreviousCandlePayload.PreviousCandlePayload.PayloadDate.Date = _tradingDate.Date Then
-                    If signalCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
-                        Dim entryPrice As Decimal = ConvertFloorCeling(signalCandle.High, _parentStrategy.TickSize, RoundOfType.Celing)
-                        Dim stoploss As Decimal = ConvertFloorCeling(Math.Min(signalCandle.PreviousCandlePayload.Low, signalCandle.PreviousCandlePayload.PreviousCandlePayload.Low), _parentStrategy.TickSize, RoundOfType.Floor)
-                        Dim buffer As Decimal = CalculateBuffer(entryPrice)
-                        entryPrice = entryPrice + buffer
-                        stoploss = stoploss - buffer
-                        If (_tradingDate.DayOfWeek = DayOfWeek.Thursday AndAlso (entryPrice - stoploss) >= 10) OrElse (_tradingDate.DayOfWeek <> DayOfWeek.Thursday) Then
-                            Dim target As Decimal = entryPrice + ConvertFloorCeling((entryPrice - stoploss) * 2, _parentStrategy.TickSize, RoundOfType.Floor)
-                            Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(Me.TradingSymbol, entryPrice, stoploss, -2000, Trade.TypeOfStock.Futures)
+                    Dim entryPrice As Decimal = ConvertFloorCeling(signalCandle.High, _parentStrategy.TickSize, RoundOfType.Celing)
+                    Dim stoploss As Decimal = ConvertFloorCeling(Math.Min(signalCandle.PreviousCandlePayload.Low, signalCandle.PreviousCandlePayload.PreviousCandlePayload.Low), _parentStrategy.TickSize, RoundOfType.Floor)
+                    Dim buffer As Decimal = CalculateBuffer(entryPrice)
+                    entryPrice = entryPrice + buffer
+                    stoploss = stoploss - buffer
+                    If (entryPrice - stoploss) <= _userInputs.OptionMaxStoplossPoint Then
+                        If (_tradingDate.DayOfWeek = DayOfWeek.Thursday AndAlso (entryPrice - stoploss) >= _userInputs.OptionMinStoplossPointOnExpiry) OrElse
+                        (_tradingDate.DayOfWeek <> DayOfWeek.Thursday) Then
+                            Dim target As Decimal = entryPrice + ConvertFloorCeling((entryPrice - stoploss) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
+                            Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(Me.TradingSymbol, entryPrice, stoploss, Math.Abs(_userInputs.MaxLossPerTrade) * -1, Trade.TypeOfStock.Futures)
                             quantity = Math.Floor(quantity / Me.LotSize) * Me.LotSize
                             If quantity > 0 Then
                                 Dim parameter As PlaceOrderParameters = Nothing
                                 parameter = New PlaceOrderParameters With {
-                                            .EntryPrice = entryPrice,
-                                            .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                            .Quantity = quantity,
-                                            .Stoploss = stoploss,
-                                            .Target = target,
-                                            .Buffer = buffer,
-                                            .SignalCandle = signalCandle,
-                                            .OrderType = Trade.TypeOfOrder.SL,
-                                            .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
-                                            .Supporting2 = Me.Remarks
-                                        }
+                                        .EntryPrice = entryPrice,
+                                        .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                                        .Quantity = quantity,
+                                        .Stoploss = stoploss,
+                                        .Target = target,
+                                        .Buffer = buffer,
+                                        .SignalCandle = signalCandle,
+                                        .OrderType = Trade.TypeOfOrder.SL,
+                                        .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                                        .Supporting2 = Me.Remarks
+                                    }
 
                                 ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
                             Else
                                 Console.WriteLine(String.Format("{0}: Unable to take trade for quntity. Entry={1}, Stoploss={2}, Quantity={3}, Signal Candle={4}, Direction={5}, Condition={6}",
-                                                                Me.TradingSymbol, entryPrice, stoploss, quantity, signalCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss"), Me.Direction.ToString, Me.Remarks))
+                                                            Me.TradingSymbol, entryPrice, stoploss, quantity, signalCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss"), Me.Direction.ToString, Me.Remarks))
                             End If
                         Else
-                            Console.WriteLine(String.Format("{0}: Unable to take trade for expiry. Entry={1}, Stoploss={2}, Signal Candle={3}, Direction={4}, Condition={5}",
-                                                                Me.TradingSymbol, entryPrice, stoploss, signalCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss"), Me.Direction, Me.Remarks))
+                            Console.WriteLine(String.Format("{0}: Unable to take trade for lower stoploss on expiry. Entry={1}, Stoploss={2}, Signal Candle={3}, Direction={4}, Condition={5}",
+                                                            Me.TradingSymbol, entryPrice, stoploss, signalCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss"), Me.Direction.ToString, Me.Remarks))
                         End If
                     Else
-                        Console.WriteLine(String.Format("{0}: Unable to take trade for weak candle. Signal Candle={1}, Direction={2}, Condition={3}",
-                                                                Me.TradingSymbol, signalCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss"), Me.Direction, Me.Remarks))
+                        Console.WriteLine(String.Format("{0}: Unable to take trade for higher stoploss. Entry={1}, Stoploss={2}, Signal Candle={3}, Direction={4}, Condition={5}",
+                                                            Me.TradingSymbol, entryPrice, stoploss, signalCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss"), Me.Direction.ToString, Me.Remarks))
                     End If
                 End If
                 Me.ForceTakeTrade = False
@@ -212,7 +228,7 @@ Public Class AjitJhaOptionStrategyRule
             If signalCandle IsNot Nothing AndAlso signalCandle.PreviousCandlePayload IsNot Nothing AndAlso
                 signalCandle.PreviousCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
                 signalCandle.PreviousCandlePayload.PreviousCandlePayload.PayloadDate.Date = _tradingDate.Date Then
-                If signalCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
+                If CInt(signalCandle.Open) = CInt(signalCandle.Low) Then
                     Dim condition As String = Nothing
                     If signalCandle.Close > _emaPayload(signalCandle.PayloadDate) AndAlso
                         signalCandle.PreviousCandlePayload.Close < _emaPayload(signalCandle.PreviousCandlePayload.PayloadDate) Then
@@ -236,14 +252,14 @@ Public Class AjitJhaOptionStrategyRule
                         Dim buffer As Decimal = 0
                         Dim entryPrice As Decimal = ConvertFloorCeling(signalCandle.High, _parentStrategy.TickSize, RoundOfType.Celing) + buffer
                         Dim stoploss As Decimal = ConvertFloorCeling(Math.Min(signalCandle.PreviousCandlePayload.Low, signalCandle.PreviousCandlePayload.PreviousCandlePayload.Low), _parentStrategy.TickSize, RoundOfType.Floor) - buffer
-                        If entryPrice - stoploss < entryPrice * 0.7 / 100 Then
+                        If entryPrice - stoploss < entryPrice * _userInputs.SpotMaxStoplossPercentage / 100 Then
                             ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, String)(True, entryPrice, Trade.TradeExecutionDirection.Buy, condition)
                         Else
-                            Console.WriteLine(String.Format("Neglected because of bigger stoploss. Signal Candle:{0}, Direction:BUY, Condition:{1}",
+                            Console.WriteLine(String.Format("Neglected because of bigger stoploss on spot. Signal Candle:{0}, Direction:BUY, Condition:{1}",
                                                             signalCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss"), condition))
                         End If
                     End If
-                ElseIf signalCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
+                ElseIf CInt(signalCandle.Open) = CInt(signalCandle.High) Then
                     Dim condition As String = Nothing
                     If signalCandle.Close < _emaPayload(signalCandle.PayloadDate) AndAlso
                         signalCandle.PreviousCandlePayload.Close > _emaPayload(signalCandle.PreviousCandlePayload.PayloadDate) Then
@@ -267,10 +283,10 @@ Public Class AjitJhaOptionStrategyRule
                         Dim buffer As Decimal = 0
                         Dim entryPrice As Decimal = ConvertFloorCeling(signalCandle.Low, _parentStrategy.TickSize, RoundOfType.Floor) - buffer
                         Dim stoploss As Decimal = ConvertFloorCeling(Math.Max(signalCandle.PreviousCandlePayload.High, signalCandle.PreviousCandlePayload.PreviousCandlePayload.High), _parentStrategy.TickSize, RoundOfType.Celing) + buffer
-                        If stoploss - entryPrice < entryPrice * 0.7 / 100 Then
+                        If stoploss - entryPrice < entryPrice * _userInputs.SpotMaxStoplossPercentage / 100 Then
                             ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, String)(True, entryPrice, Trade.TradeExecutionDirection.Sell, condition)
                         Else
-                            Console.WriteLine(String.Format("Neglected because of bigger stoploss. Signal Candle:{0}, Direction:SELL, Condition:{1}",
+                            Console.WriteLine(String.Format("Neglected because of bigger stoploss on spot. Signal Candle:{0}, Direction:SELL, Condition:{1}",
                                                             signalCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss"), condition))
                         End If
                     End If
