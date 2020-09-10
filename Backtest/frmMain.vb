@@ -287,9 +287,9 @@ Public Class frmMain
                             tick = 0.05
                     End Select
 
-                    For timeframe As Integer = 1 To 4 Step 1
-                        For spotMaxLossPer As Decimal = 0.4 To 0.7 Step 0.1
-                            For reversal As Integer = 0 To 1 Step 1
+                    For timeframe As Integer = 5 To 5 Step 1
+                        For spotMaxLossPer As Decimal = 0.7 To 0.7 Step 0.1
+                            For reversal As Integer = 1 To 1 Step 1
                                 Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                                 exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                                 exchangeEndTime:=TimeSpan.Parse("15:29:59"),
