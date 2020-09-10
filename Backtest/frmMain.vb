@@ -319,7 +319,9 @@ Public Class frmMain
                                                .TargetMultiplier = 2,
                                                .MaxLossPerTrade = -2000,
                                                .SpotMaxStoplossPercentage = 0.7,
-                                               .OptionMinStoplossPointOnExpiry = 10
+                                               .OptionMinStoplossPointOnExpiry = 10,
+                                               .ReverseSignalExit = False,
+                                               .CheckStrongCandleWithBuffer = False
                                               }
 
                             .NumberOfTradeableStockPerDay = Integer.MaxValue

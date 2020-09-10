@@ -14,6 +14,8 @@ Public Class AjitJhaOptionStrategyRule
         Public OptionMinStoplossPointOnExpiry As Decimal
         Public TargetMultiplier As Decimal
         Public MaxLossPerTrade As Decimal
+        Public ReverseSignalExit As Boolean
+        Public CheckStrongCandleWithBuffer As Boolean
     End Class
 #End Region
 
@@ -91,7 +93,8 @@ Public Class AjitJhaOptionStrategyRule
                     signalCandle.PreviousCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
                     signalCandle.PreviousCandlePayload.PreviousCandlePayload.PayloadDate.Date = _tradingDate.Date Then
                     Dim candleBuffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Low, RoundOfType.Floor)
-                    If signalCandle.Open >= signalCandle.Low - candleBuffer AndAlso signalCandle.Open <= signalCandle.Low + candleBuffer Then
+                    If (_userInputs.CheckStrongCandleWithBuffer AndAlso (signalCandle.Open >= signalCandle.Low - candleBuffer AndAlso signalCandle.Open <= signalCandle.Low + candleBuffer)) OrElse
+                        (signalCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish) Then
                         Dim entryPrice As Decimal = ConvertFloorCeling(signalCandle.High, _parentStrategy.TickSize, RoundOfType.Celing)
                         Dim stoploss As Decimal = ConvertFloorCeling(Math.Min(signalCandle.PreviousCandlePayload.Low, signalCandle.PreviousCandlePayload.PreviousCandlePayload.Low), _parentStrategy.TickSize, RoundOfType.Floor)
                         Dim buffer As Decimal = CalculateBuffer(entryPrice)
@@ -178,24 +181,16 @@ Public Class AjitJhaOptionStrategyRule
                 If runningInstrument.DummyCandle IsNot Nothing Then
                     Dim lastTrade As Trade = _parentStrategy.GetLastTradeOfTheStock(runningInstrument.DummyCandle, Trade.TypeOfTrade.MIS)
                     If lastTrade IsNot Nothing Then
-                        'If lastTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-                        '    Dim signal As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, String) = GetEntrySignal(currentMinuteCandle, currentTick)
-                        '    If signal IsNot Nothing AndAlso signal.Item1 Then
-                        '        If signal.Item3 = Trade.TradeExecutionDirection.Buy AndAlso lastTrade.TradingSymbol.EndsWith("PE") Then
-                        '            runningInstrument.ForceCancelTrade = True
-                        '        ElseIf signal.Item3 = Trade.TradeExecutionDirection.Sell AndAlso lastTrade.TradingSymbol.EndsWith("CE") Then
-                        '            runningInstrument.ForceCancelTrade = True
-                        '        End If
-                        '    End If
-                        'ElseIf lastTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
-                        '    Dim hkCandle As Payload = _hkPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
-                        '    If hkCandle.CandleColor = Color.Green AndAlso lastTrade.TradingSymbol.EndsWith("PE") Then
-                        '        runningInstrument.ForceCancelTrade = True
-                        '    ElseIf hkCandle.CandleColor = Color.Red AndAlso lastTrade.TradingSymbol.EndsWith("CE") Then
-                        '        runningInstrument.ForceCancelTrade = True
-                        '    End If
-                        'End If
-                        If lastTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
+                        If _userInputs.ReverseSignalExit AndAlso lastTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                            Dim signal As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, String) = GetEntrySignal(currentMinuteCandle, currentTick)
+                            If signal IsNot Nothing AndAlso signal.Item1 Then
+                                If signal.Item3 = Trade.TradeExecutionDirection.Buy AndAlso lastTrade.TradingSymbol.EndsWith("PE") Then
+                                    runningInstrument.ForceCancelTrade = True
+                                ElseIf signal.Item3 = Trade.TradeExecutionDirection.Sell AndAlso lastTrade.TradingSymbol.EndsWith("CE") Then
+                                    runningInstrument.ForceCancelTrade = True
+                                End If
+                            End If
+                        ElseIf lastTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
                             Dim hkCandle As Payload = _hkPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
                             If hkCandle.CandleColor = Color.Green AndAlso lastTrade.TradingSymbol.EndsWith("PE") Then
                                 runningInstrument.ForceCancelTrade = True
@@ -233,7 +228,8 @@ Public Class AjitJhaOptionStrategyRule
             If signalCandle IsNot Nothing AndAlso signalCandle.PreviousCandlePayload IsNot Nothing AndAlso
                 signalCandle.PreviousCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
                 signalCandle.PreviousCandlePayload.PreviousCandlePayload.PayloadDate.Date = _tradingDate.Date Then
-                If CInt(signalCandle.Open) = CInt(signalCandle.Low) Then
+                If (_userInputs.CheckStrongCandleWithBuffer AndAlso CInt(signalCandle.Open) = CInt(signalCandle.Low)) OrElse
+                    signalCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
                     Dim condition As String = Nothing
                     If signalCandle.Close > _emaPayload(signalCandle.PayloadDate) AndAlso
                         signalCandle.PreviousCandlePayload.Close < _emaPayload(signalCandle.PreviousCandlePayload.PayloadDate) Then
@@ -264,7 +260,8 @@ Public Class AjitJhaOptionStrategyRule
                                                             signalCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss"), condition))
                         End If
                     End If
-                ElseIf CInt(signalCandle.Open) = CInt(signalCandle.High) Then
+                ElseIf (_userInputs.CheckStrongCandleWithBuffer AndAlso CInt(signalCandle.Open) = CInt(signalCandle.High)) OrElse
+                    signalCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
                     Dim condition As String = Nothing
                     If signalCandle.Close < _emaPayload(signalCandle.PayloadDate) AndAlso
                         signalCandle.PreviousCandlePayload.Close > _emaPayload(signalCandle.PreviousCandlePayload.PayloadDate) Then
