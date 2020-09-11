@@ -125,12 +125,14 @@ Public Class InsideBarStrategyRule
             current5MinCandle.PreviousCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
             current5MinCandle.PreviousCandlePayload.PreviousCandlePayload.PayloadDate.Date = _tradingDate.Date Then
             Dim pivot As PivotPoints = _pivotPointsPayload(current5MinCandle.PreviousCandlePayload.PayloadDate)
-            Dim stoploss As Decimal = current5MinCandle.PreviousCandlePayload.PreviousCandlePayload.Low
             If IsSignalValid(current5MinCandle, current1MinCandle, currentTick, pivot) Then
+                Dim stoploss As Decimal = current5MinCandle.PreviousCandlePayload.PreviousCandlePayload.Low
                 ret = New Tuple(Of Boolean, Payload, Decimal, String)(True, current5MinCandle.PreviousCandlePayload, stoploss, "Signal at 5 min candle")
             ElseIf IsSignalValid(current10MinCandle, current1MinCandle, currentTick, pivot) Then
+                Dim stoploss As Decimal = current10MinCandle.PreviousCandlePayload.PreviousCandlePayload.Low
                 ret = New Tuple(Of Boolean, Payload, Decimal, String)(True, current10MinCandle.PreviousCandlePayload, stoploss, "Signal at 10 min candle")
             ElseIf IsSignalValid(current15MinCandle, current1MinCandle, currentTick, pivot) Then
+                Dim stoploss As Decimal = current15MinCandle.PreviousCandlePayload.PreviousCandlePayload.Low
                 ret = New Tuple(Of Boolean, Payload, Decimal, String)(True, current15MinCandle.PreviousCandlePayload, stoploss, "Signal at 15 min candle")
             End If
         End If
@@ -147,14 +149,71 @@ Public Class InsideBarStrategyRule
                 If currentXMinuteCandle.PreviousCandlePayload.Close > currentXMinuteCandle.PreviousCandlePayload.Open Then
                     If currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.High - currentXMinuteCandle.PreviousCandlePayload.Close >= 2 AndAlso
                         currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.High - currentXMinuteCandle.PreviousCandlePayload.Close < 4 Then
-                        If currentXMinuteCandle.PreviousCandlePayload.Close >= pivot.Resistance1 Then
+                        If currentXMinuteCandle.PreviousCandlePayload.Close >= pivot.Pivot Then
                             If currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.Close - currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.Low >= 3 Then
                                 If currentXMinuteCandle.Open >= currentXMinuteCandle.PreviousCandlePayload.Close Then
                                     Dim tickTime As Date = New Date(currentXMinuteCandle.PayloadDate.Year, currentXMinuteCandle.PayloadDate.Month, currentXMinuteCandle.PayloadDate.Day,
                                                                     currentXMinuteCandle.PayloadDate.Hour, currentXMinuteCandle.PayloadDate.Minute, 10)
                                     If currentTick.PayloadDate >= tickTime AndAlso current1MinuteCandle.Volume > 0 AndAlso
                                         currentTick.Close >= currentXMinuteCandle.PreviousCandlePayload.Close Then
-                                        ret = True
+                                        'ret=True
+                                        'New Condition
+                                        If currentXMinuteCandle.Open < Math.Min(pivot.Resistance1, Math.Min(pivot.Resistance2, pivot.Resistance3)) AndAlso
+                                            Math.Min(pivot.Resistance1, Math.Min(pivot.Resistance2, pivot.Resistance3)) - currentXMinuteCandle.Open >= 8 Then
+                                            Dim preCndlHighBelowPivot As Boolean = False
+                                            If currentXMinuteCandle.PreviousCandlePayload.Open < pivot.Pivot Then
+                                                If currentXMinuteCandle.PreviousCandlePayload.High < pivot.Pivot Then
+                                                    preCndlHighBelowPivot = True
+                                                End If
+                                            ElseIf currentXMinuteCandle.PreviousCandlePayload.Open < pivot.Resistance1 Then
+                                                If currentXMinuteCandle.PreviousCandlePayload.High < pivot.Resistance1 Then
+                                                    preCndlHighBelowPivot = True
+                                                End If
+                                            ElseIf currentXMinuteCandle.PreviousCandlePayload.Open < pivot.Resistance2 Then
+                                                If currentXMinuteCandle.PreviousCandlePayload.High < pivot.Resistance2 Then
+                                                    preCndlHighBelowPivot = True
+                                                End If
+                                            ElseIf currentXMinuteCandle.PreviousCandlePayload.Open < pivot.Resistance3 Then
+                                                If currentXMinuteCandle.PreviousCandlePayload.High < pivot.Resistance3 Then
+                                                    preCndlHighBelowPivot = True
+                                                End If
+                                            End If
+                                            If preCndlHighBelowPivot Then
+                                                Dim prePreCndlHighBelowPivot As Boolean = False
+                                                If currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.Open < pivot.Pivot Then
+                                                    If currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.High < pivot.Pivot Then
+                                                        prePreCndlHighBelowPivot = True
+                                                    End If
+                                                ElseIf currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.Open < pivot.Resistance1 Then
+                                                    If currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.High < pivot.Resistance1 Then
+                                                        prePreCndlHighBelowPivot = True
+                                                    End If
+                                                ElseIf currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.Open < pivot.Resistance2 Then
+                                                    If currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.High < pivot.Resistance2 Then
+                                                        prePreCndlHighBelowPivot = True
+                                                    End If
+                                                ElseIf currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.Open < pivot.Resistance3 Then
+                                                    If currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.High < pivot.Resistance3 Then
+                                                        prePreCndlHighBelowPivot = True
+                                                    End If
+                                                End If
+                                                If prePreCndlHighBelowPivot Then
+                                                    If currentXMinuteCandle.PreviousCandlePayload.High < pivot.Resistance3 AndAlso
+                                                        currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.High < pivot.Resistance3 Then
+                                                        If currentXMinuteCandle.PreviousCandlePayload.Close - currentXMinuteCandle.PreviousCandlePayload.Open > 1 Then
+                                                            If currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.CandleColor = Color.Green Then
+                                                                ret = True
+                                                            Else
+                                                                If (currentXMinuteCandle.PreviousCandlePayload.Close - currentXMinuteCandle.PreviousCandlePayload.Open) <=
+                                                                    (currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.Open - currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.Close) * 75 / 100 Then
+                                                                    ret = True
+                                                                End If
+                                                            End If
+                                                        End If
+                                                    End If
+                                                End If
+                                            End If
+                                        End If
                                     End If
                                 End If
                             End If
