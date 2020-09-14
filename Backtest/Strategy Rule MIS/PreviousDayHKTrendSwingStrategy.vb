@@ -174,26 +174,30 @@ Public Class PreviousDayHKTrendSwingStrategy
             Dim candle As Payload = currentCandle.PreviousCandlePayload
             Dim swing As Indicator.Swing = _swingPayload(candle.PayloadDate)
             If _direction = Trade.TradeExecutionDirection.Buy Then
-                Dim buffer As Decimal = _parentStrategy.CalculateBuffer(swing.SwingHigh, RoundOfType.Floor)
-                Dim signalCandle As Payload = _signalPayload(swing.SwingHighTime)
-                Dim entry As Decimal = swing.SwingHigh + buffer
-                Dim stoploss As Decimal = Math.Min(signalCandle.Low, signalCandle.PreviousCandlePayload.Low)
-                Dim nextCandle As Payload = _signalPayload(swing.SwingHighTime.AddMinutes(_parentStrategy.SignalTimeFrame))
-                If nextCandle.Low < stoploss Then stoploss = nextCandle.Low
-                stoploss = stoploss - buffer
-                If entry - stoploss < _dayATR * _userInputs.ATRMultiplier Then
-                    ret = New Tuple(Of Boolean, Decimal, Decimal, Payload, Trade.TradeExecutionDirection)(True, entry, stoploss, signalCandle, Trade.TradeExecutionDirection.Buy)
+                If swing.SwingHighTime.Date = _tradingDate.Date Then
+                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(swing.SwingHigh, RoundOfType.Floor)
+                    Dim signalCandle As Payload = _signalPayload(swing.SwingHighTime)
+                    Dim entry As Decimal = swing.SwingHigh + buffer
+                    Dim stoploss As Decimal = Math.Min(signalCandle.Low, signalCandle.PreviousCandlePayload.Low)
+                    Dim nextCandle As Payload = _signalPayload(swing.SwingHighTime.AddMinutes(_parentStrategy.SignalTimeFrame))
+                    If nextCandle.Low < stoploss Then stoploss = nextCandle.Low
+                    stoploss = stoploss - buffer
+                    If entry - stoploss < _dayATR * _userInputs.ATRMultiplier Then
+                        ret = New Tuple(Of Boolean, Decimal, Decimal, Payload, Trade.TradeExecutionDirection)(True, entry, stoploss, signalCandle, Trade.TradeExecutionDirection.Buy)
+                    End If
                 End If
             ElseIf _direction = Trade.TradeExecutionDirection.Sell Then
-                Dim buffer As Decimal = _parentStrategy.CalculateBuffer(swing.SwingLow, RoundOfType.Floor)
-                Dim signalCandle As Payload = _signalPayload(swing.SwingLowTime)
-                Dim entry As Decimal = swing.SwingLow - buffer
-                Dim stoploss As Decimal = Math.Max(signalCandle.High, signalCandle.PreviousCandlePayload.High)
-                Dim nextCandle As Payload = _signalPayload(swing.SwingLowTime.AddMinutes(_parentStrategy.SignalTimeFrame))
-                If nextCandle.High > stoploss Then stoploss = nextCandle.High
-                stoploss = stoploss + buffer
-                If stoploss - entry < _dayATR * _userInputs.ATRMultiplier Then
-                    ret = New Tuple(Of Boolean, Decimal, Decimal, Payload, Trade.TradeExecutionDirection)(True, entry, stoploss, signalCandle, Trade.TradeExecutionDirection.Sell)
+                If swing.SwingLowTime.Date = _tradingDate.Date Then
+                    Dim buffer As Decimal = _parentStrategy.CalculateBuffer(swing.SwingLow, RoundOfType.Floor)
+                    Dim signalCandle As Payload = _signalPayload(swing.SwingLowTime)
+                    Dim entry As Decimal = swing.SwingLow - buffer
+                    Dim stoploss As Decimal = Math.Max(signalCandle.High, signalCandle.PreviousCandlePayload.High)
+                    Dim nextCandle As Payload = _signalPayload(swing.SwingLowTime.AddMinutes(_parentStrategy.SignalTimeFrame))
+                    If nextCandle.High > stoploss Then stoploss = nextCandle.High
+                    stoploss = stoploss + buffer
+                    If stoploss - entry < _dayATR * _userInputs.ATRMultiplier Then
+                        ret = New Tuple(Of Boolean, Decimal, Decimal, Payload, Trade.TradeExecutionDirection)(True, entry, stoploss, signalCandle, Trade.TradeExecutionDirection.Sell)
+                    End If
                 End If
             End If
         End If
