@@ -233,6 +233,8 @@ Namespace StrategyHelper
                                             stockRule = New BollingerTouchStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 56
                                             stockRule = New AtTheMoneyOptionBuyOnlyStrategy(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).SupportingDate, stockList(stock).Supporting1)
+                                        Case 57
+                                            stockRule = New PreviousDayHKTrendSwingStrategy(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
