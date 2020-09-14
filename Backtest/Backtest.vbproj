@@ -176,6 +176,7 @@
     <Compile Include="Strategy Rule MIS\PairAnchorHKStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\PreviousDayHKTrendBollingerStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\PreviousDayHKTrendStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\PreviousDayHKTrendSwingStrategy.vb" />
     <Compile Include="Strategy Rule MIS\ReversalHHLLBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\SmallOpeningRangeBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\SmallRangeBreakoutStrategyRule.vb" />
