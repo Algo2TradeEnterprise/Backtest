@@ -65,7 +65,7 @@ Public Class PreviousDayHKTrendSwingStrategy
             Dim signalCandle As Payload = Nothing
             Dim signal As Tuple(Of Boolean, Decimal, Decimal, Payload, Trade.TradeExecutionDirection) = GetEntrySignal(currentMinuteCandle, currentTick)
             If signal IsNot Nothing AndAlso signal.Item1 Then
-                Dim lastTrade As Trade = _parentStrategy.GetLastEntryTradeOfTheStock(currentMinuteCandle, Trade.TypeOfTrade.MIS)
+                Dim lastTrade As Trade = _parentStrategy.GetLastTradeOfTheStock(currentMinuteCandle, Trade.TypeOfTrade.MIS)
                 If lastTrade IsNot Nothing Then
                     If lastTrade.SignalCandle.PayloadDate <> signal.Item4.PayloadDate Then
                         signalCandle = signal.Item4
@@ -126,18 +126,18 @@ Public Class PreviousDayHKTrendSwingStrategy
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
             Dim currentMinuteCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                If currentTick.Open <= currentTrade.PotentialStopLoss Then
+                If currentMinuteCandle.PreviousCandlePayload.Low <= currentTrade.PotentialStopLoss Then
                     ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                 End If
             ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                If currentTick.Open >= currentTrade.PotentialStopLoss Then
+                If currentMinuteCandle.PreviousCandlePayload.High >= currentTrade.PotentialStopLoss Then
                     ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                 End If
             End If
             If ret Is Nothing Then
                 Dim signal As Tuple(Of Boolean, Decimal, Decimal, Payload, Trade.TradeExecutionDirection) = GetEntrySignal(currentMinuteCandle, currentTick)
                 If signal IsNot Nothing AndAlso signal.Item1 Then
-                    If currentTrade.EntryDirection <> signal.Item3 OrElse
+                    If currentTrade.EntryDirection <> signal.Item5 OrElse
                         currentTrade.EntryPrice <> signal.Item2 OrElse
                         currentTrade.SignalCandle.PayloadDate <> signal.Item4.PayloadDate Then
                         ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
@@ -174,9 +174,9 @@ Public Class PreviousDayHKTrendSwingStrategy
             Dim candle As Payload = currentCandle.PreviousCandlePayload
             Dim swing As Indicator.Swing = _swingPayload(candle.PayloadDate)
             If _direction = Trade.TradeExecutionDirection.Buy Then
-                If swing.SwingHighTime.Date = _tradingDate.Date Then
+                Dim signalCandle As Payload = _signalPayload(swing.SwingHighTime)
+                If signalCandle.PreviousCandlePayload.PayloadDate.Date = _tradingDate.Date Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(swing.SwingHigh, RoundOfType.Floor)
-                    Dim signalCandle As Payload = _signalPayload(swing.SwingHighTime)
                     Dim entry As Decimal = swing.SwingHigh + buffer
                     Dim stoploss As Decimal = Math.Min(signalCandle.Low, signalCandle.PreviousCandlePayload.Low)
                     Dim nextCandle As Payload = _signalPayload(swing.SwingHighTime.AddMinutes(_parentStrategy.SignalTimeFrame))
@@ -187,9 +187,9 @@ Public Class PreviousDayHKTrendSwingStrategy
                     End If
                 End If
             ElseIf _direction = Trade.TradeExecutionDirection.Sell Then
-                If swing.SwingLowTime.Date = _tradingDate.Date Then
+                Dim signalCandle As Payload = _signalPayload(swing.SwingLowTime)
+                If signalCandle.PreviousCandlePayload.PayloadDate.Date = _tradingDate.Date Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(swing.SwingLow, RoundOfType.Floor)
-                    Dim signalCandle As Payload = _signalPayload(swing.SwingLowTime)
                     Dim entry As Decimal = swing.SwingLow - buffer
                     Dim stoploss As Decimal = Math.Max(signalCandle.High, signalCandle.PreviousCandlePayload.High)
                     Dim nextCandle As Payload = _signalPayload(swing.SwingLowTime.AddMinutes(_parentStrategy.SignalTimeFrame))
