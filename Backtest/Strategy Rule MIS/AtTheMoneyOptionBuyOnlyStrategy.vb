@@ -7,6 +7,7 @@ Public Class AtTheMoneyOptionBuyOnlyStrategy
     Inherits StrategyRule
 
     Private ReadOnly _tradeEntryTime As Date
+    Private ReadOnly _turnoverRatio As Decimal
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
                    ByVal parentStrategy As Strategy,
@@ -14,9 +15,11 @@ Public Class AtTheMoneyOptionBuyOnlyStrategy
                    ByVal tradingSymbol As String,
                    ByVal canceller As CancellationTokenSource,
                    ByVal entities As RuleEntities,
-                   ByVal tradeEntryTime As Date)
+                   ByVal tradeEntryTime As Date,
+                   ByVal turnoverRatio As Decimal)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _tradeEntryTime = tradeEntryTime
+        _turnoverRatio = turnoverRatio
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -39,6 +42,9 @@ Public Class AtTheMoneyOptionBuyOnlyStrategy
             If signalCandle IsNot Nothing Then
                 Dim entryPrice As Decimal = currentTick.Open
                 Dim quantity As Integer = Me.LotSize
+                If _tradingSymbol.Contains("BANKNIFTY") AndAlso _turnoverRatio > 1 Then
+                    quantity = Me.LotSize * 2
+                End If
 
                 parameter = New PlaceOrderParameters With {
                                     .entryPrice = entryPrice,

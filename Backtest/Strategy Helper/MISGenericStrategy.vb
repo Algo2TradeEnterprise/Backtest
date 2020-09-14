@@ -232,7 +232,7 @@ Namespace StrategyHelper
                                         Case 55
                                             stockRule = New BollingerTouchStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 56
-                                            stockRule = New AtTheMoneyOptionBuyOnlyStrategy(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).SupportingDate)
+                                            stockRule = New AtTheMoneyOptionBuyOnlyStrategy(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).SupportingDate, stockList(stock).Supporting1)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
@@ -1688,12 +1688,14 @@ Namespace StrategyHelper
                                     End If
                                     Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
                                     Dim tradeEntryTime As Date = Date.ParseExact(dt.Rows(i).Item("Time"), "dd-MM-yyyy HH:mm:ss", Nothing)
+                                    Dim turnoverRatio As Decimal = dt.Rows(i).Item("Turnover Ratio")
 
                                     Dim detailsOfStock As StockDetails = New StockDetails With
                                                 {.StockName = instrumentName,
                                                  .TradingSymbol = tradingSymbol,
                                                  .LotSize = lotsize,
                                                  .SupportingDate = tradeEntryTime,
+                                                 .Supporting1 = turnoverRatio,
                                                  .EligibleToTakeTrade = True}
 
                                     If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
