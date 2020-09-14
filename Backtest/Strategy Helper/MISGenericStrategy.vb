@@ -231,6 +231,8 @@ Namespace StrategyHelper
                                             stockRule = New HKReversalAdaptiveMartingaleStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
                                         Case 55
                                             stockRule = New BollingerTouchStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case 56
+                                            stockRule = New AtTheMoneyOptionBuyOnlyStrategy(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).SupportingDate)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
@@ -1672,6 +1674,35 @@ Namespace StrategyHelper
                                     Next
                                 End If
                             End If
+                        Case 56
+                            Dim counter As Integer = 0
+                            For i = 0 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i).Item("Date")
+                                If rowDate.Date = tradingDate.Date Then
+                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
+                                    Dim instrumentName As String = Nothing
+                                    If tradingSymbol.Contains("FUT") Then
+                                        instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                                    Else
+                                        instrumentName = tradingSymbol
+                                    End If
+                                    Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
+                                    Dim tradeEntryTime As Date = Date.ParseExact(dt.Rows(i).Item("Time"), "dd-MM-yyyy HH:mm:ss", Nothing)
+
+                                    Dim detailsOfStock As StockDetails = New StockDetails With
+                                                {.StockName = instrumentName,
+                                                 .TradingSymbol = tradingSymbol,
+                                                 .LotSize = lotsize,
+                                                 .SupportingDate = tradeEntryTime,
+                                                 .EligibleToTakeTrade = True}
+
+                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                    ret.Add(instrumentName, detailsOfStock)
+
+                                    counter += 1
+                                    If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                                End If
+                            Next
                         Case Else
                             Dim counter As Integer = 0
                             For i = 0 To dt.Rows.Count - 1
