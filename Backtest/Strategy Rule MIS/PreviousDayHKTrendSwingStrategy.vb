@@ -175,7 +175,8 @@ Public Class PreviousDayHKTrendSwingStrategy
             Dim swing As Indicator.Swing = _swingPayload(candle.PayloadDate)
             If _direction = Trade.TradeExecutionDirection.Buy Then
                 Dim signalCandle As Payload = _signalPayload(swing.SwingHighTime)
-                If signalCandle.PreviousCandlePayload.PayloadDate.Date = _tradingDate.Date Then
+                If signalCandle IsNot Nothing AndAlso signalCandle.PreviousCandlePayload IsNot Nothing AndAlso
+                    signalCandle.PreviousCandlePayload.PayloadDate.Date = _tradingDate.Date Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(swing.SwingHigh, RoundOfType.Floor)
                     Dim entry As Decimal = swing.SwingHigh + buffer
                     Dim stoploss As Decimal = Math.Min(signalCandle.Low, signalCandle.PreviousCandlePayload.Low)
@@ -188,7 +189,8 @@ Public Class PreviousDayHKTrendSwingStrategy
                 End If
             ElseIf _direction = Trade.TradeExecutionDirection.Sell Then
                 Dim signalCandle As Payload = _signalPayload(swing.SwingLowTime)
-                If signalCandle.PreviousCandlePayload.PayloadDate.Date = _tradingDate.Date Then
+                If signalCandle IsNot Nothing AndAlso signalCandle.PreviousCandlePayload IsNot Nothing AndAlso
+                    signalCandle.PreviousCandlePayload.PayloadDate.Date = _tradingDate.Date Then
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(swing.SwingLow, RoundOfType.Floor)
                     Dim entry As Decimal = swing.SwingLow - buffer
                     Dim stoploss As Decimal = Math.Max(signalCandle.High, signalCandle.PreviousCandlePayload.High)
