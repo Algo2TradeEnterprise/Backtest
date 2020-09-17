@@ -41,7 +41,7 @@ Public Class InsideBarStrategyRule
             Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS) AndAlso Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS) AndAlso
             currentMinuteCandle.PayloadDate >= _tradeStartTime AndAlso Me.EligibleToTakeTrade Then
             Dim signalCandle As Payload = Nothing
-            Dim signal As Tuple(Of Boolean, Payload, Decimal, String) = GetEntrySignal(currentTick)
+            Dim signal As Tuple(Of Boolean, Payload, Decimal, String, Trade.TradeExecutionDirection) = GetEntrySignal(currentTick)
             If signal IsNot Nothing AndAlso signal.Item1 Then
                 Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandle, Trade.TypeOfTrade.MIS)
                 If lastExecutedOrder IsNot Nothing Then
@@ -55,23 +55,41 @@ Public Class InsideBarStrategyRule
             If signalCandle IsNot Nothing Then
                 Dim buffer As Decimal = _parentStrategy.CalculateBuffer(currentTick.Open, RoundOfType.Floor)
                 Dim entryPrice As Decimal = currentTick.Open
-                Dim stoploss As Decimal = signal.Item3 - buffer
-                Dim quantity As Integer = Me.LotSize
-                Dim targetPoint As Decimal = 5
+                If signal.Item5 = Trade.TradeExecutionDirection.Buy Then
+                    Dim slPoint As Decimal = Math.Min((entryPrice - (signal.Item3 - buffer)), 10)
+                    Dim quantity As Integer = Me.LotSize
+                    Dim targetPoint As Decimal = 100000000
 
-                parameter = New PlaceOrderParameters With {
-                                .EntryPrice = entryPrice,
-                                .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                .Quantity = quantity,
-                                .Stoploss = stoploss,
-                                .Target = .EntryPrice + targetPoint,
-                                .Buffer = buffer,
-                                .SignalCandle = signalCandle,
-                                .OrderType = Trade.TypeOfOrder.Market,
-                                .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
-                                .Supporting2 = signal.Item4
-                            }
+                    parameter = New PlaceOrderParameters With {
+                                    .EntryPrice = entryPrice,
+                                    .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                                    .Quantity = quantity,
+                                    .Stoploss = .EntryPrice - slPoint,
+                                    .Target = .EntryPrice + targetPoint,
+                                    .Buffer = buffer,
+                                    .SignalCandle = signalCandle,
+                                    .OrderType = Trade.TypeOfOrder.Market,
+                                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                                    .Supporting2 = signal.Item4
+                                }
+                ElseIf signal.Item5 = Trade.TradeExecutionDirection.Sell Then
+                    Dim slPoint As Decimal = Math.Min(ConvertFloorCeling((entryPrice * 1.005) - entryPrice, _parentStrategy.TickSize, RoundOfType.Floor), 10)
+                    Dim quantity As Integer = Me.LotSize
+                    Dim targetPoint As Decimal = 100000000
 
+                    parameter = New PlaceOrderParameters With {
+                                    .EntryPrice = entryPrice,
+                                    .EntryDirection = Trade.TradeExecutionDirection.Sell,
+                                    .Quantity = quantity,
+                                    .Stoploss = .EntryPrice + slPoint,
+                                    .Target = .EntryPrice - targetPoint,
+                                    .Buffer = buffer,
+                                    .SignalCandle = signalCandle,
+                                    .OrderType = Trade.TypeOfOrder.Market,
+                                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                                    .Supporting2 = signal.Item4
+                                }
+                End If
             End If
         End If
         If parameter IsNot Nothing Then
@@ -89,6 +107,48 @@ Public Class InsideBarStrategyRule
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
+        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            Dim triggerPrice As Decimal = Decimal.MinValue
+            Dim remark As String = ""
+            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                Dim plPoint As Decimal = currentTick.Open - currentTrade.EntryPrice
+                Dim plPer As Decimal = (plPoint / currentTrade.EntryPrice) * 100
+                If plPer >= 0.7 AndAlso plPer <= 10 Then
+                    Dim gainPer As Decimal = Math.Floor((plPer * 100) / 10)
+                    If gainPer Mod 2 = 0 Then
+                        gainPer = (gainPer - 1) / 10
+                    Else
+                        gainPer = gainPer / 10
+                    End If
+                    Dim slPer As Decimal = gainPer - 0.2
+                    Dim potentialStoploss As Decimal = currentTrade.EntryPrice + ConvertFloorCeling(currentTrade.EntryPrice * slPer / 100, _parentStrategy.TickSize, RoundOfType.Floor)
+                    If potentialStoploss > currentTrade.PotentialStopLoss Then
+                        triggerPrice = potentialStoploss
+                        remark = String.Format("Moved at {0} for gain {1}%", currentTick.PayloadDate.ToString("HH:mm:ss"), Math.Round(gainPer, 2))
+                    End If
+                End If
+            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                Dim plPoint As Decimal = currentTrade.EntryPrice - currentTick.Open
+                Dim plPer As Decimal = (plPoint / currentTrade.EntryPrice) * 100
+                If plPer >= 0.7 AndAlso plPer <= 10 Then
+                    Dim gainPer As Decimal = Math.Floor((plPer * 100) / 10)
+                    If gainPer Mod 2 = 0 Then
+                        gainPer = (gainPer - 1) / 10
+                    Else
+                        gainPer = gainPer / 10
+                    End If
+                    Dim slPer As Decimal = gainPer - 0.2
+                    Dim potentialStoploss As Decimal = currentTrade.EntryPrice - ConvertFloorCeling(currentTrade.EntryPrice * slPer / 100, _parentStrategy.TickSize, RoundOfType.Floor)
+                    If potentialStoploss < currentTrade.PotentialStopLoss Then
+                        triggerPrice = potentialStoploss
+                        remark = String.Format("Moved at {0} for gain {1}%", currentTick.PayloadDate.ToString("HH:mm:ss"), Math.Round(gainPer, 2))
+                    End If
+                End If
+            End If
+            If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
+                ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, remark)
+            End If
+        End If
         Return ret
     End Function
 
@@ -106,8 +166,8 @@ Public Class InsideBarStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
     End Function
 
-    Private Function GetEntrySignal(ByVal currentTick As Payload) As Tuple(Of Boolean, Payload, Decimal, String)
-        Dim ret As Tuple(Of Boolean, Payload, Decimal, String) = Nothing
+    Private Function GetEntrySignal(ByVal currentTick As Payload) As Tuple(Of Boolean, Payload, Decimal, String, Trade.TradeExecutionDirection)
+        Dim ret As Tuple(Of Boolean, Payload, Decimal, String, Trade.TradeExecutionDirection) = Nothing
         Dim current1MinCandle As Payload = _inputPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _inputPayload, 1))
         Dim current5MinCandle As Payload = Nothing
         If _signalPayload.ContainsKey(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload, 5)) Then
@@ -125,21 +185,23 @@ Public Class InsideBarStrategyRule
             current5MinCandle.PreviousCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
             current5MinCandle.PreviousCandlePayload.PreviousCandlePayload.PayloadDate.Date = _tradingDate.Date Then
             Dim pivot As PivotPoints = _pivotPointsPayload(current5MinCandle.PreviousCandlePayload.PayloadDate)
-            If IsSignalValid(current5MinCandle, current1MinCandle, currentTick, pivot) Then
+            Dim direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
+            If IsSignalValid(current5MinCandle, current1MinCandle, currentTick, pivot, direction) Then
                 Dim stoploss As Decimal = current5MinCandle.PreviousCandlePayload.PreviousCandlePayload.Low
-                ret = New Tuple(Of Boolean, Payload, Decimal, String)(True, current5MinCandle.PreviousCandlePayload, stoploss, "Signal at 5 min candle")
-            ElseIf IsSignalValid(current10MinCandle, current1MinCandle, currentTick, pivot) Then
+                ret = New Tuple(Of Boolean, Payload, Decimal, String, Trade.TradeExecutionDirection)(True, current5MinCandle.PreviousCandlePayload, stoploss, "Signal at 5 min candle", direction)
+            ElseIf IsSignalValid(current10MinCandle, current1MinCandle, currentTick, pivot, direction) Then
                 Dim stoploss As Decimal = current10MinCandle.PreviousCandlePayload.PreviousCandlePayload.Low
-                ret = New Tuple(Of Boolean, Payload, Decimal, String)(True, current10MinCandle.PreviousCandlePayload, stoploss, "Signal at 10 min candle")
-            ElseIf IsSignalValid(current15MinCandle, current1MinCandle, currentTick, pivot) Then
+                ret = New Tuple(Of Boolean, Payload, Decimal, String, Trade.TradeExecutionDirection)(True, current10MinCandle.PreviousCandlePayload, stoploss, "Signal at 10 min candle", direction)
+            ElseIf IsSignalValid(current15MinCandle, current1MinCandle, currentTick, pivot, direction) Then
                 Dim stoploss As Decimal = current15MinCandle.PreviousCandlePayload.PreviousCandlePayload.Low
-                ret = New Tuple(Of Boolean, Payload, Decimal, String)(True, current15MinCandle.PreviousCandlePayload, stoploss, "Signal at 15 min candle")
+                ret = New Tuple(Of Boolean, Payload, Decimal, String, Trade.TradeExecutionDirection)(True, current15MinCandle.PreviousCandlePayload, stoploss, "Signal at 15 min candle", direction)
             End If
         End If
         Return ret
     End Function
 
-    Private Function IsSignalValid(ByVal currentXMinuteCandle As Payload, ByVal current1MinuteCandle As Payload, ByVal currentTick As Payload, ByVal pivot As PivotPoints) As Boolean
+    Private Function IsSignalValid(ByVal currentXMinuteCandle As Payload, ByVal current1MinuteCandle As Payload,
+                                   ByVal currentTick As Payload, ByVal pivot As PivotPoints, ByRef direction As Trade.TradeExecutionDirection) As Boolean
         Dim ret As Boolean = False
         If currentXMinuteCandle IsNot Nothing AndAlso currentXMinuteCandle.PreviousCandlePayload IsNot Nothing AndAlso
             currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload IsNot Nothing AndAlso
@@ -158,62 +220,72 @@ Public Class InsideBarStrategyRule
                                         currentTick.Close >= currentXMinuteCandle.PreviousCandlePayload.Close Then
                                         'ret=True
                                         'New Condition
-                                        If currentXMinuteCandle.Open < Math.Min(pivot.Resistance1, Math.Min(pivot.Resistance2, pivot.Resistance3)) AndAlso
-                                            Math.Min(pivot.Resistance1, Math.Min(pivot.Resistance2, pivot.Resistance3)) - currentXMinuteCandle.Open >= 8 Then
-                                            Dim preCndlHighBelowPivot As Boolean = False
-                                            If currentXMinuteCandle.PreviousCandlePayload.Open < pivot.Pivot Then
-                                                If currentXMinuteCandle.PreviousCandlePayload.High < pivot.Pivot Then
-                                                    preCndlHighBelowPivot = True
-                                                End If
-                                            ElseIf currentXMinuteCandle.PreviousCandlePayload.Open < pivot.Resistance1 Then
-                                                If currentXMinuteCandle.PreviousCandlePayload.High < pivot.Resistance1 Then
-                                                    preCndlHighBelowPivot = True
-                                                End If
-                                            ElseIf currentXMinuteCandle.PreviousCandlePayload.Open < pivot.Resistance2 Then
-                                                If currentXMinuteCandle.PreviousCandlePayload.High < pivot.Resistance2 Then
-                                                    preCndlHighBelowPivot = True
-                                                End If
-                                            ElseIf currentXMinuteCandle.PreviousCandlePayload.Open < pivot.Resistance3 Then
-                                                If currentXMinuteCandle.PreviousCandlePayload.High < pivot.Resistance3 Then
-                                                    preCndlHighBelowPivot = True
+                                        'If currentXMinuteCandle.Open < Math.Min(pivot.Resistance1, Math.Min(pivot.Resistance2, pivot.Resistance3)) AndAlso
+                                        '    Math.Min(pivot.Resistance1, Math.Min(pivot.Resistance2, pivot.Resistance3)) - currentXMinuteCandle.Open >= 8 Then
+                                        Dim preCndlHighBelowPivot As Boolean = False
+                                        If currentXMinuteCandle.PreviousCandlePayload.Open < pivot.Pivot Then
+                                            If currentXMinuteCandle.PreviousCandlePayload.High < pivot.Pivot Then
+                                                preCndlHighBelowPivot = True
+                                            End If
+                                        ElseIf currentXMinuteCandle.PreviousCandlePayload.Open < pivot.Resistance1 Then
+                                            If currentXMinuteCandle.PreviousCandlePayload.High < pivot.Resistance1 Then
+                                                preCndlHighBelowPivot = True
+                                            End If
+                                        ElseIf currentXMinuteCandle.PreviousCandlePayload.Open < pivot.Resistance2 Then
+                                            If currentXMinuteCandle.PreviousCandlePayload.High < pivot.Resistance2 Then
+                                                preCndlHighBelowPivot = True
+                                            End If
+                                        ElseIf currentXMinuteCandle.PreviousCandlePayload.Open < pivot.Resistance3 Then
+                                            If currentXMinuteCandle.PreviousCandlePayload.High < pivot.Resistance3 Then
+                                                preCndlHighBelowPivot = True
+                                            End If
+                                        End If
+                                        'If preCndlHighBelowPivot Then
+                                        Dim prePreCndlHighBelowPivot As Boolean = False
+                                        If currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.Open < pivot.Pivot Then
+                                            If currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.High < pivot.Pivot Then
+                                                prePreCndlHighBelowPivot = True
+                                            End If
+                                        ElseIf currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.Open < pivot.Resistance1 Then
+                                            If currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.High < pivot.Resistance1 Then
+                                                prePreCndlHighBelowPivot = True
+                                            End If
+                                        ElseIf currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.Open < pivot.Resistance2 Then
+                                            If currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.High < pivot.Resistance2 Then
+                                                prePreCndlHighBelowPivot = True
+                                            End If
+                                        ElseIf currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.Open < pivot.Resistance3 Then
+                                            If currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.High < pivot.Resistance3 Then
+                                                prePreCndlHighBelowPivot = True
+                                            End If
+                                        End If
+                                        If preCndlHighBelowPivot OrElse prePreCndlHighBelowPivot Then
+                                            'If currentXMinuteCandle.PreviousCandlePayload.High < pivot.Resistance3 AndAlso
+                                            '    currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.High < pivot.Resistance3 Then
+                                            If currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.CandleColor = Color.Green Then
+                                                direction = Trade.TradeExecutionDirection.Buy
+                                            Else
+                                                If currentXMinuteCandle.PreviousCandlePayload.CandleBody > currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.CandleBody * 0.6 Then
+                                                    direction = Trade.TradeExecutionDirection.Sell
+                                                Else
+                                                    direction = Trade.TradeExecutionDirection.Buy
                                                 End If
                                             End If
-                                            If preCndlHighBelowPivot Then
-                                                Dim prePreCndlHighBelowPivot As Boolean = False
-                                                If currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.Open < pivot.Pivot Then
-                                                    If currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.High < pivot.Pivot Then
-                                                        prePreCndlHighBelowPivot = True
-                                                    End If
-                                                ElseIf currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.Open < pivot.Resistance1 Then
-                                                    If currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.High < pivot.Resistance1 Then
-                                                        prePreCndlHighBelowPivot = True
-                                                    End If
-                                                ElseIf currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.Open < pivot.Resistance2 Then
-                                                    If currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.High < pivot.Resistance2 Then
-                                                        prePreCndlHighBelowPivot = True
-                                                    End If
-                                                ElseIf currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.Open < pivot.Resistance3 Then
-                                                    If currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.High < pivot.Resistance3 Then
-                                                        prePreCndlHighBelowPivot = True
-                                                    End If
-                                                End If
-                                                If prePreCndlHighBelowPivot Then
-                                                    If currentXMinuteCandle.PreviousCandlePayload.High < pivot.Resistance3 AndAlso
-                                                        currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.High < pivot.Resistance3 Then
-                                                        If currentXMinuteCandle.PreviousCandlePayload.Close - currentXMinuteCandle.PreviousCandlePayload.Open > 1 Then
-                                                            If currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.CandleColor = Color.Green Then
-                                                                ret = True
-                                                            Else
-                                                                If (currentXMinuteCandle.PreviousCandlePayload.Close - currentXMinuteCandle.PreviousCandlePayload.Open) <=
-                                                                    (currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.Open - currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.Close) * 75 / 100 Then
-                                                                    ret = True
-                                                                End If
-                                                            End If
+                                            If direction <> Trade.TradeExecutionDirection.None Then
+                                                If currentXMinuteCandle.PreviousCandlePayload.CandleBody > 1.15 Then
+                                                    '(20) no checked as it is same with (18)
+                                                    If Not (currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.CandleColor = Color.Green AndAlso
+                                                        currentXMinuteCandle.PreviousCandlePayload.CandleBody > currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.CandleBody) Then
+                                                        If currentXMinuteCandle.PreviousCandlePayload.Open >= currentXMinuteCandle.PreviousCandlePayload.PreviousCandlePayload.Close Then
+                                                            ret = True
                                                         End If
                                                     End If
                                                 End If
                                             End If
+                                            'End If
                                         End If
+                                        'End If
+                                        'End If
                                     End If
                                 End If
                             End If
