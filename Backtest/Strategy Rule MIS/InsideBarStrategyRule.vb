@@ -113,35 +113,39 @@ Public Class InsideBarStrategyRule
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                 Dim plPoint As Decimal = currentTick.Open - currentTrade.EntryPrice
                 Dim plPer As Decimal = (plPoint / currentTrade.EntryPrice) * 100
-                If plPer >= 0.7 AndAlso plPer <= 10 Then
+                If plPer >= 0.5 AndAlso plPer <= 10 Then
                     Dim gainPer As Decimal = Math.Floor((plPer * 100) / 10)
                     If gainPer Mod 2 = 0 Then
                         gainPer = (gainPer - 1) / 10
                     Else
                         gainPer = gainPer / 10
                     End If
-                    Dim slPer As Decimal = gainPer - 0.2
-                    Dim potentialStoploss As Decimal = currentTrade.EntryPrice + ConvertFloorCeling(currentTrade.EntryPrice * slPer / 100, _parentStrategy.TickSize, RoundOfType.Floor)
-                    If potentialStoploss > currentTrade.PotentialStopLoss Then
-                        triggerPrice = potentialStoploss
-                        remark = String.Format("Moved at {0} for gain {1}%", currentTick.PayloadDate.ToString("HH:mm:ss"), Math.Round(gainPer, 2))
+                    If plPer > gainPer Then
+                        Dim slPer As Decimal = gainPer
+                        Dim potentialStoploss As Decimal = currentTrade.EntryPrice + ConvertFloorCeling(currentTrade.EntryPrice * slPer / 100, _parentStrategy.TickSize, RoundOfType.Floor)
+                        If potentialStoploss > currentTrade.PotentialStopLoss Then
+                            triggerPrice = potentialStoploss
+                            remark = String.Format("Moved at {0} for gain {1}%", currentTick.PayloadDate.ToString("HH:mm:ss"), Math.Round(gainPer, 2))
+                        End If
                     End If
                 End If
             ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
                 Dim plPoint As Decimal = currentTrade.EntryPrice - currentTick.Open
                 Dim plPer As Decimal = (plPoint / currentTrade.EntryPrice) * 100
-                If plPer >= 0.7 AndAlso plPer <= 10 Then
+                If plPer >= 0.5 AndAlso plPer <= 10 Then
                     Dim gainPer As Decimal = Math.Floor((plPer * 100) / 10)
                     If gainPer Mod 2 = 0 Then
                         gainPer = (gainPer - 1) / 10
                     Else
                         gainPer = gainPer / 10
                     End If
-                    Dim slPer As Decimal = gainPer - 0.2
-                    Dim potentialStoploss As Decimal = currentTrade.EntryPrice - ConvertFloorCeling(currentTrade.EntryPrice * slPer / 100, _parentStrategy.TickSize, RoundOfType.Floor)
-                    If potentialStoploss < currentTrade.PotentialStopLoss Then
-                        triggerPrice = potentialStoploss
-                        remark = String.Format("Moved at {0} for gain {1}%", currentTick.PayloadDate.ToString("HH:mm:ss"), Math.Round(gainPer, 2))
+                    If plPer > gainPer Then
+                        Dim slPer As Decimal = gainPer
+                        Dim potentialStoploss As Decimal = currentTrade.EntryPrice - ConvertFloorCeling(currentTrade.EntryPrice * slPer / 100, _parentStrategy.TickSize, RoundOfType.Floor)
+                        If potentialStoploss < currentTrade.PotentialStopLoss Then
+                            triggerPrice = potentialStoploss
+                            remark = String.Format("Moved at {0} for gain {1}%", currentTick.PayloadDate.ToString("HH:mm:ss"), Math.Round(gainPer, 2))
+                        End If
                     End If
                 End If
             End If
