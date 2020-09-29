@@ -5601,19 +5601,19 @@ Public Class frmMain
                                             {
                                                 .HigherTimeframe = 15,
                                                 .MaxLossPerTrade = -500,
-                                                .TargetMultiplier = 1,
-                                                .TargetInINR = False
+                                                .TargetMultiplier = 2,
+                                                .TargetInINR = True
                                             }
 
-                            .NumberOfTradeableStockPerDay = 1
+                            .NumberOfTradeableStockPerDay = 5
 
                             .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
                             .StockMaxProfitPercentagePerDay = Decimal.MaxValue
                             .StockMaxLossPercentagePerDay = Decimal.MinValue
 
-                            .ExitOnStockFixedTargetStoploss = False
-                            .StockMaxProfitPerDay = Decimal.MaxValue
+                            .ExitOnStockFixedTargetStoploss = True
+                            .StockMaxProfitPerDay = 1000
                             .StockMaxLossPerDay = Decimal.MinValue
 
                             .ExitOnOverAllFixedTargetStoploss = False

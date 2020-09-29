@@ -73,32 +73,41 @@ Public Class MultiTimeframeMAStrategy
                     Dim entryPrice As Decimal = signal.Item2 + buffer
                     Dim stoploss As Decimal = signalCandle.Low - buffer
                     Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, stoploss, _userInputs.MaxLossPerTrade, Trade.TypeOfStock.Cash)
-                    Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, quantity, Math.Abs(_userInputs.MaxLossPerTrade * _userInputs.TargetMultiplier), Trade.TradeExecutionDirection.Buy, Trade.TypeOfStock.Cash)
-                    If Not _userInputs.TargetInINR Then
-                        target = entryPrice + (entryPrice - stoploss) * _userInputs.TargetMultiplier
-                    End If
+                    Dim slPoint As Decimal = entryPrice - stoploss
 
-                    parameter1 = New PlaceOrderParameters With {
-                                    .EntryPrice = entryPrice,
-                                    .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                    .Quantity = quantity,
-                                    .Stoploss = stoploss,
-                                    .Target = target,
-                                    .Buffer = buffer,
-                                    .SignalCandle = signalCandle,
-                                    .OrderType = Trade.TypeOfOrder.SL,
-                                    .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss")
-                                }
+                    Dim brkevnPnt As Tuple(Of Decimal, Decimal) = GetPointsToBreakeven(entryPrice, entryPrice + slPoint, quantity)
+                    If (brkevnPnt.Item1 / slPoint) * 100 <= 15 OrElse brkevnPnt.Item2 >= 350 Then
+                        Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, quantity, Math.Abs(_userInputs.MaxLossPerTrade * _userInputs.TargetMultiplier), Trade.TradeExecutionDirection.Buy, Trade.TypeOfStock.Cash)
+                        If Not _userInputs.TargetInINR Then target = entryPrice + slPoint * _userInputs.TargetMultiplier
+
+                        parameter1 = New PlaceOrderParameters With {
+                                        .EntryPrice = entryPrice,
+                                        .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                                        .Quantity = quantity,
+                                        .Stoploss = stoploss,
+                                        .Target = target,
+                                        .Buffer = buffer,
+                                        .SignalCandle = signalCandle,
+                                        .OrderType = Trade.TypeOfOrder.SL,
+                                        .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss")
+                                    }
+                    Else
+                        Console.WriteLine(String.Format("BUY Trade neglected because of higher brokerage. {0},{1},{2},{3}",
+                                                        _tradingSymbol, signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                                                        Math.Round((brkevnPnt.Item1 / slPoint) * 100, 2), brkevnPnt.Item2))
+                    End If
                 ElseIf signal.Item4 = Trade.TradeExecutionDirection.Sell Then
                     Dim entryPrice As Decimal = signal.Item2 - buffer
                     Dim stoploss As Decimal = signalCandle.High + buffer
                     Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, stoploss, entryPrice, _userInputs.MaxLossPerTrade, Trade.TypeOfStock.Cash)
-                    Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, quantity, Math.Abs(_userInputs.MaxLossPerTrade * _userInputs.TargetMultiplier), Trade.TradeExecutionDirection.Sell, Trade.TypeOfStock.Cash)
-                    If Not _userInputs.TargetInINR Then
-                        target = entryPrice - (stoploss - entryPrice) * _userInputs.TargetMultiplier
-                    End If
+                    Dim slPoint As Decimal = stoploss - entryPrice
 
-                    parameter1 = New PlaceOrderParameters With {
+                    Dim brkevnPnt As Tuple(Of Decimal, Decimal) = GetPointsToBreakeven(entryPrice - slPoint, entryPrice, quantity)
+                    If (brkevnPnt.Item1 / slPoint) * 100 <= 15 OrElse brkevnPnt.Item2 >= 350 Then
+                        Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, quantity, Math.Abs(_userInputs.MaxLossPerTrade * _userInputs.TargetMultiplier), Trade.TradeExecutionDirection.Sell, Trade.TypeOfStock.Cash)
+                        If Not _userInputs.TargetInINR Then target = entryPrice - slPoint * _userInputs.TargetMultiplier
+
+                        parameter1 = New PlaceOrderParameters With {
                                     .EntryPrice = entryPrice,
                                     .EntryDirection = Trade.TradeExecutionDirection.Sell,
                                     .Quantity = quantity,
@@ -109,6 +118,11 @@ Public Class MultiTimeframeMAStrategy
                                     .OrderType = Trade.TypeOfOrder.SL,
                                     .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss")
                                 }
+                    Else
+                        Console.WriteLine(String.Format("SELL Trade neglected because of higher brokerage. {0},{1},{2},{3}",
+                                                        _tradingSymbol, signalCandle.PayloadDate.ToString("HH:mm:ss"),
+                                                        Math.Round((brkevnPnt.Item1 / slPoint) * 100, 2), brkevnPnt.Item2))
+                    End If
                 End If
             End If
         End If
@@ -166,6 +180,7 @@ Public Class MultiTimeframeMAStrategy
                 If candle.High >= Math.Round(_ltSMAPayload(candle.PayloadDate), 2) AndAlso candle.Low <= Math.Round(_ltSMAPayload(candle.PayloadDate), 2) AndAlso
                     (candle.PreviousCandlePayload.High < Math.Round(_ltSMAPayload(candle.PreviousCandlePayload.PayloadDate), 2) OrElse
                     candle.PreviousCandlePayload.Low > Math.Round(_ltSMAPayload(candle.PreviousCandlePayload.PayloadDate), 2)) Then
+
                     ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection)(True, candle.High, candle, Trade.TradeExecutionDirection.Buy)
                 End If
             ElseIf direction = Trade.TradeExecutionDirection.Sell Then
@@ -194,5 +209,12 @@ Public Class MultiTimeframeMAStrategy
             Next
         End If
         Return ret
+    End Function
+
+    Private Function GetPointsToBreakeven(ByVal buyPrice As Decimal, ByVal sellPrice As Decimal, ByVal quantity As Integer) As Tuple(Of Decimal, Decimal)
+        Dim potentialBrokerage As New Calculator.BrokerageAttributes
+        Dim calculator As New Calculator.BrokerageCalculator(_cts)
+        calculator.Intraday_Equity(buyPrice, sellPrice, quantity, potentialBrokerage)
+        Return New Tuple(Of Decimal, Decimal)(potentialBrokerage.BreakevenPoints, potentialBrokerage.NetProfitLoss)
     End Function
 End Class
