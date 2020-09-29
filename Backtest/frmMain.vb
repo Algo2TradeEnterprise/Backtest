@@ -5605,7 +5605,7 @@ Public Class frmMain
                                                 .TargetInINR = True
                                             }
 
-                            .NumberOfTradeableStockPerDay = 5
+                            .NumberOfTradeableStockPerDay = 10
 
                             .NumberOfTradesPerStockPerDay = Integer.MaxValue
 

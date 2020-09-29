@@ -145,10 +145,12 @@ Public Class MultiTimeframeMAStrategy
             Dim currentMinuteCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
             If currentMinuteCandle IsNot Nothing AndAlso currentMinuteCandle.PreviousCandlePayload IsNot Nothing Then
                 If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy AndAlso
-                    currentMinuteCandle.PreviousCandlePayload.High < _ltSMAPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate) Then
+                    (currentMinuteCandle.PreviousCandlePayload.High < _ltSMAPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate) OrElse
+                    currentMinuteCandle.PreviousCandlePayload.Low > _ltSMAPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)) Then
                     ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                 ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell AndAlso
-                    currentMinuteCandle.PreviousCandlePayload.Low > _ltSMAPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate) Then
+                    (currentMinuteCandle.PreviousCandlePayload.Low > _ltSMAPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate) OrElse
+                    currentMinuteCandle.PreviousCandlePayload.High < _ltSMAPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)) Then
                     ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                 End If
             End If
