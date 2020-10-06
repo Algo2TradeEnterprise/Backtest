@@ -5694,7 +5694,7 @@ Public Class frmMain
                                                 .MoveStoplossToBreakoutCandleHL = False
                                             }
 
-                            .NumberOfTradeableStockPerDay = 5
+                            .NumberOfTradeableStockPerDay = 20
 
                             .NumberOfTradesPerStockPerDay = Integer.MaxValue
 

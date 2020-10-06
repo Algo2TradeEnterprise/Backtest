@@ -221,8 +221,8 @@ Public Class HKReversalAdaptiveMartingaleWithDirectionStrategyRule1
                         ret = New Tuple(Of Boolean, Decimal, Decimal, Decimal, Payload, Trade.TradeExecutionDirection, String)(True, buyLevel, sellLevel, slPoint, hkCandle, Trade.TradeExecutionDirection.Buy, "Adjusted")
                     End If
                 Else
-                    Console.WriteLine(String.Format("Trade neglected for higher capital. Signal Candle:{0}, Direction:{1}, Capital:{2}",
-                                                    hkCandle.PayloadDate.ToString("HH:mm:ss"), "BUY", Math.Round(capital, 2)))
+                    'Console.WriteLine(String.Format("Trade neglected for higher capital. Signal Candle:{0}, Direction:{1}, Capital:{2}, Trading Symbol:{3}",
+                    '                                hkCandle.PayloadDate.ToString("dd-MM-yyyy HH:mm:ss"), "BUY", Math.Round(capital, 2), _tradingSymbol))
                 End If
             ElseIf direction = Trade.TradeExecutionDirection.Sell AndAlso Math.Round(hkCandle.Low, 2) = Math.Round(hkCandle.Open, 2) Then
                 Dim sellLevel As Decimal = ConvertFloorCeling(hkCandle.Low, _parentStrategy.TickSize, RoundOfType.Floor)
@@ -253,8 +253,8 @@ Public Class HKReversalAdaptiveMartingaleWithDirectionStrategyRule1
                         ret = New Tuple(Of Boolean, Decimal, Decimal, Decimal, Payload, Trade.TradeExecutionDirection, String)(True, sellLevel, buyLevel, slPoint, hkCandle, Trade.TradeExecutionDirection.Sell, "Adjusted")
                     End If
                 Else
-                    Console.WriteLine(String.Format("Trade neglected for higher capital. Signal Candle:{0}, Direction:{1}, Capital:{2}",
-                                                    hkCandle.PayloadDate.ToString("HH:mm:ss"), "SELL", Math.Round(capital, 2)))
+                    'Console.WriteLine(String.Format("Trade neglected for higher capital. Signal Candle:{0}, Direction:{1}, Capital:{2}, Trading Symbol:{3}",
+                    '                                hkCandle.PayloadDate.ToString("dd-MM-yyyy HH:mm:ss"), "SELL", Math.Round(capital, 2), _tradingSymbol))
                 End If
             End If
         End If
