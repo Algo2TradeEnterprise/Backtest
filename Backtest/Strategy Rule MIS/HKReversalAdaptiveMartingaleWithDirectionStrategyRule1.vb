@@ -7,14 +7,21 @@ Public Class HKReversalAdaptiveMartingaleWithDirectionStrategyRule1
     Inherits StrategyRule
 
 #Region "Entity"
+    Enum DirectionType
+        WithFractal = 1
+        WithCandle
+    End Enum
+
     Public Class StrategyRuleEntities
         Inherits RuleEntities
 
+        Public TypeOfDirection As DirectionType
         Public MaxProfitPerTrade As Decimal
         Public MaxLossPerTrade As Decimal
         Public MoveStoplossToBreakoutCandleHL As Boolean
         Public MaxCapitalPerTrade As Decimal
         Public MinCapitalPerTrade As Decimal
+        Public WithCandleAdjustment As Boolean
     End Class
 #End Region
 
@@ -80,6 +87,9 @@ Public Class HKReversalAdaptiveMartingaleWithDirectionStrategyRule1
                 Dim slPoint As Decimal = signal.Item4
                 Dim iteration As Integer = _parentStrategy.StockNumberOfTrades(_tradingDate, _tradingSymbol) + 1
                 Dim lossPL As Decimal = _userInputs.MaxLossPerTrade + _parentStrategy.StockPLAfterBrokerage(_tradingDate, _tradingSymbol)
+                If Not _userInputs.WithCandleAdjustment AndAlso signal.Item7.ToUpper = "ADJUSTED" Then
+                    lossPL = (_userInputs.MaxLossPerTrade / 2) + _parentStrategy.StockPLAfterBrokerage(_tradingDate, _tradingSymbol)
+                End If
                 If lossPL < 0 Then
                     Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, entryPrice - slPoint, lossPL, Trade.TypeOfStock.Cash)
                     Dim profitPL As Decimal = _userInputs.MaxProfitPerTrade - _parentStrategy.StockPLAfterBrokerage(_tradingDate, _tradingSymbol)
@@ -210,14 +220,16 @@ Public Class HKReversalAdaptiveMartingaleWithDirectionStrategyRule1
                         ret = New Tuple(Of Boolean, Decimal, Decimal, Decimal, Payload, Trade.TradeExecutionDirection, String)(True, buyLevel, sellLevel, buyLevel - sellLevel, hkCandle, Trade.TradeExecutionDirection.Buy, "Normal")
                     Else
                         Dim slPoint As Decimal = buyLevel - sellLevel
-                        For sl As Decimal = sellLevel To 0 Step -1 * _parentStrategy.TickSize
-                            Dim modifiedQunatity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, buyLevel, sl, _userInputs.MaxLossPerTrade, _parentStrategy.StockType)
-                            Dim modifiedCapital As Decimal = buyLevel * modifiedQunatity / _parentStrategy.MarginMultiplier
-                            If modifiedCapital <= _userInputs.MaxCapitalPerTrade Then
-                                slPoint = buyLevel - sl
-                                Exit For
-                            End If
-                        Next
+                        If _userInputs.WithCandleAdjustment Then
+                            For sl As Decimal = sellLevel To 0 Step -1 * _parentStrategy.TickSize
+                                Dim modifiedQunatity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, buyLevel, sl, _userInputs.MaxLossPerTrade, _parentStrategy.StockType)
+                                Dim modifiedCapital As Decimal = buyLevel * modifiedQunatity / _parentStrategy.MarginMultiplier
+                                If modifiedCapital <= _userInputs.MaxCapitalPerTrade Then
+                                    slPoint = buyLevel - sl
+                                    Exit For
+                                End If
+                            Next
+                        End If
                         ret = New Tuple(Of Boolean, Decimal, Decimal, Decimal, Payload, Trade.TradeExecutionDirection, String)(True, buyLevel, sellLevel, slPoint, hkCandle, Trade.TradeExecutionDirection.Buy, "Adjusted")
                     End If
                 Else
@@ -242,14 +254,16 @@ Public Class HKReversalAdaptiveMartingaleWithDirectionStrategyRule1
                         ret = New Tuple(Of Boolean, Decimal, Decimal, Decimal, Payload, Trade.TradeExecutionDirection, String)(True, sellLevel, buyLevel, buyLevel - sellLevel, hkCandle, Trade.TradeExecutionDirection.Sell, "Normal")
                     Else
                         Dim slPoint As Decimal = buyLevel - sellLevel
-                        For sl As Decimal = buyLevel To Decimal.MaxValue Step 1 * _parentStrategy.TickSize
-                            Dim modifiedQunatity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, sl, sellLevel, _userInputs.MaxLossPerTrade, _parentStrategy.StockType)
-                            Dim modifiedCapital As Decimal = sellLevel * modifiedQunatity / _parentStrategy.MarginMultiplier
-                            If modifiedCapital <= _userInputs.MaxCapitalPerTrade Then
-                                slPoint = sl - sellLevel
-                                Exit For
-                            End If
-                        Next
+                        If _userInputs.WithCandleAdjustment Then
+                            For sl As Decimal = buyLevel To Decimal.MaxValue Step 1 * _parentStrategy.TickSize
+                                Dim modifiedQunatity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, sl, sellLevel, _userInputs.MaxLossPerTrade, _parentStrategy.StockType)
+                                Dim modifiedCapital As Decimal = sellLevel * modifiedQunatity / _parentStrategy.MarginMultiplier
+                                If modifiedCapital <= _userInputs.MaxCapitalPerTrade Then
+                                    slPoint = sl - sellLevel
+                                    Exit For
+                                End If
+                            Next
+                        End If
                         ret = New Tuple(Of Boolean, Decimal, Decimal, Decimal, Payload, Trade.TradeExecutionDirection, String)(True, sellLevel, buyLevel, slPoint, hkCandle, Trade.TradeExecutionDirection.Sell, "Adjusted")
                     End If
                 Else
@@ -267,14 +281,24 @@ Public Class HKReversalAdaptiveMartingaleWithDirectionStrategyRule1
                                                                     Return x.Key
                                                                 End Function)
             If runningPayload.Key.Date = _tradingDate.Date AndAlso runningPayload.Key < currentCandle.PayloadDate Then
-                If _fractalHighPayload(runningPayload.Key) > _vwapPayload(runningPayload.Key) AndAlso
+                If _userInputs.TypeOfDirection = DirectionType.WithFractal Then
+                    If _fractalHighPayload(runningPayload.Key) > _vwapPayload(runningPayload.Key) AndAlso
                     _fractalLowPayload(runningPayload.Key) > _vwapPayload(runningPayload.Key) Then
-                    ret = Trade.TradeExecutionDirection.Buy
-                    Exit For
-                ElseIf _fractalHighPayload(runningPayload.Key) < _vwapPayload(runningPayload.Key) AndAlso
+                        ret = Trade.TradeExecutionDirection.Buy
+                        Exit For
+                    ElseIf _fractalHighPayload(runningPayload.Key) < _vwapPayload(runningPayload.Key) AndAlso
                     _fractalLowPayload(runningPayload.Key) < _vwapPayload(runningPayload.Key) Then
-                    ret = Trade.TradeExecutionDirection.Sell
-                    Exit For
+                        ret = Trade.TradeExecutionDirection.Sell
+                        Exit For
+                    End If
+                ElseIf _userInputs.TypeOfDirection = DirectionType.WithCandle Then
+                    If runningPayload.Value.Low > _vwapPayload(runningPayload.Key) Then
+                        ret = Trade.TradeExecutionDirection.Buy
+                        Exit For
+                    ElseIf runningPayload.Value.High < _vwapPayload(runningPayload.Key) Then
+                        ret = Trade.TradeExecutionDirection.Sell
+                        Exit For
+                    End If
                 End If
             End If
         Next

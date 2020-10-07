@@ -5691,7 +5691,9 @@ Public Class frmMain
                                                 .MaxProfitPerTrade = 500,
                                                 .MaxCapitalPerTrade = 10000,
                                                 .MinCapitalPerTrade = 5000,
-                                                .MoveStoplossToBreakoutCandleHL = False
+                                                .MoveStoplossToBreakoutCandleHL = False,
+                                                .TypeOfDirection = HKReversalAdaptiveMartingaleWithDirectionStrategyRule1.DirectionType.WithCandle,
+                                                .WithCandleAdjustment = True
                                             }
 
                             .NumberOfTradeableStockPerDay = 20
