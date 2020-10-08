@@ -241,6 +241,8 @@ Namespace StrategyHelper
                                             stockRule = New MultiTimeframeMAStrategy(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 60
                                             stockRule = New HKReversalAdaptiveMartingaleWithDirectionStrategyRule1(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case 61
+                                            stockRule = New AnchoredVWAPDirectionStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
