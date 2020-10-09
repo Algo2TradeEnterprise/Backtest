@@ -109,40 +109,36 @@ Public Class PreviousNifty50SwingLowStrategyRule
         Dim iteration As Integer = 1
         Dim quantity As Integer = GetQuantity(iteration, candle.Open)
         Dim swing As Indicator.Swing = _swingPayload(candle.PreviousCandlePayload.PayloadDate)
-        Try
-            Dim nifty50Candle As Payload = _nifty50Payload(candle.PayloadDate)
-            If nifty50Candle.Close < swing.SwingLow Then
-                Dim entryPrice As Decimal = candle.Close
-                If lastTrade Is Nothing Then
-                    If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
-                    ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)(True, entryPrice, quantity, iteration, "First Trade", swing.SwingLowTime))
-                Else
-                    Dim lastSignalTime As Date = Date.ParseExact(lastTrade.Supporting3, "dd-MMM-yyyy HH:mm:ss", Nothing)
-                    If swing.SwingLowTime <> lastSignalTime Then
-                        If entryPrice < lastTrade.EntryPrice Then
-                            If lastTrade.EntryPrice - entryPrice >= atr Then
-                                If Val(lastTrade.Supporting1) < _userInputs.MaxIteration Then
-                                    iteration = Val(lastTrade.Supporting1) + 1
-                                    quantity = GetQuantity(iteration, entryPrice)
-                                    If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
-                                    ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)(True, entryPrice, quantity, iteration, "Below last entry", swing.SwingLowTime))
-                                Else
-                                    If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
-                                    ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)(True, entryPrice, quantity, iteration, "(Reset) Max Iteration", swing.SwingLowTime))
-                                End If
-                                'Else
-                                '    Console.WriteLine(String.Format("Trade Neglected for ATR on {0}", candle.PayloadDate.ToString("dd-MMM-yyyy")))
+        Dim nifty50Candle As Payload = _nifty50Payload(candle.PayloadDate)
+        If nifty50Candle.Close < swing.SwingLow Then
+            Dim entryPrice As Decimal = candle.Close
+            If lastTrade Is Nothing Then
+                If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
+                ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)(True, entryPrice, quantity, iteration, "First Trade", swing.SwingLowTime))
+            Else
+                Dim lastSignalTime As Date = Date.ParseExact(lastTrade.Supporting3, "dd-MMM-yyyy HH:mm:ss", Nothing)
+                If swing.SwingLowTime <> lastSignalTime Then
+                    If entryPrice < lastTrade.EntryPrice Then
+                        If lastTrade.EntryPrice - entryPrice >= atr Then
+                            If Val(lastTrade.Supporting1) < _userInputs.MaxIteration Then
+                                iteration = Val(lastTrade.Supporting1) + 1
+                                quantity = GetQuantity(iteration, entryPrice)
+                                If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
+                                ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)(True, entryPrice, quantity, iteration, "Below last entry", swing.SwingLowTime))
+                            Else
+                                If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
+                                ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)(True, entryPrice, quantity, iteration, "(Reset) Max Iteration", swing.SwingLowTime))
                             End If
-                        Else
-                            If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
-                            ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)(True, entryPrice, quantity, iteration, "(Reset) Above last entry", swing.SwingLowTime))
+                            'Else
+                            '    Console.WriteLine(String.Format("Trade Neglected for ATR on {0}", candle.PayloadDate.ToString("dd-MMM-yyyy")))
                         End If
+                    Else
+                        If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
+                        ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)(True, entryPrice, quantity, iteration, "(Reset) Above last entry", swing.SwingLowTime))
                     End If
                 End If
             End If
-        Catch ex As Exception
-            Throw ex
-        End Try
+        End If
         Return ret
     End Function
 
