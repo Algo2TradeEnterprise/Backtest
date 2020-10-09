@@ -220,12 +220,6 @@ Public Class frmMain
 
     Private Sub frmMain_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         If cmbRule.Items.Count > My.Settings.Rule Then cmbRule.SelectedIndex = My.Settings.Rule
-        rdbDatabase.Checked = My.Settings.Database
-        rdbLive.Checked = My.Settings.Live
-        rdbMIS.Checked = My.Settings.MIS
-        rdbCNCTick.Checked = My.Settings.CNCTick
-        rdbCNCCandle.Checked = My.Settings.CNCCandle
-        rdbCNCEOD.Checked = My.Settings.CNCEOD
         If My.Settings.StartDate <> Date.MinValue Then
             dtpckrStartDate.Value = My.Settings.StartDate
         End If
@@ -240,125 +234,18 @@ Public Class frmMain
         SetObjectEnableDisable_ThreadSafe(btnStart, False)
         SetObjectEnableDisable_ThreadSafe(btnStop, True)
         My.Settings.Rule = cmbRule.SelectedIndex
-        My.Settings.Database = rdbDatabase.Checked
-        My.Settings.Live = rdbLive.Checked
-        My.Settings.MIS = rdbMIS.Checked
-        My.Settings.CNCTick = rdbCNCTick.Checked
-        My.Settings.CNCEOD = rdbCNCEOD.Checked
-        My.Settings.CNCCandle = rdbCNCCandle.Checked
         My.Settings.StartDate = dtpckrStartDate.Value
         My.Settings.EndDate = dtpckrEndDate.Value
         My.Settings.Save()
 
-        If rdbMIS.Checked Then
-            Throw New NotImplementedException
-        ElseIf rdbCNCTick.Checked Then
-            Await Task.Run(AddressOf ViewDataCNCTickAsync).ConfigureAwait(False)
-        ElseIf rdbCNCEOD.Checked Then
-            Await Task.Run(AddressOf ViewDataCNCEODAsync).ConfigureAwait(False)
-        ElseIf rdbCNCCandle.Checked Then
-            Throw New NotImplementedException
-        End If
+        Await Task.Run(AddressOf ViewDataCNCEODAsync).ConfigureAwait(False)
     End Sub
-
-    Private Async Function ViewDataCNCTickAsync() As Task
-        Try
-            Dim startDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrStartDate)
-            Dim endDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrEndDate)
-            Dim sourceData As Strategy.SourceOfData = Strategy.SourceOfData.None
-            If GetRadioButtonChecked_ThreadSafe(rdbLive) Then
-                sourceData = Strategy.SourceOfData.Live
-            Else
-                sourceData = Strategy.SourceOfData.Database
-            End If
-            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
-            Dim database As Common.DataBaseTable = Common.DataBaseTable.None
-            Dim margin As Decimal = 0
-            Dim tick As Decimal = 0
-            Select Case stockType
-                Case Trade.TypeOfStock.Cash
-                    database = Common.DataBaseTable.Intraday_Cash
-                    margin = 1
-                    tick = 0.01
-                Case Trade.TypeOfStock.Commodity
-                    database = Common.DataBaseTable.Intraday_Commodity
-                    margin = 1
-                    tick = 1
-                Case Trade.TypeOfStock.Currency
-                    database = Common.DataBaseTable.Intraday_Currency
-                    margin = 1
-                    tick = 0.0025
-                Case Trade.TypeOfStock.Futures
-                    database = Common.DataBaseTable.Intraday_Futures
-                    margin = 1
-                    tick = 0.05
-            End Select
-
-            Dim tfList As List(Of Integer) = New List(Of Integer) From {120, 60, 30}
-
-            For Each runningTF In tfList
-                Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
-                                                            exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                            exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                            tradeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                            lastTradeEntryTime:=TimeSpan.Parse("15:30:00"),
-                                                            eodExitTime:=TimeSpan.Parse("15:29:59"),
-                                                            tickSize:=tick,
-                                                            marginMultiplier:=margin,
-                                                            timeframe:=runningTF,
-                                                            heikenAshiCandle:=False,
-                                                            stockType:=stockType,
-                                                            databaseTable:=database,
-                                                            dataSource:=sourceData,
-                                                            initialCapital:=Decimal.MaxValue / 2,
-                                                            usableCapital:=Decimal.MaxValue / 2,
-                                                            minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
-                                                            amountToBeWithdrawn:=5000)
-                    AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
-
-                    With backtestStrategy
-                        .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "")
-
-                        .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
-
-                        .RuleEntityData = New BelowFractalLowStrategyRule.StrategyRuleEntities With
-                                            {
-                                             .InitialCapital = 10000
-                                            }
-
-                        .NumberOfTradeableStockPerDay = 1
-
-                        .NumberOfTradesPerDay = Integer.MaxValue
-                        .NumberOfTradesPerStockPerDay = Integer.MaxValue
-
-                        .TickBasedStrategy = True
-                    End With
-
-                    'Dim ruleData As PreviousCandleSwingHighStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                    Dim filename As String = String.Format("Below Fractal Low Tick CNC Output, TF {0}", backtestStrategy.SignalTimeFrame)
-
-                    Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-                End Using
-            Next
-        Catch ex As Exception
-            MsgBox(ex.ToString, MsgBoxStyle.Critical)
-        Finally
-            OnHeartbeat("Process Complete")
-            SetObjectEnableDisable_ThreadSafe(btnStart, True)
-            SetObjectEnableDisable_ThreadSafe(btnStop, False)
-        End Try
-    End Function
 
     Private Async Function ViewDataCNCEODAsync() As Task
         Try
             Dim startDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrStartDate)
             Dim endDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrEndDate)
-            Dim sourceData As Strategy.SourceOfData = Strategy.SourceOfData.None
-            If GetRadioButtonChecked_ThreadSafe(rdbLive) Then
-                sourceData = Strategy.SourceOfData.Live
-            Else
-                sourceData = Strategy.SourceOfData.Database
-            End If
+            Dim sourceData As Strategy.SourceOfData = Strategy.SourceOfData.Database
             Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
             Dim database As Common.DataBaseTable = Common.DataBaseTable.None
             Dim margin As Decimal = 0
@@ -411,23 +298,16 @@ Public Class frmMain
                         Case 0
                             .RuleEntityData = New PreviousSwingLowStrategyRule.StrategyRuleEntities With
                                         {
-                                         .InitialCapital = 10000
+                                         .InitialCapital = 10000,
+                                         .MaxIteration = 5
                                         }
                         Case 1
-                            .RuleEntityData = New PreviousSwingHighStrategyRule.StrategyRuleEntities With
+                            .RuleEntityData = New PreviousNifty50SwingLowStrategyRule.StrategyRuleEntities With
                                         {
-                                         .InitialCapital = 10000
+                                         .InitialCapital = 10000,
+                                         .MaxIteration = 5
                                         }
-                        Case 2
-                            .RuleEntityData = New BelowFractalLowSingleStrategyRule.StrategyRuleEntities With
-                                        {
-                                         .InitialCapital = 10000
-                                        }
-                        Case 3
-                            .RuleEntityData = New BelowFractalLowMultiStrategyRule.StrategyRuleEntities With
-                                        {
-                                         .InitialCapital = 10000
-                                        }
+
                     End Select
 
                     .NumberOfTradeableStockPerDay = 1
@@ -441,19 +321,21 @@ Public Class frmMain
                 Dim filename As String = Nothing
                 Select Case rule
                     Case 0
-                        filename = String.Format("At Previous Swing Low CNC EOD Output")
+                        Dim ruleEntity As PreviousSwingLowStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                        filename = String.Format("At Previous Swing Low CNC EOD Output, Max Iteration {0}",
+                                                 If(ruleEntity.MaxIteration = Integer.MaxValue, "∞", ruleEntity.MaxIteration))
                     Case 1
-                        filename = String.Format("At Previous Swing High CNC EOD Output")
-                    Case 2
-                        filename = String.Format("Below Fractal Low Single CNC EOD Output")
-                    Case 3
-                        filename = String.Format("Below Fractal Low Multi CNC EOD Output")
+                        Dim ruleEntity As PreviousNifty50SwingLowStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                        filename = String.Format("At Previous Nifty 50 Swing Low CNC EOD Output, Max Iteration {0}",
+                                                 If(ruleEntity.MaxIteration = Integer.MaxValue, "∞", ruleEntity.MaxIteration))
                     Case Else
                         Throw New NotImplementedException
                 End Select
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using
+        Catch cex As OperationCanceledException
+            MsgBox(cex.Message, MsgBoxStyle.Exclamation)
         Catch ex As Exception
             MsgBox(ex.ToString, MsgBoxStyle.Critical)
         Finally

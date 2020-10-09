@@ -2,7 +2,7 @@
 Imports System.Threading
 Imports Algo2TradeBLL
 
-Public Class BelowFractalLowMultiStrategyRule
+Public Class PreviousNifty50SwingLowStrategyRule
     Inherits StrategyRule
 
 #Region "Entity"
@@ -10,12 +10,14 @@ Public Class BelowFractalLowMultiStrategyRule
         Inherits RuleEntities
 
         Public InitialCapital As Integer
+        Public MaxIteration As Integer
     End Class
 #End Region
 
     Private _atrPayload As Dictionary(Of Date, Decimal) = Nothing
-    Private _fractalHighPayload As Dictionary(Of Date, Decimal) = Nothing
-    Private _fractalLowPayload As Dictionary(Of Date, Decimal) = Nothing
+
+    Private _nifty50Payload As Dictionary(Of Date, Payload) = Nothing
+    Private _swingPayload As Dictionary(Of Date, Indicator.Swing) = Nothing
 
     Private ReadOnly _userInputs As StrategyRuleEntities
 
@@ -34,7 +36,9 @@ Public Class BelowFractalLowMultiStrategyRule
         MyBase.CompletePreProcessing()
 
         Indicator.ATR.CalculateATR(14, _signalPayload, _atrPayload, True)
-        Indicator.FractalBands.CalculateFractal(_signalPayload, _fractalHighPayload, _fractalLowPayload)
+
+        _nifty50Payload = _parentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.EOD_POSITIONAL, "NIFTY 50", _tradingDate.AddYears(-10), _tradingDate)
+        Indicator.SwingHighLow.CalculateSwingHighLow(_nifty50Payload, False, _swingPayload)
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -43,20 +47,18 @@ Public Class BelowFractalLowMultiStrategyRule
         Dim currentDayCandlePayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
         Dim parameters As List(Of PlaceOrderParameters) = Nothing
         If currentDayCandlePayload IsNot Nothing AndAlso currentDayCandlePayload.PreviousCandlePayload IsNot Nothing Then
-            Dim signals As List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Decimal, Integer)) = GetSignalForEntry(currentDayCandlePayload)
+            Dim signals As List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)) = GetSignalForEntry(currentDayCandlePayload)
             If signals IsNot Nothing AndAlso signals.Count > 0 Then
                 For Each runningSignal In signals
                     Dim entryPrice As Decimal = runningSignal.Item2
                     Dim quantity As Integer = runningSignal.Item3
                     Dim iteration As Integer = runningSignal.Item4
                     Dim remarks As String = runningSignal.Item5
-                    Dim fractalLow As Decimal = runningSignal.Item6
-                    Dim multipler As Integer = runningSignal.Item7
 
                     Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
-                                                                .entryPrice = entryPrice,
+                                                                .EntryPrice = entryPrice,
                                                                 .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                                                .quantity = quantity,
+                                                                .Quantity = quantity,
                                                                 .Stoploss = .EntryPrice - 1000000000,
                                                                 .Target = .EntryPrice + 1000000000,
                                                                 .Buffer = 0,
@@ -64,8 +66,7 @@ Public Class BelowFractalLowMultiStrategyRule
                                                                 .OrderType = Trade.TypeOfOrder.Market,
                                                                 .Supporting1 = iteration,
                                                                 .Supporting2 = remarks,
-                                                                .Supporting3 = fractalLow,
-                                                                .Supporting4 = multipler
+                                                                .Supporting3 = runningSignal.Item6.ToString("dd-MMM-yyyy HH:mm:ss")
                                                             }
 
                     If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
@@ -101,72 +102,42 @@ Public Class BelowFractalLowMultiStrategyRule
         Return ret
     End Function
 
-    Private Function GetSignalForEntry(ByVal candle As Payload) As List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Decimal, Integer))
-        Dim ret As List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Decimal, Integer)) = Nothing
+    Private Function GetSignalForEntry(ByVal candle As Payload) As List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
+        Dim ret As List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)) = Nothing
         Dim lastTrade As Trade = GetLastOrder(candle)
         Dim atr As Decimal = _atrPayload(candle.PreviousCandlePayload.PayloadDate)
         Dim iteration As Integer = 1
         Dim quantity As Integer = GetQuantity(iteration, candle.Open)
-        Dim fractalLow As Decimal = _fractalLowPayload(candle.PreviousCandlePayload.PayloadDate)
-        Dim entryPrice As Decimal = candle.Close
-        If lastTrade Is Nothing Then
-            fractalLow = _fractalLowPayload(candle.PayloadDate)
-            If candle.Close < fractalLow Then
-                If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Decimal, Integer))
-                ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Decimal, Integer)(True, entryPrice, quantity, iteration, "First Trade", fractalLow, 1))
-            End If
-        Else
-            Dim lastUsedFractal As Decimal = lastTrade.Supporting3
-            If IsDifferentFractal(fractalLow, candle.PreviousCandlePayload.PayloadDate, lastUsedFractal, lastTrade.EntryTime) Then
-                fractalLow = _fractalLowPayload(candle.PayloadDate)
-                If candle.Close < fractalLow Then
+        Dim swing As Indicator.Swing = _swingPayload(candle.PreviousCandlePayload.PayloadDate)
+        Dim nifty50Candle As Payload = _nifty50Payload(candle.PayloadDate)
+        If nifty50Candle.Close < swing.SwingLow Then
+            Dim entryPrice As Decimal = candle.Close
+            If lastTrade Is Nothing Then
+                If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
+                ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)(True, entryPrice, quantity, iteration, "First Trade", swing.SwingLowTime))
+            Else
+                Dim lastSignalTime As Date = Date.ParseExact(lastTrade.Supporting3, "dd-MMM-yyyy HH:mm:ss", Nothing)
+                If swing.SwingLowTime <> lastSignalTime Then
                     If entryPrice < lastTrade.EntryPrice Then
                         If lastTrade.EntryPrice - entryPrice >= atr Then
-                            If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Decimal, Integer))
-                            ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Decimal, Integer)(True, entryPrice, quantity, iteration, "(NF)(Reset) Below last entry", fractalLow, 1))
+                            If Val(lastTrade.Supporting1) < _userInputs.MaxIteration Then
+                                iteration = Val(lastTrade.Supporting1) + 1
+                                quantity = GetQuantity(iteration, entryPrice)
+                                If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
+                                ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)(True, entryPrice, quantity, iteration, "Below last entry", swing.SwingLowTime))
+                            Else
+                                If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
+                                ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)(True, entryPrice, quantity, iteration, "(Reset) Max Iteration", swing.SwingLowTime))
+                            End If
+                            'Else
+                            '    Console.WriteLine(String.Format("Trade Neglected for ATR on {0}", candle.PayloadDate.ToString("dd-MMM-yyyy")))
                         End If
                     Else
-                        If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Decimal, Integer))
-                        ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Decimal, Integer)(True, entryPrice, quantity, iteration, "(NF)(Reset) Above last entry", fractalLow, 1))
+                        If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
+                        ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)(True, entryPrice, quantity, iteration, "(Reset) Above last entry", swing.SwingLowTime))
                     End If
                 End If
-            Else
-                Dim multiplier As Integer = lastTrade.Supporting4
-                iteration = Val(lastTrade.Supporting1)
-                entryPrice = lastTrade.EntryPrice
-                While True
-                    multiplier = multiplier * 2
-                    entryPrice = Utilities.Numbers.ConvertFloorCeling(entryPrice - atr * multiplier, _parentStrategy.TickSize, Utilities.Numbers.NumberManipulation.RoundOfType.Floor)
-                    If candle.Low <= entryPrice Then
-                        iteration = iteration + 1
-                        quantity = GetQuantity(iteration, entryPrice)
-                        If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Decimal, Integer))
-                        ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Decimal, Integer)(True, entryPrice, quantity, iteration, "Below last entry", fractalLow, multiplier))
-                    Else
-                        Exit While
-                    End If
-                End While
             End If
-        End If
-        Return ret
-    End Function
-
-    Private Function IsDifferentFractal(ByVal currentFractal As Decimal, ByVal currentFratalTime As Date,
-                                        ByVal lastUsedFractal As Decimal, ByVal lastusedFratalTime As Date) As Boolean
-        Dim ret As Boolean = False
-        If currentFractal <> lastUsedFractal Then
-            ret = True
-        Else
-            For Each runningFractal In _fractalLowPayload.OrderByDescending(Function(x)
-                                                                                Return x.Key
-                                                                            End Function)
-                If runningFractal.Key <= currentFratalTime AndAlso runningFractal.Key > lastusedFratalTime Then
-                    If runningFractal.Value <> currentFractal Then
-                        ret = True
-                        Exit For
-                    End If
-                End If
-            Next
         End If
         Return ret
     End Function

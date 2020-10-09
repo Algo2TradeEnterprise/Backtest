@@ -10,6 +10,7 @@ Public Class PreviousSwingLowStrategyRule
         Inherits RuleEntities
 
         Public InitialCapital As Integer
+        Public MaxIteration As Integer
     End Class
 #End Region
 
@@ -114,10 +115,17 @@ Public Class PreviousSwingLowStrategyRule
                 If swing.SwingLowTime <> lastSignalTime Then
                     If entryPrice < lastTrade.EntryPrice Then
                         If lastTrade.EntryPrice - entryPrice >= atr Then
-                            iteration = Val(lastTrade.Supporting1) + 1
-                            quantity = GetQuantity(iteration, entryPrice)
-                            If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
-                            ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)(True, entryPrice, quantity, iteration, "Below last entry", swing.SwingLowTime))
+                            If Val(lastTrade.Supporting1) < _userInputs.MaxIteration Then
+                                iteration = Val(lastTrade.Supporting1) + 1
+                                quantity = GetQuantity(iteration, entryPrice)
+                                If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
+                                ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)(True, entryPrice, quantity, iteration, "Below last entry", swing.SwingLowTime))
+                            Else
+                                If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
+                                ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)(True, entryPrice, quantity, iteration, "(Reset) Max Iteration", swing.SwingLowTime))
+                            End If
+                            'Else
+                            '    Console.WriteLine(String.Format("Trade Neglected for ATR on {0}", candle.PayloadDate.ToString("dd-MMM-yyyy")))
                         End If
                     Else
                         If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
@@ -125,33 +133,6 @@ Public Class PreviousSwingLowStrategyRule
                     End If
                 End If
             End If
-            'If candle.Close < candle.PreviousCandlePayload.Low Then
-            '    entryPrice = candle.Close
-            '    iteration = 1
-            '    quantity = GetQuantity(iteration, entryPrice)
-            '    Dim lastEntryPrice As Decimal = Decimal.MinValue
-            '    Dim lastIteration As Integer = Integer.MinValue
-            '    If ret IsNot Nothing AndAlso ret.Count > 0 Then
-            '        lastEntryPrice = ret.FirstOrDefault.Item2
-            '        lastIteration = ret.FirstOrDefault.Item4
-            '    ElseIf lastTrade IsNot Nothing Then
-            '        lastEntryPrice = lastTrade.EntryPrice
-            '        lastIteration = lastTrade.Supporting1
-            '    End If
-            '    If lastEntryPrice <> Decimal.MinValue AndAlso lastIteration <> Integer.MinValue Then
-            '        If entryPrice < lastEntryPrice Then
-            '            If lastEntryPrice - entryPrice >= atr Then
-            '                iteration = lastIteration + 1
-            '                quantity = GetQuantity(iteration, entryPrice)
-            '                If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String))
-            '                ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String)(True, entryPrice, quantity, iteration, "(Close) Below last entry"))
-            '            End If
-            '        Else
-            '            If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String))
-            '            ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String)(True, entryPrice, quantity, iteration, "(Close) (Reset) Above last entry"))
-            '        End If
-            '    End If
-            'End If
         End If
         Return ret
     End Function
