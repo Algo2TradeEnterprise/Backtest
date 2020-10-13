@@ -152,6 +152,7 @@
     <Compile Include="Strategy Rule MIS\FractalTrendLineStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\HeikenashiReverseSlabStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\HighestLowestPointStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\HKForwardBreakoutAdaptiveMartingaleStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\HKReversalAdaptiveMartingaleStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\HKReversalAdaptiveMartingaleWithDirectionStrategyRule1.vb" />
     <Compile Include="Strategy Rule MIS\HKReversalAdaptiveMartingaleWithDirectionStrategyRule2.vb" />

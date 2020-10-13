@@ -247,6 +247,8 @@ Namespace StrategyHelper
                                             stockRule = New HKReversalAdaptiveMartingaleWithDirectionStrategyRule2(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 63
                                             stockRule = New FavourableCandleBreakoutAfterVStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case 64
+                                            stockRule = New HKForwardBreakoutAdaptiveMartingaleStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
