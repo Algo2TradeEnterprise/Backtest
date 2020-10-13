@@ -245,6 +245,8 @@ Namespace StrategyHelper
                                             stockRule = New AnchoredVWAPDirectionStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 62
                                             stockRule = New HKReversalAdaptiveMartingaleWithDirectionStrategyRule2(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case 63
+                                            stockRule = New FavourableCandleBreakoutAfterVStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
