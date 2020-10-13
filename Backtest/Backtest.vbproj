@@ -194,6 +194,7 @@
     <Compile Include="Strategy Rule MIS\SupertrendCutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\SwingAtDayHLStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\TwoThirdStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\UntouchVWAPAdaptiveMartingaleStrategyRule.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="frmMain.resx">
