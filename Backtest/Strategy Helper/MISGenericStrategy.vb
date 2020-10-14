@@ -253,6 +253,8 @@ Namespace StrategyHelper
                                             stockRule = New FravourableFractalPreviousLevelBreakoutAdaptiveMartingaleStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 66
                                             stockRule = New UntouchVWAPAdaptiveMartingaleStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case 67
+                                            stockRule = New HKUntouchVWAPAdaptiveMartingaleStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select

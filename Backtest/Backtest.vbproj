@@ -162,6 +162,7 @@
     <Compile Include="Strategy Rule MIS\HKReverseExitStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\HKReverseSlabMartingaleStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\HKReversalLossMakeupStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\HKUntouchVWAPAdaptiveMartingaleStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\HL_LHBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\LossMakeupFavourableFractalBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\LossMakeupFavourableFractalBreakoutWithSupertrendStrategyRule.vb" />
