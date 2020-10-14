@@ -6289,7 +6289,8 @@ Public Class frmMain
 
                         With backtestStrategy
                             '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pre Market Stock with Quantity sort.csv")
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based Narrow Band Stocks.csv")
+                            '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based Narrow Band Stocks.csv")
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Stock With Multiplier.csv")
 
                             .AllowBothDirectionEntryAtSameTime = False
                             .TrailingStoploss = False
