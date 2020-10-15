@@ -49,6 +49,37 @@ Module ExcelModifier
                 Dim dayPivotData As Object(,) = excelWriter.GetExcelInMemory()
 
                 excelWriter.SetActiveSheet("Data")
+                Dim startingRow As Integer = 2
+
+                Dim xirrData As List(Of KeyValuePair(Of Date, Decimal)) = Nothing
+                Dim exitPrice As Decimal = 0
+                For row As Integer = startingRow To rowCout Step 1
+                    Dim currentDate As Date = excelWriter.GetData(row, 1)
+                    Dim investment As Decimal = excelWriter.GetData(row, 3) * -1
+                    exitPrice += investment * -1 + excelWriter.GetData(row, 20)
+
+                    If xirrData Is Nothing Then xirrData = New List(Of KeyValuePair(Of Date, Decimal))
+                    xirrData.Add(New KeyValuePair(Of Date, Decimal)(currentDate, investment))
+                    'Dim currentIteration As Integer = excelWriter.GetData(row, 35)
+                    Dim nextIteration As Integer = excelWriter.GetData(row + 1, 35)
+                    If nextIteration = 1 Then
+                        'Dim totalQty As Integer = excelWriter.GetData(row, 38)
+                        'Dim extPrc As Decimal = excelWriter.GetData(row, 7)
+                        'xirrData.Add(New KeyValuePair(Of Date, Decimal)(currentDate, totalQty * extPrc))
+                        Dim exitDate As Date = excelWriter.GetData(row, 10)
+                        xirrData.Add(New KeyValuePair(Of Date, Decimal)(exitDate, exitPrice))
+                        exitPrice = 0
+                    End If
+                Next
+                If xirrData IsNot Nothing AndAlso xirrData.Count > 0 Then
+                    Dim exitDate As Date = excelWriter.GetData(rowCout - 1, 10)
+                    'Dim totalQty As Integer = excelWriter.GetData(rowCout - 1, 38)
+                    'Dim extPrc As Decimal = excelWriter.GetData(rowCout - 1, 7)
+                    'xirrData.Add(New KeyValuePair(Of Date, Decimal)(currentDate, totalQty * extPrc))
+                    xirrData.Add(New KeyValuePair(Of Date, Decimal)(exitDate, exitPrice))
+                End If
+
+
                 excelWriter.SetData(1, columnCout + 1, "Available Capital")
                 excelWriter.SetData(1, columnCout + 2, "Withdrawn Capital")
                 excelWriter.SetData(1, columnCout + 3, "Pump In Capital")
@@ -57,7 +88,6 @@ Module ExcelModifier
                 excelWriter.SetData(1, columnCout + 6, "Equity Curve DrawDown")
 
                 Dim availableCapital As Decimal = initialCapital
-                Dim startingRow As Integer = 2
                 Dim totalWithdraw As Decimal = 0
                 Dim totalPump As Decimal = 0
                 Dim drawUp As Decimal = 0
@@ -106,6 +136,7 @@ Module ExcelModifier
                         totalPump += pumpInCapital
                     End If
                     Dim effectiveCapital As Decimal = Math.Round(availableCapital + pumpInCapital - withdraw, 2)
+
                     For row As Integer = startingRow To rowCout Step 1
                         'Console.WriteLine(String.Format("Checking row {0} of {1}", row, rowCout))
                         Dim currentDate As Date = excelWriter.GetData(row, 1)
@@ -178,7 +209,24 @@ Module ExcelModifier
                 excelWriter.SetData(n + 6, 7, Math.Round((totalWinningDays / totalDays) * 100, 2), "##,##,##0.00", ExcelHelper.XLAlign.Right)
                 dayWinRatio = Math.Round((totalWinningDays / totalDays) * 100, 2)
 
-                excelWriter.SetActiveSheet("Summary")
+
+                If xirrData IsNot Nothing AndAlso xirrData.Count > 0 Then
+                    Console.WriteLine("Calculating XIRR")
+                    excelWriter.CreateNewSheet("XIRR")
+                    excelWriter.SetActiveSheet("XIRR")
+
+                    Dim xirrRowNo As Integer = 1
+                    excelWriter.SetData(xirrRowNo, 1, "Date")
+                    excelWriter.SetData(xirrRowNo, 2, "Data")
+                    For Each runningData In xirrData
+                        xirrRowNo += 1
+                        excelWriter.SetData(xirrRowNo, 1, runningData.Key)
+                        excelWriter.SetData(xirrRowNo, 2, runningData.Value, "##,##,##0", ExcelHelper.XLAlign.Right)
+                    Next
+                    xirrRowNo += 1
+                    excelWriter.SetCellFormula(xirrRowNo, 2, String.Format("=XIRR(B2:B{0},A2:A{0})", xirrRowNo - 1))
+                End If
+
                 Console.WriteLine("Saving excel...")
                 excelWriter.SaveExcel()
             End Using
