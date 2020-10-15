@@ -24,6 +24,7 @@ Module ExcelModifier
         Try
             Console.WriteLine("Opening Excel")
             Dim dayWinRatio As Decimal = Decimal.MinValue
+            Dim xirr As Decimal = Decimal.MinValue
             Using excelWriter As New ExcelHelper(filePath, ExcelHelper.ExcelOpenStatus.OpenExistingForReadWrite, ExcelHelper.ExcelSaveType.XLS_XLSX, New CancellationTokenSource)
                 excelWriter.SetActiveSheet("Data")
                 Dim rowCout As Long = excelWriter.GetLastRow
@@ -225,6 +226,9 @@ Module ExcelModifier
                     Next
                     xirrRowNo += 1
                     excelWriter.SetCellFormula(xirrRowNo, 2, String.Format("=XIRR(B2:B{0},A2:A{0})", xirrRowNo - 1))
+                    excelWriter.SaveExcel()
+
+                    xirr = Math.Round(excelWriter.GetData(xirrRowNo, 2) * 100, 2)
                 End If
 
                 Console.WriteLine("Saving excel...")
@@ -232,7 +236,8 @@ Module ExcelModifier
             End Using
 
             Dim copiedFileName As String = Path.GetFileName(filePath)
-            copiedFileName = String.Format("WR {0},{1}", dayWinRatio, copiedFileName)
+            'copiedFileName = String.Format("WR {0},{1}", dayWinRatio, copiedFileName)
+            copiedFileName = String.Format("XIRR {0}, {1}", xirr, copiedFileName)
             Dim copiedFilePath As String = Path.Combine(Path.GetDirectoryName(filePath), copiedFileName)
             If File.Exists(copiedFilePath) Then File.Delete(copiedFilePath)
             'File.Move(filePath, copiedFilePath)

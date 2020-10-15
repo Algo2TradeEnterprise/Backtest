@@ -1478,7 +1478,19 @@ Namespace StrategyHelper
                             .AverageDurationInLosingTrades = If((totalTrades - totalPositiveTrades) <> 0, totalDurationInNegativeTrades / (totalTrades - totalPositiveTrades), 0)
                         End With
 
-                        fileName = String.Format("PL {0},{1}.xlsx", Math.Round(strategyOutputData.NetProfit, 0), fileName)
+                        Dim maxInvestment As Decimal = allTradesData.Values.Max(Function(x)
+                                                                                    Return x.Values.Max(Function(y)
+                                                                                                            Return y.Max(Function(z)
+                                                                                                                             If z.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel Then
+                                                                                                                                 Return Val(z.Supporting3)
+                                                                                                                             Else
+                                                                                                                                 Return Decimal.MinValue
+                                                                                                                             End If
+                                                                                                                         End Function)
+                                                                                                        End Function)
+                                                                                End Function)
+
+                        fileName = String.Format("PL {0}, Cap {1}, {2}.xlsx", Math.Round(strategyOutputData.NetProfit, 0), Math.Round(maxInvestment, 0), fileName)
                         Dim filepath As String = Path.Combine(My.Application.Info.DirectoryPath, "BackTest Output", fileName)
                         If File.Exists(filepath) Then File.Delete(filepath)
 

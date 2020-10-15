@@ -10,7 +10,9 @@ Public Class ValueInvestingWithExitAndReEntryStrategyRule
         Inherits RuleEntities
 
         Public InitialInvestment As Decimal
-        Public AmountOfIncreaseDesireEachPeriod As Decimal
+        Public PercentageOfIncreaseDesireEachPeriod As Decimal
+        Public ReturnPercentage As Decimal
+        Public ExitAtExactReturnPercentage As Boolean
     End Class
 #End Region
 
@@ -51,7 +53,7 @@ Public Class ValueInvestingWithExitAndReEntryStrategyRule
                                                                        Return x.Key.Date >= firstTrade.SignalCandle.PayloadDate.Date AndAlso
                                                                        x.Key.Date <= currentDayCandlePayload.PayloadDate.Date
                                                                    End Function).Count
-                Dim desiredValue As Decimal = _userInputs.InitialInvestment + (numberOfDays - 1) * _userInputs.AmountOfIncreaseDesireEachPeriod
+                Dim desiredValue As Decimal = _userInputs.InitialInvestment + (numberOfDays - 1) * (_userInputs.InitialInvestment * _userInputs.PercentageOfIncreaseDesireEachPeriod / 100)
                 Dim amountToInvest As Decimal = desiredValue - totalValueBeforeRebalancing
                 Dim numberOfSharesToBuy As Decimal = Math.Round(amountToInvest / currentDayCandlePayload.Close)
 
@@ -124,9 +126,14 @@ Public Class ValueInvestingWithExitAndReEntryStrategyRule
             Dim totalQuantityTradedInThisChain As Integer = currentTrade.Supporting4
             Dim totalAmountInvestedInThisChain As Decimal = currentTrade.Supporting3
             Dim totalAmountReturnInThisChain As Decimal = totalQuantityTradedInThisChain * currentDayCandlePayload.Close
+            If _userInputs.ExitAtExactReturnPercentage Then totalAmountReturnInThisChain = totalQuantityTradedInThisChain * currentDayCandlePayload.High
             Dim returnPercentage As Decimal = Math.Round((totalAmountReturnInThisChain / totalAmountInvestedInThisChain - 1) * 100, 2)
-            If returnPercentage >= 5 Then
-                ret = New Tuple(Of Boolean, Decimal, String)(True, currentDayCandlePayload.Close, "Target")
+            If returnPercentage >= _userInputs.ReturnPercentage Then
+                Dim priceToExit As Decimal = currentDayCandlePayload.Close
+                If _userInputs.ExitAtExactReturnPercentage Then
+                    priceToExit = Math.Round(((_userInputs.ReturnPercentage / 100 + 1) * totalAmountInvestedInThisChain) / totalQuantityTradedInThisChain, 2)
+                End If
+                ret = New Tuple(Of Boolean, Decimal, String)(True, priceToExit, "Target")
             End If
         End If
         Return ret
