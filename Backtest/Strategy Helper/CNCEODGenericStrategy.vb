@@ -78,7 +78,7 @@ Namespace StrategyHelper
                             Dim XDayPayload As Dictionary(Of Date, Payload) = Nothing
                             Dim currentDayPayload As Dictionary(Of Date, Payload) = Nothing
                             If Me.DataSource = SourceOfData.Database Then
-                                XDayPayload = Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.EOD_POSITIONAL, stock, tradeCheckingDate.AddYears(-10), tradeCheckingDate)
+                                XDayPayload = Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.EOD_POSITIONAL, stock, startDate, tradeCheckingDate)
                             ElseIf Me.DataSource = SourceOfData.Live Then
                                 XDayPayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, stock, tradeCheckingDate.AddYears(-10), tradeCheckingDate).ConfigureAwait(False)
                             End If
@@ -109,9 +109,9 @@ Namespace StrategyHelper
                                     Dim tradingSymbol As String = currentDayPayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
                                         Case 0
-                                            stockRule = New PreviousSwingLowStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 1
-                                            stockRule = New PreviousNifty50SwingLowStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                            stockRule = New ValueInvestingWithExitStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case Else
+                                            Throw New NotImplementedException
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -172,6 +172,29 @@ Namespace StrategyHelper
 
                                     'Update Collection
                                     Await stockStrategyRule.UpdateRequiredCollectionsAsync(runningTick).ConfigureAwait(False)
+
+                                    'Exit Trade From Rule
+                                    _canceller.Token.ThrowIfCancellationRequested()
+                                    Dim potentialRuleExitTrades As List(Of Trade) = GetSpecificTrades(currentDayCandlePayload, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
+                                    If potentialRuleExitTrades IsNot Nothing AndAlso potentialRuleExitTrades.Count > 0 Then
+                                        For Each runningExitTrade In potentialRuleExitTrades
+                                            _canceller.Token.ThrowIfCancellationRequested()
+                                            Dim exitOrderDetails As Tuple(Of Boolean, Decimal, String) = Await stockStrategyRule.IsTriggerReceivedForExitCNCEODOrderAsync(runningTick, runningExitTrade).ConfigureAwait(False)
+                                            If exitOrderDetails IsNot Nothing AndAlso exitOrderDetails.Item1 Then
+                                                _canceller.Token.ThrowIfCancellationRequested()
+                                                Dim exitTick As Payload = New Payload(Payload.CandleDataSource.Calculated) With {
+                                                            .Open = exitOrderDetails.Item2,
+                                                            .Low = exitOrderDetails.Item2,
+                                                            .High = exitOrderDetails.Item2,
+                                                            .Close = exitOrderDetails.Item2,
+                                                            .PayloadDate = runningTick.PayloadDate,
+                                                            .TradingSymbol = runningTick.TradingSymbol
+                                                        }
+                                                ExitTradeByForce(runningExitTrade, exitTick, exitOrderDetails.Item3)
+                                            End If
+                                        Next
+                                        stockList(stockName).ExitOrderDoneForTheMinute = True
+                                    End If
 
                                     'Place Order
                                     _canceller.Token.ThrowIfCancellationRequested()
@@ -287,7 +310,7 @@ Namespace StrategyHelper
             Dim ret As Dictionary(Of String, StockDetails) = Nothing
 
             Dim detailsOfStock As StockDetails = New StockDetails With
-                                    {.StockName = "NIFTYBEES",
+                                    {.StockName = "RELIANCE",
                                     .LotSize = 1,
                                     .EligibleToTakeTrade = True}
 
