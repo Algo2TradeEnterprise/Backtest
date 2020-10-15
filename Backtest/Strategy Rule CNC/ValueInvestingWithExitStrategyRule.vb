@@ -51,7 +51,7 @@ Public Class ValueInvestingWithExitStrategyRule
                                                                        Return x.Key.Date >= firstTrade.SignalCandle.PayloadDate.Date AndAlso
                                                                        x.Key.Date <= currentDayCandlePayload.PayloadDate.Date
                                                                    End Function).Count
-                Dim desiredValue As Decimal = _userInputs.InitialInvestment + numberOfDays * _userInputs.AmountOfIncreaseDesireEachPeriod
+                Dim desiredValue As Decimal = _userInputs.InitialInvestment + (numberOfDays - 1) * _userInputs.AmountOfIncreaseDesireEachPeriod
                 Dim amountToInvest As Decimal = desiredValue - totalValueBeforeRebalancing
                 Dim numberOfSharesToBuy As Decimal = Math.Round(amountToInvest / currentDayCandlePayload.Close)
 
