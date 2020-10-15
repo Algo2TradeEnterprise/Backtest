@@ -294,11 +294,23 @@ Public Class frmMain
 
                     .RuleNumber = rule
 
-                    .RuleEntityData = New ValueInvestingWithExitStrategyRule.StrategyRuleEntities With
+                    Select Case rule
+                        Case 0
+                            .RuleEntityData = New ValueInvestingWithExitAndReEntryStrategyRule.StrategyRuleEntities With
                                 {
                                  .InitialInvestment = 10000,
                                  .AmountOfIncreaseDesireEachPeriod = 1000
                                 }
+                        Case 1
+                            .RuleEntityData = New ValueInvestingWithExitAndIncrementedReEntryStrategyRule.StrategyRuleEntities With
+                                {
+                                 .InitialInvestment = 10000,
+                                 .AmountOfIncreaseDesireEachPeriod = 1000
+                                }
+                        Case Else
+                            Throw New NotImplementedException
+                    End Select
+
 
                     .NumberOfTradeableStockPerDay = 1
 
@@ -308,8 +320,16 @@ Public Class frmMain
                     .TickBasedStrategy = True
                 End With
 
-                Dim ruleEntity As ValueInvestingWithExitStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                Dim filename As String = String.Format("Value Investing With Exit")
+                'Dim ruleEntity As ValueInvestingWithExitAndReEntryStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                Dim filename As String = Nothing
+                Select Case rule
+                    Case 0
+                        filename = String.Format("Value Investing With Exit And ReEntry")
+                    Case 1
+                        filename = String.Format("Value Investing With Exit And Incremented ReEntry")
+                    Case Else
+                        Throw New NotImplementedException
+                End Select
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using

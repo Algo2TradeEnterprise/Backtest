@@ -2,7 +2,7 @@
 Imports System.Threading
 Imports Algo2TradeBLL
 
-Public Class ValueInvestingWithExitStrategyRule
+Public Class ValueInvestingWithExitAndReEntryStrategyRule
     Inherits StrategyRule
 
 #Region "Entity"
