@@ -272,7 +272,7 @@ Public Class frmMain
             Dim rule As Integer = GetComboBoxIndex_ThreadSafe(cmbRule)
 
             For incrsPer As Decimal = 5 To 10 Step 1
-                For ext As Integer = 0 To 1
+                For ext As Integer = 1 To 1
                     Using backtestStrategy As New CNCEODGenericStrategy(canceller:=_canceller,
                                                                         exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                         exchangeEndTime:=TimeSpan.Parse("15:29:59"),
