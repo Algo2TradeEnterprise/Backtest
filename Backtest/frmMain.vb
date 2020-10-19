@@ -6476,8 +6476,9 @@ Public Class frmMain
                             .RuleEntityData = New MADirectionBasedSMIEntryStrategyRule.StrategyRuleEntities With
                                             {
                                                 .MaxLossPerTrade = -500,
-                                                .MaxProfitPerTrade = 1500,
-                                                .SignalTimeframe = 15
+                                                .SignalTimeframe = 15,
+                                                .TargetMultiplier = 3,
+                                                .ATRMultiplier = 1
                                             }
 
                             .NumberOfTradeableStockPerDay = 10

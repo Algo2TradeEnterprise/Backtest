@@ -10,9 +10,10 @@ Public Class MADirectionBasedSMIEntryStrategyRule
     Public Class StrategyRuleEntities
         Inherits RuleEntities
 
-        Public MaxProfitPerTrade As Decimal
-        Public MaxLossPerTrade As Decimal
         Public SignalTimeframe As Integer
+        Public MaxLossPerTrade As Decimal
+        Public TargetMultiplier As Decimal
+        Public ATRMultiplier As Decimal
     End Class
 #End Region
 
@@ -84,13 +85,13 @@ Public Class MADirectionBasedSMIEntryStrategyRule
 
             If signalCandle IsNot Nothing Then
                 Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2, RoundOfType.Floor)
-                Dim slPoint As Decimal = ConvertFloorCeling(_atrPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
+                Dim slPoint As Decimal = ConvertFloorCeling(_atrPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate) * _userInputs.ATRMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
                 Dim entryPrice As Decimal = signal.Item2
                 Dim stoploss As Decimal = signal.Item2 - slPoint
                 If signal.Item4 = Trade.TradeExecutionDirection.Sell Then stoploss = signal.Item2 + slPoint
 
                 Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, entryPrice - slPoint, _userInputs.MaxLossPerTrade, Trade.TypeOfStock.Cash)
-                Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, quantity, _userInputs.MaxProfitPerTrade, signal.Item4, Trade.TypeOfStock.Cash)
+                Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, quantity, Math.Abs(_userInputs.MaxLossPerTrade * _userInputs.TargetMultiplier), signal.Item4, Trade.TypeOfStock.Cash)
 
                 Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                                                             .EntryPrice = entryPrice,
@@ -162,7 +163,7 @@ Public Class MADirectionBasedSMIEntryStrategyRule
                 If _direction = Trade.TradeExecutionDirection.Buy AndAlso signalCandle.Low > _smaPayload(signalCandle.PayloadDate) Then
                     If _smiPayload(hkCandle.PayloadDate) <= -40 Then
                         If hkCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
-                            Dim entryPrice As Decimal = ConvertFloorCeling(hkCandle.High, _parentStrategy.TickSize, RoundOfType.Celing)
+                            Dim entryPrice As Decimal = ConvertFloorCeling(Math.Round(hkCandle.High, 2), _parentStrategy.TickSize, RoundOfType.Celing)
                             If entryPrice = Math.Round(hkCandle.High, 2) Then
                                 entryPrice = entryPrice + _parentStrategy.CalculateBuffer(entryPrice, RoundOfType.Floor)
                             End If
@@ -172,7 +173,7 @@ Public Class MADirectionBasedSMIEntryStrategyRule
                 ElseIf _direction = Trade.TradeExecutionDirection.Sell AndAlso signalCandle.High < _smaPayload(signalCandle.PayloadDate) Then
                     If _smiPayload(hkCandle.PayloadDate) >= 40 Then
                         If hkCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
-                            Dim entryPrice As Decimal = ConvertFloorCeling(hkCandle.Low, _parentStrategy.TickSize, RoundOfType.Floor)
+                            Dim entryPrice As Decimal = ConvertFloorCeling(Math.Round(hkCandle.Low, 2), _parentStrategy.TickSize, RoundOfType.Floor)
                             If entryPrice = Math.Round(hkCandle.Low, 2) Then
                                 entryPrice = entryPrice - _parentStrategy.CalculateBuffer(entryPrice, RoundOfType.Floor)
                             End If
