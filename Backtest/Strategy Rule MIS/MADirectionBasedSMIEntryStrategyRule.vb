@@ -3,22 +3,26 @@ Imports System.Threading
 Imports Algo2TradeBLL
 Imports Utilities.Numbers.NumberManipulation
 
-Public Class SingleTradeRiskRewardStrategyRule
+Public Class MADirectionBasedSMIEntryStrategyRule
     Inherits StrategyRule
 
 #Region "Entity"
     Public Class StrategyRuleEntities
         Inherits RuleEntities
 
-        Public SignalTimeframe As Integer
+        Public MaxProfitPerTrade As Decimal
         Public MaxLossPerTrade As Decimal
-        Public TargetMultiplier As Decimal
-        Public ATRMultiplier As Decimal
+        Public SignalTimeframe As Integer
     End Class
 #End Region
 
     Private _atrPayload As Dictionary(Of Date, Decimal) = Nothing
+    Private _hkPayload As Dictionary(Of Date, Payload) = Nothing
+    Private _smiPayload As Dictionary(Of Date, Decimal) = Nothing
+
     Private _xMinutePayload As Dictionary(Of Date, Payload) = Nothing
+    Private _smaPayload As Dictionary(Of Date, Decimal) = Nothing
+    Private _direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
 
     Private ReadOnly _userInputs As StrategyRuleEntities
 
@@ -37,8 +41,24 @@ Public Class SingleTradeRiskRewardStrategyRule
         MyBase.CompletePreProcessing()
 
         Indicator.ATR.CalculateATR(14, _signalPayload, _atrPayload)
+        Indicator.HeikenAshi.ConvertToHeikenAshi(_signalPayload, _hkPayload)
+        Indicator.SMI.CalculateSMI(10, 3, 3, 10, _hkPayload, _smiPayload, Nothing)
+
         Dim exchangeStartTime As Date = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, _parentStrategy.ExchangeStartTime.Hours, _parentStrategy.ExchangeStartTime.Minutes, _parentStrategy.ExchangeStartTime.Seconds)
         _xMinutePayload = Common.ConvertPayloadsToXMinutes(_inputPayload, _userInputs.SignalTimeframe, exchangeStartTime)
+        Indicator.SMA.CalculateSMA(20, Payload.PayloadFields.Close, _xMinutePayload, _smaPayload)
+
+        Dim eodPayload As Dictionary(Of Date, Payload) = _parentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.EOD_Cash, _tradingSymbol, _tradingDate.AddDays(-150), _tradingDate)
+        If eodPayload IsNot Nothing AndAlso eodPayload.Count > 0 Then
+            Dim eodSMAPayload As Dictionary(Of Date, Decimal) = Nothing
+            Indicator.SMA.CalculateSMA(20, Payload.PayloadFields.Close, eodPayload, eodSMAPayload)
+            Dim currentDayCandle As Payload = eodPayload(_tradingDate.Date)
+            If currentDayCandle.PreviousCandlePayload.Low > eodSMAPayload(currentDayCandle.PreviousCandlePayload.PayloadDate) Then
+                _direction = Trade.TradeExecutionDirection.Buy
+            ElseIf currentDayCandle.PreviousCandlePayload.High < eodSMAPayload(currentDayCandle.PreviousCandlePayload.PayloadDate) Then
+                _direction = Trade.TradeExecutionDirection.Sell
+            End If
+        End If
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -64,13 +84,13 @@ Public Class SingleTradeRiskRewardStrategyRule
 
             If signalCandle IsNot Nothing Then
                 Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2, RoundOfType.Floor)
-                Dim slPoint As Decimal = ConvertFloorCeling(_atrPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate) * _userInputs.ATRMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
+                Dim slPoint As Decimal = ConvertFloorCeling(_atrPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
                 Dim entryPrice As Decimal = signal.Item2
                 Dim stoploss As Decimal = signal.Item2 - slPoint
                 If signal.Item4 = Trade.TradeExecutionDirection.Sell Then stoploss = signal.Item2 + slPoint
 
                 Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, entryPrice - slPoint, _userInputs.MaxLossPerTrade, Trade.TypeOfStock.Cash)
-                Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, quantity, Math.Abs(_userInputs.MaxLossPerTrade * _userInputs.TargetMultiplier), signal.Item4, Trade.TypeOfStock.Cash)
+                Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, quantity, _userInputs.MaxProfitPerTrade, signal.Item4, Trade.TypeOfStock.Cash)
 
                 Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                                                             .EntryPrice = entryPrice,
@@ -94,11 +114,19 @@ Public Class SingleTradeRiskRewardStrategyRule
         Dim ret As Tuple(Of Boolean, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
-            Dim currentMinuteCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
-            Dim signal As Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection) = GetEntrySignal(currentMinuteCandle, currentTick)
-            If signal IsNot Nothing AndAlso signal.Item1 Then
-                If signal.Item3.PayloadDate <> currentTrade.SignalCandle.PayloadDate Then
-                    ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+            Dim signalCandle As Payload = _xMinutePayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _xMinutePayload, _userInputs.SignalTimeframe)).PreviousCandlePayload
+            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell AndAlso signalCandle.Low > _smaPayload(signalCandle.PayloadDate) Then
+                ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy AndAlso signalCandle.High < _smaPayload(signalCandle.PayloadDate) Then
+                ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+            End If
+            If ret Is Nothing Then
+                Dim currentMinuteCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
+                Dim signal As Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection) = GetEntrySignal(currentMinuteCandle, currentTick)
+                If signal IsNot Nothing AndAlso signal.Item1 Then
+                    If signal.Item3.PayloadDate <> currentTrade.SignalCandle.PayloadDate Then
+                        ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
+                    End If
                 End If
             End If
         End If
@@ -128,17 +156,28 @@ Public Class SingleTradeRiskRewardStrategyRule
     Private Function GetEntrySignal(ByVal currentCandle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection)
         Dim ret As Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection) = Nothing
         If currentCandle IsNot Nothing AndAlso currentCandle.PreviousCandlePayload IsNot Nothing Then
+            Dim hkCandle As Payload = _hkPayload(currentCandle.PreviousCandlePayload.PayloadDate)
             Dim signalCandle As Payload = _xMinutePayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _xMinutePayload, _userInputs.SignalTimeframe)).PreviousCandlePayload
-            If signalCandle.PreviousCandlePayload.PayloadDate.Date = _tradingDate.Date Then
-                If signalCandle.Volume > signalCandle.PreviousCandlePayload.Volume Then
-                    If signalCandle.CandleColor = Color.Red Then
-                        Dim entryPrice As Decimal = signalCandle.High + _parentStrategy.CalculateBuffer(signalCandle.High, RoundOfType.Floor)
-
-                        ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection)(True, entryPrice, signalCandle, Trade.TradeExecutionDirection.Buy)
-                    ElseIf signalCandle.CandleColor = Color.Green Then
-                        Dim entryPrice As Decimal = signalCandle.Low - _parentStrategy.CalculateBuffer(signalCandle.Low, RoundOfType.Floor)
-
-                        ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection)(True, entryPrice, signalCandle, Trade.TradeExecutionDirection.Sell)
+            If signalCandle.PayloadDate.Date = _tradingDate.Date Then
+                If _direction = Trade.TradeExecutionDirection.Buy AndAlso signalCandle.Low > _smaPayload(signalCandle.PayloadDate) Then
+                    If _smiPayload(hkCandle.PayloadDate) <= -40 Then
+                        If hkCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
+                            Dim entryPrice As Decimal = ConvertFloorCeling(hkCandle.High, _parentStrategy.TickSize, RoundOfType.Celing)
+                            If entryPrice = Math.Round(hkCandle.High, 2) Then
+                                entryPrice = entryPrice + _parentStrategy.CalculateBuffer(entryPrice, RoundOfType.Floor)
+                            End If
+                            ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection)(True, entryPrice, hkCandle, _direction)
+                        End If
+                    End If
+                ElseIf _direction = Trade.TradeExecutionDirection.Sell AndAlso signalCandle.High < _smaPayload(signalCandle.PayloadDate) Then
+                    If _smiPayload(hkCandle.PayloadDate) >= 40 Then
+                        If hkCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
+                            Dim entryPrice As Decimal = ConvertFloorCeling(hkCandle.Low, _parentStrategy.TickSize, RoundOfType.Floor)
+                            If entryPrice = Math.Round(hkCandle.Low, 2) Then
+                                entryPrice = entryPrice - _parentStrategy.CalculateBuffer(entryPrice, RoundOfType.Floor)
+                            End If
+                            ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection)(True, entryPrice, hkCandle, _direction)
+                        End If
                     End If
                 End If
             End If
