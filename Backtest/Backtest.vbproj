@@ -187,6 +187,7 @@
     <Compile Include="Strategy Rule MIS\PreviousDayHKTrendStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\PreviousDayHKTrendSwingStrategy.vb" />
     <Compile Include="Strategy Rule MIS\ReversalHHLLBreakoutStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\SingleTradeRiskRewardStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\SmallOpeningRangeBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\SmallRangeBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\SqueezeBreakoutStrategyRule.vb" />
