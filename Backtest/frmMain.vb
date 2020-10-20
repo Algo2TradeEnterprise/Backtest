@@ -6421,7 +6421,7 @@ Public Class frmMain
                     Next
 #End Region
                 Case 69
-#Region "MA Direction Based SMI Entry Strategy"
+#Region "Direction Based"
                     Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
                     Dim database As Common.DataBaseTable = Common.DataBaseTable.None
                     Dim margin As Decimal = 0
