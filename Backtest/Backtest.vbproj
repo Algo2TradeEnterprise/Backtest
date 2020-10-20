@@ -170,7 +170,7 @@
     <Compile Include="Strategy Rule MIS\LowerPriceOptionBuyOnlyStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\LowerPriceOptionOIChangeBuyOnlyStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\LowerPriceOptionBuyOnlyEODStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\MADirectionBasedSMIEntryStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\MADirectionBasedStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\MarketEntryStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\MarketPlusMarketMinusStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\BNFMartingaleStrategyRule.vb" />
