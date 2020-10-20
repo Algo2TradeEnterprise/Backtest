@@ -137,28 +137,28 @@ Public Class MADirectionBasedStrategyRule
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
-        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-            Dim currentMinuteCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
-            Dim triggerPrice As Decimal = Decimal.MinValue
-            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                If currentMinuteCandle.PreviousCandlePayload.Low > _smaPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate) Then
-                    Dim breakevenPoint As Decimal = _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, currentTrade.LotSize, currentTrade.StockType)
-                    If currentTrade.EntryPrice + breakevenPoint < currentTick.Open Then
-                        triggerPrice = currentTrade.EntryPrice + breakevenPoint
-                    End If
-                End If
-            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                If currentMinuteCandle.PreviousCandlePayload.High < _smaPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate) Then
-                    Dim breakevenPoint As Decimal = _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, currentTrade.LotSize, currentTrade.StockType)
-                    If currentTrade.EntryPrice - breakevenPoint > currentTick.Open Then
-                        triggerPrice = currentTrade.EntryPrice - breakevenPoint
-                    End If
-                End If
-            End If
-            If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
-                ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, String.Format("Move to breakeven at {0}", currentTick.PayloadDate.ToString("HH:mm:ss")))
-            End If
-        End If
+        'If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+        '    Dim currentMinuteCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
+        '    Dim triggerPrice As Decimal = Decimal.MinValue
+        '    If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+        '        If currentMinuteCandle.PreviousCandlePayload.Low > _smaPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate) Then
+        '            Dim breakevenPoint As Decimal = _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, currentTrade.LotSize, currentTrade.StockType)
+        '            If currentTrade.EntryPrice + breakevenPoint < currentTick.Open Then
+        '                triggerPrice = currentTrade.EntryPrice + breakevenPoint
+        '            End If
+        '        End If
+        '    ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+        '        If currentMinuteCandle.PreviousCandlePayload.High < _smaPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate) Then
+        '            Dim breakevenPoint As Decimal = _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, currentTrade.LotSize, currentTrade.StockType)
+        '            If currentTrade.EntryPrice - breakevenPoint > currentTick.Open Then
+        '                triggerPrice = currentTrade.EntryPrice - breakevenPoint
+        '            End If
+        '        End If
+        '    End If
+        '    If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
+        '        ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, String.Format("Move to breakeven at {0}", currentTick.PayloadDate.ToString("HH:mm:ss")))
+        '    End If
+        'End If
         Return ret
     End Function
 
@@ -173,14 +173,14 @@ Public Class MADirectionBasedStrategyRule
                 If bollingerHigh - currentMinuteCandle.PreviousCandlePayload.High > 0 Then
                     price = ConvertFloorCeling(bollingerHigh + (bollingerHigh - currentMinuteCandle.PreviousCandlePayload.High), _parentStrategy.TickSize, RoundOfType.Celing)
                 Else
-                    price = ConvertFloorCeling(bollingerHigh, _parentStrategy.TickSize, RoundOfType.Celing)
+                    price = ConvertFloorCeling(currentMinuteCandle.PreviousCandlePayload.High, _parentStrategy.TickSize, RoundOfType.Celing)
                 End If
             ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
                 Dim bollingerLow As Decimal = _bollingerLowPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
                 If currentMinuteCandle.PreviousCandlePayload.Low - bollingerLow > 0 Then
                     price = ConvertFloorCeling(bollingerLow - (currentMinuteCandle.PreviousCandlePayload.Low - bollingerLow), _parentStrategy.TickSize, RoundOfType.Floor)
                 Else
-                    price = ConvertFloorCeling(bollingerLow, _parentStrategy.TickSize, RoundOfType.Floor)
+                    price = ConvertFloorCeling(currentMinuteCandle.PreviousCandlePayload.Low, _parentStrategy.TickSize, RoundOfType.Floor)
                 End If
             End If
             If price <> Decimal.MinValue AndAlso price <> currentTrade.PotentialTarget Then

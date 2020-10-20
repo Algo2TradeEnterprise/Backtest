@@ -6449,7 +6449,7 @@ Public Class frmMain
                                                                     exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                     exchangeEndTime:=TimeSpan.Parse("15:29:59"),
                                                                     tradeStartTime:=TimeSpan.Parse("9:16:00"),
-                                                                    lastTradeEntryTime:=TimeSpan.Parse("14:44:59"),
+                                                                    lastTradeEntryTime:=TimeSpan.Parse("09:16:59"),
                                                                     eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                                     tickSize:=tick,
                                                                     marginMultiplier:=margin,
@@ -6466,7 +6466,8 @@ Public Class frmMain
                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                         With backtestStrategy
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "EOD Outside MA Stocks.csv")
+                            '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "EOD Outside MA Stocks.csv")
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "EOD Non Doji Stocks.csv")
 
                             .AllowBothDirectionEntryAtSameTime = False
                             .TrailingStoploss = False
