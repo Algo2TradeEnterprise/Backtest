@@ -259,6 +259,8 @@ Namespace StrategyHelper
                                             stockRule = New SingleTradeRiskRewardStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 69
                                             stockRule = New MADirectionBasedStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2)
+                                        Case 70
+                                            stockRule = New EMADirectionBasedHammerCandleBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).SupportingDate)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
@@ -1754,6 +1756,38 @@ Namespace StrategyHelper
                                                  .Slab = slab,
                                                  .Supporting1 = If(direction.ToUpper = "BUY", 1, -1),
                                                  .Supporting2 = If(gap, 1, 0),
+                                                 .EligibleToTakeTrade = True}
+
+                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                    ret.Add(instrumentName, detailsOfStock)
+
+                                    counter += 1
+                                    If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                                End If
+                            Next
+                        Case 70
+                            Dim counter As Integer = 0
+                            For i = 0 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i).Item("Date")
+                                If rowDate.Date = tradingDate.Date Then
+                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
+                                    Dim instrumentName As String = Nothing
+                                    If tradingSymbol.Contains("FUT") Then
+                                        instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                                    Else
+                                        instrumentName = tradingSymbol
+                                    End If
+                                    Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
+                                    Dim slab As Decimal = dt.Rows(i).Item("Slab")
+                                    Dim direction As String = dt.Rows(i).Item("Direction")
+                                    Dim candleTime As Date = Date.ParseExact(dt.Rows(i).Item("Hammer Candle Time"), "dd-MM-yyyy HH:mm:ss", Nothing)
+                                    Dim detailsOfStock As StockDetails = New StockDetails With
+                                                {.StockName = instrumentName,
+                                                 .TradingSymbol = tradingSymbol,
+                                                 .LotSize = lotsize,
+                                                 .Slab = slab,
+                                                 .Supporting1 = If(direction.ToUpper = "BUY", 1, -1),
+                                                 .SupportingDate = candleTime,
                                                  .EligibleToTakeTrade = True}
 
                                     If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)

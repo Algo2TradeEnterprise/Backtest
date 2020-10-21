@@ -141,6 +141,7 @@
     <Compile Include="Strategy Rule MIS\BuyBelowFractalStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\DayHLSwingTrendlineStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\EMAAttractionStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\EMADirectionBasedHammerCandleBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\EmaSmaCrossoverStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\FavourableCandleBreakoutAfterVStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\FibonacciBacktestStrategyRule.vb" />
