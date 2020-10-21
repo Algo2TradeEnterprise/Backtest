@@ -16,9 +16,11 @@ Public Class MADirectionBasedStrategyRule
 #End Region
 
     Private _atrPayload As Dictionary(Of Date, Decimal) = Nothing
-    Private _bollingerHighPayload As Dictionary(Of Date, Decimal) = Nothing
-    Private _bollingerLowPayload As Dictionary(Of Date, Decimal) = Nothing
+    Private _entryBollingerHighPayload As Dictionary(Of Date, Decimal) = Nothing
+    Private _entryBollingerLowPayload As Dictionary(Of Date, Decimal) = Nothing
     Private _smaPayload As Dictionary(Of Date, Decimal) = Nothing
+    Private _targetBollingerHighPayload As Dictionary(Of Date, Decimal) = Nothing
+    Private _targetBollingerLowPayload As Dictionary(Of Date, Decimal) = Nothing
 
     Private ReadOnly _direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
     Private ReadOnly _gap As Boolean = False
@@ -48,7 +50,8 @@ Public Class MADirectionBasedStrategyRule
         MyBase.CompletePreProcessing()
 
         Indicator.ATR.CalculateATR(14, _signalPayload, _atrPayload)
-        Indicator.BollingerBands.CalculateBollingerBands(20, Payload.PayloadFields.Close, 2, _signalPayload, _bollingerHighPayload, _bollingerLowPayload, _smaPayload)
+        Indicator.BollingerBands.CalculateBollingerBands(20, Payload.PayloadFields.Close, 2, _signalPayload, _entryBollingerHighPayload, _entryBollingerLowPayload, _smaPayload)
+        Indicator.BollingerBands.CalculateBollingerBands(20, Payload.PayloadFields.Close, 5, _signalPayload, _targetBollingerHighPayload, _targetBollingerLowPayload, Nothing)
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -75,20 +78,23 @@ Public Class MADirectionBasedStrategyRule
             If signalCandle IsNot Nothing Then
                 Dim entryPrice As Decimal = signal.Item2
                 If signal.Item4 = Trade.TradeExecutionDirection.Buy Then
-                    Dim bollingerHigh As Decimal = _bollingerHighPayload(signalCandle.PayloadDate)
+                    Dim bollingerHigh As Decimal = _entryBollingerHighPayload(signalCandle.PayloadDate)
                     Dim atr As Decimal = _atrPayload(signalCandle.PayloadDate)
                     Dim slPoint As Decimal = ConvertFloorCeling((bollingerHigh - entryPrice) / 2, _parentStrategy.TickSize, RoundOfType.Floor)
+                    Dim remark As String = "Half"
                     If slPoint < atr * _userInputs.ATRMultiplier Then
                         slPoint = ConvertFloorCeling(bollingerHigh - entryPrice, _parentStrategy.TickSize, RoundOfType.Floor)
+                        remark = "Full"
                     End If
                     Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, entryPrice - slPoint, _userInputs.MaxLossPerTrade, Trade.TypeOfStock.Cash)
+                    Dim target As Decimal = ConvertFloorCeling(_targetBollingerHighPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Celing)
 
                     Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                                                             .EntryPrice = entryPrice,
                                                             .EntryDirection = Trade.TradeExecutionDirection.Buy,
                                                             .Quantity = quantity,
                                                             .Stoploss = .EntryPrice - slPoint,
-                                                            .Target = bollingerHigh,
+                                                            .Target = target,
                                                             .Buffer = 0,
                                                             .SignalCandle = signalCandle,
                                                             .OrderType = Trade.TypeOfOrder.Market,
@@ -99,20 +105,23 @@ Public Class MADirectionBasedStrategyRule
 
                     ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
                 ElseIf signal.Item4 = Trade.TradeExecutionDirection.Sell Then
-                    Dim bollingerLow As Decimal = _bollingerLowPayload(signalCandle.PayloadDate)
+                    Dim bollingerLow As Decimal = _entryBollingerLowPayload(signalCandle.PayloadDate)
                     Dim atr As Decimal = _atrPayload(signalCandle.PayloadDate)
                     Dim slPoint As Decimal = ConvertFloorCeling((entryPrice - bollingerLow) / 2, _parentStrategy.TickSize, RoundOfType.Floor)
+                    Dim remark As String = "Half"
                     If slPoint < atr * _userInputs.ATRMultiplier Then
                         slPoint = ConvertFloorCeling(entryPrice - bollingerLow, _parentStrategy.TickSize, RoundOfType.Floor)
+                        remark = "Full"
                     End If
                     Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, entryPrice, entryPrice - slPoint, _userInputs.MaxLossPerTrade, Trade.TypeOfStock.Cash)
+                    Dim target As Decimal = ConvertFloorCeling(_targetBollingerLowPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Floor)
 
                     Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                                                             .EntryPrice = entryPrice,
                                                             .EntryDirection = Trade.TradeExecutionDirection.Sell,
                                                             .Quantity = quantity,
                                                             .Stoploss = .EntryPrice + slPoint,
-                                                            .Target = bollingerLow,
+                                                            .Target = target,
                                                             .Buffer = 0,
                                                             .SignalCandle = signalCandle,
                                                             .OrderType = Trade.TypeOfOrder.Market,
@@ -169,18 +178,14 @@ Public Class MADirectionBasedStrategyRule
             Dim currentMinuteCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
             Dim price As Decimal = Decimal.MinValue
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                Dim bollingerHigh As Decimal = _bollingerHighPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
-                If bollingerHigh - currentMinuteCandle.PreviousCandlePayload.High > 0 Then
-                    price = ConvertFloorCeling(bollingerHigh + (bollingerHigh - currentMinuteCandle.PreviousCandlePayload.High), _parentStrategy.TickSize, RoundOfType.Celing)
-                Else
-                    price = ConvertFloorCeling(currentMinuteCandle.PreviousCandlePayload.High, _parentStrategy.TickSize, RoundOfType.Celing)
+                Dim bollingerHigh As Decimal = _targetBollingerHighPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
+                If bollingerHigh < currentTrade.PotentialTarget Then
+                    price = ConvertFloorCeling(bollingerHigh, _parentStrategy.TickSize, RoundOfType.Celing)
                 End If
             ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                Dim bollingerLow As Decimal = _bollingerLowPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
-                If currentMinuteCandle.PreviousCandlePayload.Low - bollingerLow > 0 Then
-                    price = ConvertFloorCeling(bollingerLow - (currentMinuteCandle.PreviousCandlePayload.Low - bollingerLow), _parentStrategy.TickSize, RoundOfType.Floor)
-                Else
-                    price = ConvertFloorCeling(currentMinuteCandle.PreviousCandlePayload.Low, _parentStrategy.TickSize, RoundOfType.Floor)
+                Dim bollingerLow As Decimal = _targetBollingerLowPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
+                If bollingerLow > currentTrade.PotentialTarget Then
+                    price = ConvertFloorCeling(bollingerLow, _parentStrategy.TickSize, RoundOfType.Floor)
                 End If
             End If
             If price <> Decimal.MinValue AndAlso price <> currentTrade.PotentialTarget Then
@@ -202,11 +207,11 @@ Public Class MADirectionBasedStrategyRule
         Dim ret As Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection) = Nothing
         If currentCandle IsNot Nothing AndAlso currentCandle.PreviousCandlePayload IsNot Nothing Then
             If _direction = Trade.TradeExecutionDirection.Buy Then
-                If currentCandle.PreviousCandlePayload.Close < _bollingerLowPayload(currentCandle.PreviousCandlePayload.PayloadDate) Then
+                If currentCandle.PreviousCandlePayload.Close < _entryBollingerLowPayload(currentCandle.PreviousCandlePayload.PayloadDate) Then
                     ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection)(True, currentTick.Open, currentCandle.PreviousCandlePayload, Trade.TradeExecutionDirection.Buy)
                 End If
             ElseIf _direction = Trade.TradeExecutionDirection.Sell Then
-                If currentCandle.PreviousCandlePayload.Close > _bollingerHighPayload(currentCandle.PreviousCandlePayload.PayloadDate) Then
+                If currentCandle.PreviousCandlePayload.Close > _entryBollingerHighPayload(currentCandle.PreviousCandlePayload.PayloadDate) Then
                     ret = New Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection)(True, currentTick.Open, currentCandle.PreviousCandlePayload, Trade.TradeExecutionDirection.Sell)
                 End If
             End If
