@@ -107,62 +107,8 @@ Namespace StrategyHelper
 
                                     Dim tradingSymbol As String = currentDayPayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
-                                        Case 0
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 1
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 2
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 3
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 4
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 5
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 6
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 7
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 8
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 9
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 10
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 11
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 12
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 13
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 14
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 15
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 16
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 17
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 18
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 19
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 20
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 21
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 22
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 23
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 24
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 25
-                                            Throw New ApplicationException("Not a CNC strategy")
-                                        Case 26
-                                            stockRule = New HKPositionalHourlyStrategyRule1(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1)
-                                        Case 27
-                                            Throw New ApplicationException("Not a CNC strategy")
+                                        Case Else
+                                            Throw New NotImplementedException
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
