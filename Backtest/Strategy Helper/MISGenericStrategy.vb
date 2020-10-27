@@ -118,7 +118,7 @@ Namespace StrategyHelper
                                     End If
                                     Select Case RuleNumber
                                         Case 0
-                                            stockRule = New HKReversalAdaptiveMartingaleStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, loss, iteration, stockList(stock).Supporting1)
+                                            stockRule = New HKReversalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, loss, iteration, stockList(stock).Supporting1)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select

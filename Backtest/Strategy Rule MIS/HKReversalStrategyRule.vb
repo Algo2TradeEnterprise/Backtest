@@ -3,7 +3,7 @@ Imports System.Threading
 Imports Algo2TradeBLL
 Imports Utilities.Numbers.NumberManipulation
 
-Public Class HKReversalAdaptiveMartingaleStrategyRule
+Public Class HKReversalStrategyRule
     Inherits StrategyRule
 
     '#Region "Entity"
