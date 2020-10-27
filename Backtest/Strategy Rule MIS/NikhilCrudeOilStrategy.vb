@@ -14,6 +14,7 @@ Public Class NikhilCrudeOilStrategy
         Public TargetPoint As Decimal
         Public Buffer As Decimal
         Public InitialNumberOfLots As Integer
+        Public WithTimeConstraint As Boolean
     End Class
 #End Region
 
@@ -41,10 +42,12 @@ Public Class NikhilCrudeOilStrategy
             currentCandle.PayloadDate >= _tradeStartTime AndAlso Me.EligibleToTakeTrade Then
             Dim signal As Tuple(Of Boolean, Decimal, Integer, Trade.TradeExecutionDirection) = GetEntrySignal(currentCandle, currentTick)
             If signal IsNot Nothing AndAlso signal.Item1 Then
-                If signal.Item4 = Trade.TradeExecutionDirection.Buy AndAlso
+                Dim lastSignalEntryTime As Date = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, currentCandle.PayloadDate.Hour, 45, 0)
+                If Not _userInputs.WithTimeConstraint OrElse currentTick.PayloadDate < lastSignalEntryTime Then
+                    If signal.Item4 = Trade.TradeExecutionDirection.Buy AndAlso
                     Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) AndAlso
                     Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) Then
-                    Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
+                        Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                                                                 .EntryPrice = signal.Item2,
                                                                 .EntryDirection = Trade.TradeExecutionDirection.Buy,
                                                                 .Quantity = signal.Item3,
@@ -56,11 +59,11 @@ Public Class NikhilCrudeOilStrategy
                                                                 .Supporting1 = currentCandle.PreviousCandlePayload.PayloadDate.ToString("HH:mm:ss")
                                                             }
 
-                    ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
-                ElseIf signal.Item4 = Trade.TradeExecutionDirection.Sell AndAlso
+                        ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
+                    ElseIf signal.Item4 = Trade.TradeExecutionDirection.Sell AndAlso
                     Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) AndAlso
                     Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) Then
-                    Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
+                        Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                                                                 .EntryPrice = signal.Item2,
                                                                 .EntryDirection = Trade.TradeExecutionDirection.Sell,
                                                                 .Quantity = signal.Item3,
@@ -72,7 +75,8 @@ Public Class NikhilCrudeOilStrategy
                                                                 .Supporting1 = currentCandle.PreviousCandlePayload.PayloadDate.ToString("HH:mm:ss")
                                                             }
 
-                    ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
+                        ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
+                    End If
                 End If
             End If
         End If
@@ -94,6 +98,12 @@ Public Class NikhilCrudeOilStrategy
                         currentTrade.Quantity >= oppositeTrade.Quantity * 2 Then
                         ret = New Tuple(Of Boolean, String)(True, "Quantity Correction")
                     End If
+                End If
+            End If
+            If currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open AndAlso _userInputs.WithTimeConstraint Then
+                Dim lastSignalEntryTime As Date = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, currentCandle.PayloadDate.Hour, 45, 0)
+                If currentTick.PayloadDate >= lastSignalEntryTime Then
+                    ret = New Tuple(Of Boolean, String)(True, "Time Constraint Exit")
                 End If
             End If
         End If

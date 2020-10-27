@@ -302,7 +302,7 @@ Public Class frmMain
                             tick = 0.05
                         Case Trade.TypeOfStock.Commodity
                             database = Common.DataBaseTable.Intraday_Commodity
-                            margin = 1
+                            margin = 15
                             tick = 1
                         Case Trade.TypeOfStock.Currency
                             database = Common.DataBaseTable.Intraday_Currency
@@ -347,7 +347,8 @@ Public Class frmMain
                                                 .Buffer = 5,
                                                 .TargetPoint = 5,
                                                 .StoplossPoint = 10,
-                                                .InitialNumberOfLots = 5
+                                                .InitialNumberOfLots = 5,
+                                                .WithTimeConstraint = False
                                             }
 
                             .NumberOfTradeableStockPerDay = Integer.MaxValue
