@@ -119,6 +119,8 @@ Namespace StrategyHelper
                                     Select Case RuleNumber
                                         Case 0
                                             stockRule = New HKReversalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, loss, iteration, stockList(stock).Supporting1)
+                                        Case 1
+                                            stockRule = New HKRSIStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, loss, iteration, stockList(stock).Supporting1)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
@@ -564,7 +566,7 @@ Namespace StrategyHelper
 
                             For Each stockName In stockList.Keys
                                 Dim stockPL As Decimal = StockPLAfterBrokerage(tradeCheckingDate, stockList(stockName).TradingSymbol)
-                                If stockPL >= 500 Then
+                                If stockPL >= 0 Then
                                     If previousLossDetails IsNot Nothing AndAlso
                                         previousLossDetails.ContainsKey(stockName) Then
                                         previousLossDetails.Remove(stockName)
