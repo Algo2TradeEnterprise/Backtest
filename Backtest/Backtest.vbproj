@@ -131,6 +131,7 @@
     <Compile Include="Strategy Rule MIS\HKRSIColorEntryStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\HKRSIColorRetracementEntryStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\HKRSIStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\OpeningSlabBreakoutStrategyRule.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="frmMain.resx">

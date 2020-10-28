@@ -125,6 +125,8 @@ Namespace StrategyHelper
                                             stockRule = New HKRSIColorEntryStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, loss, iteration, stockList(stock).Supporting1)
                                         Case 3
                                             stockRule = New HKRSIColorRetracementEntryStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, loss, iteration, stockList(stock).Supporting1)
+                                        Case 4
+                                            stockRule = New OpeningSlabBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Slab, loss, iteration)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
@@ -570,11 +572,13 @@ Namespace StrategyHelper
 
                             For Each stockName In stockList.Keys
                                 Dim stockPL As Decimal = StockPLAfterBrokerage(tradeCheckingDate, stockList(stockName).TradingSymbol)
-                                If stockPL >= 0 Then
+                                If stockPL > 0 Then
                                     If previousLossDetails IsNot Nothing AndAlso
                                         previousLossDetails.ContainsKey(stockName) Then
                                         previousLossDetails.Remove(stockName)
                                     End If
+                                ElseIf stockPL = 0 Then
+                                    'Do nothing
                                 Else
                                     If previousLossDetails Is Nothing Then previousLossDetails = New Dictionary(Of String, StockDetails)
                                     If previousLossDetails.ContainsKey(stockName) Then
