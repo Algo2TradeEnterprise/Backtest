@@ -127,6 +127,7 @@
     <Compile Include="Strategy Helper\StrategyOutput.vb" />
     <Compile Include="Strategy Helper\StrategyRule.vb" />
     <Compile Include="Strategy Helper\Trade.vb" />
+    <Compile Include="Strategy Rule MIS\FavourableFractalBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\HKReversalStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\HKRSIColorEntryStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\HKRSIColorRetracementEntryStrategyRule.vb" />

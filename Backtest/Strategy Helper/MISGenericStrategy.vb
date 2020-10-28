@@ -127,6 +127,8 @@ Namespace StrategyHelper
                                             stockRule = New HKRSIColorRetracementEntryStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, loss, iteration, stockList(stock).Supporting1)
                                         Case 4
                                             stockRule = New OpeningSlabBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Slab, loss, iteration)
+                                        Case 5
+                                            stockRule = New FavourableFractalBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, loss, iteration)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
