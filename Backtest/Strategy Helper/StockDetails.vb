@@ -21,5 +21,8 @@
         Public Supporting5 As Decimal
         Public Supporting6 As Decimal
         Public SupportingDate As Date
+
+        Public PreviousLoss As Decimal
+        Public PreviousIteration As Decimal
     End Class
 End Namespace

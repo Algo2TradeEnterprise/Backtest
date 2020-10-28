@@ -60,7 +60,7 @@ Namespace StrategyHelper
                 Dim totalPL As Decimal = 0
                 Dim tradeCheckingDate As Date = startDate.Date
                 Dim portfolioLossPerDay As Decimal = Me.OverAllLossPerDay
-                Dim previousLossDetails As Dictionary(Of String, Tuple(Of Decimal, Integer)) = Nothing
+                Dim previousLossDetails As Dictionary(Of String, StockDetails) = Nothing
                 While tradeCheckingDate <= endDate.Date
                     _canceller.Token.ThrowIfCancellationRequested()
                     Me.AvailableCapital = Me.UsableCapital
@@ -113,8 +113,8 @@ Namespace StrategyHelper
                                     Dim loss As Decimal = 0
                                     Dim iteration As Decimal = 0
                                     If previousLossDetails IsNot Nothing AndAlso previousLossDetails.ContainsKey(stock) Then
-                                        loss = previousLossDetails(stock).Item1
-                                        iteration = previousLossDetails(stock).Item2
+                                        loss = previousLossDetails(stock).PreviousLoss
+                                        iteration = previousLossDetails(stock).PreviousIteration
                                     End If
                                     Select Case RuleNumber
                                         Case 0
@@ -576,11 +576,14 @@ Namespace StrategyHelper
                                         previousLossDetails.Remove(stockName)
                                     End If
                                 Else
-                                    If previousLossDetails Is Nothing Then previousLossDetails = New Dictionary(Of String, Tuple(Of Decimal, Integer))
+                                    If previousLossDetails Is Nothing Then previousLossDetails = New Dictionary(Of String, StockDetails)
                                     If previousLossDetails.ContainsKey(stockName) Then
-                                        previousLossDetails(stockName) = New Tuple(Of Decimal, Integer)(previousLossDetails(stockName).Item1 + stockPL, previousLossDetails(stockName).Item2 + 1)
+                                        previousLossDetails(stockName).PreviousLoss = previousLossDetails(stockName).PreviousLoss + stockPL
+                                        previousLossDetails(stockName).PreviousIteration = previousLossDetails(stockName).PreviousIteration + 1
                                     Else
-                                        previousLossDetails.Add(stockName, New Tuple(Of Decimal, Integer)(stockPL, 1))
+                                        previousLossDetails.Add(stockName, stockList(stockName))
+                                        previousLossDetails(stockName).PreviousLoss = stockPL
+                                        previousLossDetails(stockName).PreviousIteration = 1
                                     End If
                                 End If
                             Next
@@ -605,7 +608,7 @@ Namespace StrategyHelper
 
 
 #Region "Stock Selection"
-        Private Async Function GetStockDataAsync(tradingDate As Date, ByVal previousLossDetails As Dictionary(Of String, Tuple(Of Decimal, Integer))) As Task(Of Dictionary(Of String, StockDetails))
+        Private Async Function GetStockDataAsync(tradingDate As Date, ByVal previousLossDetails As Dictionary(Of String, StockDetails)) As Task(Of Dictionary(Of String, StockDetails))
             Dim ret As Dictionary(Of String, StockDetails) = Nothing
             Await Task.Delay(0).ConfigureAwait(False)
             If Me.StockFileName IsNot Nothing Then
@@ -623,15 +626,16 @@ Namespace StrategyHelper
                                     If counter = 0 Then
                                         ret = New Dictionary(Of String, StockDetails)
                                         If previousLossDetails IsNot Nothing AndAlso previousLossDetails.Count > 0 Then
-                                            For Each runningStock In previousLossDetails.Keys
+                                            For Each runningStock In previousLossDetails
                                                 Dim detailsOfStock As StockDetails = New StockDetails With
-                                                {.StockName = runningStock,
-                                                 .TradingSymbol = runningStock,
-                                                 .LotSize = 1,
+                                                {.StockName = runningStock.Value.TradingSymbol,
+                                                 .TradingSymbol = runningStock.Value.TradingSymbol,
+                                                 .LotSize = runningStock.Value.LotSize,
+                                                 .Slab = runningStock.Value.Slab,
                                                  .Supporting1 = 0,
                                                  .EligibleToTakeTrade = True}
 
-                                                ret.Add(runningStock, detailsOfStock)
+                                                ret.Add(runningStock.Key, detailsOfStock)
                                                 counter += 1
                                             Next
                                         End If
@@ -639,10 +643,12 @@ Namespace StrategyHelper
                                     End If
                                     Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
                                     If Not ret.ContainsKey(tradingSymbol) Then
+                                        Dim slab As String = dt.Rows(i).Item("Slab")
                                         Dim detailsOfStock As StockDetails = New StockDetails With
                                                 {.StockName = tradingSymbol,
                                                  .TradingSymbol = tradingSymbol,
                                                  .LotSize = 1,
+                                                 .Slab = slab,
                                                  .Supporting1 = 0,
                                                  .EligibleToTakeTrade = True}
 
