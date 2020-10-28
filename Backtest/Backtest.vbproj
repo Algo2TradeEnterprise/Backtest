@@ -129,6 +129,7 @@
     <Compile Include="Strategy Helper\Trade.vb" />
     <Compile Include="Strategy Rule MIS\HKReversalStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\HKRSIColorEntryStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\HKRSIColorRetracementEntryStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\HKRSIStrategyRule.vb" />
   </ItemGroup>
   <ItemGroup>
