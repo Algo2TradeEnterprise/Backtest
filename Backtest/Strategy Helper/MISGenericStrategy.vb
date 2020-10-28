@@ -121,6 +121,8 @@ Namespace StrategyHelper
                                             stockRule = New HKReversalStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, loss, iteration, stockList(stock).Supporting1)
                                         Case 1
                                             stockRule = New HKRSIStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, loss, iteration, stockList(stock).Supporting1)
+                                        Case 2
+                                            stockRule = New HKRSIColorEntryStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, loss, iteration, stockList(stock).Supporting1)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
