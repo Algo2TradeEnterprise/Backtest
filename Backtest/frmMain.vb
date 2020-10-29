@@ -603,7 +603,7 @@ Public Class frmMain
                             tick = 0.0025
                         Case Trade.TypeOfStock.Futures
                             database = Common.DataBaseTable.Intraday_Futures
-                            margin = 15
+                            margin = 2
                             tick = 0.05
                     End Select
 
