@@ -111,6 +111,7 @@
     <Compile Include="Strategy Helper\StrategyOutput.vb" />
     <Compile Include="Strategy Helper\StrategyRule.vb" />
     <Compile Include="Strategy Helper\Trade.vb" />
+    <Compile Include="Strategy Rule MIS\OpeningPriceOptionsATRTraillingStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\OptionLadderStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\PreviousDayHLSellStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\TopGainerLooserStrategyRule.vb" />

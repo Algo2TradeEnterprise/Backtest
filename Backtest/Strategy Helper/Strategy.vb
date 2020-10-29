@@ -873,7 +873,7 @@ Namespace StrategyHelper
                 Case Trade.TypeOfStock.Commodity
                     calculator.Commodity_MCX(stockName, buyPrice, sellPrice, quantity / lotSize, potentialBrokerage)
                 Case Trade.TypeOfStock.Futures
-                    calculator.FO_Futures(buyPrice, sellPrice, quantity, potentialBrokerage)
+                    calculator.FO_Options(buyPrice, sellPrice, quantity, potentialBrokerage)
             End Select
 
             Return potentialBrokerage.NetProfitLoss
@@ -896,7 +896,7 @@ Namespace StrategyHelper
                     Case Trade.TypeOfStock.Currency
                         Throw New ApplicationException("Not Implemented")
                     Case Trade.TypeOfStock.Futures
-                        calculator.FO_Futures(buyPrice, sellPrice, quantity, potentialBrokerage)
+                        calculator.FO_Options(buyPrice, sellPrice, quantity, potentialBrokerage)
                 End Select
 
                 If NetProfitLossOfTrade > 0 Then
@@ -947,7 +947,7 @@ Namespace StrategyHelper
                             Case Trade.TypeOfStock.Currency
                                 calculator.Currency_Futures(entryPrice, exitPrice, quantity, potentialBrokerage)
                             Case Trade.TypeOfStock.Futures
-                                calculator.FO_Futures(entryPrice, exitPrice, quantity, potentialBrokerage)
+                                calculator.FO_Options(entryPrice, exitPrice, quantity, potentialBrokerage)
                         End Select
                         If potentialBrokerage.NetProfitLoss > desiredProfitLossOfTrade Then Exit While
                         exitPrice += TickSize
@@ -960,7 +960,7 @@ Namespace StrategyHelper
                             Case Trade.TypeOfStock.Currency
                                 Throw New ApplicationException("Not Implemented")
                             Case Trade.TypeOfStock.Futures
-                                calculator.FO_Futures(exitPrice, entryPrice, quantity, potentialBrokerage)
+                                calculator.FO_Options(exitPrice, entryPrice, quantity, potentialBrokerage)
                         End Select
                         If potentialBrokerage.NetProfitLoss > desiredProfitLossOfTrade Then Exit While
                         exitPrice -= TickSize
@@ -977,7 +977,7 @@ Namespace StrategyHelper
                             Case Trade.TypeOfStock.Currency
                                 Throw New ApplicationException("Not Implemented")
                             Case Trade.TypeOfStock.Futures
-                                calculator.FO_Futures(entryPrice, exitPrice, quantity, potentialBrokerage)
+                                calculator.FO_Options(entryPrice, exitPrice, quantity, potentialBrokerage)
                         End Select
                         If potentialBrokerage.NetProfitLoss < desiredProfitLossOfTrade Then Exit While
                         exitPrice -= TickSize
@@ -990,7 +990,7 @@ Namespace StrategyHelper
                             Case Trade.TypeOfStock.Currency
                                 Throw New ApplicationException("Not Implemented")
                             Case Trade.TypeOfStock.Futures
-                                calculator.FO_Futures(exitPrice, entryPrice, quantity, potentialBrokerage)
+                                calculator.FO_Options(exitPrice, entryPrice, quantity, potentialBrokerage)
                         End Select
                         If potentialBrokerage.NetProfitLoss < desiredProfitLossOfTrade Then Exit While
                         exitPrice += TickSize

@@ -48,6 +48,7 @@ Namespace StrategyHelper
         Public ReadOnly Controller As Boolean
 
         Public DependentInstrument As List(Of StrategyRule)
+        Public ControllerInstrument As StrategyRule
 
         Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                        ByVal lotSize As Integer,

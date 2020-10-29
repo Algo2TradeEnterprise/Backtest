@@ -117,6 +117,8 @@ Namespace StrategyHelper
                                             stockRule = New TopGainerLooserStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, stockList(stock).Controller, _canceller)
                                         Case 3
                                             stockRule = New PreviousDayHLSellStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, stockList(stock).Controller, _canceller)
+                                        Case 4
+                                            stockRule = New OpeningPriceOptionsATRTraillingStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, stockList(stock).Controller, _canceller)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
@@ -129,10 +131,13 @@ Namespace StrategyHelper
                         Next
                         If stocksRuleData IsNot Nothing AndAlso stocksRuleData.Count > 0 Then
                             Dim dependentInstrument As List(Of StrategyRule) = Nothing
+                            Dim controller As StrategyRule = Nothing
                             For Each stockRule In stocksRuleData.Values
                                 If Not stockRule.Controller Then
                                     If dependentInstrument Is Nothing Then dependentInstrument = New List(Of StrategyRule)
                                     dependentInstrument.Add(stockRule)
+                                Else
+                                    controller = stockRule
                                 End If
                             Next
 
@@ -140,6 +145,8 @@ Namespace StrategyHelper
                                 If stockRule.Controller Then
                                     stockRule.DependentInstrument = dependentInstrument
                                     stockRule.CompletePairProcessing()
+                                Else
+                                    stockRule.ControllerInstrument = controller
                                 End If
                             Next
                         End If
@@ -707,6 +714,29 @@ Namespace StrategyHelper
                                     ret.Add(sellStock.StockName, sellStock)
                                 End If
                             End If
+                        Case 4
+                            For i = 0 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i).Item("Date")
+                                If rowDate.Date = tradingDate.Date Then
+                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
+                                    Dim lotSize As Integer = dt.Rows(i).Item("Lot Size")
+                                    Dim controller As Boolean = False
+                                    Dim optionStock As Boolean = False
+                                    If tradingSymbol.EndsWith("FUT") Then
+                                        controller = True
+                                    ElseIf tradingSymbol.EndsWith("CE") OrElse tradingSymbol.EndsWith("PE") Then
+                                        optionStock = True
+                                    End If
+                                    Dim detailsOfStock As StockDetails = New StockDetails With
+                                               {.StockName = tradingSymbol,
+                                                .LotSize = lotSize,
+                                                .Controller = controller,
+                                                .OptionStock = optionStock,
+                                                .EligibleToTakeTrade = True}
+                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                    ret.Add(tradingSymbol, detailsOfStock)
+                                End If
+                            Next
                     End Select
                 End If
             End If

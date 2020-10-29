@@ -11,6 +11,7 @@
         Public Property Clearing As Decimal
         Public Property GST As Decimal
         Public Property SEBI As Decimal
+        Public Property StampDuty As Decimal
         Public Property TotalTax As Decimal
         Public Property BreakevenPoints As Decimal
         Public Property NetProfitLoss As Decimal
