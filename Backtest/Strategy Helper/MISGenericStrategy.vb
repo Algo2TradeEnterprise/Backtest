@@ -109,9 +109,9 @@ Namespace StrategyHelper
 
                                     Dim tradingSymbol As String = currentDayOneMinutePayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
-                                        Case 29
+                                        Case 0
                                             stockRule = New OptionPairSupertrendStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 30
+                                        Case 1
                                             stockRule = New OptionPairHLStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting7)
                                     End Select
 
@@ -553,7 +553,7 @@ Namespace StrategyHelper
                 End Using
                 If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
                     Select Case Me.RuleNumber
-                        Case 29
+                        Case 0
                             Dim tradingDay As Boolean = Await Cmn.IsTradingDay(tradingDate).ConfigureAwait(False)
                             If tradingDay Then
                                 Dim counter As Integer = 0
@@ -597,7 +597,7 @@ Namespace StrategyHelper
                                     'End If
                                 Next
                             End If
-                        Case 30
+                        Case 1
                             Dim tradingDay As Boolean = Await Cmn.IsTradingDay(tradingDate).ConfigureAwait(False)
                             If tradingDay Then
                                 Dim counter As Integer = 0
