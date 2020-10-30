@@ -6,11 +6,14 @@ Imports Utilities.Numbers
 Public Class OpeningPriceOptionsATRTraillingStrategyRule
     Inherits StrategyRule
 
+    Private _targetPercentage As Decimal = 50
+
     Private _atrTrailingLowPayload As Dictionary(Of Date, Decimal)
     Private _atrTrailingLowColorPayload As Dictionary(Of Date, Color)
     Private _atrTrailingHighPayload As Dictionary(Of Date, Decimal)
     Private _atrTrailingHighColorPayload As Dictionary(Of Date, Color)
     Private _rsiPayload As Dictionary(Of Date, Decimal)
+    Private _atrPayload As Dictionary(Of Date, Decimal)
 
     Public DummyCandle As Payload = Nothing
 
@@ -31,6 +34,7 @@ Public Class OpeningPriceOptionsATRTraillingStrategyRule
         Indicator.ATRTrailingStop.CalculateATRTrailingStop(14, 5, _signalPayload, _atrTrailingLowPayload, _atrTrailingLowColorPayload)
         Indicator.ATRTrailingStop.CalculateATRTrailingStop(14, 10, _signalPayload, _atrTrailingHighPayload, _atrTrailingHighColorPayload)
         Indicator.RSI.CalculateRSI(4, _signalPayload, _rsiPayload)
+        Indicator.ATR.CalculateATR(14, _signalPayload, _atrPayload)
     End Sub
 
     Public Overrides Sub CompletePairProcessing()
@@ -75,15 +79,25 @@ Public Class OpeningPriceOptionsATRTraillingStrategyRule
                     Dim buffer As Decimal = 0
                     Dim entryPrice As Decimal = currentTick.Open
                     Dim stoploss As Decimal = ConvertFloorCeling(_atrTrailingHighPayload(signalCandle.PayloadDate), _parentStrategy.TickSize, RoundOfType.Floor)
-                    Dim slPoint As Decimal = entryPrice - stoploss
-                    Dim targetPoint As Decimal = ConvertFloorCeling(slPoint * 75 / 100, _parentStrategy.TickSize, RoundOfType.Celing)
-                    Dim brkevnPoints As Decimal = _parentStrategy.GetBreakevenPoint(signalCandle.TradingSymbol, entryPrice, Me.LotSize, Trade.TradeExecutionDirection.Buy, Me.LotSize, Trade.TypeOfStock.Futures)
-                    If targetPoint > brkevnPoints Then
-                        Dim plToAchive As Decimal = 500 - _parentStrategy.TotalPLAfterBrokerage(currentTick.PayloadDate)
-                        Dim quantity As Decimal = _parentStrategy.CalculateQuantityFromTargetSL(signalCandle.TradingSymbol, entryPrice, entryPrice + targetPoint, plToAchive, Trade.TypeOfStock.Futures)
-                        quantity = Math.Ceiling(quantity / Me.LotSize) * Me.LotSize
+                    Dim slPoint As Decimal = signalCandle.Close - stoploss
+                    If slPoint >= Math.Round(_atrPayload(signalCandle.PayloadDate), 2) Then
+                        Dim targetPercentage As Decimal = _targetPercentage
+                        Dim targetPoint As Decimal = ConvertFloorCeling(slPoint * targetPercentage / 100, _parentStrategy.TickSize, RoundOfType.Celing)
+                        Dim brkevnPoints As Decimal = _parentStrategy.GetBreakevenPoint(signalCandle.TradingSymbol, entryPrice, Me.LotSize, Trade.TradeExecutionDirection.Buy, Me.LotSize, Trade.TypeOfStock.Futures)
+                        While True
+                            _cts.Token.ThrowIfCancellationRequested()
+                            If targetPoint > brkevnPoints Then
+                                Exit While
+                            Else
+                                targetPoint = ConvertFloorCeling(slPoint * (targetPercentage + 10) / 100, _parentStrategy.TickSize, RoundOfType.Celing)
+                            End If
+                        End While
+                        If targetPoint > brkevnPoints Then
+                            Dim plToAchive As Decimal = 500 - _parentStrategy.TotalPLAfterBrokerage(currentTick.PayloadDate)
+                            Dim quantity As Decimal = _parentStrategy.CalculateQuantityFromTargetSL(signalCandle.TradingSymbol, entryPrice, entryPrice + targetPoint, plToAchive, Trade.TypeOfStock.Futures)
+                            quantity = Math.Ceiling(quantity / Me.LotSize) * Me.LotSize
 
-                        Dim parameter = New PlaceOrderParameters With {
+                            Dim parameter = New PlaceOrderParameters With {
                                         .EntryPrice = entryPrice,
                                         .EntryDirection = Trade.TradeExecutionDirection.Buy,
                                         .Quantity = quantity,
@@ -94,10 +108,13 @@ Public Class OpeningPriceOptionsATRTraillingStrategyRule
                                         .OrderType = Trade.TypeOfOrder.Market,
                                         .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
                                         .Supporting2 = slPoint,
-                                        .Supporting3 = entryRemark
+                                        .Supporting3 = entryRemark,
+                                        .Supporting4 = targetPercentage,
+                                        .Supporting5 = Math.Round(_atrPayload(signalCandle.PayloadDate), 2)
                                     }
 
-                        ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
+                            ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
+                        End If
                     End If
                 End If
             End If
