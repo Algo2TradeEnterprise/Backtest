@@ -312,7 +312,7 @@ Namespace StrategyHelper
             Dim ret As Dictionary(Of String, StockDetails) = Nothing
 
             Dim detailsOfStock As StockDetails = New StockDetails With
-                                    {.StockName = "TCS",
+                                    {.StockName = "RELIANCE",
                                     .LotSize = 1,
                                     .EligibleToTakeTrade = True}
 
