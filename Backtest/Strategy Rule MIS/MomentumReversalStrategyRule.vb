@@ -198,7 +198,7 @@ Public Class MomentumReversalStrategyRule
 
     Private Function GetEntrySignal(ByVal candle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection)
         Dim ret As Tuple(Of Boolean, Decimal, Payload, Trade.TradeExecutionDirection) = Nothing
-        If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing Then
+        If candle IsNot Nothing AndAlso candle.PreviousCandlePayload IsNot Nothing AndAlso candle.CandleRange > 0 Then
             Dim buffer As Decimal = _parentStrategy.CalculateBuffer(candle.Open, RoundOfType.Floor)
             Dim topWick As Decimal = ((candle.CandleWicks.Top + buffer) / candle.CandleRange) * 100
             Dim bottomWick As Decimal = ((candle.CandleWicks.Bottom + buffer) / candle.CandleRange) * 100

@@ -2657,7 +2657,7 @@ Public Class frmMain
                                                 .BreakevenMovement = True
                                             }
 
-                            .NumberOfTradeableStockPerDay = 1
+                            .NumberOfTradeableStockPerDay = 5
 
                             .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
@@ -2669,7 +2669,7 @@ Public Class frmMain
                             .StockMaxLossPerDay = Decimal.MinValue
 
                             .ExitOnOverAllFixedTargetStoploss = True
-                            .OverAllProfitPerDay = 1000
+                            .OverAllProfitPerDay = 5000
                             .OverAllLossPerDay = Decimal.MinValue
 
                             .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
