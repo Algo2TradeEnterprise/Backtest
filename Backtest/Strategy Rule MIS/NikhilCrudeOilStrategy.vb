@@ -141,10 +141,10 @@ Public Class NikhilCrudeOilStrategy
                     Dim oppositeTrade As Trade = GetOppositeTrade(signalCandle, Trade.TradeExecutionDirection.Sell)
                     If oppositeTrade IsNot Nothing Then
                         If oppositeTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-                            ret = New Tuple(Of Boolean, Decimal, Integer, Trade.TradeExecutionDirection)(True, oppositeTrade.PotentialStopLoss, Me.LotSize * _userInputs.InitialNumberOfLots * 2, Trade.TradeExecutionDirection.Sell)
+                            ret = New Tuple(Of Boolean, Decimal, Integer, Trade.TradeExecutionDirection)(True, oppositeTrade.PotentialStopLoss - _userInputs.Buffer, Me.LotSize * _userInputs.InitialNumberOfLots * 2, Trade.TradeExecutionDirection.Sell)
                         ElseIf oppositeTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
                             If oppositeTrade.ExitCondition = Trade.TradeExitCondition.Target Then
-                                ret = New Tuple(Of Boolean, Decimal, Integer, Trade.TradeExecutionDirection)(True, oppositeTrade.PotentialStopLoss, Me.LotSize * _userInputs.InitialNumberOfLots, Trade.TradeExecutionDirection.Sell)
+                                ret = New Tuple(Of Boolean, Decimal, Integer, Trade.TradeExecutionDirection)(True, oppositeTrade.PotentialStopLoss - _userInputs.Buffer, Me.LotSize * _userInputs.InitialNumberOfLots, Trade.TradeExecutionDirection.Sell)
                             End If
                         End If
                     End If
@@ -152,10 +152,10 @@ Public Class NikhilCrudeOilStrategy
                     Dim oppositeTrade As Trade = GetOppositeTrade(signalCandle, Trade.TradeExecutionDirection.Buy)
                     If oppositeTrade IsNot Nothing Then
                         If oppositeTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-                            ret = New Tuple(Of Boolean, Decimal, Integer, Trade.TradeExecutionDirection)(True, oppositeTrade.PotentialStopLoss, Me.LotSize * _userInputs.InitialNumberOfLots * 2, Trade.TradeExecutionDirection.Buy)
+                            ret = New Tuple(Of Boolean, Decimal, Integer, Trade.TradeExecutionDirection)(True, oppositeTrade.PotentialStopLoss + _userInputs.Buffer, Me.LotSize * _userInputs.InitialNumberOfLots * 2, Trade.TradeExecutionDirection.Buy)
                         ElseIf oppositeTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
                             If oppositeTrade.ExitCondition = Trade.TradeExitCondition.Target Then
-                                ret = New Tuple(Of Boolean, Decimal, Integer, Trade.TradeExecutionDirection)(True, oppositeTrade.PotentialStopLoss, Me.LotSize * _userInputs.InitialNumberOfLots, Trade.TradeExecutionDirection.Buy)
+                                ret = New Tuple(Of Boolean, Decimal, Integer, Trade.TradeExecutionDirection)(True, oppositeTrade.PotentialStopLoss + _userInputs.Buffer, Me.LotSize * _userInputs.InitialNumberOfLots, Trade.TradeExecutionDirection.Buy)
                             End If
                         End If
                     End If

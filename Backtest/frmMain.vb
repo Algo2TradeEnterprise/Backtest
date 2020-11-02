@@ -346,7 +346,7 @@ Public Class frmMain
                                             {
                                                 .Buffer = 5,
                                                 .TargetPoint = 5,
-                                                .StoplossPoint = 10,
+                                                .StoplossPoint = 5,
                                                 .InitialNumberOfLots = 5,
                                                 .WithTimeConstraint = False
                                             }
