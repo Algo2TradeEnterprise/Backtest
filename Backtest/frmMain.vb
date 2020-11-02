@@ -304,7 +304,7 @@ Public Class frmMain
                                         {
                                          .InitialInvestment = 10000,
                                          .PercentageOfIncreaseDesireEachPeriod = incrsPer,
-                                         .ReturnPercentage = 5,
+                                         .ReturnPercentage = rtrn,
                                          .ExitAtExactReturnPercentage = ext
                                         }
                                     Case 1
@@ -312,7 +312,7 @@ Public Class frmMain
                                         {
                                          .InitialInvestment = 10000,
                                          .PercentageOfIncreaseDesireEachPeriod = incrsPer,
-                                         .ReturnPercentage = 5,
+                                         .ReturnPercentage = rtrn,
                                          .ExitAtExactReturnPercentage = ext
                                         }
                                     Case Else
