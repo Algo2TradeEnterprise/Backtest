@@ -339,6 +339,51 @@ Public Class Common
         Return ret
     End Function
 
+    Public Shared Function ConvertDayPayloadsToWeek(ByVal payloads As Dictionary(Of Date, Payload)) As Dictionary(Of Date, Payload)
+        Dim ret As Dictionary(Of Date, Payload) = Nothing
+        If payloads IsNot Nothing AndAlso payloads.Count > 0 Then
+            Dim newCandleStarted As Boolean = True
+            Dim runningOutputPayload As Payload = Nothing
+            For Each payload In payloads.Values
+                If runningOutputPayload Is Nothing OrElse
+                    GetStartDateOfTheWeek(payload.PayloadDate, DayOfWeek.Monday) <> runningOutputPayload.PayloadDate Then
+                    newCandleStarted = True
+                End If
+                If newCandleStarted Then
+                    newCandleStarted = False
+                    Dim prevPayload As Payload = runningOutputPayload
+                    runningOutputPayload = New Payload(Payload.CandleDataSource.Calculated)
+                    runningOutputPayload.PayloadDate = GetStartDateOfTheWeek(payload.PayloadDate, DayOfWeek.Monday)
+                    runningOutputPayload.Open = payload.Open
+                    runningOutputPayload.High = payload.High
+                    runningOutputPayload.Low = payload.Low
+                    runningOutputPayload.Close = payload.Close
+                    runningOutputPayload.Volume = payload.Volume
+                    runningOutputPayload.TradingSymbol = payload.TradingSymbol
+                    runningOutputPayload.PreviousCandlePayload = prevPayload
+
+                    If ret Is Nothing Then ret = New Dictionary(Of Date, Payload)
+                    ret.Add(runningOutputPayload.PayloadDate, runningOutputPayload)
+                Else
+                    runningOutputPayload.High = Math.Max(runningOutputPayload.High, payload.High)
+                    runningOutputPayload.Low = Math.Min(runningOutputPayload.Low, payload.Low)
+                    runningOutputPayload.Close = payload.Close
+                    runningOutputPayload.Volume = runningOutputPayload.Volume + payload.Volume
+                End If
+            Next
+        End If
+        Return ret
+    End Function
+
+    Public Shared Function GetStartDateOfTheWeek(ByVal dt As Date, ByVal startOfWeek As DayOfWeek) As Date
+        Dim diff As Integer = (7 + (dt.DayOfWeek - startOfWeek)) Mod 7
+        Return dt.AddDays(-1 * diff).Date
+    End Function
+
+    Public Shared Function GetEndDateOfTheWeek(ByVal dt As Date, ByVal startOfWeek As DayOfWeek) As Date
+        Return GetStartDateOfTheWeek(dt, startOfWeek).AddDays(7).AddSeconds(-1).Date
+    End Function
+
     Public Shared Function ConvertDecimalToPayload(ByVal targetfield As Payload.PayloadFields, ByVal inputpayload As Dictionary(Of Date, Decimal), ByRef outputpayload As Dictionary(Of Date, Payload))
         Dim output As Payload
         outputpayload = New Dictionary(Of Date, Payload)

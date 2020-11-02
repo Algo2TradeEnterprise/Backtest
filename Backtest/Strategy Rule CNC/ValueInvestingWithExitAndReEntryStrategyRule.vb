@@ -16,6 +16,9 @@ Public Class ValueInvestingWithExitAndReEntryStrategyRule
     End Class
 #End Region
 
+    Private _weeklyPayload As Dictionary(Of Date, Payload)
+    Private _lastTradingDayOfTheWeek As Date = Date.MinValue
+
     Private ReadOnly _userInputs As StrategyRuleEntities
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -30,14 +33,22 @@ Public Class ValueInvestingWithExitAndReEntryStrategyRule
 
     Public Overrides Sub CompletePreProcessing()
         MyBase.CompletePreProcessing()
+
+        _weeklyPayload = Common.ConvertDayPayloadsToWeek(_signalPayload)
+        Dim startDateOfTheWeek As Date = Common.GetStartDateOfTheWeek(_tradingDate.Date, DayOfWeek.Monday)
+        Dim endDateOfTheWeek As Date = Common.GetEndDateOfTheWeek(_tradingDate.Date, DayOfWeek.Monday)
+        Dim eodPayload As Dictionary(Of Date, Payload) = _parentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.EOD_POSITIONAL, _tradingSymbol, startDateOfTheWeek, endDateOfTheWeek)
+        If eodPayload IsNot Nothing AndAlso eodPayload.Count > 0 Then
+            _lastTradingDayOfTheWeek = eodPayload.LastOrDefault.Key
+        End If
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
         Dim ret As Tuple(Of Boolean, List(Of PlaceOrderParameters)) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
-        Dim currentDayCandlePayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
-        If currentDayCandlePayload IsNot Nothing Then
-            Dim activeTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentDayCandlePayload, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
+        Dim currentWeekCandle As Payload = _weeklyPayload(Common.GetStartDateOfTheWeek(currentTick.PayloadDate.Date, DayOfWeek.Monday))
+        If currentWeekCandle IsNot Nothing AndAlso _lastTradingDayOfTheWeek <> Date.MinValue AndAlso currentTick.PayloadDate.Date = _lastTradingDayOfTheWeek.Date Then
+            Dim activeTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentWeekCandle, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
             If activeTrades IsNot Nothing AndAlso activeTrades.Count > 0 Then   'Continue Investing
                 Dim firstTrade As Trade = activeTrades.OrderBy(Function(x)
                                                                    Return x.EntryTime
@@ -48,37 +59,37 @@ Public Class ValueInvestingWithExitAndReEntryStrategyRule
                                                               End Function).LastOrDefault
 
                 Dim noOfSharedOwnedBeforeRebalancing As Integer = activeTrades.Sum(Function(x) x.Quantity)
-                Dim totalValueBeforeRebalancing As Decimal = noOfSharedOwnedBeforeRebalancing * currentDayCandlePayload.Close
-                Dim numberOfDays As Integer = _signalPayload.Where(Function(x)
+                Dim totalValueBeforeRebalancing As Decimal = noOfSharedOwnedBeforeRebalancing * currentWeekCandle.Close
+                Dim numberOfDays As Integer = _weeklyPayload.Where(Function(x)
                                                                        Return x.Key.Date >= firstTrade.SignalCandle.PayloadDate.Date AndAlso
-                                                                       x.Key.Date <= currentDayCandlePayload.PayloadDate.Date
+                                                                   x.Key.Date <= currentWeekCandle.PayloadDate.Date
                                                                    End Function).Count
                 Dim desiredValue As Decimal = _userInputs.InitialInvestment + (numberOfDays - 1) * (_userInputs.InitialInvestment * _userInputs.PercentageOfIncreaseDesireEachPeriod / 100)
                 Dim amountToInvest As Decimal = desiredValue - totalValueBeforeRebalancing
-                Dim numberOfSharesToBuy As Decimal = Math.Round(amountToInvest / currentDayCandlePayload.Close)
+                Dim numberOfSharesToBuy As Decimal = Math.Round(amountToInvest / currentWeekCandle.Close)
 
                 If numberOfSharesToBuy > 0 Then
                     Dim totalInvestedAmount As Decimal = activeTrades.Sum(Function(x)
                                                                               Return x.EntryPrice * x.Quantity
                                                                           End Function)
-                    totalInvestedAmount += currentDayCandlePayload.Close * numberOfSharesToBuy
+                    totalInvestedAmount += currentWeekCandle.Close * numberOfSharesToBuy
 
                     Dim noOfSharedOwnedAfterRebalancing As Integer = noOfSharedOwnedBeforeRebalancing + numberOfSharesToBuy
 
                     Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
-                                                                .EntryPrice = currentDayCandlePayload.Close,
-                                                                .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                                                .Quantity = numberOfSharesToBuy,
-                                                                .Stoploss = .EntryPrice - 1000000000,
-                                                                .Target = .EntryPrice + 1000000000,
-                                                                .Buffer = 0,
-                                                                .SignalCandle = currentDayCandlePayload,
-                                                                .OrderType = Trade.TypeOfOrder.Market,
-                                                                .Supporting1 = Val(lastTrade.Supporting1) + 1,  'Iteration
-                                                                .Supporting2 = lastTrade.Supporting2,           'Tag
-                                                                .Supporting3 = totalInvestedAmount,             'Total Amount Invested in this chain
-                                                                .Supporting4 = noOfSharedOwnedAfterRebalancing  'Total Quantity Traded in this chain
-                                                            }
+                                                            .EntryPrice = currentWeekCandle.Close,
+                                                            .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                                                            .Quantity = numberOfSharesToBuy,
+                                                            .Stoploss = .EntryPrice - 1000000000,
+                                                            .Target = .EntryPrice + 1000000000,
+                                                            .Buffer = 0,
+                                                            .SignalCandle = currentWeekCandle,
+                                                            .OrderType = Trade.TypeOfOrder.Market,
+                                                            .Supporting1 = Val(lastTrade.Supporting1) + 1,  'Iteration
+                                                            .Supporting2 = lastTrade.Supporting2,           'Tag
+                                                            .Supporting3 = totalInvestedAmount,             'Total Amount Invested in this chain
+                                                            .Supporting4 = noOfSharedOwnedAfterRebalancing  'Total Quantity Traded in this chain
+                                                        }
 
                     For Each runningTrade In activeTrades
                         runningTrade.UpdateTrade(Supporting3:=totalInvestedAmount, Supporting4:=noOfSharedOwnedAfterRebalancing)
@@ -87,19 +98,19 @@ Public Class ValueInvestingWithExitAndReEntryStrategyRule
                     ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
                 End If
             Else    'New Investing start
-                Dim numberOfSharesToBuy As Decimal = Math.Round(_userInputs.InitialInvestment / currentDayCandlePayload.Close)
+                Dim numberOfSharesToBuy As Decimal = Math.Round(_userInputs.InitialInvestment / currentWeekCandle.Close)
 
                 If numberOfSharesToBuy > 0 Then
-                    Dim totalInvestedAmount As Decimal = currentDayCandlePayload.Close * numberOfSharesToBuy
+                    Dim totalInvestedAmount As Decimal = currentWeekCandle.Close * numberOfSharesToBuy
 
                     Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
-                                                                .EntryPrice = currentDayCandlePayload.Close,
+                                                                .EntryPrice = currentWeekCandle.Close,
                                                                 .EntryDirection = Trade.TradeExecutionDirection.Buy,
                                                                 .Quantity = numberOfSharesToBuy,
                                                                 .Stoploss = .EntryPrice - 1000000000,
                                                                 .Target = .EntryPrice + 1000000000,
                                                                 .Buffer = 0,
-                                                                .SignalCandle = currentDayCandlePayload,
+                                                                .SignalCandle = currentWeekCandle,
                                                                 .OrderType = Trade.TypeOfOrder.Market,
                                                                 .Supporting1 = 1,                                  'Iteration
                                                                 .Supporting2 = System.Guid.NewGuid.ToString(),     'Tag
@@ -121,15 +132,16 @@ Public Class ValueInvestingWithExitAndReEntryStrategyRule
     Public Overrides Async Function IsTriggerReceivedForExitCNCEODOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
-        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-            Dim currentDayCandlePayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
+        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress AndAlso
+            currentTick.PayloadDate.Date = _lastTradingDayOfTheWeek.Date Then
+            Dim currentWeekCandle As Payload = _weeklyPayload(Common.GetStartDateOfTheWeek(currentTick.PayloadDate.Date, DayOfWeek.Monday))
             Dim totalQuantityTradedInThisChain As Integer = currentTrade.Supporting4
             Dim totalAmountInvestedInThisChain As Decimal = currentTrade.Supporting3
-            Dim totalAmountReturnInThisChain As Decimal = totalQuantityTradedInThisChain * currentDayCandlePayload.Close
-            If _userInputs.ExitAtExactReturnPercentage Then totalAmountReturnInThisChain = totalQuantityTradedInThisChain * currentDayCandlePayload.High
+            Dim totalAmountReturnInThisChain As Decimal = totalQuantityTradedInThisChain * currentWeekCandle.Close
+            If _userInputs.ExitAtExactReturnPercentage Then totalAmountReturnInThisChain = totalQuantityTradedInThisChain * currentWeekCandle.High
             Dim returnPercentage As Decimal = Math.Round((totalAmountReturnInThisChain / totalAmountInvestedInThisChain - 1) * 100, 2)
             If returnPercentage >= _userInputs.ReturnPercentage Then
-                Dim priceToExit As Decimal = currentDayCandlePayload.Close
+                Dim priceToExit As Decimal = currentWeekCandle.Close
                 If _userInputs.ExitAtExactReturnPercentage Then
                     priceToExit = Math.Round(((_userInputs.ReturnPercentage / 100 + 1) * totalAmountInvestedInThisChain) / totalQuantityTradedInThisChain, 2)
                 End If
