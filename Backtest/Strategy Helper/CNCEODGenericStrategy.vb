@@ -78,7 +78,7 @@ Namespace StrategyHelper
                             Dim XDayPayload As Dictionary(Of Date, Payload) = Nothing
                             Dim currentDayPayload As Dictionary(Of Date, Payload) = Nothing
                             If Me.DataSource = SourceOfData.Database Then
-                                XDayPayload = Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.EOD_POSITIONAL, stock, startDate, tradeCheckingDate)
+                                XDayPayload = Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.EOD_POSITIONAL, stock, startDate, tradeCheckingDate.AddDays(15))
                             ElseIf Me.DataSource = SourceOfData.Live Then
                                 XDayPayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, stock, tradeCheckingDate.AddYears(-10), tradeCheckingDate).ConfigureAwait(False)
                             End If

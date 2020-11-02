@@ -331,7 +331,7 @@ Public Class frmMain
                         Select Case rule
                             Case 0
                                 Dim ruleEntity As ValueInvestingWithExitAndReEntryStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                                filename = String.Format("VluInvstngWtExtNdReEty,IncrsPer {0},HghExt {1},RtrnPer {2}",
+                                filename = String.Format("WklyVluInvstngWtExtNdReEty,IncrsPer {0},HghExt {1},RtrnPer {2}",
                                                          ruleEntity.PercentageOfIncreaseDesireEachPeriod,
                                                          ruleEntity.ExitAtExactReturnPercentage,
                                                          ruleEntity.ReturnPercentage)

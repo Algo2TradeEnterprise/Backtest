@@ -37,10 +37,15 @@ Public Class ValueInvestingWithExitAndReEntryStrategyRule
         _weeklyPayload = Common.ConvertDayPayloadsToWeek(_signalPayload)
         Dim startDateOfTheWeek As Date = Common.GetStartDateOfTheWeek(_tradingDate.Date, DayOfWeek.Monday)
         Dim endDateOfTheWeek As Date = Common.GetEndDateOfTheWeek(_tradingDate.Date, DayOfWeek.Monday)
-        Dim eodPayload As Dictionary(Of Date, Payload) = _parentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.EOD_POSITIONAL, _tradingSymbol, startDateOfTheWeek, endDateOfTheWeek)
-        If eodPayload IsNot Nothing AndAlso eodPayload.Count > 0 Then
-            _lastTradingDayOfTheWeek = eodPayload.LastOrDefault.Key
-        End If
+        'Dim eodPayload As Dictionary(Of Date, Payload) = _parentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.EOD_POSITIONAL, _tradingSymbol, startDateOfTheWeek, endDateOfTheWeek)
+        'If eodPayload IsNot Nothing AndAlso eodPayload.Count > 0 Then
+        '    _lastTradingDayOfTheWeek = eodPayload.LastOrDefault.Key
+        'End If
+        _lastTradingDayOfTheWeek = _signalPayload.Where(Function(x)
+                                                            Return x.Key.Date >= startDateOfTheWeek.Date AndAlso x.Key.Date <= endDateOfTheWeek.Date
+                                                        End Function).OrderBy(Function(y)
+                                                                                  Return y.Key
+                                                                              End Function).LastOrDefault.Key
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
