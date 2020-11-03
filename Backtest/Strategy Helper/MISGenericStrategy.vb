@@ -261,6 +261,8 @@ Namespace StrategyHelper
                                             stockRule = New MADirectionBasedStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2)
                                         Case 70
                                             stockRule = New EMADirectionBasedHammerCandleBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).SupportingDate)
+                                        Case 71
+                                            stockRule = New FirstFavourableFractalTopGainerLooserStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2, stockList(stock).SupportingDate)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
@@ -1797,6 +1799,70 @@ Namespace StrategyHelper
                                     If counter = Me.NumberOfTradeableStockPerDay Then Exit For
                                 End If
                             Next
+                        Case 71
+                            Dim stockData As List(Of StockDetails) = Nothing
+                            For i = 0 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i).Item("Date")
+                                If rowDate.Date = tradingDate.Date Then
+                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
+                                    Dim instrumentName As String = Nothing
+                                    If tradingSymbol.Contains("FUT") Then
+                                        instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                                    Else
+                                        instrumentName = tradingSymbol
+                                    End If
+                                    Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
+                                    Dim slab As Decimal = dt.Rows(i).Item("Slab")
+                                    Dim dayATR As Decimal = dt.Rows(i).Item("Day ATR")
+                                    Dim breakoutTime As Date = Date.ParseExact(dt.Rows(i).Item("Breakout Time"), "dd-MMM-yyyy HH:mm:ss", Nothing)
+                                    Dim fractalTime As Date = Date.ParseExact(dt.Rows(i).Item("Favourable Fractal Time"), "dd-MMM-yyyy HH:mm:ss", Nothing)
+                                    Dim gainerLooser As String = dt.Rows(i).Item("Gainer_Looser")
+                                    Dim direction As Integer = 0
+                                    If gainerLooser.ToUpper = "GAINER" Then
+                                        direction = -1
+                                    ElseIf gainerLooser.ToUpper = "LOOSER" Then
+                                        direction = 1
+                                    End If
+
+                                    If direction <> 0 Then
+                                        Dim detailsOfStock As StockDetails = New StockDetails With
+                                                {.StockName = instrumentName,
+                                                 .TradingSymbol = tradingSymbol,
+                                                 .LotSize = lotsize,
+                                                 .Slab = slab,
+                                                 .Supporting1 = dayATR,
+                                                 .Supporting2 = direction,
+                                                 .SupportingDate = fractalTime,
+                                                 .SupportingDate1 = breakoutTime,
+                                                 .EligibleToTakeTrade = True}
+
+                                        If stockData Is Nothing Then stockData = New List(Of StockDetails)
+                                        stockData.Add(detailsOfStock)
+                                    End If
+                                End If
+                            Next
+                            If stockData IsNot Nothing AndAlso stockData.Count > 0 Then
+                                Dim gainerCount As Integer = 0
+                                Dim looserCount As Integer = 0
+                                For Each runningStock In stockData.OrderBy(Function(x)
+                                                                               Return x.SupportingDate1
+                                                                           End Function)
+                                    If gainerCount < Me.NumberOfTradeableStockPerDay / 2 Then
+                                        If runningStock.Supporting2 = -1 Then
+                                            gainerCount += 1
+                                            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                            ret.Add(runningStock.StockName, runningStock)
+                                        End If
+                                    End If
+                                    If looserCount < Me.NumberOfTradeableStockPerDay / 2 Then
+                                        If runningStock.Supporting2 = 1 Then
+                                            looserCount += 1
+                                            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                            ret.Add(runningStock.StockName, runningStock)
+                                        End If
+                                    End If
+                                Next
+                            End If
                         Case Else
                             Dim counter As Integer = 0
                             For i = 0 To dt.Rows.Count - 1

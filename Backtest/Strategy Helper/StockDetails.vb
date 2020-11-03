@@ -21,5 +21,6 @@
         Public Supporting5 As Decimal
         Public Supporting6 As Decimal
         Public SupportingDate As Date
+        Public SupportingDate1 As Date
     End Class
 End Namespace
