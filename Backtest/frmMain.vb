@@ -344,7 +344,7 @@ Public Class frmMain
 
                             .RuleEntityData = Nothing
 
-                            .NumberOfTradeableStockPerDay = 10
+                            .NumberOfTradeableStockPerDay = Integer.MaxValue
 
                             .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
