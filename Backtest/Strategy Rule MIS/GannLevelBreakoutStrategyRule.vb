@@ -75,20 +75,20 @@ Public Class GannLevelBreakoutStrategyRule
             Dim sellData As Tuple(Of Decimal, Decimal) = GetMinDiff(gann.SellAt, fib)
             If buyData.Item2 <= _userInputs.MaxDiffPer Then
                 _buyLevel = ConvertFloorCeling(gann.BuyAt, _parentStrategy.TickSize, RoundOfType.Celing)
-                _buyRemarks = String.Format("Buy At:{0}, Fib Level={1}%, Diff:{2}%",
-                                            Math.Round(gann.BuyAt, 2), buyData.Item1, Math.Round(buyData.Item2))
+                _buyRemarks = String.Format("Buy At:{0}, Fib Level:{1}%, Diff:{2}%",
+                                            Math.Round(gann.BuyAt, 2), buyData.Item1, Math.Round(buyData.Item2, 2))
                 _buySLLevel = ConvertFloorCeling(gann.SellAt, _parentStrategy.TickSize, RoundOfType.Floor)
             Else
-                _buyRemarks = String.Format("Buy At:{0}, Fib Level={1}%, Diff:{2}%",
+                _buyRemarks = String.Format("Buy At:{0}, Fib Level:{1}, Diff:{2}",
                                             Math.Round(gann.BuyAt, 2), "None", "Not Applicable")
             End If
             If sellData.Item2 <= _userInputs.MaxDiffPer Then
                 _sellLevel = ConvertFloorCeling(gann.SellAt, _parentStrategy.TickSize, RoundOfType.Floor)
-                _sellRemarks = String.Format("Sell At:{0}, Fib Level={1}%, Diff:{2}%",
-                                            Math.Round(gann.SellAt, 2), sellData.Item1, Math.Round(sellData.Item2))
+                _sellRemarks = String.Format("Sell At:{0}, Fib Level:{1}%, Diff:{2}%",
+                                            Math.Round(gann.SellAt, 2), sellData.Item1, Math.Round(sellData.Item2, 2))
                 _sellSLLevel = ConvertFloorCeling(gann.BuyAt, _parentStrategy.TickSize, RoundOfType.Celing)
             Else
-                _sellRemarks = String.Format("Sell At:{0}, Fib Level={1}%, Diff:{2}%",
+                _sellRemarks = String.Format("Sell At:{0}, Fib Level:{1}, Diff:{2}",
                                             Math.Round(gann.SellAt, 2), "None", "Not Applicable")
             End If
         End If

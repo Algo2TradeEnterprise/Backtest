@@ -703,15 +703,15 @@ Public Class Common
         Dim ret As FibonacciLevels = Nothing
         Dim range As Decimal = high - low
         ret = New FibonacciLevels With {
-            .Level0 = low + low * 0 / 100,
-            .Level38 = low + low * 38.2 / 100,
-            .Level50 = low + low * 50 / 100,
-            .Level61 = low + low * 61.8 / 100,
-            .Level100 = low + low * 100 / 100,
-            .Level_38 = low + low * (-38.2) / 100,
-            .Level_61 = low + low * (-61.8) / 100,
-            .Level138 = low + low * 138.2 / 100,
-            .Level161 = low + low * 161.8 / 100
+            .Level0 = low + range * 0 / 100,
+            .Level38 = low + range * 38.2 / 100,
+            .Level50 = low + range * 50 / 100,
+            .Level61 = low + range * 61.8 / 100,
+            .Level100 = low + range * 100 / 100,
+            .Level_38 = low + range * (-38.2) / 100,
+            .Level_61 = low + range * (-61.8) / 100,
+            .Level138 = low + range * 138.2 / 100,
+            .Level161 = low + range * 161.8 / 100
         }
         Return ret
     End Function

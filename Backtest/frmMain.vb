@@ -426,7 +426,7 @@ Public Class frmMain
                             .RuleEntityData = New GannLevelBreakoutStrategyRule.StrategyRuleEntities With
                                             {
                                                 .MaxDiffPer = 0.3,
-                                                .TypeOfStrategy = GannLevelBreakoutStrategyRule.StrategyType.InfiniteTradesWithoutFib
+                                                .TypeOfStrategy = GannLevelBreakoutStrategyRule.StrategyType.OnlyTwoOppositeDirectionTrades
                                             }
 
                             .NumberOfTradeableStockPerDay = 10
