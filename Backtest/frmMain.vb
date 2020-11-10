@@ -291,7 +291,7 @@ Public Class frmMain
             Select Case ruleNumber
                 Case 0
 #Region "Close Outside Hull Strategy"
-                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Futures
+                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Commodity
                     Dim database As Common.DataBaseTable = Common.DataBaseTable.None
                     Dim margin As Decimal = 0
                     Dim tick As Decimal = 0
@@ -315,11 +315,11 @@ Public Class frmMain
                     End Select
 
                     Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
-                                                                    exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                                    exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                                    tradeStartTime:=TimeSpan.Parse("9:30:00"),
-                                                                    lastTradeEntryTime:=TimeSpan.Parse("14:29:59"),
-                                                                    eodExitTime:=TimeSpan.Parse("15:15:00"),
+                                                                    exchangeStartTime:=TimeSpan.Parse("09:00:00"),
+                                                                    exchangeEndTime:=TimeSpan.Parse("23:29:59"),
+                                                                    tradeStartTime:=TimeSpan.Parse("9:15:00"),
+                                                                    lastTradeEntryTime:=TimeSpan.Parse("22:29:59"),
+                                                                    eodExitTime:=TimeSpan.Parse("23:15:00"),
                                                                     tickSize:=tick,
                                                                     marginMultiplier:=margin,
                                                                     timeframe:=15,
@@ -335,7 +335,7 @@ Public Class frmMain
                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                         With backtestStrategy
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Ravi Nifty 50_Nifty_BankNifty Future Stocks.csv")
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Ravi Nifty 50_Nifty_BankNifty Commodity Stocks.csv")
 
                             .AllowBothDirectionEntryAtSameTime = False
                             .TrailingStoploss = False
@@ -365,7 +365,7 @@ Public Class frmMain
                             .RealtimeTrailingPercentage = 50
                         End With
 
-                        Dim filename As String = String.Format("Close Outside Hull Strategy Output")
+                        Dim filename As String = String.Format("Close Outside Hull Strategy Commodity Output")
 
                         Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
                     End Using
@@ -395,7 +395,7 @@ Public Class frmMain
                             tick = 0.05
                     End Select
 
-                    For strategyTyp As Integer = 1 To 3
+                    For strategyTyp As Integer = 1 To 1
                         Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                         exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                         exchangeEndTime:=TimeSpan.Parse("15:29:59"),
