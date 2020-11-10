@@ -3,7 +3,7 @@ Imports System.Threading
 Imports Backtest.StrategyHelper
 Imports Utilities.Numbers.NumberManipulation
 
-Public Class CloseOutsideHullSTrategyRule
+Public Class CloseOutsideHullStrategyRule
     Inherits StrategyRule
 
     Private _hkPayload As Dictionary(Of Date, Payload) = Nothing
