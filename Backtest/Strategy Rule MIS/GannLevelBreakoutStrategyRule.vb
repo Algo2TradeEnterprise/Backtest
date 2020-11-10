@@ -73,7 +73,7 @@ Public Class GannLevelBreakoutStrategyRule
             Dim fib As FibonacciLevels = Common.GetFibonacciLevels(previousDayHigh, previousDayLow)
             Dim buyData As Tuple(Of Decimal, Decimal) = GetMinDiff(gann.BuyAt, fib)
             Dim sellData As Tuple(Of Decimal, Decimal) = GetMinDiff(gann.SellAt, fib)
-            If buyData.Item2 <= _userInputs.MaxDiffPer Then
+            If buyData IsNot Nothing AndAlso buyData.Item2 <= _userInputs.MaxDiffPer Then
                 _buyLevel = ConvertFloorCeling(gann.BuyAt, _parentStrategy.TickSize, RoundOfType.Celing)
                 _buyRemarks = String.Format("Buy At:{0}, Fib Level:{1}%, Diff:{2}%",
                                             Math.Round(gann.BuyAt, 2), buyData.Item1, Math.Round(buyData.Item2, 2))
@@ -82,7 +82,7 @@ Public Class GannLevelBreakoutStrategyRule
                 _buyRemarks = String.Format("Buy At:{0}, Fib Level:{1}, Diff:{2}",
                                             Math.Round(gann.BuyAt, 2), "None", "Not Applicable")
             End If
-            If sellData.Item2 <= _userInputs.MaxDiffPer Then
+            If sellData IsNot Nothing AndAlso sellData.Item2 <= _userInputs.MaxDiffPer Then
                 _sellLevel = ConvertFloorCeling(gann.SellAt, _parentStrategy.TickSize, RoundOfType.Floor)
                 _sellRemarks = String.Format("Sell At:{0}, Fib Level:{1}%, Diff:{2}%",
                                             Math.Round(gann.SellAt, 2), sellData.Item1, Math.Round(sellData.Item2, 2))
