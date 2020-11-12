@@ -124,6 +124,8 @@ Namespace StrategyHelper
                                             stockRule = New CloseOutsideHullStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 1
                                             stockRule = New GannLevelBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case 2
+                                            stockRule = New CloseOutsideEMAStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select

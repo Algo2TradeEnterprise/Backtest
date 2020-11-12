@@ -127,6 +127,7 @@
     <Compile Include="Strategy Helper\StrategyOutput.vb" />
     <Compile Include="Strategy Helper\StrategyRule.vb" />
     <Compile Include="Strategy Helper\Trade.vb" />
+    <Compile Include="Strategy Rule MIS\CloseOutsideEMAStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\CloseOutsideHullStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\GannLevelBreakoutStrategyRule.vb" />
   </ItemGroup>
