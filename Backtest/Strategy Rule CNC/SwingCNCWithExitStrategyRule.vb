@@ -203,7 +203,7 @@ Public Class SwingCNCWithExitStrategyRule
                             If lastTrade.EntryPrice - signalCandle.Close >= atr Then
                                 Dim iteration As Integer = Val(lastTrade.Supporting1) + 1
                                 Dim quantity As Long = GetQuantity(iteration, currentTick.Open)
-                                ret = New Tuple(Of Boolean, Payload, Integer, Integer, String)(True, currentCandle, quantity, iteration, "Below last entry")
+                                ret = New Tuple(Of Boolean, Payload, Integer, Integer, String)(True, crossedCandle, quantity, iteration, "Below last entry")
                             End If
                         End If
                     Else
