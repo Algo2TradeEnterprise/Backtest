@@ -115,6 +115,7 @@
     <Compile Include="Strategy Helper\StrategyRule.vb" />
     <Compile Include="Strategy Helper\Trade.vb" />
     <Compile Include="Strategy Rule CNC\SwingCNCStrategyRule.vb" />
+    <Compile Include="Strategy Rule CNC\SwingCNCWithExitStrategyRule.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="frmMain.resx">

@@ -106,6 +106,8 @@ Namespace StrategyHelper
                                     Select Case RuleNumber
                                         Case 0
                                             stockRule = New SwingCNCStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case 1
+                                            stockRule = New SwingCNCWithExitStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -463,15 +465,26 @@ Namespace StrategyHelper
 #Region "Stock Selection"
         Private Function GetStockData(tradingDate As Date) As Dictionary(Of String, StockDetails)
             Dim ret As Dictionary(Of String, StockDetails) = Nothing
-
-            Dim detailsOfStock As StockDetails = New StockDetails With
+            Select Case Me.RuleNumber
+                Case 0
+                    Dim detailsOfStock As StockDetails = New StockDetails With
                                     {.StockName = "NIFTYBEES",
                                     .LotSize = 1,
                                     .EligibleToTakeTrade = True}
 
-            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-            ret.Add(detailsOfStock.StockName, detailsOfStock)
+                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                    ret.Add(detailsOfStock.StockName, detailsOfStock)
+                Case 1
+                    Dim detailsOfStock As StockDetails = New StockDetails With
+                                    {.StockName = Me.StockFileName,
+                                    .LotSize = 1,
+                                    .EligibleToTakeTrade = True}
 
+                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                    ret.Add(detailsOfStock.StockName, detailsOfStock)
+                Case Else
+                    Throw New NotImplementedException
+            End Select
             Return ret
         End Function
 #End Region

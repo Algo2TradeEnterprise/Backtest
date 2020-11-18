@@ -936,7 +936,7 @@ Namespace StrategyHelper
                     If tradeDirection = Trade.TradeExecutionDirection.Buy Then
                         Select Case typeOfStock
                             Case Trade.TypeOfStock.Cash
-                                calculator.Intraday_Equity(entryPrice, exitPrice, quantity, potentialBrokerage)
+                                calculator.Delivery_Equity(entryPrice, exitPrice, quantity, potentialBrokerage)
                             Case Trade.TypeOfStock.Commodity
                                 calculator.Commodity_MCX(coreStockName, entryPrice, exitPrice, quantity, potentialBrokerage)
                             Case Trade.TypeOfStock.Currency
@@ -944,12 +944,14 @@ Namespace StrategyHelper
                             Case Trade.TypeOfStock.Futures
                                 calculator.FO_Futures(entryPrice, exitPrice, quantity, potentialBrokerage)
                         End Select
-                        If potentialBrokerage.NetProfitLoss > desiredProfitLossOfTrade Then Exit While
+                        If potentialBrokerage.NetProfitLoss > desiredProfitLossOfTrade Then
+                            Exit While
+                        End If
                         exitPrice += TickSize
                     ElseIf tradeDirection = Trade.TradeExecutionDirection.Sell Then
                         Select Case typeOfStock
                             Case Trade.TypeOfStock.Cash
-                                calculator.Intraday_Equity(exitPrice, entryPrice, quantity, potentialBrokerage)
+                                calculator.Delivery_Equity(exitPrice, entryPrice, quantity, potentialBrokerage)
                             Case Trade.TypeOfStock.Commodity
                                 calculator.Commodity_MCX(coreStockName, exitPrice, entryPrice, quantity, potentialBrokerage)
                             Case Trade.TypeOfStock.Currency
@@ -966,7 +968,7 @@ Namespace StrategyHelper
                     If tradeDirection = Trade.TradeExecutionDirection.Buy Then
                         Select Case typeOfStock
                             Case Trade.TypeOfStock.Cash
-                                calculator.Intraday_Equity(entryPrice, exitPrice, quantity, potentialBrokerage)
+                                calculator.Delivery_Equity(entryPrice, exitPrice, quantity, potentialBrokerage)
                             Case Trade.TypeOfStock.Commodity
                                 calculator.Commodity_MCX(coreStockName, entryPrice, exitPrice, quantity, potentialBrokerage)
                             Case Trade.TypeOfStock.Currency
@@ -979,7 +981,7 @@ Namespace StrategyHelper
                     ElseIf tradeDirection = Trade.TradeExecutionDirection.Sell Then
                         Select Case typeOfStock
                             Case Trade.TypeOfStock.Cash
-                                calculator.Intraday_Equity(exitPrice, entryPrice, quantity, potentialBrokerage)
+                                calculator.Delivery_Equity(exitPrice, entryPrice, quantity, potentialBrokerage)
                             Case Trade.TypeOfStock.Commodity
                                 calculator.Commodity_MCX(coreStockName, exitPrice, entryPrice, quantity, potentialBrokerage)
                             Case Trade.TypeOfStock.Currency
@@ -996,28 +998,42 @@ Namespace StrategyHelper
             Return exitPrice
         End Function
 
-        ''' <summary>
-        ''' If in a lower timeframe, we want to know the previous higher timeframe time, then we need to use this
-        ''' It will take the lower timeframe
-        ''' </summary>
-        Public Function GetPreviousXMinuteCandleTime(ByVal lowerTFTime As Date, ByVal higherTFPayload As Dictionary(Of Date, Payload), ByVal higherTF As Integer) As Date
+        Public Function GetCurrentXMinuteCandleTime(ByVal lowerTFTime As Date, ByVal higherTFPayload As Dictionary(Of Date, Payload), Optional ByVal timeframe As Integer = Integer.MinValue) As Date
             Dim ret As Date = Nothing
 
             If higherTFPayload IsNot Nothing AndAlso higherTFPayload.Count > 0 Then
-                ret = higherTFPayload.Keys.LastOrDefault(Function(x)
-                                                             Return x <= lowerTFTime.AddMinutes(-higherTF)
-                                                         End Function)
-            End If
-            Return ret
-        End Function
+                'ret = higherTFPayload.Keys.LastOrDefault(Function(x)
+                '                                             Return x <= lowerTFTime
+                '                                         End Function)
+                'For Each runningPayload In higherTFPayload.Keys
+                '    If runningPayload > lowerTFTime AndAlso higherTFPayload(runningPayload).PreviousCandlePayload IsNot Nothing AndAlso
+                '        higherTFPayload(runningPayload).PreviousCandlePayload.PayloadDate <= lowerTFTime Then
+                '        ret = higherTFPayload(runningPayload).PreviousCandlePayload.PayloadDate
+                '        Exit For
+                '    End If
+                'Next
+                Dim timeframeToCheck As Integer = Me.SignalTimeFrame
+                If timeframe <> Integer.MinValue Then timeframeToCheck = timeframe
 
-        Public Function GetCurrentXMinuteCandleTime(ByVal lowerTFTime As Date, ByVal higherTFPayload As Dictionary(Of Date, Payload)) As Date
-            Dim ret As Date = Nothing
-
-            If higherTFPayload IsNot Nothing AndAlso higherTFPayload.Count > 0 Then
-                ret = higherTFPayload.Keys.LastOrDefault(Function(x)
-                                                             Return x <= lowerTFTime
-                                                         End Function)
+                If Me.ExchangeStartTime.Minutes Mod timeframeToCheck = 0 Then
+                    ret = New Date(lowerTFTime.Year,
+                                    lowerTFTime.Month,
+                                    lowerTFTime.Day,
+                                    lowerTFTime.Hour,
+                                    Math.Floor(lowerTFTime.Minute / timeframeToCheck) * timeframeToCheck, 0)
+                Else
+                    Dim exchangeTime As Date = New Date(lowerTFTime.Year, lowerTFTime.Month, lowerTFTime.Day, Me.ExchangeStartTime.Hours, Me.ExchangeStartTime.Minutes, 0)
+                    Dim currentTime As Date = New Date(lowerTFTime.Year, lowerTFTime.Month, lowerTFTime.Day, lowerTFTime.Hour, lowerTFTime.Minute, 0)
+                    Dim timeDifference As Double = currentTime.Subtract(exchangeTime).TotalMinutes
+                    Dim adjustedTimeDifference As Integer = Math.Floor(timeDifference / timeframeToCheck) * timeframeToCheck
+                    ret = exchangeTime.AddMinutes(adjustedTimeDifference)
+                    'Dim currentMinute As Date = exchangeTime.AddMinutes(adjustedTimeDifference)
+                    'ret = New Date(lowerTFTime.Year,
+                    '                lowerTFTime.Month,
+                    '                lowerTFTime.Day,
+                    '                currentMinute.Hour,
+                    '                currentMinute.Minute, 0)
+                End If
             End If
             Return ret
         End Function

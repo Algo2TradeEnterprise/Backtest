@@ -117,8 +117,9 @@ Namespace Calculator
             Dim etc As Decimal = Math.Round(0.0000325 * turnover, 2)
             Dim cc As Decimal = 0
             Dim stax As Decimal = Math.Round(0.18 * (brokerage + etc), 2)
-            Dim sebi_charges As Decimal = Math.Round(turnover * 0.000001, 2)
-            Dim total_tax As Decimal = Math.Round(brokerage + stt_total + etc + cc + stax + sebi_charges, 2)
+            Dim sebi_charges As Decimal = Math.Round(turnover * 0.0000005, 2)
+            Dim stamp_charges As Decimal = Math.Round(bp * qty * 0.00015, 2)
+            Dim total_tax As Decimal = Math.Round(brokerage + stt_total + etc + cc + stax + sebi_charges + stamp_charges, 2)
             Dim breakeven As Decimal = Math.Round(total_tax / qty, 2)
             Dim net_profit As Decimal = Math.Round(((sp - bp) * qty) - total_tax, 2)
 
@@ -126,13 +127,14 @@ Namespace Calculator
                         .Buy = bp,
                         .Sell = sp,
                         .Quantity = qty,
-                        .turnover = turnover,
-                        .brokerage = brokerage,
+                        .Turnover = turnover,
+                        .Brokerage = brokerage,
                         .STT = stt_total,
                         .ExchangeFees = etc,
                         .Clearing = 0,
                         .GST = stax,
                         .SEBI = sebi_charges,
+                        .StampDuty = stamp_charges,
                         .TotalTax = total_tax,
                         .BreakevenPoints = breakeven,
                         .NetProfitLoss = net_profit
