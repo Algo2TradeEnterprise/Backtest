@@ -394,11 +394,11 @@ Public Class frmMain
                                     End With
 
                                     Dim ruleData As SwingCNCWithExitStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                                    Dim filename As String = String.Format("Swing CNC With Exit Output,LT {0},HT {1},QtyTyp {2},MinExtPr {3}",
+                                    Dim filename As String = String.Format("Swing CNC With Exit Output,LT {0},HT {1},QtyTyp {2}, {3}",
                                                                            backtestStrategy.SignalTimeFrame,
                                                                            ruleData.HigherTimeframe,
                                                                            ruleData.QuantityType.ToString,
-                                                                           ruleData.MinimumExitPercentage)
+                                                                           stock)
 
                                     Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
                                 End Using
