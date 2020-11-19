@@ -1468,6 +1468,12 @@ Namespace StrategyHelper
                                                                                                              End Function)
                                                                                      End Function)
 
+                        Dim maxCapital As Decimal = allCapitalData.Values.Max(Function(x)
+                                                                                  Return x.Max(Function(y)
+                                                                                                   Return y.RunningCapital
+                                                                                               End Function)
+                                                                              End Function)
+
                         Dim winRatio As Decimal = Math.Round((totalPositiveTrades / totalTrades) * 100, 2)
                         Dim riskReward As Decimal = 0
                         If totalPositiveTrades <> 0 AndAlso (totalTrades - totalPositiveTrades) <> 0 Then
@@ -1494,7 +1500,23 @@ Namespace StrategyHelper
                             .AverageDurationInLosingTrades = If((totalTrades - totalPositiveTrades) <> 0, totalDurationInNegativeTrades / (totalTrades - totalPositiveTrades), 0)
                         End With
 
-                        fileName = String.Format("PL {0},{1}.xlsx", Math.Round(strategyOutputData.NetProfit, 0), fileName)
+                        Dim returnPercentage As Decimal = (strategyOutputData.NetProfit / maxCapital) * 100
+                        Dim totalUniqueTrades As Integer = allTradesData.Values.Sum(Function(x)
+                                                                                        Return x.Values.Sum(Function(y)
+                                                                                                                Return y.FindAll(Function(z)
+                                                                                                                                     Return z.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel AndAlso
+                                                                                                                                            Val(z.Supporting1) = 1
+                                                                                                                                 End Function).Count
+                                                                                                            End Function)
+                                                                                    End Function)
+
+                        fileName = String.Format("PL {0},Cap {1},Rtrn {2},TT {3},{4}.xlsx",
+                                                 Math.Round(strategyOutputData.NetProfit, 0),
+                                                 Math.Round(maxCapital, 0),
+                                                 Math.Round(returnPercentage, 0),
+                                                 Math.Round(totalUniqueTrades, 0),
+                                                 fileName)
+
                         Dim filepath As String = Path.Combine(My.Application.Info.DirectoryPath, "BackTest Output", fileName)
                         If File.Exists(filepath) Then File.Delete(filepath)
 
