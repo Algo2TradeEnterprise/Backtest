@@ -395,7 +395,7 @@ Public Class frmMain
                             tick = 0.05
                     End Select
 
-                    For strategyTyp As Integer = 1 To 1
+                    For strategyTyp As Integer = 4 To 4
                         Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                         exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                         exchangeEndTime:=TimeSpan.Parse("15:29:59"),
@@ -452,7 +452,7 @@ Public Class frmMain
                             End With
 
                             Dim rule As GannLevelBreakoutStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                            Dim filename As String = String.Format("Gann Level Breakout Strategy Output({0})", rule.TypeOfStrategy.ToString)
+                            Dim filename As String = String.Format("Gann Level Breakout Strategy Future Output({0})", rule.TypeOfStrategy.ToString)
 
                             Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
                         End Using

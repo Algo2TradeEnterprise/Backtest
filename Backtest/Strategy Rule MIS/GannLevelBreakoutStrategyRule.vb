@@ -8,9 +8,10 @@ Public Class GannLevelBreakoutStrategyRule
 
 #Region "Entity"
     Enum StrategyType
-        OnlyTwoOppositeDirectionTrades = 1
+        OnlyTwoOppositeDirectionTradesWithFib = 1
         InfiniteTradesWithFib
         InfiniteTradesWithoutFib
+        OnlyTwoOppositeDirectionTradesWithoutFib
     End Enum
     Public Class StrategyRuleEntities
         Inherits RuleEntities
@@ -62,7 +63,8 @@ Public Class GannLevelBreakoutStrategyRule
                                                            End Function)
 
         Dim gann As GannLevels = Common.CalculateGann(currentDayOpen)
-        If _userInputs.TypeOfStrategy = StrategyType.InfiniteTradesWithoutFib Then
+        If _userInputs.TypeOfStrategy = StrategyType.InfiniteTradesWithoutFib OrElse
+            _userInputs.TypeOfStrategy = StrategyType.OnlyTwoOppositeDirectionTradesWithoutFib Then
             _buyLevel = ConvertFloorCeling(gann.BuyAt, _parentStrategy.TickSize, RoundOfType.Celing)
             _buyRemarks = String.Format("Buy At:{0}", Math.Round(gann.BuyAt, 2))
             _sellLevel = ConvertFloorCeling(gann.SellAt, _parentStrategy.TickSize, RoundOfType.Floor)
@@ -103,7 +105,8 @@ Public Class GannLevelBreakoutStrategyRule
                 Not _parentStrategy.IsTradeOpen(currentCandle, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) AndAlso
                 Not _parentStrategy.IsTradeActive(currentCandle, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) Then
                 Dim takeTrade As Boolean = False
-                If _userInputs.TypeOfStrategy = StrategyType.OnlyTwoOppositeDirectionTrades Then
+                If _userInputs.TypeOfStrategy = StrategyType.OnlyTwoOppositeDirectionTradesWithFib OrElse
+                    _userInputs.TypeOfStrategy = StrategyType.OnlyTwoOppositeDirectionTradesWithoutFib Then
                     If _parentStrategy.GetLastExecutedTradeOfTheStock(currentCandle, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) Is Nothing Then
                         takeTrade = True
                     End If
@@ -139,7 +142,8 @@ Public Class GannLevelBreakoutStrategyRule
                 Not _parentStrategy.IsTradeOpen(currentCandle, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) AndAlso
                 Not _parentStrategy.IsTradeActive(currentCandle, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) Then
                 Dim takeTrade As Boolean = False
-                If _userInputs.TypeOfStrategy = StrategyType.OnlyTwoOppositeDirectionTrades Then
+                If _userInputs.TypeOfStrategy = StrategyType.OnlyTwoOppositeDirectionTradesWithFib OrElse
+                    _userInputs.TypeOfStrategy = StrategyType.OnlyTwoOppositeDirectionTradesWithoutFib Then
                     If _parentStrategy.GetLastExecutedTradeOfTheStock(currentCandle, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) Is Nothing Then
                         takeTrade = True
                     End If
