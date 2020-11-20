@@ -395,7 +395,7 @@ Public Class frmMain
                             tick = 0.05
                     End Select
 
-                    For strategyTyp As Integer = 4 To 4
+                    For strategyTyp As Integer = 3 To 3
                         Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                         exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                         exchangeEndTime:=TimeSpan.Parse("15:29:59"),
@@ -410,14 +410,14 @@ Public Class frmMain
                                                                         optionStockType:=Trade.TypeOfStock.None,
                                                                         databaseTable:=database,
                                                                         dataSource:=sourceData,
-                                                                        initialCapital:=Decimal.MaxValue / 2,
-                                                                        usableCapital:=Decimal.MaxValue / 2,
-                                                                        minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
-                                                                        amountToBeWithdrawn:=0)
+                                                                        initialCapital:=500000,
+                                                                        usableCapital:=500000,
+                                                                        minimumEarnedCapitalToWithdraw:=600000,
+                                                                        amountToBeWithdrawn:=100000)
                             AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                             With backtestStrategy
-                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Ravi Nifty 50_Nifty_BankNifty Future Stocks.csv")
+                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Ravi 3 Future Stock.csv")
 
                                 .AllowBothDirectionEntryAtSameTime = False
                                 .TrailingStoploss = False
