@@ -411,7 +411,7 @@ Public Class frmMain
                                                                         databaseTable:=database,
                                                                         dataSource:=sourceData,
                                                                         initialCapital:=500000,
-                                                                        usableCapital:=500000,
+                                                                        usableCapital:=200000,
                                                                         minimumEarnedCapitalToWithdraw:=600000,
                                                                         amountToBeWithdrawn:=100000)
                             AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
