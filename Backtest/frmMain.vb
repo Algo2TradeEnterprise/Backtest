@@ -372,7 +372,7 @@ Public Class frmMain
 #End Region
                 Case 1
 #Region "Gann Level Breakout Strategy"
-                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Futures
+                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
                     Dim database As Common.DataBaseTable = Common.DataBaseTable.None
                     Dim margin As Decimal = 0
                     Dim tick As Decimal = 0
@@ -410,14 +410,14 @@ Public Class frmMain
                                                                         optionStockType:=Trade.TypeOfStock.None,
                                                                         databaseTable:=database,
                                                                         dataSource:=sourceData,
-                                                                        initialCapital:=500000,
-                                                                        usableCapital:=200000,
-                                                                        minimumEarnedCapitalToWithdraw:=600000,
-                                                                        amountToBeWithdrawn:=100000)
+                                                                        initialCapital:=Decimal.MaxValue / 2,
+                                                                        usableCapital:=Decimal.MaxValue / 2,
+                                                                        minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                                        amountToBeWithdrawn:=0)
                             AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                             With backtestStrategy
-                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Ravi 3 Future Stock.csv")
+                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Ravi Nifty 100 Stocks.csv")
 
                                 .AllowBothDirectionEntryAtSameTime = False
                                 .TrailingStoploss = False
@@ -452,7 +452,7 @@ Public Class frmMain
                             End With
 
                             Dim rule As GannLevelBreakoutStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                            Dim filename As String = String.Format("Gann Level Breakout Strategy Future Output({0})", rule.TypeOfStrategy.ToString)
+                            Dim filename As String = String.Format("Gann Level Breakout Strategy Nifty 100 Output({0})", rule.TypeOfStrategy.ToString)
 
                             Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
                         End Using
