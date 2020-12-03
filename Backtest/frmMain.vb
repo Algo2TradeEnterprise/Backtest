@@ -319,7 +319,7 @@ Public Class frmMain
 
                                         .RuleEntityData = New AjitJhaOptionStrategyRule.StrategyRuleEntities With
                                                           {
-                                                           .TargetMultiplier = 2,
+                                                           .TargetMultiplier = 3,
                                                            .MaxLossPerTrade = -2000,
                                                            .SpotMaxStoplossPercentage = spotMaxLossPer,
                                                            .OptionMinStoplossPointOnExpiry = 10,
