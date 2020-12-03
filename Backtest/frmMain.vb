@@ -421,7 +421,7 @@ Public Class frmMain
 
                                 .AllowBothDirectionEntryAtSameTime = False
                                 .TrailingStoploss = False
-                                .TickBasedStrategy = True
+                                .TickBasedStrategy = False
                                 .RuleNumber = ruleNumber
 
                                 .RuleEntityData = New GannLevelBreakoutStrategyRule.StrategyRuleEntities With
