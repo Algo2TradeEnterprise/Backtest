@@ -417,7 +417,7 @@ Public Class frmMain
                             AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                             With backtestStrategy
-                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Ravi Nifty 100 Stocks.csv")
+                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Gann Cash Stocklist.csv")
 
                                 .AllowBothDirectionEntryAtSameTime = False
                                 .TrailingStoploss = False
@@ -452,7 +452,7 @@ Public Class frmMain
                             End With
 
                             Dim rule As GannLevelBreakoutStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                            Dim filename As String = String.Format("Gann Level Breakout Strategy Nifty 100 Output({0})", rule.TypeOfStrategy.ToString)
+                            Dim filename As String = String.Format("Gann Level Breakout Strategy Output({0})", rule.TypeOfStrategy.ToString)
 
                             Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
                         End Using

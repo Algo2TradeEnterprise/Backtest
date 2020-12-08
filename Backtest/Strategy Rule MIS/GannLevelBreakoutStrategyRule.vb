@@ -28,6 +28,9 @@ Public Class GannLevelBreakoutStrategyRule
     Private _sellSLLevel As Decimal = Decimal.MinValue
     Private _sellRemarks As String = Nothing
 
+    Private _atrPayload As Dictionary(Of Date, Decimal) = Nothing
+    Private _swingPayload As Dictionary(Of Date, Indicator.Swing) = Nothing
+
     Private ReadOnly _userInputs As StrategyRuleEntities
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -94,6 +97,9 @@ Public Class GannLevelBreakoutStrategyRule
                                             Math.Round(gann.SellAt, 2), "None", "Not Applicable")
             End If
         End If
+
+        Indicator.ATR.CalculateATR(14, _signalPayload, _atrPayload, True)
+        Indicator.SwingHighLow.CalculateSwingHighLow(_signalPayload, False, _swingPayload)
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -111,7 +117,20 @@ Public Class GannLevelBreakoutStrategyRule
                         takeTrade = True
                     End If
                 Else
-                    takeTrade = True
+                    Dim lastOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentCandle, Trade.TypeOfTrade.MIS)
+                    If lastOrder IsNot Nothing Then
+                        If lastOrder.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                            If currentCandle.PreviousCandlePayload.Close <= _buyLevel Then
+                                takeTrade = True
+                            Else
+                                Console.WriteLine(String.Format("{0} -> BUY neglect at {1}", _tradingSymbol, currentCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss")))
+                            End If
+                        Else
+                            takeTrade = True
+                        End If
+                    Else
+                        takeTrade = True
+                    End If
                 End If
                 If takeTrade Then
                     Dim entryPrice As Decimal = _buyLevel
@@ -148,7 +167,20 @@ Public Class GannLevelBreakoutStrategyRule
                         takeTrade = True
                     End If
                 Else
-                    takeTrade = True
+                    Dim lastOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentCandle, Trade.TypeOfTrade.MIS)
+                    If lastOrder IsNot Nothing Then
+                        If lastOrder.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                            If currentCandle.PreviousCandlePayload.Close >= _sellLevel Then
+                                takeTrade = True
+                            Else
+                                Console.WriteLine(String.Format("{0} -> SELL neglect at {1}", _tradingSymbol, currentCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss")))
+                            End If
+                        Else
+                            takeTrade = True
+                        End If
+                    Else
+                        takeTrade = True
+                    End If
                 End If
                 If takeTrade Then
                     Dim entryPrice As Decimal = _sellLevel
@@ -188,6 +220,33 @@ Public Class GannLevelBreakoutStrategyRule
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
+        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            Dim currentCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
+            Dim atr As Decimal = ConvertFloorCeling(_atrPayload(currentCandle.PreviousCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Floor)
+            Dim swingHL As Indicator.Swing = _swingPayload(currentCandle.PreviousCandlePayload.PayloadDate)
+            Dim triggerPrice As Decimal = Decimal.MinValue
+            Dim remark As String = Nothing
+            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                If swingHL.SwingLowTime >= currentTrade.EntryTime Then
+                    Dim potentialSL As Decimal = swingHL.SwingLow - atr
+                    If potentialSL > currentTrade.PotentialStopLoss Then
+                        triggerPrice = potentialSL
+                        remark = String.Format("Trailling to {0}[Swing({1})-ATR({2})], Swing at {3}", triggerPrice, swingHL.SwingLow, atr, swingHL.SwingLowTime.ToString("HH:mm:ss"))
+                    End If
+                End If
+            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                If swingHL.SwingHighTime >= currentTrade.EntryTime Then
+                    Dim potentialSL As Decimal = swingHL.SwingHigh + atr
+                    If potentialSL < currentTrade.PotentialStopLoss Then
+                        triggerPrice = potentialSL
+                        remark = String.Format("Trailling to {0}[Swing({1})+ATR({2})], Swing at {3}", triggerPrice, swingHL.SwingHigh, atr, swingHL.SwingHighTime.ToString("HH:mm:ss"))
+                    End If
+                End If
+            End If
+            If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
+                ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, remark)
+            End If
+        End If
         Return ret
     End Function
 
