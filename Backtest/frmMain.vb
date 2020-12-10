@@ -421,13 +421,15 @@ Public Class frmMain
 
                                 .AllowBothDirectionEntryAtSameTime = False
                                 .TrailingStoploss = False
-                                .TickBasedStrategy = False
+                                .TickBasedStrategy = True
                                 .RuleNumber = ruleNumber
 
                                 .RuleEntityData = New GannLevelBreakoutStrategyRule.StrategyRuleEntities With
                                             {
                                                 .MaxDiffPer = 0.3,
-                                                .TypeOfStrategy = strategyTyp
+                                                .TypeOfStrategy = strategyTyp,
+                                                .TargetMultiplier1 = 1,
+                                                .TargetMultiplier2 = 100
                                             }
 
                                 .NumberOfTradeableStockPerDay = Integer.MaxValue

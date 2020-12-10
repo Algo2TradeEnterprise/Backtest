@@ -3,7 +3,7 @@ Imports System.Threading
 Imports Backtest.StrategyHelper
 Imports Utilities.Numbers.NumberManipulation
 
-Public Class GannLevelBreakoutStrategyRule
+Public Class GannLevelBreakoutStrategyRuleOld
     Inherits StrategyRule
 
 #Region "Entity"
@@ -18,8 +18,6 @@ Public Class GannLevelBreakoutStrategyRule
 
         Public MaxDiffPer As Decimal
         Public TypeOfStrategy As StrategyType
-        Public TargetMultiplier1 As Decimal
-        Public TargetMultiplier2 As Decimal
     End Class
 #End Region
 
@@ -29,6 +27,9 @@ Public Class GannLevelBreakoutStrategyRule
     Private _sellLevel As Decimal = Decimal.MinValue
     Private _sellSLLevel As Decimal = Decimal.MinValue
     Private _sellRemarks As String = Nothing
+
+    Private _atrPayload As Dictionary(Of Date, Decimal) = Nothing
+    Private _swingPayload As Dictionary(Of Date, Indicator.Swing) = Nothing
 
     Private ReadOnly _userInputs As StrategyRuleEntities
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
@@ -96,6 +97,9 @@ Public Class GannLevelBreakoutStrategyRule
                                             Math.Round(gann.SellAt, 2), "None", "Not Applicable")
             End If
         End If
+
+        Indicator.ATR.CalculateATR(14, _signalPayload, _atrPayload, True)
+        Indicator.SwingHighLow.CalculateSwingHighLow(_signalPayload, False, _swingPayload)
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -116,11 +120,11 @@ Public Class GannLevelBreakoutStrategyRule
                     Dim lastOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentCandle, Trade.TypeOfTrade.MIS)
                     If lastOrder IsNot Nothing Then
                         If lastOrder.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                            'If currentCandle.PreviousCandlePayload.Close <= _buyLevel Then
-                            '    takeTrade = True
-                            'Else
-                            '    Console.WriteLine(String.Format("{0} -> BUY neglect at {1}", _tradingSymbol, currentCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss")))
-                            'End If
+                            If currentCandle.PreviousCandlePayload.Close <= _buyLevel Then
+                                takeTrade = True
+                            Else
+                                Console.WriteLine(String.Format("{0} -> BUY neglect at {1}", _tradingSymbol, currentCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss")))
+                            End If
                         Else
                             takeTrade = True
                         End If
@@ -129,44 +133,26 @@ Public Class GannLevelBreakoutStrategyRule
                     End If
                 End If
                 If takeTrade Then
-                    Dim buffer As Decimal = CalculateBuffer(_buyLevel)
-                    Dim entryPrice As Decimal = _buyLevel + buffer
+                    Dim entryPrice As Decimal = _buyLevel
                     Dim quantity As Integer = Me.LotSize
                     If currentTick.Open < entryPrice Then
-                        Dim parameter1 = New PlaceOrderParameters With {
-                                            .EntryPrice = entryPrice,
-                                            .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                            .Quantity = Math.Ceiling(quantity / 2),
-                                            .Stoploss = _buySLLevel - buffer,
-                                            .Target = .EntryPrice + (.EntryPrice - .Stoploss) * _userInputs.TargetMultiplier1,
-                                            .Buffer = 0,
-                                            .SignalCandle = currentCandle,
-                                            .OrderType = Trade.TypeOfOrder.SL,
-                                            .Supporting1 = _buyRemarks,
-                                            .Supporting2 = _sellRemarks,
-                                            .Supporting3 = .EntryPrice + (.EntryPrice - .Stoploss) * _userInputs.TargetMultiplier1,
-                                            .Supporting4 = 1
-                                        }
-                        Dim parameter2 = New PlaceOrderParameters With {
-                                            .EntryPrice = entryPrice,
-                                            .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                            .Quantity = Math.Floor(quantity / 2),
-                                            .Stoploss = _buySLLevel - buffer,
-                                            .Target = .EntryPrice + (.EntryPrice - .Stoploss) * _userInputs.TargetMultiplier2,
-                                            .Buffer = 0,
-                                            .SignalCandle = currentCandle,
-                                            .OrderType = Trade.TypeOfOrder.SL,
-                                            .Supporting1 = _buyRemarks,
-                                            .Supporting2 = _sellRemarks,
-                                            .Supporting3 = .EntryPrice + (.EntryPrice - .Stoploss) * _userInputs.TargetMultiplier1,
-                                            .Supporting4 = 2
-                                        }
+                        Dim parameter = New PlaceOrderParameters With {
+                                        .entryPrice = entryPrice,
+                                        .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                                        .quantity = quantity,
+                                        .Stoploss = _buySLLevel,
+                                        .Target = .EntryPrice + 1000000000,
+                                        .Buffer = 0,
+                                        .SignalCandle = currentCandle,
+                                        .OrderType = Trade.TypeOfOrder.SL,
+                                        .Supporting1 = _buyRemarks,
+                                        .Supporting2 = _sellRemarks
+                                    }
 
                         If ret Is Nothing Then
-                            ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter1, parameter2})
+                            ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
                         Else
-                            ret.Item2.Add(parameter1)
-                            ret.Item2.Add(parameter2)
+                            ret.Item2.Add(parameter)
                         End If
                     End If
                 End If
@@ -184,11 +170,11 @@ Public Class GannLevelBreakoutStrategyRule
                     Dim lastOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentCandle, Trade.TypeOfTrade.MIS)
                     If lastOrder IsNot Nothing Then
                         If lastOrder.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                            'If currentCandle.PreviousCandlePayload.Close >= _sellLevel Then
-                            '    takeTrade = True
-                            'Else
-                            '    Console.WriteLine(String.Format("{0} -> SELL neglect at {1}", _tradingSymbol, currentCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss")))
-                            'End If
+                            If currentCandle.PreviousCandlePayload.Close >= _sellLevel Then
+                                takeTrade = True
+                            Else
+                                Console.WriteLine(String.Format("{0} -> SELL neglect at {1}", _tradingSymbol, currentCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss")))
+                            End If
                         Else
                             takeTrade = True
                         End If
@@ -197,44 +183,26 @@ Public Class GannLevelBreakoutStrategyRule
                     End If
                 End If
                 If takeTrade Then
-                    Dim buffer As Decimal = CalculateBuffer(_sellLevel)
-                    Dim entryPrice As Decimal = _sellLevel - buffer
+                    Dim entryPrice As Decimal = _sellLevel
                     Dim quantity As Integer = Me.LotSize
                     If currentTick.Open > entryPrice Then
-                        Dim parameter1 = New PlaceOrderParameters With {
-                                            .EntryPrice = entryPrice,
-                                            .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                                            .Quantity = Math.Ceiling(quantity / 2),
-                                            .Stoploss = _sellSLLevel + buffer,
-                                            .Target = .EntryPrice - (.Stoploss - .EntryPrice) * _userInputs.TargetMultiplier1,
-                                            .Buffer = 0,
-                                            .SignalCandle = currentCandle,
-                                            .OrderType = Trade.TypeOfOrder.SL,
-                                            .Supporting1 = _buyRemarks,
-                                            .Supporting2 = _sellRemarks,
-                                            .Supporting3 = .EntryPrice - (.Stoploss - .EntryPrice) * _userInputs.TargetMultiplier1,
-                                            .Supporting4 = 1
-                                        }
-                        Dim parameter2 = New PlaceOrderParameters With {
-                                            .EntryPrice = entryPrice,
-                                            .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                                            .Quantity = Math.Floor(quantity / 2),
-                                            .Stoploss = _sellSLLevel + buffer,
-                                            .Target = .EntryPrice - (.Stoploss - .EntryPrice) * _userInputs.TargetMultiplier2,
-                                            .Buffer = 0,
-                                            .SignalCandle = currentCandle,
-                                            .OrderType = Trade.TypeOfOrder.SL,
-                                            .Supporting1 = _buyRemarks,
-                                            .Supporting2 = _sellRemarks,
-                                            .Supporting3 = .EntryPrice - (.Stoploss - .EntryPrice) * _userInputs.TargetMultiplier1,
-                                            .Supporting4 = 2
-                                        }
+                        Dim parameter = New PlaceOrderParameters With {
+                                        .entryPrice = entryPrice,
+                                        .EntryDirection = Trade.TradeExecutionDirection.Sell,
+                                        .quantity = quantity,
+                                        .Stoploss = _sellSLLevel,
+                                        .Target = .EntryPrice - 1000000000,
+                                        .Buffer = 0,
+                                        .SignalCandle = currentCandle,
+                                        .OrderType = Trade.TypeOfOrder.SL,
+                                        .Supporting1 = _buyRemarks,
+                                        .Supporting2 = _sellRemarks
+                                    }
 
                         If ret Is Nothing Then
-                            ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter1, parameter2})
+                            ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
                         Else
-                            ret.Item2.Add(parameter1)
-                            ret.Item2.Add(parameter2)
+                            ret.Item2.Add(parameter)
                         End If
                     End If
                 End If
@@ -252,18 +220,27 @@ Public Class GannLevelBreakoutStrategyRule
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
-        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress AndAlso currentTrade.Supporting4 = 2 Then
+        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            Dim currentCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
+            Dim atr As Decimal = ConvertFloorCeling(_atrPayload(currentCandle.PreviousCandlePayload.PayloadDate), _parentStrategy.TickSize, RoundOfType.Floor)
+            Dim swingHL As Indicator.Swing = _swingPayload(currentCandle.PreviousCandlePayload.PayloadDate)
             Dim triggerPrice As Decimal = Decimal.MinValue
             Dim remark As String = Nothing
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                If currentTick.Open >= Val(currentTrade.Supporting3) Then
-                    triggerPrice = currentTrade.EntryPrice
-                    remark = String.Format("Move to CC")
+                If swingHL.SwingLowTime >= currentTrade.EntryTime Then
+                    Dim potentialSL As Decimal = swingHL.SwingLow - atr
+                    If potentialSL > currentTrade.PotentialStopLoss Then
+                        triggerPrice = potentialSL
+                        remark = String.Format("Trailling to {0}[Swing({1})-ATR({2})], Swing at {3}", triggerPrice, swingHL.SwingLow, atr, swingHL.SwingLowTime.ToString("HH:mm:ss"))
+                    End If
                 End If
             ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                If currentTick.Open <= Val(currentTrade.Supporting3) Then
-                    triggerPrice = currentTrade.EntryPrice
-                    remark = String.Format("Move to CC")
+                If swingHL.SwingHighTime >= currentTrade.EntryTime Then
+                    Dim potentialSL As Decimal = swingHL.SwingHigh + atr
+                    If potentialSL < currentTrade.PotentialStopLoss Then
+                        triggerPrice = potentialSL
+                        remark = String.Format("Trailling to {0}[Swing({1})+ATR({2})], Swing at {3}", triggerPrice, swingHL.SwingHigh, atr, swingHL.SwingHighTime.ToString("HH:mm:ss"))
+                    End If
                 End If
             End If
             If triggerPrice <> Decimal.MinValue AndAlso triggerPrice <> currentTrade.PotentialStopLoss Then
@@ -316,9 +293,5 @@ Public Class GannLevelBreakoutStrategyRule
             ret = New Tuple(Of Decimal, Decimal)(161.8, diff161)
         End If
         Return ret
-    End Function
-
-    Private Function CalculateBuffer(ByVal price As Decimal) As Decimal
-        Return ConvertFloorCeling(Math.Max(1, price * 0.1 / 100), _parentStrategy.TickSize, RoundOfType.Floor)
     End Function
 End Class
