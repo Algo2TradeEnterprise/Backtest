@@ -109,9 +109,9 @@ Namespace StrategyHelper
                                     Dim tradingSymbol As String = currentDayPayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
                                         Case 0
-                                            stockRule = New PreviousSwingLowStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 1
-                                            stockRule = New PreviousNifty50SwingLowStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                            stockRule = New RainbowStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case Else
+                                            Throw New NotImplementedException
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat

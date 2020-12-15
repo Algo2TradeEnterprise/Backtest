@@ -294,21 +294,12 @@ Public Class frmMain
 
                     .RuleNumber = rule
 
-                    Select Case rule
-                        Case 0
-                            .RuleEntityData = New PreviousSwingLowStrategyRule.StrategyRuleEntities With
-                                        {
-                                         .InitialCapital = 10000,
-                                         .MaxIteration = 5
-                                        }
-                        Case 1
-                            .RuleEntityData = New PreviousNifty50SwingLowStrategyRule.StrategyRuleEntities With
-                                        {
-                                         .InitialCapital = 10000,
-                                         .MaxIteration = 5
-                                        }
 
-                    End Select
+                    .RuleEntityData = New RainbowStrategyRule.StrategyRuleEntities With
+                                        {
+                                         .InitialCapital = 10000,
+                                         .MaxIteration = 5
+                                        }
 
                     .NumberOfTradeableStockPerDay = 1
 
@@ -319,18 +310,9 @@ Public Class frmMain
                 End With
 
                 Dim filename As String = Nothing
-                Select Case rule
-                    Case 0
-                        Dim ruleEntity As PreviousSwingLowStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                        filename = String.Format("At Previous Swing Low CNC EOD Output, Max Iteration {0}",
+                Dim ruleEntity As RainbowStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                filename = String.Format("At Previous Swing Low CNC EOD Output, Max Iteration {0}",
                                                  If(ruleEntity.MaxIteration = Integer.MaxValue, "∞", ruleEntity.MaxIteration))
-                    Case 1
-                        Dim ruleEntity As PreviousNifty50SwingLowStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                        filename = String.Format("At Previous Nifty 50 Swing Low CNC EOD Output, Max Iteration {0}",
-                                                 If(ruleEntity.MaxIteration = Integer.MaxValue, "∞", ruleEntity.MaxIteration))
-                    Case Else
-                        Throw New NotImplementedException
-                End Select
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using

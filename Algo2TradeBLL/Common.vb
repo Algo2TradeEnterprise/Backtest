@@ -190,57 +190,6 @@ Public Class Common
         Return ret
     End Function
 
-    'Public Shared Function ConvertPayloadsToXMinutes(ByVal payloads As Dictionary(Of Date, Payload), ByVal minute As Integer) As Dictionary(Of Date, Payload)
-    '    Dim XMinutePayloads As Dictionary(Of Date, Payload) = Nothing
-    '    If payloads IsNot Nothing AndAlso payloads.Count > 0 Then
-    '        Dim newCandleStarted As Boolean = True
-    '        Dim runningOutputPayload As Payload = Nothing
-    '        Dim startTime As Date = Date.MaxValue
-    '        Dim endTime As Date = Date.MaxValue
-    '        For Each payload In payloads.Values
-    '            If payload.PayloadDate >= endTime Then
-    '                newCandleStarted = True
-    '                If runningOutputPayload IsNot Nothing Then
-    '                    If XMinutePayloads Is Nothing Then XMinutePayloads = New Dictionary(Of Date, Payload)
-    '                    XMinutePayloads.Add(runningOutputPayload.PayloadDate, runningOutputPayload)
-    '                End If
-    '            End If
-    '            If newCandleStarted Then
-    '                newCandleStarted = False
-    '                startTime = payload.PayloadDate
-    '                endTime = payload.PayloadDate.AddMinutes(minute)
-    '                Dim prevPayload As Payload = runningOutputPayload
-    '                runningOutputPayload = New Payload(Payload.CandleDataSource.Calculated)
-    '                runningOutputPayload.PayloadDate = startTime
-    '                runningOutputPayload.Open = payload.Open
-    '                runningOutputPayload.High = payload.High
-    '                runningOutputPayload.Low = payload.Low
-    '                runningOutputPayload.Close = payload.Close
-    '                runningOutputPayload.Volume = payload.Volume
-    '                runningOutputPayload.TradingSymbol = payload.TradingSymbol
-    '                runningOutputPayload.PreviousCandlePayload = prevPayload
-    '            Else
-    '                runningOutputPayload.High = Math.Max(runningOutputPayload.High, payload.High)
-    '                runningOutputPayload.Low = Math.Min(runningOutputPayload.Low, payload.Low)
-    '                runningOutputPayload.Close = payload.Close
-    '                runningOutputPayload.Volume = runningOutputPayload.Volume + payload.Volume
-    '            End If
-    '            If (runningOutputPayload.PreviousCandlePayload IsNot Nothing AndAlso runningOutputPayload.PayloadDate.Date <> runningOutputPayload.PreviousCandlePayload.PayloadDate.Date) Then
-    '                runningOutputPayload.CumulativeVolume = runningOutputPayload.Volume
-    '            ElseIf (runningOutputPayload.PreviousCandlePayload Is Nothing) Then
-    '                runningOutputPayload.CumulativeVolume = runningOutputPayload.Volume
-    '            ElseIf (runningOutputPayload.PreviousCandlePayload IsNot Nothing AndAlso runningOutputPayload.PayloadDate.Date = runningOutputPayload.PreviousCandlePayload.PayloadDate.Date) Then
-    '                runningOutputPayload.CumulativeVolume = runningOutputPayload.PreviousCandlePayload.CumulativeVolume + runningOutputPayload.Volume
-    '            End If
-    '        Next
-    '        If runningOutputPayload IsNot Nothing Then
-    '            If XMinutePayloads Is Nothing Then XMinutePayloads = New Dictionary(Of Date, Payload)
-    '            XMinutePayloads.Add(runningOutputPayload.PayloadDate, runningOutputPayload)
-    '        End If
-    '    End If
-    '    Return XMinutePayloads
-    'End Function
-
     Public Shared Function ConvertPayloadsToXMinutes(ByVal inputPayloads As Dictionary(Of Date, Payload), ByVal timeframe As Integer, ByVal exchangeStartTime As Date) As Dictionary(Of Date, Payload)
         Dim ret As Dictionary(Of Date, Payload) = Nothing
         If inputPayloads IsNot Nothing AndAlso inputPayloads.Count > 0 Then
@@ -339,11 +288,10 @@ Public Class Common
         Return ret
     End Function
 
-    Public Shared Function ConvertDecimalToPayload(ByVal targetfield As Payload.PayloadFields, ByVal inputpayload As Dictionary(Of Date, Decimal), ByRef outputpayload As Dictionary(Of Date, Payload))
-        Dim output As Payload
-        outputpayload = New Dictionary(Of Date, Payload)
+    Public Shared Function ConvertDecimalToPayload(ByVal targetfield As Payload.PayloadFields, ByVal inputpayload As Dictionary(Of Date, Decimal)) As Dictionary(Of Date, Payload)
+        Dim ret As Dictionary(Of Date, Payload) = Nothing
         For Each runningitem In inputpayload
-            output = New Payload(Payload.CandleDataSource.Chart)
+            Dim output As Payload = New Payload(Payload.CandleDataSource.Chart)
             output.PayloadDate = runningitem.Key
             Select Case targetfield
                 Case Payload.PayloadFields.Close
@@ -365,9 +313,10 @@ Public Class Common
                 Case Payload.PayloadFields.Additional_Field
                     output.Additional_Field = runningitem.Value
             End Select
-            outputpayload.Add(runningitem.Key, output)
+            If ret Is Nothing Then ret = New Dictionary(Of Date, Payload)
+            ret.Add(runningitem.Key, output)
         Next
-        Return Nothing
+        Return ret
     End Function
 
     Public Shared Function ConvertDataTableToPayload(ByVal dt As DataTable,

@@ -2,7 +2,7 @@
 Imports System.Threading
 Imports Algo2TradeBLL
 
-Public Class PreviousNifty50SwingLowStrategyRule
+Public Class RainbowStrategyRule
     Inherits StrategyRule
 
 #Region "Entity"
@@ -15,9 +15,7 @@ Public Class PreviousNifty50SwingLowStrategyRule
 #End Region
 
     Private _atrPayload As Dictionary(Of Date, Decimal) = Nothing
-
-    Private _nifty50Payload As Dictionary(Of Date, Payload) = Nothing
-    Private _swingPayload As Dictionary(Of Date, Indicator.Swing) = Nothing
+    Private _rainbowPayload As Dictionary(Of Date, Indicator.RainbowMA) = Nothing
 
     Private ReadOnly _userInputs As StrategyRuleEntities
 
@@ -36,9 +34,7 @@ Public Class PreviousNifty50SwingLowStrategyRule
         MyBase.CompletePreProcessing()
 
         Indicator.ATR.CalculateATR(14, _signalPayload, _atrPayload, True)
-
-        _nifty50Payload = _parentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.EOD_POSITIONAL, "NIFTY 50", _tradingDate.AddYears(-10), _tradingDate)
-        Indicator.SwingHighLow.CalculateSwingHighLow(_nifty50Payload, False, _swingPayload)
+        Indicator.RainbowMovingAverage.CalculateRainbowMovingAverage(2, _signalPayload, _rainbowPayload)
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -105,36 +101,38 @@ Public Class PreviousNifty50SwingLowStrategyRule
     Private Function GetSignalForEntry(ByVal candle As Payload) As List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
         Dim ret As List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)) = Nothing
         Dim lastTrade As Trade = GetLastOrder(candle)
-        Dim atr As Decimal = _atrPayload(candle.PreviousCandlePayload.PayloadDate)
+        Dim atr As Decimal = _atrPayload(candle.PayloadDate)
         Dim iteration As Integer = 1
         Dim quantity As Integer = GetQuantity(iteration, candle.Open)
-        Dim swing As Indicator.Swing = _swingPayload(candle.PreviousCandlePayload.PayloadDate)
-        Dim nifty50Candle As Payload = _nifty50Payload(candle.PayloadDate)
-        If nifty50Candle.Close < swing.SwingLow Then
-            Dim entryPrice As Decimal = candle.Close
-            If lastTrade Is Nothing Then
-                If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
-                ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)(True, entryPrice, quantity, iteration, "First Trade", swing.SwingLowTime))
-            Else
-                Dim lastSignalTime As Date = Date.ParseExact(lastTrade.Supporting3, "dd-MMM-yyyy HH:mm:ss", Nothing)
-                If swing.SwingLowTime <> lastSignalTime Then
-                    If entryPrice < lastTrade.EntryPrice Then
-                        If lastTrade.EntryPrice - entryPrice >= atr Then
-                            If Val(lastTrade.Supporting1) < _userInputs.MaxIteration Then
-                                iteration = Val(lastTrade.Supporting1) + 1
-                                quantity = GetQuantity(iteration, entryPrice)
-                                If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
-                                ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)(True, entryPrice, quantity, iteration, "Below last entry", swing.SwingLowTime))
-                            Else
-                                If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
-                                ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)(True, entryPrice, quantity, iteration, "(Reset) Max Iteration", swing.SwingLowTime))
+        Dim rainbow As Indicator.RainbowMA = _rainbowPayload(candle.PayloadDate)
+        If candle.Close > Math.Max(rainbow.SMA1, Math.Max(rainbow.SMA2, Math.Max(rainbow.SMA3, Math.Max(rainbow.SMA4, Math.Max(rainbow.SMA5, Math.Max(rainbow.SMA6, Math.Max(rainbow.SMA7, Math.Max(rainbow.SMA8, Math.Max(rainbow.SMA9, rainbow.SMA10))))))))) Then
+            Dim previousOutsideRainbow As Tuple(Of Trade.TradeExecutionDirection, Date) = GetLastOutsideRainbow(candle)
+            If previousOutsideRainbow IsNot Nothing AndAlso previousOutsideRainbow.Item1 = Trade.TradeExecutionDirection.Sell AndAlso previousOutsideRainbow.Item2 <> Date.MinValue Then
+                Dim entryPrice As Decimal = candle.Close
+                If lastTrade Is Nothing Then
+                    If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
+                    ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)(True, entryPrice, quantity, iteration, "First Trade", previousOutsideRainbow.Item2))
+                Else
+                    Dim lastSignalTime As Date = Date.ParseExact(lastTrade.Supporting3, "dd-MMM-yyyy HH:mm:ss", Nothing)
+                    If previousOutsideRainbow.Item2 <> lastSignalTime Then
+                        If entryPrice < lastTrade.EntryPrice Then
+                            If lastTrade.EntryPrice - entryPrice >= atr Then
+                                If Val(lastTrade.Supporting1) < _userInputs.MaxIteration Then
+                                    iteration = Val(lastTrade.Supporting1) + 1
+                                    quantity = GetQuantity(iteration, entryPrice)
+                                    If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
+                                    ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)(True, entryPrice, quantity, iteration, "Below last entry", previousOutsideRainbow.Item2))
+                                Else
+                                    If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
+                                    ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)(True, entryPrice, quantity, iteration, "(Reset) Max Iteration", previousOutsideRainbow.Item2))
+                                End If
+                                'Else
+                                '    Console.WriteLine(String.Format("Trade Neglected for ATR on {0}", candle.PayloadDate.ToString("dd-MMM-yyyy")))
                             End If
-                            'Else
-                            '    Console.WriteLine(String.Format("Trade Neglected for ATR on {0}", candle.PayloadDate.ToString("dd-MMM-yyyy")))
+                        Else
+                            If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
+                            ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)(True, entryPrice, quantity, iteration, "(Reset) Above last entry", previousOutsideRainbow.Item2))
                         End If
-                    Else
-                        If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
-                        ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)(True, entryPrice, quantity, iteration, "(Reset) Above last entry", swing.SwingLowTime))
                     End If
                 End If
             End If
@@ -152,6 +150,25 @@ Public Class PreviousNifty50SwingLowStrategyRule
         If currentPayload IsNot Nothing Then
             ret = Me._parentStrategy.GetLastExecutedTradeOfTheStock(currentPayload, Me._parentStrategy.TradeType)
         End If
+        Return ret
+    End Function
+
+    Private Function GetLastOutsideRainbow(ByVal candle As Payload) As Tuple(Of Trade.TradeExecutionDirection, Date)
+        Dim ret As Tuple(Of Trade.TradeExecutionDirection, Date) = Nothing
+        For Each runningPayload In _signalPayload.OrderByDescending(Function(x)
+                                                                        Return x.Key
+                                                                    End Function)
+            If runningPayload.Key <= candle.PreviousCandlePayload.PayloadDate Then
+                Dim rainbow As Indicator.RainbowMA = _rainbowPayload(runningPayload.Key)
+                If runningPayload.Value.Close > Math.Max(rainbow.SMA1, Math.Max(rainbow.SMA2, Math.Max(rainbow.SMA3, Math.Max(rainbow.SMA4, Math.Max(rainbow.SMA5, Math.Max(rainbow.SMA6, Math.Max(rainbow.SMA7, Math.Max(rainbow.SMA8, Math.Max(rainbow.SMA9, rainbow.SMA10))))))))) Then
+                    ret = New Tuple(Of Trade.TradeExecutionDirection, Date)(Trade.TradeExecutionDirection.Buy, runningPayload.Key)
+                    Exit For
+                ElseIf runningPayload.Value.Close < Math.Min(rainbow.SMA1, Math.Min(rainbow.SMA2, Math.Min(rainbow.SMA3, Math.Min(rainbow.SMA4, Math.Min(rainbow.SMA5, Math.Min(rainbow.SMA6, Math.Min(rainbow.SMA7, Math.Min(rainbow.SMA8, Math.Min(rainbow.SMA9, rainbow.SMA10))))))))) Then
+                    ret = New Tuple(Of Trade.TradeExecutionDirection, Date)(Trade.TradeExecutionDirection.Sell, runningPayload.Key)
+                    Exit For
+                End If
+            End If
+        Next
         Return ret
     End Function
 End Class
