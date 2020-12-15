@@ -311,7 +311,7 @@ Public Class frmMain
 
                 Dim filename As String = Nothing
                 Dim ruleEntity As RainbowStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                filename = String.Format("At Previous Swing Low CNC EOD Output, Max Iteration {0}",
+                filename = String.Format("Rainbow CNC EOD Output, Max Iteration {0}",
                                                  If(ruleEntity.MaxIteration = Integer.MaxValue, "∞", ruleEntity.MaxIteration))
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
