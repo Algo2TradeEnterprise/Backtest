@@ -1,9 +1,5 @@
-﻿Imports System.Threading
-
-Namespace Indicator
+﻿Namespace Indicator
     Public Module MACD
-        Dim cts As CancellationTokenSource
-        Dim cmn As Common = New Common(cts)
         Public Sub CalculateMACD(ByVal fastMAPeriod As Integer, ByVal slowMAPeriod As Integer, ByVal signalPeriod As Integer, ByVal inputPayload As Dictionary(Of Date, Payload), ByRef MACDPayload As Dictionary(Of Date, Decimal), ByRef signalPayload As Dictionary(Of Date, Decimal), ByRef histogramPayload As Dictionary(Of Date, Decimal))
             Dim fastEMA As Dictionary(Of Date, Decimal) = Nothing
             Dim slowEMA As Dictionary(Of Date, Decimal) = Nothing
@@ -17,8 +13,7 @@ Namespace Indicator
                 For Each runninginputpayload In inputPayload.Keys
                     MACDPayload.Add(runninginputpayload, (fastEMA(runninginputpayload) - slowEMA(runninginputpayload)))
                 Next
-                Dim tempMACDPayload As Dictionary(Of Date, Payload) = Nothing
-                Common.ConvertDecimalToPayload(Payload.PayloadFields.Additional_Field, MACDPayload, tempMACDPayload)
+                Dim tempMACDPayload As Dictionary(Of Date, Payload) = Common.ConvertDecimalToPayload(Payload.PayloadFields.Additional_Field, MACDPayload)
                 EMA.CalculateEMA(signalPeriod, Payload.PayloadFields.Additional_Field, tempMACDPayload, signalPayload)
                 histogramPayload = New Dictionary(Of Date, Decimal)
                 For Each runninginputpayload In inputPayload.Keys

@@ -1,10 +1,6 @@
-﻿Imports System.Threading
-
-Namespace Indicator
+﻿Namespace Indicator
     Public Module BollingerBands
-        Dim cts As CancellationTokenSource
-        Dim cmn As Common = New Common(cts)
-        Public Sub CalculateBollingerBands(ByVal period As Integer, ByVal field As Payload.PayloadFields, ByVal standardDeviationMultiplier As Decimal, ByVal inputPayload As Dictionary(Of Date, Payload), ByRef outputHighPayload As Dictionary(Of Date, Decimal), ByRef outputLowPayload As Dictionary(Of Date, Decimal), ByRef outputSMAPayload As Dictionary(Of Date, Decimal))
+        Public Sub CalculateBollingerBands(ByVal period As Integer, ByVal field As Payload.PayloadFields, ByVal standardDeviationMultiplier As Integer, ByVal inputPayload As Dictionary(Of Date, Payload), ByRef outputHighPayload As Dictionary(Of Date, Decimal), ByRef outputLowPayload As Dictionary(Of Date, Decimal), ByRef outputSMAPayload As Dictionary(Of Date, Decimal))
             If inputPayload IsNot Nothing AndAlso inputPayload.Count > 0 Then
                 If inputPayload.Count < period + 1 Then
                     Throw New ApplicationException("Can't Calculate Bollinger Bands")

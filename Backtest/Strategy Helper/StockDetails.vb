@@ -1,6 +1,7 @@
 ﻿Namespace StrategyHelper
     Public Class StockDetails
         Public StockName As String
+        Public TradingSymbol As String
         Public ContractRolloverSymbol As String
         Public LotSize As Integer
         Public EligibleToTakeTrade As Boolean

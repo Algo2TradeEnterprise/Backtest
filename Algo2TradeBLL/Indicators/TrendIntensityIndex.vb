@@ -1,5 +1,4 @@
-﻿Imports System.Threading
-Namespace Indicator
+﻿Namespace Indicator
     Public Module TrendIntensityIndex
         Public Sub CalculateTII(ByVal field As Payload.PayloadFields, ByVal period As Integer, ByVal signalPeriod As Integer, ByVal inputPayload As Dictionary(Of Date, Payload), ByRef TIIPayload As Dictionary(Of Date, Decimal), ByRef signalLinePayload As Dictionary(Of Date, Decimal))
             If inputPayload IsNot Nothing AndAlso inputPayload.Count > 0 Then
@@ -35,8 +34,7 @@ Namespace Indicator
                     If TIIPayload Is Nothing Then TIIPayload = New Dictionary(Of Date, Decimal)
                     TIIPayload.Add(runningPayload, Math.Round(tii, 4))
                 Next
-                Dim emaInputPayload As Dictionary(Of Date, Payload) = Nothing
-                Common.ConvertDecimalToPayload(Payload.PayloadFields.Additional_Field, TIIPayload, emaInputPayload)
+                Dim emaInputPayload As Dictionary(Of Date, Payload) = Common.ConvertDecimalToPayload(Payload.PayloadFields.Additional_Field, TIIPayload)
                 Indicator.EMA.CalculateEMA(signalPeriod, Payload.PayloadFields.Additional_Field, emaInputPayload, signalLinePayload)
             End If
         End Sub
