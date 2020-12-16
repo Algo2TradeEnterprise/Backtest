@@ -294,12 +294,20 @@ Public Class frmMain
 
                     .RuleNumber = rule
 
-
-                    .RuleEntityData = New RainbowStrategyRule.StrategyRuleEntities With
+                    Select Case rule
+                        Case 0
+                            .RuleEntityData = New RainbowStrategyRule.StrategyRuleEntities With
                                         {
                                          .InitialCapital = 10000,
                                          .MaxIteration = 5
                                         }
+                        Case 1
+                            .RuleEntityData = New Nifty50RainbowStrategyRule.StrategyRuleEntities With
+                                        {
+                                         .InitialCapital = 10000,
+                                         .MaxIteration = 5
+                                        }
+                    End Select
 
                     .NumberOfTradeableStockPerDay = 1
 
@@ -310,9 +318,19 @@ Public Class frmMain
                 End With
 
                 Dim filename As String = Nothing
-                Dim ruleEntity As RainbowStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                filename = String.Format("Rainbow CNC EOD Output, Max Iteration {0}",
+                Select Case rule
+                    Case 0
+                        Dim ruleEntity As RainbowStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                        filename = String.Format("Rainbow CNC EOD Output, Max Iteration {0}",
                                                  If(ruleEntity.MaxIteration = Integer.MaxValue, "∞", ruleEntity.MaxIteration))
+                    Case 1
+                        Dim ruleEntity As Nifty50RainbowStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                        filename = String.Format("Nifty 50 Rainbow CNC EOD Output, Max Iteration {0}",
+                                                 If(ruleEntity.MaxIteration = Integer.MaxValue, "∞", ruleEntity.MaxIteration))
+                    Case Else
+                        Throw New NotImplementedException
+                End Select
+
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using

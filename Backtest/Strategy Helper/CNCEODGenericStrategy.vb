@@ -110,6 +110,8 @@ Namespace StrategyHelper
                                     Select Case RuleNumber
                                         Case 0
                                             stockRule = New RainbowStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case 1
+                                            stockRule = New Nifty50RainbowStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
