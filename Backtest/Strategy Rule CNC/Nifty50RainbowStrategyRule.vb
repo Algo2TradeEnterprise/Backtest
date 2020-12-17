@@ -37,7 +37,7 @@ Public Class Nifty50RainbowStrategyRule
 
         Indicator.ATR.CalculateATR(14, _signalPayload, _atrPayload, True)
 
-        _nifty50Payload = _parentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.EOD_POSITIONAL, "NIFTY 50", _tradingDate.AddYears(-10), _tradingDate)
+        _nifty50Payload = _parentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.EOD_POSITIONAL, "NIFTY 50", _tradingDate.AddYears(-2), _tradingDate)
         Indicator.RainbowMovingAverage.CalculateRainbowMovingAverage(2, _nifty50Payload, _rainbowPayload)
     End Sub
 
