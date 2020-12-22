@@ -339,9 +339,11 @@ Namespace StrategyHelper
                                                     If stockList(stockName).EligibleToTakeTrade Then
                                                         stockPL = Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol)
                                                         totalPLOftheDay = Me.TotalPLAfterBrokerage(runningTick.PayloadDate)
-                                                        Dim nmbrOfTrd As Integer = Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol)
+                                                        Dim nmbrOfTrd As Integer = Me.TotalNumberOfTrades(runningTick.PayloadDate.Date)
+                                                        Dim stkNmbrOfTrd As Integer = Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol)
                                                         If Me.TickBasedStrategy OrElse Not stockList(stockName).PlaceOrderDoneForTheMinute OrElse exitOrderRuleSuccessful Then
-                                                            If nmbrOfTrd < Me.NumberOfTradesPerStockPerDay AndAlso
+                                                            If stkNmbrOfTrd < Me.NumberOfTradesPerStockPerDay AndAlso
+                                                                nmbrOfTrd < Me.NumberOfTradesPerDay AndAlso
                                                                 totalPLOftheDay < Me.OverAllProfitPerDay AndAlso
                                                                 totalPLOftheDay > Me.OverAllLossPerDay AndAlso
                                                                 stockPL < Me.StockMaxProfitPerDay AndAlso
@@ -353,7 +355,8 @@ Namespace StrategyHelper
                                                                 stockList(stockName).PlaceOrderDoneForTheMinute = True
                                                             End If
                                                         Else
-                                                            If nmbrOfTrd < Me.NumberOfTradesPerStockPerDay AndAlso
+                                                            If stkNmbrOfTrd < Me.NumberOfTradesPerStockPerDay AndAlso
+                                                                nmbrOfTrd < Me.NumberOfTradesPerDay AndAlso
                                                                 totalPLOftheDay < Me.OverAllProfitPerDay AndAlso
                                                                 totalPLOftheDay > Me.OverAllLossPerDay AndAlso
                                                                 stockPL < Me.StockMaxProfitPerDay AndAlso
@@ -442,8 +445,10 @@ Namespace StrategyHelper
                                                     If exitOrderSuccessful Then
                                                         totalPLOftheDay = Me.TotalPLAfterBrokerage(runningTick.PayloadDate)
                                                         stockPL = Me.StockPLAfterBrokerage(runningTick.PayloadDate, runningTick.TradingSymbol)
-                                                        Dim nmbrOfTrd As Integer = Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol)
-                                                        If nmbrOfTrd < Me.NumberOfTradesPerStockPerDay AndAlso
+                                                        Dim nmbrOfTrd As Integer = Me.TotalNumberOfTrades(runningTick.PayloadDate.Date)
+                                                        Dim stkNmbrOfTrd As Integer = Me.StockNumberOfTrades(runningTick.PayloadDate, runningTick.TradingSymbol)
+                                                        If stkNmbrOfTrd < Me.NumberOfTradesPerStockPerDay AndAlso
+                                                            nmbrOfTrd < Me.NumberOfTradesPerDay AndAlso
                                                             totalPLOftheDay < Me.OverAllProfitPerDay AndAlso
                                                             totalPLOftheDay > Me.OverAllLossPerDay AndAlso
                                                             stockPL < Me.StockMaxProfitPerDay AndAlso

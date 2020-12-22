@@ -209,22 +209,6 @@ Namespace StrategyHelper
                                                                                         Return 0
                                                                                     End If
                                                                                 End Function)
-
-                    'ret = TradesTaken(currentDate.Date)(stockTradingSymbol).Sum(Function(x)
-                    '                                                                If x.ExitCondition <> Trade.TradeExitCondition.Cancelled AndAlso x.TradeCurrentStatus <> Trade.TradeExecutionStatus.Open Then
-                    '                                                                    If x.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
-                    '                                                                        If Math.Round(x.PLPoint, 2) = Math.Round(x.EntryBuffer * -2, 2) Then
-                    '                                                                            Return 0
-                    '                                                                        Else
-                    '                                                                            Return x.PLAfterBrokerage
-                    '                                                                        End If
-                    '                                                                    Else
-                    '                                                                        Return x.PLAfterBrokerage
-                    '                                                                    End If
-                    '                                                                Else
-                    '                                                                    Return 0
-                    '                                                                End If
-                    '                                                            End Function)
                 End If
                 Return ret
             End Get
@@ -253,63 +237,12 @@ Namespace StrategyHelper
                                                                                                               x.TradeCurrentStatus <> Trade.TradeExecutionStatus.Open
                                                                                                                 End Function)
                     If tradeList IsNot Nothing AndAlso tradeList.Count > 0 Then
-                        'Dim artnrGroups = From a In tradeList
-                        '                  Group a By Key = a.Tag Into Group
-                        '                  Select artnr = Key, numbersCount = Group.Count()
-
-                        'If artnrGroups IsNot Nothing AndAlso artnrGroups.Count > 0 Then
-                        '    ret = artnrGroups.Count
-                        'End If
                         ret = tradeList.Count
                     End If
                 End If
                 If StockNumberOfTradeBuffer IsNot Nothing AndAlso StockNumberOfTradeBuffer.ContainsKey(currentDate.Date) AndAlso
                     StockNumberOfTradeBuffer(currentDate.Date).ContainsKey(stockTradingSymbol) Then
                     ret += StockNumberOfTradeBuffer(currentDate.Date)(stockTradingSymbol)
-                End If
-                Return ret
-            End Get
-        End Property
-        Public ReadOnly Property StockNumberOfStoplossTrades(ByVal currentDate As Date, ByVal stockTradingSymbol As String) As Integer
-            Get
-                Dim ret As Integer = 0
-                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentDate.Date) AndAlso TradesTaken(currentDate.Date).ContainsKey(stockTradingSymbol) Then
-                    Dim tradeList As List(Of Trade) = TradesTaken(currentDate.Date)(stockTradingSymbol).FindAll(Function(x)
-                                                                                                                    Return x.ExitCondition <> Trade.TradeExitCondition.Cancelled AndAlso
-                                                                                                              x.TradeCurrentStatus <> Trade.TradeExecutionStatus.Open AndAlso
-                                                                                                              x.ExitCondition = Trade.TradeExitCondition.StopLoss
-                                                                                                                End Function)
-                    If tradeList IsNot Nothing AndAlso tradeList.Count > 0 Then
-                        Dim artnrGroups = From a In tradeList
-                                          Group a By Key = a.Tag Into Group
-                                          Select artnr = Key, numbersCount = Group.Count()
-
-                        If artnrGroups IsNot Nothing AndAlso artnrGroups.Count > 0 Then
-                            ret = artnrGroups.Count
-                        End If
-                    End If
-                End If
-                Return ret
-            End Get
-        End Property
-        Public ReadOnly Property StockNumberOfTargetTrades(ByVal currentDate As Date, ByVal stockTradingSymbol As String) As Integer
-            Get
-                Dim ret As Integer = 0
-                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentDate.Date) AndAlso TradesTaken(currentDate.Date).ContainsKey(stockTradingSymbol) Then
-                    Dim tradeList As List(Of Trade) = TradesTaken(currentDate.Date)(stockTradingSymbol).FindAll(Function(x)
-                                                                                                                    Return x.ExitCondition <> Trade.TradeExitCondition.Cancelled AndAlso
-                                                                                                              x.TradeCurrentStatus <> Trade.TradeExecutionStatus.Open AndAlso
-                                                                                                              x.ExitCondition = Trade.TradeExitCondition.Target
-                                                                                                                End Function)
-                    If tradeList IsNot Nothing AndAlso tradeList.Count > 0 Then
-                        Dim artnrGroups = From a In tradeList
-                                          Group a By Key = a.Tag Into Group
-                                          Select artnr = Key, numbersCount = Group.Count()
-
-                        If artnrGroups IsNot Nothing AndAlso artnrGroups.Count > 0 Then
-                            ret = artnrGroups.Count
-                        End If
-                    End If
                 End If
                 Return ret
             End Get
@@ -322,41 +255,6 @@ Namespace StrategyHelper
                     If stockTrades IsNot Nothing AndAlso stockTrades.Count > 0 Then
                         For Each stock In stockTrades.Keys
                             ret += StockNumberOfTrades(currentDate, stock)
-                        Next
-                    End If
-                End If
-                Return ret
-            End Get
-        End Property
-        Public ReadOnly Property StockNumberOfTradesWithoutBreakevenExit(ByVal currentDate As Date, ByVal stockTradingSymbol As String) As Integer
-            Get
-                Dim ret As Integer = 0
-                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentDate.Date) AndAlso TradesTaken(currentDate.Date).ContainsKey(stockTradingSymbol) Then
-                    ret = Me.StockNumberOfTrades(currentDate, stockTradingSymbol)
-                    Dim beakevenTradeList As List(Of Trade) = TradesTaken(currentDate.Date)(stockTradingSymbol).FindAll(Function(x)
-                                                                                                                            Return x.ExitCondition = Trade.TradeExitCondition.StopLoss AndAlso x.PLPoint > 0
-                                                                                                                        End Function)
-                    If beakevenTradeList IsNot Nothing AndAlso beakevenTradeList.Count > 0 Then
-                        Dim artnrGroups = From a In beakevenTradeList
-                                          Group a By Key = a.Tag Into Group
-                                          Select artnr = Key, numbersCount = Group.Count()
-
-                        If artnrGroups IsNot Nothing AndAlso artnrGroups.Count > 0 Then
-                            ret = ret - artnrGroups.Count
-                        End If
-                    End If
-                End If
-                Return ret
-            End Get
-        End Property
-        Public ReadOnly Property TotalNumberOfTradesWithoutBreakevenExit(ByVal currentDate As Date) As Integer
-            Get
-                Dim ret As Integer = 0
-                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentDate.Date) Then
-                    Dim stockTrades As Dictionary(Of String, List(Of Trade)) = TradesTaken(currentDate.Date)
-                    If stockTrades IsNot Nothing AndAlso stockTrades.Count > 0 Then
-                        For Each stock In stockTrades.Keys
-                            ret += StockNumberOfTradesWithoutBreakevenExit(currentDate, stock)
                         Next
                     End If
                 End If
@@ -750,67 +648,69 @@ Namespace StrategyHelper
             If currentTrade Is Nothing OrElse currentTrade.TradeCurrentStatus <> Trade.TradeExecutionStatus.Open Then Throw New ApplicationException("Supplied trade is not open, cannot enter")
 
             Dim previousRunningTrades As List(Of Trade) = GetSpecificTrades(currentPayload, currentTrade.SquareOffType, Trade.TradeExecutionStatus.Inprogress)
-            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                If currentPayload.High >= currentTrade.EntryPrice Then
-                    'Dim pl As Decimal = TotalPLAfterBrokerage(currentPayload.PayloadDate.Date)
-                    'Console.WriteLine(String.Format("{0},{1}", currentPayload.PayloadDate.ToString("HH:mm:ss"), pl))
+            If Me.TotalNumberOfTrades(currentPayload.PayloadDate) < Me.NumberOfTradesPerDay Then
+                If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                    If currentPayload.High >= currentTrade.EntryPrice Then
+                        'Dim pl As Decimal = TotalPLAfterBrokerage(currentPayload.PayloadDate.Date)
+                        'Console.WriteLine(String.Format("{0},{1}", currentPayload.PayloadDate.ToString("HH:mm:ss"), pl))
 
-                    If Not AllowBothDirectionEntryAtSameTime AndAlso previousRunningTrades IsNot Nothing AndAlso previousRunningTrades.Count > 0 Then
-                        For Each previousRunningTrade In previousRunningTrades
-                            If previousRunningTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                                ExitTradeByForce(previousRunningTrade, currentPayload, "Opposite direction trade trigerred")
-                                reverseSignalExit = True
+                        If Not AllowBothDirectionEntryAtSameTime AndAlso previousRunningTrades IsNot Nothing AndAlso previousRunningTrades.Count > 0 Then
+                            For Each previousRunningTrade In previousRunningTrades
+                                If previousRunningTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                                    ExitTradeByForce(previousRunningTrade, currentPayload, "Opposite direction trade trigerred")
+                                    reverseSignalExit = True
+                                End If
+                            Next
+                        End If
+                        Dim targetPoint As Decimal = currentTrade.PotentialTarget - currentTrade.EntryPrice
+                        If reverseSignalExitOnly Then
+                            If reverseSignalExit OrElse StockNumberOfTrades(currentPayload.PayloadDate, currentPayload.TradingSymbol) >= 1 Then
+                                ExitTradeByForce(currentTrade, currentPayload, "Opposite direction trade exited")
+                                If StockNumberOfTradeBuffer Is Nothing Then StockNumberOfTradeBuffer = New Dictionary(Of Date, Dictionary(Of String, Integer))
+                                If Not StockNumberOfTradeBuffer.ContainsKey(currentPayload.PayloadDate.Date) Then
+                                    StockNumberOfTradeBuffer.Add(currentPayload.PayloadDate.Date, New Dictionary(Of String, Integer) From {{currentPayload.TradingSymbol, 1}})
+                                End If
+                                StockNumberOfTradeBuffer(currentPayload.PayloadDate.Date)(currentPayload.TradingSymbol) = 1
+                            Else
+                                currentTrade.UpdateTrade(EntryPrice:=currentPayload.Open, EntryTime:=currentPayload.PayloadDate, TradeCurrentStatus:=Trade.TradeExecutionStatus.Inprogress)
                             End If
-                        Next
-                    End If
-                    Dim targetPoint As Decimal = currentTrade.PotentialTarget - currentTrade.EntryPrice
-                    If reverseSignalExitOnly Then
-                        If reverseSignalExit OrElse StockNumberOfTrades(currentPayload.PayloadDate, currentPayload.TradingSymbol) >= 1 Then
-                            ExitTradeByForce(currentTrade, currentPayload, "Opposite direction trade exited")
-                            If StockNumberOfTradeBuffer Is Nothing Then StockNumberOfTradeBuffer = New Dictionary(Of Date, Dictionary(Of String, Integer))
-                            If Not StockNumberOfTradeBuffer.ContainsKey(currentPayload.PayloadDate.Date) Then
-                                StockNumberOfTradeBuffer.Add(currentPayload.PayloadDate.Date, New Dictionary(Of String, Integer) From {{currentPayload.TradingSymbol, 1}})
-                            End If
-                            StockNumberOfTradeBuffer(currentPayload.PayloadDate.Date)(currentPayload.TradingSymbol) = 1
                         Else
                             currentTrade.UpdateTrade(EntryPrice:=currentPayload.Open, EntryTime:=currentPayload.PayloadDate, TradeCurrentStatus:=Trade.TradeExecutionStatus.Inprogress)
                         End If
-                    Else
-                        currentTrade.UpdateTrade(EntryPrice:=currentPayload.Open, EntryTime:=currentPayload.PayloadDate, TradeCurrentStatus:=Trade.TradeExecutionStatus.Inprogress)
+                        currentTrade.UpdateTrade(PotentialTarget:=currentTrade.EntryPrice + targetPoint)
+                        ret = True
                     End If
-                    currentTrade.UpdateTrade(PotentialTarget:=currentTrade.EntryPrice + targetPoint)
-                    ret = True
-                End If
-            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                If currentPayload.Low <= currentTrade.EntryPrice Then
-                    'Dim pl As Decimal = TotalPLAfterBrokerage(currentPayload.PayloadDate.Date)
-                    'Console.WriteLine(String.Format("{0},{1}", currentPayload.PayloadDate.ToString("HH:mm:ss"), pl))
+                ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                    If currentPayload.Low <= currentTrade.EntryPrice Then
+                        'Dim pl As Decimal = TotalPLAfterBrokerage(currentPayload.PayloadDate.Date)
+                        'Console.WriteLine(String.Format("{0},{1}", currentPayload.PayloadDate.ToString("HH:mm:ss"), pl))
 
-                    If Not AllowBothDirectionEntryAtSameTime AndAlso previousRunningTrades IsNot Nothing AndAlso previousRunningTrades.Count > 0 Then
-                        For Each previousRunningTrade In previousRunningTrades
-                            If previousRunningTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                                ExitTradeByForce(previousRunningTrade, currentPayload, "Opposite direction trade trigerred")
-                                reverseSignalExit = True
+                        If Not AllowBothDirectionEntryAtSameTime AndAlso previousRunningTrades IsNot Nothing AndAlso previousRunningTrades.Count > 0 Then
+                            For Each previousRunningTrade In previousRunningTrades
+                                If previousRunningTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                                    ExitTradeByForce(previousRunningTrade, currentPayload, "Opposite direction trade trigerred")
+                                    reverseSignalExit = True
+                                End If
+                            Next
+                        End If
+                        Dim targetPoint As Decimal = currentTrade.EntryPrice - currentTrade.PotentialTarget
+                        If reverseSignalExitOnly Then
+                            If reverseSignalExit OrElse StockNumberOfTrades(currentPayload.PayloadDate, currentPayload.TradingSymbol) >= 1 Then
+                                ExitTradeByForce(currentTrade, currentPayload, "Opposite direction trade exited")
+                                If StockNumberOfTradeBuffer Is Nothing Then StockNumberOfTradeBuffer = New Dictionary(Of Date, Dictionary(Of String, Integer))
+                                If Not StockNumberOfTradeBuffer.ContainsKey(currentPayload.PayloadDate.Date) Then
+                                    StockNumberOfTradeBuffer.Add(currentPayload.PayloadDate.Date, New Dictionary(Of String, Integer) From {{currentPayload.TradingSymbol, 1}})
+                                End If
+                                StockNumberOfTradeBuffer(currentPayload.PayloadDate.Date)(currentPayload.TradingSymbol) = 1
+                            Else
+                                currentTrade.UpdateTrade(EntryPrice:=currentPayload.Open, EntryTime:=currentPayload.PayloadDate, TradeCurrentStatus:=Trade.TradeExecutionStatus.Inprogress)
                             End If
-                        Next
-                    End If
-                    Dim targetPoint As Decimal = currentTrade.EntryPrice - currentTrade.PotentialTarget
-                    If reverseSignalExitOnly Then
-                        If reverseSignalExit OrElse StockNumberOfTrades(currentPayload.PayloadDate, currentPayload.TradingSymbol) >= 1 Then
-                            ExitTradeByForce(currentTrade, currentPayload, "Opposite direction trade exited")
-                            If StockNumberOfTradeBuffer Is Nothing Then StockNumberOfTradeBuffer = New Dictionary(Of Date, Dictionary(Of String, Integer))
-                            If Not StockNumberOfTradeBuffer.ContainsKey(currentPayload.PayloadDate.Date) Then
-                                StockNumberOfTradeBuffer.Add(currentPayload.PayloadDate.Date, New Dictionary(Of String, Integer) From {{currentPayload.TradingSymbol, 1}})
-                            End If
-                            StockNumberOfTradeBuffer(currentPayload.PayloadDate.Date)(currentPayload.TradingSymbol) = 1
                         Else
                             currentTrade.UpdateTrade(EntryPrice:=currentPayload.Open, EntryTime:=currentPayload.PayloadDate, TradeCurrentStatus:=Trade.TradeExecutionStatus.Inprogress)
                         End If
-                    Else
-                        currentTrade.UpdateTrade(EntryPrice:=currentPayload.Open, EntryTime:=currentPayload.PayloadDate, TradeCurrentStatus:=Trade.TradeExecutionStatus.Inprogress)
+                        currentTrade.UpdateTrade(PotentialTarget:=currentTrade.EntryPrice - targetPoint)
+                        ret = True
                     End If
-                    currentTrade.UpdateTrade(PotentialTarget:=currentTrade.EntryPrice - targetPoint)
-                    ret = True
                 End If
             End If
 
