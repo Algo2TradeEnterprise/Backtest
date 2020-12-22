@@ -323,7 +323,7 @@ Public Class frmMain
                                                                     eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                                     tickSize:=tick,
                                                                     marginMultiplier:=margin,
-                                                                    timeframe:=5,
+                                                                    timeframe:=15,
                                                                     heikenAshiCandle:=False,
                                                                     stockType:=stockType,
                                                                     optionStockType:=Trade.TypeOfStock.Futures,
@@ -336,21 +336,19 @@ Public Class frmMain
                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                         With backtestStrategy
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Ajit NIFTYBANK Options.csv")
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Top Gainer Top Looser Options.csv")
 
                             .AllowBothDirectionEntryAtSameTime = False
                             .TrailingStoploss = False
                             .TickBasedStrategy = True
                             .RuleNumber = ruleNumber
 
-                            .RuleEntityData = New AtTheMoneyOptionBuyOnlyStrategy.StrategyRuleEntities With
+                            .RuleEntityData = New TopGainerTopLooserOptionsBuyOnlyStrategy.StrategyRuleEntities With
                                 {
-                                 .MaxLossPerTrade = 60,
-                                 .TargetMultiplier = 3,
-                                 .TraillingSlab = 2
+                                 .TargetMultiplier = 1
                                 }
 
-                            .NumberOfTradeableStockPerDay = 1
+                            .NumberOfTradeableStockPerDay = 6
 
                             .NumberOfTradesPerStockPerDay = 1
 
@@ -371,7 +369,7 @@ Public Class frmMain
                             .RealtimeTrailingPercentage = 50
                         End With
 
-                        Dim filename As String = String.Format("At The Money Option Buy Only Strategy")
+                        Dim filename As String = String.Format("Top Gainer Looser Options Buy Only Strategy")
 
                         Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
                     End Using

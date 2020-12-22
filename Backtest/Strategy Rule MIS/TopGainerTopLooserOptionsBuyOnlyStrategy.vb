@@ -3,21 +3,22 @@ Imports System.Threading
 Imports Algo2TradeBLL
 Imports Utilities.Numbers.NumberManipulation
 
-Public Class AtTheMoneyOptionBuyOnlyStrategy
+Public Class TopGainerTopLooserOptionsBuyOnlyStrategy
     Inherits StrategyRule
 
 #Region "Entity"
     Public Class StrategyRuleEntities
         Inherits RuleEntities
 
-        Public MaxLossPerTrade As Decimal
         Public TargetMultiplier As Decimal
-        Public TraillingSlab As Decimal
     End Class
 #End Region
 
+    Private _remarks As String
+
     Private ReadOnly _userInputs As StrategyRuleEntities
     Private ReadOnly _siganlTime As Date
+    Private ReadOnly _stkNmbr As Integer
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
                    ByVal parentStrategy As Strategy,
@@ -25,14 +26,29 @@ Public Class AtTheMoneyOptionBuyOnlyStrategy
                    ByVal tradingSymbol As String,
                    ByVal canceller As CancellationTokenSource,
                    ByVal entities As RuleEntities,
-                   ByVal signalTime As Date)
+                   ByVal signalTime As Date,
+                   ByVal stkNmbr As Integer)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _siganlTime = signalTime
         _userInputs = entities
+        _stkNmbr = stkNmbr
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
         MyBase.CompletePreProcessing()
+
+        Dim nifty50Payload As Dictionary(Of Date, Payload) = _parentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.Intraday_Cash, "NIFTY 50", _tradingDate, _tradingDate)
+        If nifty50Payload IsNot Nothing AndAlso nifty50Payload.ContainsKey(_siganlTime) Then
+            Dim open As Decimal = nifty50Payload.FirstOrDefault.Value.Open
+            Dim close As Decimal = nifty50Payload(_siganlTime).Close
+            If close > open AndAlso _stkNmbr <= 3 Then
+                _remarks = "Relevant"
+            ElseIf close < open AndAlso _stkNmbr >= 4 Then
+                _remarks = "Relevant"
+            Else
+                _remarks = "Contradicory"
+            End If
+        End If
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -43,28 +59,18 @@ Public Class AtTheMoneyOptionBuyOnlyStrategy
             Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS) AndAlso Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS) AndAlso
             currentMinuteCandlePayload.PayloadDate >= _tradeStartTime AndAlso Me.EligibleToTakeTrade Then
             Dim signalCandle As Payload = Nothing
-            If currentMinuteCandlePayload.PreviousCandlePayload.PayloadDate >= _siganlTime Then
+            If currentMinuteCandlePayload.PayloadDate > _siganlTime Then
                 signalCandle = currentMinuteCandlePayload.PreviousCandlePayload
             End If
 
             If signalCandle IsNot Nothing Then
                 Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Close, RoundOfType.Floor)
                 Dim entryPrice As Decimal = signalCandle.High + buffer
-                Dim maxSL As Decimal = entryPrice
                 Dim quantity As Integer = Me.LotSize
-                Dim stoploss As Decimal = Decimal.MinValue
-                If maxSL >= _userInputs.MaxLossPerTrade Then
-                    quantity = Me.LotSize
-                    stoploss = entryPrice - _userInputs.MaxLossPerTrade
-                Else
-                    Dim mul As Integer = Math.Floor(_userInputs.MaxLossPerTrade / maxSL)
-                    quantity = Me.LotSize * mul
-                    stoploss = entryPrice - maxSL
-                End If
-
+                Dim stoploss As Decimal = signalCandle.Low - buffer
                 Dim target As Decimal = entryPrice + ((entryPrice - stoploss) * _userInputs.TargetMultiplier)
 
-                Dim parameter1 As PlaceOrderParameters = New PlaceOrderParameters With {
+                Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                                                             .EntryPrice = entryPrice,
                                                             .EntryDirection = Trade.TradeExecutionDirection.Buy,
                                                             .Quantity = quantity,
@@ -74,23 +80,11 @@ Public Class AtTheMoneyOptionBuyOnlyStrategy
                                                             .SignalCandle = signalCandle,
                                                             .OrderType = Trade.TypeOfOrder.SL,
                                                             .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
-                                                            .Supporting2 = entryPrice - stoploss
+                                                            .Supporting2 = entryPrice - stoploss,
+                                                            .Supporting3 = _remarks
                                                         }
 
-                Dim parameter2 As PlaceOrderParameters = New PlaceOrderParameters With {
-                                                            .EntryPrice = entryPrice,
-                                                            .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                                            .Quantity = quantity,
-                                                            .Stoploss = stoploss,
-                                                            .Target = .EntryPrice + 10000000000000,
-                                                            .Buffer = buffer,
-                                                            .SignalCandle = signalCandle,
-                                                            .OrderType = Trade.TypeOfOrder.SL,
-                                                            .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
-                                                            .Supporting2 = entryPrice - stoploss
-                                                        }
-
-                ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter1, parameter2})
+                ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
             End If
         End If
         Return ret
@@ -105,21 +99,6 @@ Public Class AtTheMoneyOptionBuyOnlyStrategy
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
-        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-            Dim triggerPrice As Decimal = Decimal.MinValue
-            Dim remarks As String = Nothing
-            Dim plPoint As Decimal = currentTick.Open - currentTrade.EntryPrice
-            Dim slPoint As Decimal = currentTrade.Supporting2
-            If plPoint >= slPoint * _userInputs.TraillingSlab Then
-                Dim mul As Integer = Math.Floor(plPoint / slPoint)
-                Dim slToMove As Decimal = slPoint * (mul - _userInputs.TraillingSlab)
-                triggerPrice = currentTrade.EntryPrice + slToMove
-                remarks = String.Format("SL Moved at {0} for {1} at {2}", mul - _userInputs.TraillingSlab, mul, currentTick.PayloadDate.ToString("HH:mm:ss"))
-            End If
-            If triggerPrice <> Decimal.MinValue AndAlso triggerPrice > currentTrade.PotentialStopLoss Then
-                ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, remarks)
-            End If
-        End If
         Return ret
     End Function
 
