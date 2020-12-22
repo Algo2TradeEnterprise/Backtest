@@ -604,9 +604,11 @@ Namespace StrategyHelper
                     Select Case Me.RuleNumber
                         Case 0, 1
                             Dim counter As Integer = 0
+                            Dim stkCtr As Integer = 0
                             For i = 0 To dt.Rows.Count - 1
                                 Dim rowDate As Date = dt.Rows(i).Item("Date")
                                 If rowDate.Date = tradingDate.Date Then
+                                    stkCtr += 1
                                     Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
                                     Dim instrumentName As String = Nothing
                                     If tradingSymbol.Contains("FUT") Then
@@ -616,7 +618,15 @@ Namespace StrategyHelper
                                     End If
                                     Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
                                     Dim signalTime As Date = dt.Rows(i).Item("Signal Time")
-                                    Dim detailsOfStock As StockDetails = New StockDetails With
+
+                                    Dim eligible As Boolean = False
+                                    If counter < Me.NumberOfTradeableStockPerDay / 2 AndAlso stkCtr <= 10 Then
+                                        eligible = True
+                                    ElseIf counter >= Me.NumberOfTradeableStockPerDay / 2 AndAlso stkCtr >= 11 Then
+                                        eligible = True
+                                    End If
+                                    If eligible Then
+                                        Dim detailsOfStock As StockDetails = New StockDetails With
                                                 {.StockName = instrumentName,
                                                  .TradingSymbol = tradingSymbol,
                                                  .LotSize = lotsize,
@@ -624,11 +634,12 @@ Namespace StrategyHelper
                                                  .Supporting1 = counter + 1, '1-10 Gainer, 11-20 Looser
                                                  .EligibleToTakeTrade = True}
 
-                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                                    ret.Add(instrumentName, detailsOfStock)
+                                        If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                        ret.Add(instrumentName, detailsOfStock)
 
-                                    counter += 1
-                                    If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                                        counter += 1
+                                        If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                                    End If
                                 End If
                             Next
                         Case Else

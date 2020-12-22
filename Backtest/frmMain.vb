@@ -428,10 +428,11 @@ Public Class frmMain
 
                             .RuleEntityData = New TopGainerTopLooserOptionsBuyOnlyStrategy2.StrategyRuleEntities With
                                 {
-                                 .TargetMultiplier = 1
+                                 .TargetMultiplier = 1,
+                                 .EntryBelowBuyLevel = False
                                 }
 
-                            .NumberOfTradeableStockPerDay = 20
+                            .NumberOfTradeableStockPerDay = 6
 
                             .NumberOfTradesPerStockPerDay = 1
 

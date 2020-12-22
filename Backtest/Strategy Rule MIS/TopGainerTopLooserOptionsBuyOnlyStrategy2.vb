@@ -11,6 +11,7 @@ Public Class TopGainerTopLooserOptionsBuyOnlyStrategy2
         Inherits RuleEntities
 
         Public TargetMultiplier As Decimal
+        Public EntryBelowBuyLevel As Boolean
     End Class
 #End Region
 
@@ -98,7 +99,13 @@ Public Class TopGainerTopLooserOptionsBuyOnlyStrategy2
                 If _breakoutCandle IsNot Nothing AndAlso Not _targetReached Then
                     If currentMinuteCandlePayload.PreviousCandlePayload.PreviousCandlePayload.High < currentMinuteCandlePayload.PreviousCandlePayload.PreviousCandlePayload.PreviousCandlePayload.High Then
                         If currentMinuteCandlePayload.PreviousCandlePayload.PreviousCandlePayload.PreviousCandlePayload.PayloadDate >= _breakoutCandle.PayloadDate Then
-                            _lastLowestHigh = currentMinuteCandlePayload.PreviousCandlePayload.PreviousCandlePayload
+                            If _userInputs.EntryBelowBuyLevel Then
+                                If currentMinuteCandlePayload.PreviousCandlePayload.PreviousCandlePayload.High < _buyPrice Then
+                                    _lastLowestHigh = currentMinuteCandlePayload.PreviousCandlePayload.PreviousCandlePayload
+                                End If
+                            Else
+                                _lastLowestHigh = currentMinuteCandlePayload.PreviousCandlePayload.PreviousCandlePayload
+                            End If
                         End If
                     End If
                     If _lastLowestHigh IsNot Nothing AndAlso currentMinuteCandlePayload.PreviousCandlePayload.Close > _lastLowestHigh.High Then
