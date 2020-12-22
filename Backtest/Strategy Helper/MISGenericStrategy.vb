@@ -122,6 +122,8 @@ Namespace StrategyHelper
                                     Select Case RuleNumber
                                         Case 0
                                             stockRule = New TopGainerTopLooserOptionsBuyOnlyStrategy(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).SupportingDate, stockList(stock).Supporting1)
+                                        Case 1
+                                            stockRule = New TopGainerTopLooserOptionsBuyOnlyStrategy2(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).SupportingDate, stockList(stock).Supporting1)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
@@ -595,7 +597,7 @@ Namespace StrategyHelper
                 End Using
                 If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
                     Select Case Me.RuleNumber
-                        Case 0
+                        Case 0, 1
                             Dim counter As Integer = 0
                             For i = 0 To dt.Rows.Count - 1
                                 Dim rowDate As Date = dt.Rows(i).Item("Date")
@@ -614,7 +616,7 @@ Namespace StrategyHelper
                                                  .TradingSymbol = tradingSymbol,
                                                  .LotSize = lotsize,
                                                  .SupportingDate = signalTime,
-                                                 .Supporting1 = counter + 1, '1-3 Gainer, 4-6 Looser
+                                                 .Supporting1 = counter + 1, '1-10 Gainer, 11-20 Looser
                                                  .EligibleToTakeTrade = True}
 
                                     If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)

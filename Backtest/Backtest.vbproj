@@ -128,6 +128,7 @@
     <Compile Include="Strategy Helper\StrategyRule.vb" />
     <Compile Include="Strategy Helper\Trade.vb" />
     <Compile Include="Strategy Rule MIS\TopGainerTopLooserOptionsBuyOnlyStrategy.vb" />
+    <Compile Include="Strategy Rule MIS\TopGainerTopLooserOptionsBuyOnlyStrategy2.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="frmMain.resx">
