@@ -92,7 +92,7 @@ Namespace StrategyHelper
                             Dim XDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             Dim currentDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             If Me.DataSource = SourceOfData.Database Then
-                                XDayOneMinutePayload = Cmn.GetRawPayload(database, stock.StockName, tradeCheckingDate.AddDays(-7), tradeCheckingDate)
+                                XDayOneMinutePayload = Cmn.GetRawPayload(database, stock.StockName, tradeCheckingDate.AddDays(-30), tradeCheckingDate)
                             ElseIf Me.DataSource = SourceOfData.Live Then
                                 XDayOneMinutePayload = Await Cmn.GetHistoricalDataAsync(database, stock.StockName, tradeCheckingDate.AddDays(-7), tradeCheckingDate).ConfigureAwait(False)
                             End If
@@ -119,8 +119,8 @@ Namespace StrategyHelper
 
                                     Dim tradingSymbol As String = currentDayOneMinutePayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
-                                        Case 1
-                                            stockRule = New BTSTValueInvestingStrategyRule(XDayOneMinutePayload, stock.LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, _canceller, stock.Supporting1)
+                                        Case 0
+                                            stockRule = New HourlyRainbowStrategyRule(XDayOneMinutePayload, stock.LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, _canceller, stock.Supporting1)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
@@ -130,33 +130,38 @@ Namespace StrategyHelper
                                     stocksRuleData.Add(stock.TradingSymbol, stockRule)
 
                                     If stock.StockType <> Trade.TypeOfStock.Cash Then
+                                        Dim nextDayPayload As Dictionary(Of Date, Payload) = Nothing
                                         Dim nextTradingDay As Date = Cmn.GetNexTradingDay(database, tradingSymbol, tradeCheckingDate)
                                         If nextTradingDay <> Date.MinValue Then
-                                            Dim nextDayTradingSymbol As String = Cmn.GetCurrentTradingSymbol(database, nextTradingDay, stock.StockName)
-                                            If nextDayTradingSymbol IsNot Nothing AndAlso nextDayTradingSymbol <> tradingSymbol Then
-                                                stock.ContractRolloverSymbol = nextDayTradingSymbol
-                                                stocksRuleData(stock.TradingSymbol).ContractRollover = True
-                                                stocksRuleData(stock.TradingSymbol).BlankDayExit = False
-                                            ElseIf nextDayTradingSymbol Is Nothing Then
-                                                stocksRuleData(stock.TradingSymbol).ContractRollover = False
-                                                stocksRuleData(stock.TradingSymbol).BlankDayExit = True
-                                            End If
+                                            nextDayPayload = Cmn.GetRawPayloadForSpecificTradingSymbol(database, tradingSymbol, nextTradingDay, nextTradingDay)
+                                            'Dim nextDayTradingSymbol As String = Cmn.GetCurrentTradingSymbol(database, nextTradingDay, stock.StockName)
+                                            'If nextDayTradingSymbol IsNot Nothing AndAlso nextDayTradingSymbol <> tradingSymbol Then
+                                            '    stock.ContractRolloverSymbol = nextDayTradingSymbol
+                                            '    stocksRuleData(stock.TradingSymbol).ContractRollover = True
+                                            '    stocksRuleData(stock.TradingSymbol).BlankDayExit = False
+                                            'ElseIf nextDayTradingSymbol Is Nothing Then
+                                            '    stocksRuleData(stock.TradingSymbol).ContractRollover = False
+                                            '    stocksRuleData(stock.TradingSymbol).BlankDayExit = True
+                                            'End If
                                         Else
                                             If commonNextTradingDay <> Date.MinValue Then
-                                                Dim nextDayTradingSymbol As String = Cmn.GetCurrentTradingSymbol(database, commonNextTradingDay, stock.StockName)
-                                                If nextDayTradingSymbol IsNot Nothing AndAlso nextDayTradingSymbol <> tradingSymbol Then
-                                                    stock.ContractRolloverSymbol = nextDayTradingSymbol
-                                                    stocksRuleData(stock.TradingSymbol).ContractRollover = True
-                                                    stocksRuleData(stock.TradingSymbol).BlankDayExit = False
-                                                Else
-                                                    stocksRuleData(stock.TradingSymbol).ContractRollover = False
-                                                    stocksRuleData(stock.TradingSymbol).BlankDayExit = True
-                                                End If
+                                                nextDayPayload = Cmn.GetRawPayloadForSpecificTradingSymbol(database, tradingSymbol, commonNextTradingDay, commonNextTradingDay)
+                                                'Dim nextDayTradingSymbol As String = Cmn.GetCurrentTradingSymbol(database, commonNextTradingDay, stock.StockName)
+                                                'If nextDayTradingSymbol IsNot Nothing AndAlso nextDayTradingSymbol <> tradingSymbol Then
+                                                '    stock.ContractRolloverSymbol = nextDayTradingSymbol
+                                                '    stocksRuleData(stock.TradingSymbol).ContractRollover = True
+                                                '    stocksRuleData(stock.TradingSymbol).BlankDayExit = False
+                                                'Else
+                                                '    stocksRuleData(stock.TradingSymbol).ContractRollover = False
+                                                '    stocksRuleData(stock.TradingSymbol).BlankDayExit = True
+                                                'End If
                                             Else
-                                                stocksRuleData(stock.TradingSymbol).ContractRollover = False
-                                                stocksRuleData(stock.TradingSymbol).BlankDayExit = True
+                                                'stocksRuleData(stock.TradingSymbol).ContractRollover = False
+                                                'stocksRuleData(stock.TradingSymbol).BlankDayExit = True
+                                                Throw New NotImplementedException
                                             End If
                                         End If
+
                                     End If
                                 End If
                             End If
@@ -206,7 +211,7 @@ Namespace StrategyHelper
                                         End If
                                         Dim stockStrategyRule As StrategyRule = stocksRuleData(stockName.TradingSymbol)
 
-                                        If Not stockList(stockName.TradingSymbol).EligibleToTakeTrade Then
+                                        If Not stockName.EligibleToTakeTrade Then
                                             Continue For
                                         End If
 
@@ -345,7 +350,7 @@ Namespace StrategyHelper
                                                                 End Select
                                                                 Dim runningTrade As Trade = New Trade(originatingStrategy:=Me,
                                                                                                       tradingSymbol:=runningTick.TradingSymbol,
-                                                                                                      stockType:=Me.StockType,
+                                                                                                      stockType:=stockName.StockType,
                                                                                                       orderType:=runningOrder.OrderType,
                                                                                                       tradingDate:=runningTick.PayloadDate,
                                                                                                       entryDirection:=runningOrder.EntryDirection,
@@ -431,7 +436,7 @@ Namespace StrategyHelper
                                                                 End Select
                                                                 Dim runningTrade As Trade = New Trade(originatingStrategy:=Me,
                                                                                                       tradingSymbol:=runningTick.TradingSymbol,
-                                                                                                      stockType:=Me.StockType,
+                                                                                                      stockType:=stockName.StockType,
                                                                                                       orderType:=runningOrder.OrderType,
                                                                                                       tradingDate:=runningTick.PayloadDate,
                                                                                                       entryDirection:=runningOrder.EntryDirection,

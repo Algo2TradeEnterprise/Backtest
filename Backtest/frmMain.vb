@@ -307,7 +307,7 @@ Public Class frmMain
                                                               eodExitTime:=TimeSpan.Parse("15:29:59"),
                                                               tickSize:=tick,
                                                               marginMultiplier:=margin,
-                                                              timeframe:=1,
+                                                              timeframe:=60,
                                                               heikenAshiCandle:=False,
                                                               stockType:=stockType,
                                                               databaseTable:=database,
@@ -325,7 +325,12 @@ Public Class frmMain
                     .TrailingStoploss = False
                     .TickBasedStrategy = True
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
-                    .RuleEntityData = Nothing
+
+                    .RuleEntityData = New HourlyRainbowStrategyRule.StrategyRuleEntities With
+                        {
+                         .ExitType = HourlyRainbowStrategyRule.TypeOfExit.Percentage,
+                         .ExitValue = 2
+                        }
 
                     .NumberOfTradeableStockPerDay = Integer.MaxValue
 
@@ -348,8 +353,8 @@ Public Class frmMain
                     .RealtimeTrailingPercentage = 50
                 End With
 
-                'Dim ruleData As FavourableFractalBreakoutStrategyRule2.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                Dim filename As String = String.Format("Pair Change Percentage CNC")
+                Dim ruleData As HourlyRainbowStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                Dim filename As String = String.Format("Hourly Rainbow CNC,ExtTyp {0},Val {1}", ruleData.ExitType.ToString, ruleData.ExitValue)
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using
