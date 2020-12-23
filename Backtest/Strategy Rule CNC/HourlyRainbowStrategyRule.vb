@@ -258,15 +258,17 @@ Public Class HourlyRainbowStrategyRule
 
     Private Function GetEntryTrades() As List(Of Trade)
         Dim ret As List(Of Trade) = Nothing
-        Dim myTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(Me.LastTick, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
-        Dim myFutTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(CType(Me.AnotherPairInstrument, HourlyRainbowStrategyRule).LastTick, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
-        If myTrades IsNot Nothing AndAlso myFutTrades IsNot Nothing Then
-            ret = New List(Of Trade)
-            ret.AddRange(myTrades)
-            ret.AddRange(myFutTrades)
-        Else
-            If myTrades IsNot Nothing Then ret = myTrades
-            If myFutTrades IsNot Nothing Then ret = myFutTrades
+        If CType(Me.AnotherPairInstrument, HourlyRainbowStrategyRule).LastTick IsNot Nothing Then
+            Dim myTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(Me.LastTick, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
+            Dim myFutTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(CType(Me.AnotherPairInstrument, HourlyRainbowStrategyRule).LastTick, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
+            If myTrades IsNot Nothing AndAlso myFutTrades IsNot Nothing Then
+                ret = New List(Of Trade)
+                ret.AddRange(myTrades)
+                ret.AddRange(myFutTrades)
+            Else
+                If myTrades IsNot Nothing Then ret = myTrades
+                If myFutTrades IsNot Nothing Then ret = myFutTrades
+            End If
         End If
         Return ret
     End Function
