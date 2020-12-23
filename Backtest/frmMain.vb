@@ -299,65 +299,77 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
-                                                              exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                              exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                              tradeStartTime:=TimeSpan.Parse("9:15:00"),
-                                                              lastTradeEntryTime:=TimeSpan.Parse("15:29:59"),
-                                                              eodExitTime:=TimeSpan.Parse("15:29:59"),
-                                                              tickSize:=tick,
-                                                              marginMultiplier:=margin,
-                                                              timeframe:=60,
-                                                              heikenAshiCandle:=False,
-                                                              stockType:=stockType,
-                                                              databaseTable:=database,
-                                                              dataSource:=sourceData,
-                                                              initialCapital:=Decimal.MaxValue / 2,
-                                                              usableCapital:=Decimal.MaxValue / 2,
-                                                              minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
-                                                              amountToBeWithdrawn:=0)
-                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+            Dim atrExtValues As List(Of Decimal) = New List(Of Decimal) From {1.5, 2, 2.5}
+            Dim perExtValues As List(Of Decimal) = New List(Of Decimal) From {0.5, 1, 2}
+            For extTyp As Integer = 1 To 2
+                Dim listToFollow As List(Of Decimal) = Nothing
+                If extTyp = 1 Then
+                    listToFollow = atrExtValues
+                Else
+                    listToFollow = perExtValues
+                End If
+                For Each extVal In listToFollow
+                    Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
+                                                                      exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                      exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                      tradeStartTime:=TimeSpan.Parse("9:15:00"),
+                                                                      lastTradeEntryTime:=TimeSpan.Parse("15:29:59"),
+                                                                      eodExitTime:=TimeSpan.Parse("15:29:59"),
+                                                                      tickSize:=tick,
+                                                                      marginMultiplier:=margin,
+                                                                      timeframe:=60,
+                                                                      heikenAshiCandle:=False,
+                                                                      stockType:=stockType,
+                                                                      databaseTable:=database,
+                                                                      dataSource:=sourceData,
+                                                                      initialCapital:=Decimal.MaxValue / 2,
+                                                                      usableCapital:=Decimal.MaxValue / 2,
+                                                                      minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                                      amountToBeWithdrawn:=0)
+                        AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                With backtestStrategy
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Cash Future Pair Stock List.csv")
+                        With backtestStrategy
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Cash Future Pair Stock List.csv")
 
-                    .AllowBothDirectionEntryAtSameTime = False
-                    .TrailingStoploss = False
-                    .TickBasedStrategy = True
-                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+                            .AllowBothDirectionEntryAtSameTime = False
+                            .TrailingStoploss = False
+                            .TickBasedStrategy = True
+                            .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                    .RuleEntityData = New HourlyRainbowStrategyRule.StrategyRuleEntities With
-                        {
-                         .ExitType = HourlyRainbowStrategyRule.TypeOfExit.Percentage,
-                         .ExitValue = 2
-                        }
+                            .RuleEntityData = New HourlyRainbowStrategyRule.StrategyRuleEntities With
+                            {
+                             .ExitType = extTyp,
+                             .ExitValue = extVal
+                            }
 
-                    .NumberOfTradeableStockPerDay = Integer.MaxValue
+                            .NumberOfTradeableStockPerDay = Integer.MaxValue
 
-                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
+                            .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
-                    .StockMaxProfitPercentagePerDay = Decimal.MaxValue
-                    .StockMaxLossPercentagePerDay = Decimal.MinValue
+                            .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                            .StockMaxLossPercentagePerDay = Decimal.MinValue
 
-                    .ExitOnStockFixedTargetStoploss = False
-                    .StockMaxProfitPerDay = Decimal.MaxValue
-                    .StockMaxLossPerDay = Decimal.MinValue
+                            .ExitOnStockFixedTargetStoploss = False
+                            .StockMaxProfitPerDay = Decimal.MaxValue
+                            .StockMaxLossPerDay = Decimal.MinValue
 
-                    .ExitOnOverAllFixedTargetStoploss = False
-                    .OverAllProfitPerDay = Decimal.MaxValue
-                    .OverAllLossPerDay = Decimal.MinValue
+                            .ExitOnOverAllFixedTargetStoploss = False
+                            .OverAllProfitPerDay = Decimal.MaxValue
+                            .OverAllLossPerDay = Decimal.MinValue
 
-                    .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
-                    .MTMSlab = Math.Abs(.OverAllLossPerDay)
-                    .MovementSlab = .MTMSlab / 2
-                    .RealtimeTrailingPercentage = 50
-                End With
+                            .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+                            .MTMSlab = Math.Abs(.OverAllLossPerDay)
+                            .MovementSlab = .MTMSlab / 2
+                            .RealtimeTrailingPercentage = 50
+                        End With
 
-                Dim ruleData As HourlyRainbowStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                Dim filename As String = String.Format("Hourly Rainbow CNC,ExtTyp {0},Val {1}", ruleData.ExitType.ToString, ruleData.ExitValue)
+                        Dim ruleData As HourlyRainbowStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                        Dim filename As String = String.Format("Hourly Rainbow CNC,ExtTyp {0},Val {1}", ruleData.ExitType.ToString, ruleData.ExitValue)
 
-                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-            End Using
+                        Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                    End Using
+                Next
+            Next
         Catch ex As Exception
             MsgBox(ex.ToString, MsgBoxStyle.Critical)
         Finally

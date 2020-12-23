@@ -179,7 +179,7 @@ Public Class HourlyRainbowStrategyRule
                 Dim avgPrice As Decimal = currentTrade.Supporting1
                 Dim totalQty As Decimal = currentTrade.Supporting2
                 Dim capital As Decimal = currentTrade.Supporting3
-                Dim pl As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, avgPrice, currentTick.Open, totalQty, Me.LotSize, Trade.TypeOfStock.Futures)
+                Dim pl As Decimal = _parentStrategy.CalculatePL(TradingSymbol, avgPrice, currentTick.Open, totalQty, Me.LotSize, Trade.TypeOfStock.Futures)
                 If pl >= capital * _userInputs.ExitValue / 100 Then
                     ret = New Tuple(Of Boolean, String)(True, "Percentage Target Hit")
                 End If

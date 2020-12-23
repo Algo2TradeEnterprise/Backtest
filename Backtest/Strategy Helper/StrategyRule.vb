@@ -42,11 +42,21 @@ Namespace StrategyHelper
         Public ForceCancelTrade As Boolean = False
 
         Public EligibleToTakeTrade As Boolean = True
+        Public ReadOnly Property TradingSymbol As String
+        Public ReadOnly Property InstrumentName As String
+            Get
+                If Me.TradingSymbol.Contains("FUT") Then
+                    Return Me.TradingSymbol.Remove(Me.TradingSymbol.Count - 8)
+                Else
+                    Return Me.TradingSymbol
+                End If
+            End Get
+        End Property
+
         Protected _signalPayload As Dictionary(Of Date, Payload)
 
         Protected ReadOnly _parentStrategy As Strategy
         Protected ReadOnly _tradingDate As Date
-        Protected _tradingSymbol As String
         Protected _inputPayload As Dictionary(Of Date, Payload)
         Protected ReadOnly _cts As CancellationTokenSource
         Protected ReadOnly _entities As RuleEntities
@@ -64,7 +74,7 @@ Namespace StrategyHelper
             Me.LotSize = lotSize
             _parentStrategy = parentStrategy
             _tradingDate = tradingDate
-            _tradingSymbol = tradingSymbol
+            Me.TradingSymbol = tradingSymbol
             _cts = canceller
             _entities = entities
 
@@ -99,7 +109,7 @@ Namespace StrategyHelper
 
         Public Sub UpdateInputPayloadAndTradingSymbol(ByVal inputPayload As Dictionary(Of Date, Payload), ByVal tradingSymbol As String)
             _inputPayload = inputPayload
-            _tradingSymbol = tradingSymbol
+            _TradingSymbol = tradingSymbol
         End Sub
 
 

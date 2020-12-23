@@ -143,8 +143,7 @@ Namespace StrategyHelper
                                                 stocksRuleData(stock.TradingSymbol).ContractRollover = True
                                                 stocksRuleData(stock.TradingSymbol).BlankDayExit = False
                                             ElseIf nextDayTradingSymbol Is Nothing Then
-                                                stocksRuleData(stock.TradingSymbol).ContractRollover = False
-                                                stocksRuleData(stock.TradingSymbol).BlankDayExit = True
+                                                Throw New NotImplementedException(String.Format("{0}, {1}", stock.StockName, tradeCheckingDate.ToString("dd-MMM-yyyy")))
                                             End If
                                         Else
                                             If commonNextTradingDay <> Date.MinValue Then
@@ -154,26 +153,37 @@ Namespace StrategyHelper
                                                     stocksRuleData(stock.TradingSymbol).ContractRollover = True
                                                     stocksRuleData(stock.TradingSymbol).BlankDayExit = False
                                                 Else
-                                                    stocksRuleData(stock.TradingSymbol).ContractRollover = False
-                                                    stocksRuleData(stock.TradingSymbol).BlankDayExit = True
+                                                    Throw New NotImplementedException(String.Format("{0}, {1}", stock.StockName, tradeCheckingDate.ToString("dd-MMM-yyyy")))
                                                 End If
                                             Else
-                                                stocksRuleData(stock.TradingSymbol).ContractRollover = False
-                                                stocksRuleData(stock.TradingSymbol).BlankDayExit = True
+                                                Throw New NotImplementedException(String.Format("{0}, {1}", stock.StockName, tradeCheckingDate.ToString("dd-MMM-yyyy")))
                                             End If
                                         End If
 
                                     End If
                                 Else
                                     If Cmn.IsTradingDay(tradeCheckingDate) Then
-                                        Throw New NotImplementedException()
+                                        Throw New NotImplementedException(String.Format("{0}, {1}", stock.StockName, tradeCheckingDate.ToString("dd-MMM-yyyy")))
                                     End If
                                 End If
                             End If
                         Next
                         If stocksRuleData IsNot Nothing AndAlso stocksRuleData.Count > 0 Then
-                            stocksRuleData.FirstOrDefault.Value.AnotherPairInstrument = stocksRuleData.LastOrDefault.Value
-                            stocksRuleData.LastOrDefault.Value.AnotherPairInstrument = stocksRuleData.FirstOrDefault.Value
+                            'stocksRuleData.FirstOrDefault.Value.AnotherPairInstrument = stocksRuleData.LastOrDefault.Value
+                            'stocksRuleData.LastOrDefault.Value.AnotherPairInstrument = stocksRuleData.FirstOrDefault.Value
+                            For Each stockRule In stocksRuleData.Values
+                                If stockRule.AnotherPairInstrument Is Nothing Then
+                                    Dim myAnotherPair As StrategyRule = stocksRuleData.Where(Function(x)
+                                                                                                 Return x.Value.TradingSymbol <> stockRule.TradingSymbol AndAlso
+                                                                                                  x.Value.InstrumentName = stockRule.InstrumentName
+                                                                                             End Function).LastOrDefault.Value
+
+                                    If myAnotherPair IsNot Nothing Then
+                                        stockRule.AnotherPairInstrument = myAnotherPair
+                                        myAnotherPair.AnotherPairInstrument = stockRule
+                                    End If
+                                End If
+                            Next
 
                             For Each stockRule In stocksRuleData.Values
                                 stockRule.CompletePairProcessing()
