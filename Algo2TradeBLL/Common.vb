@@ -1026,9 +1026,9 @@ Public Class Common
         Return ret
     End Function
 
-    Public Async Function IsTradingDay(ByVal tradingDate As Date) As Task(Of Boolean)
+    Public Function IsTradingDay(ByVal tradingDate As Date) As Boolean
         Dim ret As Boolean = False
-        Dim eodHistoricalData As Dictionary(Of Date, Payload) = Await GetHistoricalDataAsync(DataBaseTable.EOD_Cash, "JINDALSTEL", tradingDate, tradingDate).ConfigureAwait(False)
+        Dim eodHistoricalData As Dictionary(Of Date, Payload) = GetRawPayloadForSpecificTradingSymbol(DataBaseTable.EOD_POSITIONAL, "JINDALSTEL", tradingDate, tradingDate)
         _cts.Token.ThrowIfCancellationRequested()
         If eodHistoricalData IsNot Nothing AndAlso eodHistoricalData.Count > 0 Then
             _cts.Token.ThrowIfCancellationRequested()

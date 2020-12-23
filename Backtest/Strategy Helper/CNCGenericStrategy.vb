@@ -92,7 +92,12 @@ Namespace StrategyHelper
                             Dim XDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             Dim currentDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             If Me.DataSource = SourceOfData.Database Then
-                                XDayOneMinutePayload = Cmn.GetRawPayload(database, stock.StockName, tradeCheckingDate.AddDays(-30), tradeCheckingDate)
+                                If stock.StockType = Trade.TypeOfStock.Cash Then
+                                    XDayOneMinutePayload = Cmn.GetRawPayloadForSpecificTradingSymbol(database, stock.StockName, tradeCheckingDate.AddDays(-30), tradeCheckingDate)
+                                Else
+                                    Dim futSymbol As String = GetFutureInstrumentNameFromCore(stock.StockName, tradeCheckingDate)
+                                    XDayOneMinutePayload = Cmn.GetRawPayloadForSpecificTradingSymbol(database, futSymbol, tradeCheckingDate.AddDays(-30), tradeCheckingDate)
+                                End If
                             ElseIf Me.DataSource = SourceOfData.Live Then
                                 XDayOneMinutePayload = Await Cmn.GetHistoricalDataAsync(database, stock.StockName, tradeCheckingDate.AddDays(-7), tradeCheckingDate).ConfigureAwait(False)
                             End If
@@ -130,38 +135,38 @@ Namespace StrategyHelper
                                     stocksRuleData.Add(stock.TradingSymbol, stockRule)
 
                                     If stock.StockType <> Trade.TypeOfStock.Cash Then
-                                        Dim nextDayPayload As Dictionary(Of Date, Payload) = Nothing
                                         Dim nextTradingDay As Date = Cmn.GetNexTradingDay(database, tradingSymbol, tradeCheckingDate)
                                         If nextTradingDay <> Date.MinValue Then
-                                            nextDayPayload = Cmn.GetRawPayloadForSpecificTradingSymbol(database, tradingSymbol, nextTradingDay, nextTradingDay)
-                                            'Dim nextDayTradingSymbol As String = Cmn.GetCurrentTradingSymbol(database, nextTradingDay, stock.StockName)
-                                            'If nextDayTradingSymbol IsNot Nothing AndAlso nextDayTradingSymbol <> tradingSymbol Then
-                                            '    stock.ContractRolloverSymbol = nextDayTradingSymbol
-                                            '    stocksRuleData(stock.TradingSymbol).ContractRollover = True
-                                            '    stocksRuleData(stock.TradingSymbol).BlankDayExit = False
-                                            'ElseIf nextDayTradingSymbol Is Nothing Then
-                                            '    stocksRuleData(stock.TradingSymbol).ContractRollover = False
-                                            '    stocksRuleData(stock.TradingSymbol).BlankDayExit = True
-                                            'End If
+                                            Dim nextDayTradingSymbol As String = GetFutureInstrumentNameFromCore(stock.StockName, nextTradingDay)
+                                            If nextDayTradingSymbol IsNot Nothing AndAlso nextDayTradingSymbol <> tradingSymbol Then
+                                                stock.ContractRolloverSymbol = nextDayTradingSymbol
+                                                stocksRuleData(stock.TradingSymbol).ContractRollover = True
+                                                stocksRuleData(stock.TradingSymbol).BlankDayExit = False
+                                            ElseIf nextDayTradingSymbol Is Nothing Then
+                                                stocksRuleData(stock.TradingSymbol).ContractRollover = False
+                                                stocksRuleData(stock.TradingSymbol).BlankDayExit = True
+                                            End If
                                         Else
                                             If commonNextTradingDay <> Date.MinValue Then
-                                                nextDayPayload = Cmn.GetRawPayloadForSpecificTradingSymbol(database, tradingSymbol, commonNextTradingDay, commonNextTradingDay)
-                                                'Dim nextDayTradingSymbol As String = Cmn.GetCurrentTradingSymbol(database, commonNextTradingDay, stock.StockName)
-                                                'If nextDayTradingSymbol IsNot Nothing AndAlso nextDayTradingSymbol <> tradingSymbol Then
-                                                '    stock.ContractRolloverSymbol = nextDayTradingSymbol
-                                                '    stocksRuleData(stock.TradingSymbol).ContractRollover = True
-                                                '    stocksRuleData(stock.TradingSymbol).BlankDayExit = False
-                                                'Else
-                                                '    stocksRuleData(stock.TradingSymbol).ContractRollover = False
-                                                '    stocksRuleData(stock.TradingSymbol).BlankDayExit = True
-                                                'End If
+                                                Dim nextDayTradingSymbol As String = GetFutureInstrumentNameFromCore(stock.StockName, commonNextTradingDay)
+                                                If nextDayTradingSymbol IsNot Nothing AndAlso nextDayTradingSymbol <> tradingSymbol Then
+                                                    stock.ContractRolloverSymbol = nextDayTradingSymbol
+                                                    stocksRuleData(stock.TradingSymbol).ContractRollover = True
+                                                    stocksRuleData(stock.TradingSymbol).BlankDayExit = False
+                                                Else
+                                                    stocksRuleData(stock.TradingSymbol).ContractRollover = False
+                                                    stocksRuleData(stock.TradingSymbol).BlankDayExit = True
+                                                End If
                                             Else
-                                                'stocksRuleData(stock.TradingSymbol).ContractRollover = False
-                                                'stocksRuleData(stock.TradingSymbol).BlankDayExit = True
-                                                Throw New NotImplementedException
+                                                stocksRuleData(stock.TradingSymbol).ContractRollover = False
+                                                stocksRuleData(stock.TradingSymbol).BlankDayExit = True
                                             End If
                                         End If
 
+                                    End If
+                                Else
+                                    If Cmn.IsTradingDay(tradeCheckingDate) Then
+                                        Throw New NotImplementedException()
                                     End If
                                 End If
                             End If
@@ -588,6 +593,32 @@ Namespace StrategyHelper
         End Function
 #End Region
 
+#Region "Cotract Helper"
+        Private Function GetFutureInstrumentNameFromCore(ByVal coreInstrumentName As String, ByVal tradingDate As Date) As String
+            Dim ret As String = Nothing
+            Dim lastThursday As Date = GetLastThusrdayOfMonth(tradingDate)
+            If tradingDate.Date > lastThursday.Date.AddDays(-2) Then
+                ret = String.Format("{0}{1}FUT", coreInstrumentName, tradingDate.AddDays(10).ToString("yyMMM")).ToUpper
+            Else
+                ret = String.Format("{0}{1}FUT", coreInstrumentName, tradingDate.ToString("yyMMM")).ToUpper
+            End If
+            Return ret
+        End Function
+
+        Private Function GetLastThusrdayOfMonth(ByVal dateTime As Date) As Date
+            Dim ret As Date = Date.MinValue
+            Dim lastDayOfMonth As Date = New Date(dateTime.Year, dateTime.Month, Date.DaysInMonth(dateTime.Year, dateTime.Month))
+            While True
+                If lastDayOfMonth.DayOfWeek = DayOfWeek.Thursday Then
+                    ret = lastDayOfMonth
+                    Exit While
+                End If
+                lastDayOfMonth = lastDayOfMonth.AddDays(-1)
+            End While
+            Return ret
+        End Function
+#End Region
+
 #Region "IDisposable Support"
         Private disposedValue As Boolean ' To detect redundant calls
 
@@ -619,5 +650,6 @@ Namespace StrategyHelper
             ' GC.SuppressFinalize(Me)
         End Sub
 #End Region
+
     End Class
 End Namespace

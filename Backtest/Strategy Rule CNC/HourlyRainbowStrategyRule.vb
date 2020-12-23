@@ -64,18 +64,21 @@ Public Class HourlyRainbowStrategyRule
 
             Dim entryTrades As List(Of Trade) = GetEntryTrades()
             If entryTrades IsNot Nothing AndAlso entryTrades.Count Then
-                Dim totalValue As Decimal = entryTrades.Sum(Function(x)
-                                                                Return x.EntryPrice * x.Quantity
-                                                            End Function)
-                Dim totalQty As Decimal = entryTrades.Sum(Function(x)
-                                                              Return x.Quantity
-                                                          End Function)
+                'Dim totalValue As Decimal = entryTrades.Sum(Function(x)
+                '                                                Return x.EntryPrice * x.Quantity
+                '                                            End Function)
+                'Dim totalQty As Decimal = entryTrades.Sum(Function(x)
+                '                                              Return x.Quantity
+                '                                          End Function)
+                Dim totalValue As Decimal = Val(entryTrades.LastOrDefault.Supporting1) * Val(entryTrades.LastOrDefault.Supporting2)
+                Dim totalQty As Decimal = Val(entryTrades.LastOrDefault.Supporting2)
+
                 totalValue += currentTick.Open * Me.LotSize
                 totalQty += Me.LotSize
                 avgPrice = totalValue / totalQty
                 totalQuantity = totalQty
 
-                capital = totalValue
+                capital += Val(entryTrades.LastOrDefault.Supporting3)
                 tradeID = entryTrades.LastOrDefault.Supporting5
 
                 For Each runningTrade In entryTrades
@@ -94,9 +97,9 @@ Public Class HourlyRainbowStrategyRule
                                 .Buffer = 0,
                                 .SignalCandle = currentCandle.PreviousCandlePayload,
                                 .OrderType = Trade.TypeOfOrder.Market,
-                                .Supporting1 = _lastTrade.Supporting1,
+                                .Supporting1 = _lastTrade.Supporting1 + (currentTick.Open - _lastTrade.ExitPrice),
                                 .Supporting2 = _lastTrade.Supporting2,
-                                .Supporting3 = _lastTrade.Supporting3,
+                                .Supporting3 = Math.Max(Val(_lastTrade.Supporting3), currentTick.Open * _lastTrade.Quantity),
                                 .Supporting4 = _lastTrade.Supporting4,
                                 .Supporting5 = _lastTrade.Supporting5
                             }
@@ -135,8 +138,10 @@ Public Class HourlyRainbowStrategyRule
                         Dim rainbow As Indicator.RainbowMA = _rainbowPayload(currentCandle.PreviousCandlePayload.PayloadDate)
                         If currentCandle.PreviousCandlePayload.Close > Math.Max(rainbow.SMA1, Math.Max(rainbow.SMA2, Math.Max(rainbow.SMA3, Math.Max(rainbow.SMA4, Math.Max(rainbow.SMA5, Math.Max(rainbow.SMA6, Math.Max(rainbow.SMA7, Math.Max(rainbow.SMA8, Math.Max(rainbow.SMA9, rainbow.SMA10))))))))) Then
                             If IsValidRainbow(currentCandle) Then
-                                Me.AnotherPairInstrument.ForceTakeTrade = True
-                                CType(Me.AnotherPairInstrument, HourlyRainbowStrategyRule).EntryATR = _atrPayload(currentCandle.PreviousCandlePayload.PayloadDate)
+                                If lastEntryTrade Is Nothing OrElse currentCandle.PreviousCandlePayload.Close < Val(lastEntryTrade.Supporting1) Then
+                                    Me.AnotherPairInstrument.ForceTakeTrade = True
+                                    CType(Me.AnotherPairInstrument, HourlyRainbowStrategyRule).EntryATR = _atrPayload(currentCandle.PreviousCandlePayload.PayloadDate)
+                                End If
                             End If
                         End If
                     End If
@@ -151,34 +156,35 @@ Public Class HourlyRainbowStrategyRule
         Dim ret As Tuple(Of Boolean, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-            If Me.ContractRollover OrElse Me.BlankDayExit Then
-                Dim currentMinutePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
-                If currentMinutePayload.PayloadDate = _signalPayload.LastOrDefault.Key Then
+            If _userInputs.ExitType = TypeOfExit.Percentage Then
+                Dim avgPrice As Decimal = currentTrade.Supporting1
+                Dim totalQty As Decimal = currentTrade.Supporting2
+                Dim capital As Decimal = currentTrade.Supporting3
+                Dim pl As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, avgPrice, currentTick.Open, totalQty, Me.LotSize, Trade.TypeOfStock.Futures)
+                If pl >= capital * _userInputs.ExitValue / 100 Then
+                    ret = New Tuple(Of Boolean, String)(True, "Percentage Target Hit")
+                End If
+            ElseIf _userInputs.ExitType = TypeOfExit.ATR Then
+                Dim avgPrice As Decimal = currentTrade.Supporting1
+                Dim atr As Decimal = currentTrade.Supporting4
+                If currentTick.Open >= avgPrice + atr * _userInputs.ExitValue Then
+                    ret = New Tuple(Of Boolean, String)(True, "ATR Target Hit")
+                End If
+            End If
+            If ret Is Nothing Then
+                If (Me.ContractRollover OrElse Me.BlankDayExit) Then
+                    'Dim currentMinutePayload As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
+                    'If currentMinutePayload.PayloadDate = _signalPayload.LastOrDefault.Key Then
                     ret = New Tuple(Of Boolean, String)(True, If(Me.ContractRollover, "Contract Rollover Exit", "Blank Day Exit"))
                     Me.ForceCancellationDone = True
                     If _lastTrade IsNot Nothing Then
                         Dim ttlQty As Integer = _lastTrade.Quantity + currentTrade.Quantity
                         _lastTrade.UpdateTrade(Quantity:=ttlQty)
                     Else
-                        _lastTrade = currentTrade
+                        _lastTrade = Utilities.Strings.DeepClone(Of Trade)(currentTrade)
+                        _lastTrade.UpdateTrade(ExitPrice:=currentTick.Open)
                     End If
-                End If
-            End If
-            If ret Is Nothing Then
-                If _userInputs.ExitType = TypeOfExit.Percentage Then
-                    Dim avgPrice As Decimal = currentTrade.Supporting1
-                    Dim totalQty As Decimal = currentTrade.Supporting2
-                    Dim capital As Decimal = currentTrade.Supporting3
-                    Dim pl As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, avgPrice, currentTick.Open, totalQty, Me.LotSize, Trade.TypeOfStock.Futures)
-                    If pl >= capital * _userInputs.ExitValue / 100 Then
-                        ret = New Tuple(Of Boolean, String)(True, "Percentage Target Hit")
-                    End If
-                ElseIf _userInputs.ExitType = TypeOfExit.ATR Then
-                    Dim avgPrice As Decimal = currentTrade.Supporting1
-                    Dim atr As Decimal = currentTrade.Supporting4
-                    If currentTick.Open >= avgPrice + atr * _userInputs.ExitValue Then
-                        ret = New Tuple(Of Boolean, String)(True, "ATR Target Hit")
-                    End If
+                    'End If
                 End If
             End If
         End If
