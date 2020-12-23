@@ -181,6 +181,8 @@ Namespace StrategyHelper
                                     If myAnotherPair IsNot Nothing Then
                                         stockRule.AnotherPairInstrument = myAnotherPair
                                         myAnotherPair.AnotherPairInstrument = stockRule
+                                    Else
+                                        Throw New NotImplementedException()
                                     End If
                                 End If
                             Next
