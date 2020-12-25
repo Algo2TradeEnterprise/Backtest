@@ -694,9 +694,9 @@ Namespace StrategyHelper
                                 Dim candleTime As Date = New Date(currentTimeOfExit.Year, currentTimeOfExit.Month, currentTimeOfExit.Day, currentTimeOfExit.Hour, currentTimeOfExit.Minute, 0)
                                 Dim currentPayload As Payload = Nothing
                                 Dim stock As String = stockName
-                                If stockName.ToUpper.Contains("FUT") Then
-                                    stock = stockName.Remove(stockName.Count - 8)
-                                End If
+                                'If stockName.ToUpper.Contains("FUT") Then
+                                '    stock = stockName.Remove(stockName.Count - 8)
+                                'End If
                                 If allOneMinutePayload.ContainsKey(stock) AndAlso allOneMinutePayload(stock).ContainsKey(candleTime) Then
                                     currentPayload = allOneMinutePayload(stock)(candleTime).Ticks.FindAll(Function(x)
                                                                                                               Return x.PayloadDate >= currentTimeOfExit

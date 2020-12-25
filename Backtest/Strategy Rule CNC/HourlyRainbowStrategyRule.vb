@@ -155,7 +155,7 @@ Public Class HourlyRainbowStrategyRule
                         Dim atr As Decimal = _atrPayload(currentCandle.PreviousCandlePayload.PayloadDate)
                         If currentCandle.PreviousCandlePayload.Close > Math.Max(rainbow.SMA1, Math.Max(rainbow.SMA2, Math.Max(rainbow.SMA3, Math.Max(rainbow.SMA4, Math.Max(rainbow.SMA5, Math.Max(rainbow.SMA6, Math.Max(rainbow.SMA7, Math.Max(rainbow.SMA8, Math.Max(rainbow.SMA9, rainbow.SMA10))))))))) Then
                             If IsValidRainbow(currentCandle) Then
-                                If lastEntryTrade Is Nothing OrElse currentCandle.PreviousCandlePayload.Close <= Val(lastEntryTrade.Supporting1) - atr Then
+                                If lastEntryTrade Is Nothing OrElse currentCandle.PreviousCandlePayload.Close <= Val(lastEntryTrade.EntryPrice) - atr Then
                                     If currentTick.PayloadDate <= currentCandle.PayloadDate.AddMinutes(1) Then
                                         Me.AnotherPairInstrument.ForceTakeTrade = True
                                         CType(Me.AnotherPairInstrument, HourlyRainbowStrategyRule).EntrySpotATR = atr
