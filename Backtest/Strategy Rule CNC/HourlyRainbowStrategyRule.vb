@@ -283,4 +283,77 @@ Public Class HourlyRainbowStrategyRule
         End If
         Return ret
     End Function
+
+#Region "Contract Helper"
+    Private Function GetFutureInstrumentNameFromCore(ByVal coreInstrumentName As String, ByVal tradingDate As Date) As String
+        Dim ret As String = Nothing
+        If coreInstrumentName = "NIFTY 50" Then
+            coreInstrumentName = "NIFTY"
+        ElseIf coreInstrumentName = "NIFTY BANK" Then
+            coreInstrumentName = "BANKNIFTY"
+        End If
+        Dim lastThursday As Date = GetLastThusrdayOfMonth(tradingDate)
+        If tradingDate.Date > lastThursday.Date.AddDays(-2) Then
+            ret = String.Format("{0}{1}FUT", coreInstrumentName, tradingDate.AddDays(10).ToString("yyMMM")).ToUpper
+        Else
+            ret = String.Format("{0}{1}FUT", coreInstrumentName, tradingDate.ToString("yyMMM")).ToUpper
+        End If
+        Return ret
+    End Function
+
+    Private Function GetOptionInstrumentNameFromCore(ByVal coreInstrumentName As String, ByVal tradingDate As Date) As String
+        Dim ret As String = Nothing
+        If coreInstrumentName = "NIFTY 50" Then
+            coreInstrumentName = "NIFTY"
+        ElseIf coreInstrumentName = "NIFTY BANK" Then
+            coreInstrumentName = "BANKNIFTY"
+        End If
+        Dim nextThursday As Date = GetNextThusrday(tradingDate)
+        Dim lastThursday As Date = GetLastThusrdayOfMonth(tradingDate)
+        If tradingDate.Date > nextThursday.Date.AddDays(-2) Then
+            nextThursday = GetNextThusrday(tradingDate.AddDays(3))
+            If nextThursday.Date = lastThursday.Date Then
+                ret = String.Format("{0}{1}", coreInstrumentName, tradingDate.ToString("yyMMM")).ToUpper
+            Else
+                ret = String.Format("{0}{1}", coreInstrumentName, GetExpiryString(nextThursday)).ToUpper
+            End If
+        Else
+            If nextThursday.Date = lastThursday.Date Then
+                ret = String.Format("{0}{1}", coreInstrumentName, tradingDate.ToString("yyMMM")).ToUpper
+            Else
+                ret = String.Format("{0}{1}", coreInstrumentName, GetExpiryString(nextThursday)).ToUpper
+            End If
+        End If
+        Return ret
+    End Function
+
+    Private Function GetExpiryString(ByVal expiryDate As Date) As String
+        If expiryDate.Month >= 10 Then
+            Return String.Format("{0}{1}{2}", expiryDate.ToString("yy"), expiryDate.ToString("MMM").Substring(0, 1), expiryDate.ToString("dd"))
+        Else
+            Return String.Format("{0}{1}{2}", expiryDate.ToString("yy"), expiryDate.Month.ToString.PadLeft(2, "0"), expiryDate.ToString("dd"))
+        End If
+    End Function
+
+    Private Function GetLastThusrdayOfMonth(ByVal dateTime As Date) As Date
+        Dim ret As Date = Date.MinValue
+        Dim lastDayOfMonth As Date = New Date(dateTime.Year, dateTime.Month, Date.DaysInMonth(dateTime.Year, dateTime.Month))
+        While True
+            If lastDayOfMonth.DayOfWeek = DayOfWeek.Thursday Then
+                ret = lastDayOfMonth
+                Exit While
+            End If
+            lastDayOfMonth = lastDayOfMonth.AddDays(-1)
+        End While
+        Return ret
+    End Function
+
+    Private Function GetNextThusrday(ByVal dateTime As Date) As Date
+        Dim ret As Date = Date.MinValue
+        Dim daysUntilTradingDay As Integer = (CInt(DayOfWeek.Thursday) - CInt(dateTime.DayOfWeek) + 7) Mod 7
+        ret = dateTime.Date.AddDays(daysUntilTradingDay).Date
+        Return ret
+    End Function
+#End Region
+
 End Class

@@ -92,12 +92,7 @@ Namespace StrategyHelper
                             Dim XDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             Dim currentDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             If Me.DataSource = SourceOfData.Database Then
-                                If stock.StockType = Trade.TypeOfStock.Cash Then
-                                    XDayOneMinutePayload = Cmn.GetRawPayloadForSpecificTradingSymbol(database, stock.StockName, tradeCheckingDate.AddDays(-30), tradeCheckingDate)
-                                Else
-                                    Dim futSymbol As String = GetFutureInstrumentNameFromCore(stock.StockName, tradeCheckingDate)
-                                    XDayOneMinutePayload = Cmn.GetRawPayloadForSpecificTradingSymbol(database, futSymbol, tradeCheckingDate.AddDays(-30), tradeCheckingDate)
-                                End If
+                                XDayOneMinutePayload = Cmn.GetRawPayloadForSpecificTradingSymbol(database, stock.StockName, tradeCheckingDate.AddDays(-30), tradeCheckingDate)
                             ElseIf Me.DataSource = SourceOfData.Live Then
                                 XDayOneMinutePayload = Await Cmn.GetHistoricalDataAsync(database, stock.StockName, tradeCheckingDate.AddDays(-7), tradeCheckingDate).ConfigureAwait(False)
                             End If
@@ -134,33 +129,32 @@ Namespace StrategyHelper
                                     stockRule.CompletePreProcessing()
                                     stocksRuleData.Add(stock.TradingSymbol, stockRule)
 
-                                    If stock.StockType <> Trade.TypeOfStock.Cash Then
-                                        Dim nextTradingDay As Date = Cmn.GetNexTradingDay(database, tradingSymbol, tradeCheckingDate)
-                                        If nextTradingDay <> Date.MinValue Then
-                                            Dim nextDayTradingSymbol As String = GetFutureInstrumentNameFromCore(stock.StockName, nextTradingDay)
-                                            If nextDayTradingSymbol IsNot Nothing AndAlso nextDayTradingSymbol <> tradingSymbol Then
-                                                stock.ContractRolloverSymbol = nextDayTradingSymbol
-                                                stocksRuleData(stock.TradingSymbol).ContractRollover = True
-                                                stocksRuleData(stock.TradingSymbol).BlankDayExit = False
-                                            ElseIf nextDayTradingSymbol Is Nothing Then
-                                                Throw New NotImplementedException(String.Format("{0}, {1}", stock.StockName, tradeCheckingDate.ToString("dd-MMM-yyyy")))
-                                            End If
-                                        Else
-                                            If commonNextTradingDay <> Date.MinValue Then
-                                                Dim nextDayTradingSymbol As String = GetFutureInstrumentNameFromCore(stock.StockName, commonNextTradingDay)
-                                                If nextDayTradingSymbol IsNot Nothing AndAlso nextDayTradingSymbol <> tradingSymbol Then
-                                                    stock.ContractRolloverSymbol = nextDayTradingSymbol
-                                                    stocksRuleData(stock.TradingSymbol).ContractRollover = True
-                                                    stocksRuleData(stock.TradingSymbol).BlankDayExit = False
-                                                Else
-                                                    Throw New NotImplementedException(String.Format("{0}, {1}", stock.StockName, tradeCheckingDate.ToString("dd-MMM-yyyy")))
-                                                End If
-                                            Else
-                                                Throw New NotImplementedException(String.Format("{0}, {1}", stock.StockName, tradeCheckingDate.ToString("dd-MMM-yyyy")))
-                                            End If
-                                        End If
-
-                                    End If
+                                    'If stock.StockType <> Trade.TypeOfStock.Cash Then
+                                    '    Dim nextTradingDay As Date = Cmn.GetNexTradingDay(database, tradingSymbol, tradeCheckingDate)
+                                    '    If nextTradingDay <> Date.MinValue Then
+                                    '        Dim nextDayTradingSymbol As String = GetFutureInstrumentNameFromCore(stock.StockName, nextTradingDay)
+                                    '        If nextDayTradingSymbol IsNot Nothing AndAlso nextDayTradingSymbol <> tradingSymbol Then
+                                    '            stock.ContractRolloverSymbol = nextDayTradingSymbol
+                                    '            stocksRuleData(stock.TradingSymbol).ContractRollover = True
+                                    '            stocksRuleData(stock.TradingSymbol).BlankDayExit = False
+                                    '        ElseIf nextDayTradingSymbol Is Nothing Then
+                                    '            Throw New NotImplementedException(String.Format("{0}, {1}", stock.StockName, tradeCheckingDate.ToString("dd-MMM-yyyy")))
+                                    '        End If
+                                    '    Else
+                                    '        If commonNextTradingDay <> Date.MinValue Then
+                                    '            Dim nextDayTradingSymbol As String = GetFutureInstrumentNameFromCore(stock.StockName, commonNextTradingDay)
+                                    '            If nextDayTradingSymbol IsNot Nothing AndAlso nextDayTradingSymbol <> tradingSymbol Then
+                                    '                stock.ContractRolloverSymbol = nextDayTradingSymbol
+                                    '                stocksRuleData(stock.TradingSymbol).ContractRollover = True
+                                    '                stocksRuleData(stock.TradingSymbol).BlankDayExit = False
+                                    '            Else
+                                    '                Throw New NotImplementedException(String.Format("{0}, {1}", stock.StockName, tradeCheckingDate.ToString("dd-MMM-yyyy")))
+                                    '            End If
+                                    '        Else
+                                    '            Throw New NotImplementedException(String.Format("{0}, {1}", stock.StockName, tradeCheckingDate.ToString("dd-MMM-yyyy")))
+                                    '        End If
+                                    '    End If
+                                    'End If
                                 Else
                                     If Cmn.IsTradingDay(tradeCheckingDate) Then
                                         Throw New NotImplementedException(String.Format("{0}, {1}", stock.StockName, tradeCheckingDate.ToString("dd-MMM-yyyy")))
@@ -561,72 +555,57 @@ Namespace StrategyHelper
 #Region "Stock Selection"
         Private Function GetStockData(ByVal tradingDate As Date) As List(Of StockDetails)
             Dim ret As List(Of StockDetails) = Nothing
-            If Me.StockFileName IsNot Nothing Then
-                Dim dt As DataTable = Nothing
-                Using csvHelper As New Utilities.DAL.CSVHelper(Me.StockFileName, ",", _canceller)
-                    dt = csvHelper.GetDataTableFromCSV(1)
-                End Using
-                If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
-                    For Each runningRow As DataRow In dt.Rows
-                        If ret Is Nothing Then ret = New List(Of StockDetails)
-                        Dim tradingSymbol As String = runningRow.Item(0)
-                        Dim instrumentName As String = Nothing
-                        If tradingSymbol.Contains("FUT") Then
-                            instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
-                        Else
-                            instrumentName = tradingSymbol
-                        End If
-                        Dim lotSize As Integer = runningRow.Item(1)
-                        Dim xlStockType As String = runningRow.Item(2)
-                        Dim controller As String = runningRow.Item(3)
-                        Dim stockTyp As Trade.TypeOfStock = Trade.TypeOfStock.None
-                        Select Case xlStockType
-                            Case "Cash"
-                                stockTyp = Trade.TypeOfStock.Cash
-                            Case "Future"
-                                stockTyp = Trade.TypeOfStock.Futures
-                            Case Else
-                                Throw New NotImplementedException
-                        End Select
 
-                        Dim detailsOfStock As StockDetails = New StockDetails With
-                                    {.StockName = instrumentName,
-                                     .TradingSymbol = tradingSymbol,
-                                     .LotSize = lotSize,
+            Dim detailsOfStock As StockDetails = New StockDetails With
+                                    {.StockName = "NIFTY 50",
+                                     .TradingSymbol = "NIFTY 50",
+                                     .LotSize = 75,
                                      .EligibleToTakeTrade = True,
-                                     .StockType = stockTyp,
-                                     .Supporting1 = If(controller.ToUpper = "TRUE", 1, 0)}
+                                     .StockType = Trade.TypeOfStock.Cash}
 
-                        ret.Add(detailsOfStock)
-                    Next
-                End If
-            End If
-            Return ret
-        End Function
-#End Region
+            ret = New List(Of StockDetails)
+            ret.Add(detailsOfStock)
 
-#Region "Cotract Helper"
-        Private Function GetFutureInstrumentNameFromCore(ByVal coreInstrumentName As String, ByVal tradingDate As Date) As String
-            Dim ret As String = Nothing
-            Dim lastThursday As Date = GetLastThusrdayOfMonth(tradingDate)
-            If tradingDate.Date > lastThursday.Date.AddDays(-2) Then
-                ret = String.Format("{0}{1}FUT", coreInstrumentName, tradingDate.AddDays(10).ToString("yyMMM")).ToUpper
-            Else
-                ret = String.Format("{0}{1}FUT", coreInstrumentName, tradingDate.ToString("yyMMM")).ToUpper
-            End If
-            Return ret
-        End Function
+            'If Me.StockFileName IsNot Nothing Then
+            '    Dim dt As DataTable = Nothing
+            '    Using csvHelper As New Utilities.DAL.CSVHelper(Me.StockFileName, ",", _canceller)
+            '        dt = csvHelper.GetDataTableFromCSV(1)
+            '    End Using
+            '    If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
+            '        For Each runningRow As DataRow In dt.Rows
+            '            If ret Is Nothing Then ret = New List(Of StockDetails)
+            '            Dim tradingSymbol As String = runningRow.Item(0)
+            '            Dim instrumentName As String = Nothing
+            '            If tradingSymbol.Contains("FUT") Then
+            '                instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+            '            Else
+            '                instrumentName = tradingSymbol
+            '            End If
+            '            Dim lotSize As Integer = runningRow.Item(1)
+            '            Dim xlStockType As String = runningRow.Item(2)
+            '            Dim controller As String = runningRow.Item(3)
+            '            Dim stockTyp As Trade.TypeOfStock = Trade.TypeOfStock.None
+            '            Select Case xlStockType
+            '                Case "Cash"
+            '                    stockTyp = Trade.TypeOfStock.Cash
+            '                Case "Future"
+            '                    stockTyp = Trade.TypeOfStock.Futures
+            '                Case Else
+            '                    Throw New NotImplementedException
+            '            End Select
 
-        Private Function GetLastThusrdayOfMonth(ByVal dateTime As Date) As Date
-            Dim ret As Date = Date.MinValue
-            Dim lastDayOfMonth As Date = New Date(dateTime.Year, dateTime.Month, Date.DaysInMonth(dateTime.Year, dateTime.Month))
-            While True
-                If lastDayOfMonth.DayOfWeek = DayOfWeek.Thursday Then
-                    ret = lastDayOfMonth
-                    Exit While
-                End If
-                lastDayOfMonth = lastDayOfMonth.AddDays(-1)
-            End While
+            '            Dim detailsOfStock As StockDetails = New StockDetails With
+            '                        {.StockName = instrumentName,
+            '                         .TradingSymbol = tradingSymbol,
+            '                         .LotSize = lotSize,
+            '                         .EligibleToTakeTrade = True,
+            '                         .StockType = stockTyp,
+            '                         .Supporting1 = If(controller.ToUpper = "TRUE", 1, 0)}
+
+            '            ret.Add(detailsOfStock)
+            '        Next
+            '    End If
+            'End If
             Return ret
         End Function
 #End Region
