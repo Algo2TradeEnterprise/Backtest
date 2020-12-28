@@ -146,6 +146,7 @@ Namespace StrategyHelper
         Public ReadOnly Property Supporting3 As String
         Public ReadOnly Property Supporting4 As String
         Public ReadOnly Property Supporting5 As String
+        Public ReadOnly Property SupportingTradingSymbol As String
 
         Private _CurrentLTP As Double
         Public Property CurrentLTP As Double
@@ -404,7 +405,8 @@ Namespace StrategyHelper
                                 Optional ByVal Supporting2 As String = Nothing,
                                 Optional ByVal Supporting3 As String = Nothing,
                                 Optional ByVal Supporting4 As String = Nothing,
-                                Optional ByVal Supporting5 As String = Nothing)
+                                Optional ByVal Supporting5 As String = Nothing,
+                                Optional ByVal SupportingTradingSymbol As String = Nothing)
 
 
             If TradingSymbol IsNot Nothing Then _TradingSymbol = TradingSymbol
@@ -438,6 +440,7 @@ Namespace StrategyHelper
             If Supporting3 IsNot Nothing Then _Supporting3 = Supporting3
             If Supporting4 IsNot Nothing Then _Supporting4 = Supporting4
             If Supporting5 IsNot Nothing Then _Supporting5 = Supporting5
+            If SupportingTradingSymbol IsNot Nothing Then _SupportingTradingSymbol = SupportingTradingSymbol
 
             If Me._ExitTime <> Nothing OrElse Me._ExitTime <> Date.MinValue Then
                 Me._TradeUpdateTimeStamp = Me._ExitTime
@@ -480,6 +483,7 @@ Namespace StrategyHelper
                 If .Supporting3 IsNot Nothing Then _Supporting3 = .Supporting3
                 If .Supporting4 IsNot Nothing Then _Supporting4 = .Supporting4
                 If .Supporting5 IsNot Nothing Then _Supporting5 = .Supporting5
+                If .SupportingTradingSymbol IsNot Nothing Then _SupportingTradingSymbol = .SupportingTradingSymbol
             End With
 
             If Me._ExitTime <> Nothing OrElse Me._ExitTime <> Date.MinValue Then

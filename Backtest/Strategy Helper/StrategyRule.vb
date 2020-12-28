@@ -33,13 +33,13 @@ Namespace StrategyHelper
         Public MaxLossOfThisStock As Decimal = Decimal.MinValue
         Public LotSize As Integer
 
-        Public ContractRollover As Boolean = False
-        Public BlankDayExit As Boolean = False
-        Public ForceCancellationDone As Boolean = False
-        Public ContractRolloverForceEntry As Boolean = False
+        Protected ContractRollover As Boolean = False
+        Protected BlankDayExit As Boolean = False
+        Protected ForceCancellationDone As Boolean = False
+        Protected ContractRolloverForceEntry As Boolean = False
 
-        Public ForceTakeTrade As Boolean = False
-        Public ForceCancelTrade As Boolean = False
+        Protected ForceTakeTrade As Boolean = False
+        Protected ForceCancelTrade As Boolean = False
 
         Public EligibleToTakeTrade As Boolean = True
         Public ReadOnly Property TradingSymbol As String
@@ -60,14 +60,16 @@ Namespace StrategyHelper
         Protected _inputPayload As Dictionary(Of Date, Payload)
         Protected ReadOnly _cts As CancellationTokenSource
         Protected ReadOnly _entities As RuleEntities
+        Protected ReadOnly _nextTradingDay As Date
 
-        Public AnotherPairInstrument As StrategyRule
+        'Public AnotherPairInstrument As StrategyRule
 
         Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                        ByVal lotSize As Integer,
                        ByVal parentStrategy As Strategy,
                        ByVal tradingDate As Date,
                        ByVal tradingSymbol As String,
+                       ByVal nextTradingDay As Date,
                        ByVal entities As RuleEntities,
                        ByVal canceller As CancellationTokenSource)
             _inputPayload = inputPayload
@@ -77,6 +79,7 @@ Namespace StrategyHelper
             Me.TradingSymbol = tradingSymbol
             _cts = canceller
             _entities = entities
+            _nextTradingDay = nextTradingDay
 
             EligibleToTakeTrade = True
         End Sub

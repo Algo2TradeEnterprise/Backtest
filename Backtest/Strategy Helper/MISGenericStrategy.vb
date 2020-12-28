@@ -142,15 +142,15 @@ Namespace StrategyHelper
                                 End If
                             End If
                         Next
-                        If stocksRuleData IsNot Nothing AndAlso stocksRuleData.Count > 0 Then
-                            stocksRuleData.FirstOrDefault.Value.AnotherPairInstrument = stocksRuleData.LastOrDefault.Value
-                            stocksRuleData.LastOrDefault.Value.AnotherPairInstrument = stocksRuleData.FirstOrDefault.Value
+                        'If stocksRuleData IsNot Nothing AndAlso stocksRuleData.Count > 0 Then
+                        '    stocksRuleData.FirstOrDefault.Value.AnotherPairInstrument = stocksRuleData.LastOrDefault.Value
+                        '    stocksRuleData.LastOrDefault.Value.AnotherPairInstrument = stocksRuleData.FirstOrDefault.Value
 
-                            For Each stockRule In stocksRuleData.Values
-                                stockRule.CompletePairProcessing()
-                            Next
-                        End If
-                        '---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                        '    For Each stockRule In stocksRuleData.Values
+                        '        stockRule.CompletePairProcessing()
+                        '    Next
+                        'End If
+                        ''---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
                         If currentDayOneMinuteStocksPayload IsNot Nothing AndAlso currentDayOneMinuteStocksPayload.Count > 0 Then
                             OnHeartbeat(String.Format("Checking Trade on {0}", tradeCheckingDate.ToShortDateString))

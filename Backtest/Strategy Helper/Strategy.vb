@@ -614,6 +614,25 @@ Namespace StrategyHelper
             Return ret
         End Function
 
+        Public Function GetAllTradesByTag(ByVal tag As String, ByVal currentMinutePayload As Payload) As List(Of Trade)
+            Dim ret As List(Of Trade) = Nothing
+            If currentMinutePayload IsNot Nothing Then
+                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
+                    For Each runningDate In TradesTaken.Keys
+                        If TradesTaken(runningDate).ContainsKey(currentMinutePayload.TradingSymbol) Then
+                            For Each runningTrade In TradesTaken(runningDate)(currentMinutePayload.TradingSymbol)
+                                If runningTrade.Tag = tag Then
+                                    If ret Is Nothing Then ret = New List(Of Trade)
+                                    ret.Add(runningTrade)
+                                End If
+                            Next
+                        End If
+                    Next
+                End If
+            End If
+            Return ret
+        End Function
+
         Public Sub ExitTradeByForce(ByVal currentTrade As Trade, ByVal currentPayload As Payload, ByVal exitRemark As String)
             If currentTrade Is Nothing Then Throw New ApplicationException("Supplied trade is nothing, cannot exit")
 
@@ -1751,7 +1770,7 @@ Namespace StrategyHelper
                                                     mainRawData(rowCtr, colCtr) = tradeTaken.TradingDate.ToString("dd-MMM-yyyy")
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.TradingSymbol
+                                                    mainRawData(rowCtr, colCtr) = tradeTaken.SupportingTradingSymbol
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                                     mainRawData(rowCtr, colCtr) = tradeTaken.CapitalRequiredWithMargin

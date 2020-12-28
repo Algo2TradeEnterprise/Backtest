@@ -300,8 +300,8 @@ Public Class frmMain
             End Select
 
             Dim atrExtValues As List(Of Decimal) = New List(Of Decimal) From {1.5, 2, 2.5}
-            Dim perExtValues As List(Of Decimal) = New List(Of Decimal) From {0.5, 1, 2}
-            For extTyp As Integer = 1 To 2
+            Dim perExtValues As List(Of Decimal) = New List(Of Decimal) From {10}
+            For extTyp As Integer = 2 To 2
                 Dim listToFollow As List(Of Decimal) = Nothing
                 If extTyp = 1 Then
                     listToFollow = atrExtValues
