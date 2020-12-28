@@ -76,7 +76,8 @@ Public Class HourlyRainbowStrategyRule
                     Dim atr As Decimal = _atrPayload(currentCandle.PreviousCandlePayload.PayloadDate)
                     If currentCandle.PreviousCandlePayload.Close > Math.Max(rainbow.SMA1, Math.Max(rainbow.SMA2, Math.Max(rainbow.SMA3, Math.Max(rainbow.SMA4, Math.Max(rainbow.SMA5, Math.Max(rainbow.SMA6, Math.Max(rainbow.SMA7, Math.Max(rainbow.SMA8, Math.Max(rainbow.SMA9, rainbow.SMA10))))))))) Then
                         If IsValidRainbow(currentCandle) Then
-                            If lastEntryTrade Is Nothing OrElse currentCandle.PreviousCandlePayload.Close <= Val(lastEntryTrade.EntryPrice) - atr Then
+                            If lastEntryTrade Is Nothing OrElse lastEntryTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close OrElse
+                                currentCandle.PreviousCandlePayload.Close <= Val(lastEntryTrade.EntryPrice) - atr Then
                                 If Not EnterTrade(currentCandle.PreviousCandlePayload, currentTick) Then
                                     Throw New NotImplementedException()
                                 End If
@@ -213,6 +214,13 @@ Public Class HourlyRainbowStrategyRule
                 Dim currentCandle As Payload = inputPayload.Where(Function(x)
                                                                       Return x.Key <= currentMinute
                                                                   End Function).LastOrDefault.Value
+
+                If currentCandle Is Nothing Then
+                    currentCandle = inputPayload.Where(Function(x)
+                                                           Return x.Key.Date = _tradingDate
+                                                       End Function).FirstOrDefault.Value
+                End If
+
                 ret = currentCandle.Ticks.FindAll(Function(x)
                                                       Return x.PayloadDate <= currentTime
                                                   End Function).LastOrDefault
@@ -401,9 +409,11 @@ Public Class HourlyRainbowStrategyRule
             coreInstrumentName = "BANKNIFTY"
         End If
         Dim nextThursday As Date = GetNextThusrday(tradingDate)
+        If nextThursday.Date = New Date(2020, 4, 2).Date Then nextThursday = New Date(2020, 4, 1)
         Dim lastThursday As Date = GetLastThusrdayOfMonth(tradingDate)
         If tradingDate.Date > nextThursday.Date.AddDays(-2) Then
             nextThursday = GetNextThusrday(tradingDate.AddDays(3))
+            If nextThursday.Date = New Date(2020, 4, 2).Date Then nextThursday = New Date(2020, 4, 1)
             If nextThursday.Date = lastThursday.Date Then
                 ret = String.Format("{0}{1}", coreInstrumentName, tradingDate.ToString("yyMMM")).ToUpper
             Else
@@ -423,7 +433,7 @@ Public Class HourlyRainbowStrategyRule
         If expiryDate.Month >= 10 Then
             Return String.Format("{0}{1}{2}", expiryDate.ToString("yy"), expiryDate.ToString("MMM").Substring(0, 1), expiryDate.ToString("dd"))
         Else
-            Return String.Format("{0}{1}{2}", expiryDate.ToString("yy"), expiryDate.Month.ToString.PadLeft(2, "0"), expiryDate.ToString("dd"))
+            Return String.Format("{0}{1}{2}", expiryDate.ToString("yy"), expiryDate.Month, expiryDate.ToString("dd"))
         End If
     End Function
 
