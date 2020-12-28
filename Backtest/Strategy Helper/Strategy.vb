@@ -694,18 +694,23 @@ Namespace StrategyHelper
                                 Dim candleTime As Date = New Date(currentTimeOfExit.Year, currentTimeOfExit.Month, currentTimeOfExit.Day, currentTimeOfExit.Hour, currentTimeOfExit.Minute, 0)
                                 Dim currentPayload As Payload = Nothing
                                 Dim stock As String = stockName
-                                'If stockName.ToUpper.Contains("FUT") Then
-                                '    stock = stockName.Remove(stockName.Count - 8)
-                                'End If
+                                If stockName.ToUpper.Contains("FUT") Then
+                                    stock = stockName.Remove(stockName.Count - 8)
+                                    stock = String.Format("{0}20DECFUT", stock)
+                                End If
                                 If allOneMinutePayload.ContainsKey(stock) AndAlso allOneMinutePayload(stock).ContainsKey(candleTime) Then
                                     currentPayload = allOneMinutePayload(stock)(candleTime).Ticks.FindAll(Function(x)
                                                                                                               Return x.PayloadDate >= currentTimeOfExit
                                                                                                           End Function).FirstOrDefault
                                 End If
                                 If currentPayload Is Nothing Then           'If the current time is more than last available Tick then move to the next available minute
-                                    currentPayload = allOneMinutePayload(stock).Where(Function(x)
-                                                                                          Return x.Key >= currentTimeOfExit
-                                                                                      End Function).FirstOrDefault.Value
+                                    Try
+                                        currentPayload = allOneMinutePayload(stock).Where(Function(x)
+                                                                                              Return x.Key >= currentTimeOfExit
+                                                                                          End Function).FirstOrDefault.Value
+                                    Catch ex As Exception
+                                        Throw ex
+                                    End Try
                                 End If
                                 If currentPayload Is Nothing Then           'If current time payload is not available then pick last available payload
                                     Dim lastPayloadTime As Date = allOneMinutePayload(stock).Keys.LastOrDefault
