@@ -330,8 +330,8 @@ Public Class frmMain
                     {
                      .TargetType = HourlyRainbowStrategyRule.TypeOfTarget.Percentage,
                      .TargetValue = 10,
-                     .ExitAtAveraging = False,
-                     .AveragingType = HourlyRainbowStrategyRule.TypeOfAveraging.FutureEntry,
+                     .ExitAtAveraging = True,
+                     .AveragingType = HourlyRainbowStrategyRule.TypeOfAveraging.SpotSignal,
                      .RainbowPeriod = 7
                     }
 

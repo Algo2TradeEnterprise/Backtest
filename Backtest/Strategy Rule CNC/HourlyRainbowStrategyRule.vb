@@ -106,15 +106,6 @@ Public Class HourlyRainbowStrategyRule
 
                             End If
                             If validEntry Then
-                                If _userInputs.ExitAtAveraging Then
-                                    Dim runningTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentCandle, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
-                                    If runningTrades IsNot Nothing AndAlso runningTrades.Count > 0 Then
-                                        For Each runningTrade In runningTrades
-                                            Dim currentFOTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTick.PayloadDate)
-                                            _parentStrategy.ExitTradeByForce(runningTrade, currentFOTick, "Loss Exit")
-                                        Next
-                                    End If
-                                End If
                                 If Not EnterTrade(currentCandle.PreviousCandlePayload, currentTick) Then
                                     Throw New NotImplementedException()
                                 End If
@@ -302,6 +293,19 @@ Public Class HourlyRainbowStrategyRule
         Dim tradeID As String = System.Guid.NewGuid.ToString()
         Dim tradeNumber As Integer = 1
         Dim entryDate As String = _tradingDate.ToString("dd-MMM-yyyy")
+
+        If _userInputs.ExitAtAveraging Then
+            Dim runningTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(signalCandle, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
+            If runningTrades IsNot Nothing AndAlso runningTrades.Count > 0 Then
+                For Each runningTrade In runningTrades
+                    Dim currentFOTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentSpotTick.PayloadDate)
+                    _parentStrategy.ExitTradeByForce(runningTrade, currentFOTick, "Loss Exit")
+                Next
+                tradeID = runningTrades.LastOrDefault.Tag
+                entryDate = runningTrades.LastOrDefault.Supporting6
+            End If
+        End If
+
         Dim currentFutureTradingSymbol As String = GetFutureInstrumentNameFromCore(Me.TradingSymbol, _tradingDate)
         If currentFutureTradingSymbol IsNot Nothing Then
             Dim currentFutTick As Payload = GetCurrentTick(currentFutureTradingSymbol, currentSpotTick.PayloadDate)
