@@ -299,9 +299,12 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            Dim tfList As List(Of Integer) = New List(Of Integer) From {60, 30, 15}
-            Dim extAtAvrgList As List(Of Integer) = New List(Of Integer) From {1, 0}
-            Dim sgnlTypList As List(Of Integer) = New List(Of Integer) From {1, 2}
+            'Dim tfList As List(Of Integer) = New List(Of Integer) From {60, 30, 15}
+            Dim tfList As List(Of Integer) = New List(Of Integer) From {60}
+            'Dim extAtAvrgList As List(Of Integer) = New List(Of Integer) From {1, 0}
+            Dim extAtAvrgList As List(Of Integer) = New List(Of Integer) From {1}
+            'Dim sgnlTypList As List(Of Integer) = New List(Of Integer) From {1, 2}
+            Dim sgnlTypList As List(Of Integer) = New List(Of Integer) From {1}
             For Each runningTF In tfList
                 For Each runningExt In extAtAvrgList
                     For Each runningSglTyp In sgnlTypList

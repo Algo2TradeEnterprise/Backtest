@@ -10,6 +10,7 @@ Namespace StrategyHelper
             Currency
             Commodity
             Futures
+            Options
             None
         End Enum
         Public Enum TradeExecutionDirection
@@ -223,7 +224,8 @@ Namespace StrategyHelper
         End Property
         Public ReadOnly Property CapitalRequiredWithMargin As Double
             Get
-                Return Me.EntryPrice * Me.Quantity / _OriginatingStrategy.MarginMultiplier
+                'Return Me.EntryPrice * Me.Quantity / _OriginatingStrategy.MarginMultiplier
+                Return 15000
             End Get
         End Property
 

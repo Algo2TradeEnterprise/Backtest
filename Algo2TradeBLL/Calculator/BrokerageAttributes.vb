@@ -1,4 +1,5 @@
-﻿Namespace Calculator
+﻿
+Namespace Calculator
     Public Class BrokerageAttributes
         Public Property Buy As Decimal
         Public Property Sell As Decimal
@@ -11,6 +12,7 @@
         Public Property Clearing As Decimal
         Public Property GST As Decimal
         Public Property SEBI As Decimal
+        Public Property StampDuty As Decimal
         Public Property TotalTax As Decimal
         Public Property BreakevenPoints As Decimal
         Public Property NetProfitLoss As Decimal

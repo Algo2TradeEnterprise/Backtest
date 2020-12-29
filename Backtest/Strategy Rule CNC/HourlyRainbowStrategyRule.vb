@@ -384,7 +384,7 @@ Public Class HourlyRainbowStrategyRule
                     If currentOptTick IsNot Nothing Then
                         Dim runningOptTrade As Trade = New Trade(originatingStrategy:=_parentStrategy,
                                                                 tradingSymbol:=signalCandle.TradingSymbol,
-                                                                stockType:=Trade.TypeOfStock.Futures,
+                                                                stockType:=Trade.TypeOfStock.Options,
                                                                 orderType:=Trade.TypeOfOrder.Market,
                                                                 tradingDate:=currentOptTick.PayloadDate,
                                                                 entryDirection:=Trade.TradeExecutionDirection.Buy,
@@ -414,7 +414,9 @@ Public Class HourlyRainbowStrategyRule
 
                         If _parentStrategy.PlaceOrModifyOrder(runningOptTrade, Nothing) Then
                             If _parentStrategy.EnterTradeIfPossible(runningFutTrade, currentFutTick) Then
-                                ret = _parentStrategy.EnterTradeIfPossible(runningOptTrade, currentOptTick)
+                                If _parentStrategy.EnterTradeIfPossible(runningOptTrade, currentOptTick) Then
+                                    ret = True
+                                End If
                             End If
                         End If
                     End If
@@ -429,7 +431,7 @@ Public Class HourlyRainbowStrategyRule
         Try
             Dim runningFutTrade As Trade = New Trade(originatingStrategy:=_parentStrategy,
                                                       tradingSymbol:=existingTrade.SignalCandle.TradingSymbol,
-                                                      stockType:=Trade.TypeOfStock.Futures,
+                                                      stockType:=existingTrade.StockType,
                                                       orderType:=Trade.TypeOfOrder.Market,
                                                       tradingDate:=currentTick.PayloadDate,
                                                       entryDirection:=Trade.TradeExecutionDirection.Buy,
