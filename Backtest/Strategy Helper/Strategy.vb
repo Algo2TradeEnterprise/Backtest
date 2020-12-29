@@ -1337,6 +1337,23 @@ Namespace StrategyHelper
             End If
             Return ret
         End Function
+
+        Public Function GetMaxCapital(ByVal startTime As Date, ByVal endTime As Date) As Decimal
+            Dim ret As Decimal = Decimal.MinValue
+            If Me.CapitalMovement IsNot Nothing AndAlso CapitalMovement.Count > 0 Then
+                For Each runningDate In CapitalMovement.Keys
+                    If runningDate.Date >= startTime.Date AndAlso runningDate.Date <= endTime.Date Then
+                        For Each runningCapital In CapitalMovement(runningDate)
+                            If runningCapital.CapitalExhaustedDateTime >= startTime AndAlso
+                                runningCapital.CapitalExhaustedDateTime <= endTime Then
+                                ret = Math.Max(ret, runningCapital.RunningCapital)
+                            End If
+                        Next
+                    End If
+                Next
+            End If
+            Return ret
+        End Function
 #End Region
 
 #Region "Public MustOverride Function"

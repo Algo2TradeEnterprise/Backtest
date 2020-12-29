@@ -135,27 +135,29 @@ Public Class HourlyRainbowStrategyRule
                         End If
                     Next
 
-                    Dim plToAchive As Decimal = currentTrade.Supporting5 * 30000 * _userInputs.TargetValue / 100
+                    Dim entryDate As Date = Date.ParseExact(allTrades.LastOrDefault.Supporting6, "dd-MMM-yyyy HH:mm:ss", Nothing).Date
+                    Dim plToAchive As Decimal = Math.Max(_parentStrategy.GetMaxCapital(entryDate, currentTick.PayloadDate), 30000) * _userInputs.TargetValue / 100
 
-                    If _userInputs.ExitAtAveraging Then
-                        Dim closedTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentTick, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Close)
-                        If closedTrades IsNot Nothing AndAlso closedTrades.Count > 0 Then
-                            Dim pl As Decimal = 0
-                            For Each runningTrade In closedTrades.OrderByDescending(Function(x)
-                                                                                        Return x.ExitTime
-                                                                                    End Function)
-                                If runningTrade.Tag <> currentTrade.Tag Then
-                                    If runningTrade.ExitRemark.ToUpper = "TARGET HIT" Then
-                                        Exit For
-                                    Else
-                                        pl += _parentStrategy.CalculatePL(runningTrade.SupportingTradingSymbol, runningTrade.EntryPrice, runningTrade.ExitPrice, runningTrade.Quantity, runningTrade.LotSize, runningTrade.StockType)
-                                    End If
-                                End If
-                            Next
+                    'Dim plToAchive As Decimal = currentTrade.Supporting5 * 30000 * _userInputs.TargetValue / 100
+                    'If _userInputs.ExitAtAveraging Then
+                    '    Dim closedTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentTick, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Close)
+                    '    If closedTrades IsNot Nothing AndAlso closedTrades.Count > 0 Then
+                    '        Dim pl As Decimal = 0
+                    '        For Each runningTrade In closedTrades.OrderByDescending(Function(x)
+                    '                                                                    Return x.ExitTime
+                    '                                                                End Function)
+                    '            If runningTrade.Tag <> currentTrade.Tag Then
+                    '                If runningTrade.ExitRemark.ToUpper = "TARGET HIT" Then
+                    '                    Exit For
+                    '                Else
+                    '                    pl += _parentStrategy.CalculatePL(runningTrade.SupportingTradingSymbol, runningTrade.EntryPrice, runningTrade.ExitPrice, runningTrade.Quantity, runningTrade.LotSize, runningTrade.StockType)
+                    '                End If
+                    '            End If
+                    '        Next
 
-                            plToAchive = plToAchive - pl
-                        End If
-                    End If
+                    '        plToAchive = plToAchive - pl
+                    '    End If
+                    'End If
 
                     If totalPL >= plToAchive Then
                         ret = New Tuple(Of Boolean, String)(True, "Target Hit")
@@ -202,8 +204,8 @@ Public Class HourlyRainbowStrategyRule
                     End If
                 Next
 
-                Dim entryDate As Date = Date.ParseExact(allTrades.LastOrDefault.Supporting6, "dd-MMM-yyyy", Nothing)
-                Dim exitDate As Date = _tradingDate.ToString("dd-MMM-yyyy")
+                Dim entryDate As Date = Date.ParseExact(allTrades.LastOrDefault.Supporting6, "dd-MMM-yyyy HH:mm:ss", Nothing).Date
+                Dim exitDate As Date = currentTick.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss")
                 Dim numberOfDays As Integer = _tradingDate.Subtract(entryDate).Days
                 For Each runningTrade In allTrades
                     runningTrade.UpdateTrade(Supporting7:=exitDate, Supporting8:=numberOfDays)
@@ -293,7 +295,7 @@ Public Class HourlyRainbowStrategyRule
         Dim ret As Boolean = False
         Dim tradeID As String = System.Guid.NewGuid.ToString()
         Dim tradeNumber As Integer = 1
-        Dim entryDate As String = _tradingDate.ToString("dd-MMM-yyyy")
+        Dim entryDate As String = currentSpotTick.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss")
 
         If _userInputs.ExitAtAveraging Then
             Dim runningTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(signalCandle, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
