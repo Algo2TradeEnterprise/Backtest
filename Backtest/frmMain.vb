@@ -305,75 +305,79 @@ Public Class frmMain
             'Dim extAtAvrgList As List(Of Integer) = New List(Of Integer) From {1}
             Dim sgnlTypList As List(Of Integer) = New List(Of Integer) From {1, 2}
             'Dim sgnlTypList As List(Of Integer) = New List(Of Integer) From {1}
+            Dim rnbwPrdList As List(Of Integer) = New List(Of Integer) From {7, 20, 50}
             For Each runningTF In tfList
                 For Each runningExt In extAtAvrgList
                     For Each runningSglTyp In sgnlTypList
-                        Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
-                                                                          exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                                          exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                                          tradeStartTime:=TimeSpan.Parse("9:15:00"),
-                                                                          lastTradeEntryTime:=TimeSpan.Parse("15:29:59"),
-                                                                          eodExitTime:=TimeSpan.Parse("15:29:59"),
-                                                                          tickSize:=tick,
-                                                                          marginMultiplier:=margin,
-                                                                          timeframe:=runningTF,
-                                                                          heikenAshiCandle:=False,
-                                                                          stockType:=stockType,
-                                                                          databaseTable:=database,
-                                                                          dataSource:=sourceData,
-                                                                          initialCapital:=Decimal.MaxValue / 2,
-                                                                          usableCapital:=Decimal.MaxValue / 2,
-                                                                          minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
-                                                                          amountToBeWithdrawn:=0)
-                            AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+                        For Each runningRnbwPrd In rnbwPrdList
+                            Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
+                                                                              exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                              exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                              tradeStartTime:=TimeSpan.Parse("9:15:00"),
+                                                                              lastTradeEntryTime:=TimeSpan.Parse("15:29:59"),
+                                                                              eodExitTime:=TimeSpan.Parse("15:29:59"),
+                                                                              tickSize:=tick,
+                                                                              marginMultiplier:=margin,
+                                                                              timeframe:=runningTF,
+                                                                              heikenAshiCandle:=False,
+                                                                              stockType:=stockType,
+                                                                              databaseTable:=database,
+                                                                              dataSource:=sourceData,
+                                                                              initialCapital:=Decimal.MaxValue / 2,
+                                                                              usableCapital:=Decimal.MaxValue / 2,
+                                                                              minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                                              amountToBeWithdrawn:=0)
+                                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                            With backtestStrategy
-                                '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Cash Future Pair Stock List.csv")
-                                .StockFileName = Nothing
+                                With backtestStrategy
+                                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Cash Future Pair Stock List.csv")
+                                    .StockFileName = Nothing
 
-                                .AllowBothDirectionEntryAtSameTime = False
-                                .TrailingStoploss = False
-                                .TickBasedStrategy = True
-                                .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+                                    .AllowBothDirectionEntryAtSameTime = False
+                                    .TrailingStoploss = False
+                                    .TickBasedStrategy = True
+                                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                                .RuleEntityData = New HourlyRainbowStrategyRule.StrategyRuleEntities With
-                                {
-                                 .TargetType = HourlyRainbowStrategyRule.TypeOfTarget.Percentage,
-                                 .TargetValue = 10,
-                                 .ExitAtAveraging = runningExt,
-                                 .AveragingType = runningSglTyp,
-                                 .RainbowPeriod = 7
-                                }
+                                    .RuleEntityData = New HourlyRainbowStrategyRule.StrategyRuleEntities With
+                                    {
+                                     .TargetType = HourlyRainbowStrategyRule.TypeOfTarget.Percentage,
+                                     .TargetValue = 10,
+                                     .ExitAtAveraging = runningExt,
+                                     .AveragingType = runningSglTyp,
+                                     .RainbowPeriod = runningRnbwPrd
+                                    }
 
-                                .NumberOfTradeableStockPerDay = Integer.MaxValue
+                                    .NumberOfTradeableStockPerDay = Integer.MaxValue
 
-                                .NumberOfTradesPerStockPerDay = Integer.MaxValue
+                                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
-                                .StockMaxProfitPercentagePerDay = Decimal.MaxValue
-                                .StockMaxLossPercentagePerDay = Decimal.MinValue
+                                    .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                                    .StockMaxLossPercentagePerDay = Decimal.MinValue
 
-                                .ExitOnStockFixedTargetStoploss = False
-                                .StockMaxProfitPerDay = Decimal.MaxValue
-                                .StockMaxLossPerDay = Decimal.MinValue
+                                    .ExitOnStockFixedTargetStoploss = False
+                                    .StockMaxProfitPerDay = Decimal.MaxValue
+                                    .StockMaxLossPerDay = Decimal.MinValue
 
-                                .ExitOnOverAllFixedTargetStoploss = False
-                                .OverAllProfitPerDay = Decimal.MaxValue
-                                .OverAllLossPerDay = Decimal.MinValue
+                                    .ExitOnOverAllFixedTargetStoploss = False
+                                    .OverAllProfitPerDay = Decimal.MaxValue
+                                    .OverAllLossPerDay = Decimal.MinValue
 
-                                .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
-                                .MTMSlab = Math.Abs(.OverAllLossPerDay)
-                                .MovementSlab = .MTMSlab / 2
-                                .RealtimeTrailingPercentage = 50
-                            End With
+                                    .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+                                    .MTMSlab = Math.Abs(.OverAllLossPerDay)
+                                    .MovementSlab = .MTMSlab / 2
+                                    .RealtimeTrailingPercentage = 50
+                                End With
 
-                            Dim ruleData As HourlyRainbowStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                            Dim filename As String = String.Format("Rnbw FutOpt CNC,TF {0},ExtAtAvrg {1},AvrgTyp {2}",
-                                                                   backtestStrategy.SignalTimeFrame,
-                                                                   ruleData.ExitAtAveraging,
-                                                                   ruleData.AveragingType.ToString)
+                                Dim ruleData As HourlyRainbowStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                                Dim filename As String = String.Format("RnbwFutOptCNC,TF {0},ExtAtAvrg {1},AvrgTyp {2},RnbwPrd {3}",
+                                                                       backtestStrategy.SignalTimeFrame,
+                                                                       ruleData.ExitAtAveraging,
+                                                                       ruleData.AveragingType.ToString,
+                                                                       ruleData.RainbowPeriod)
 
-                            Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-                        End Using
+                                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                            End Using
+                        Next
                     Next
                 Next
             Next

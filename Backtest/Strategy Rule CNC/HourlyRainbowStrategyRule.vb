@@ -11,8 +11,8 @@ Public Class HourlyRainbowStrategyRule
         Percentage
     End Enum
     Enum TypeOfAveraging
-        SpotSignal = 1
-        FutureEntry
+        Spt = 1
+        Fut
     End Enum
     Public Class StrategyRuleEntities
         Inherits RuleEntities
@@ -90,11 +90,11 @@ Public Class HourlyRainbowStrategyRule
                                 If lastEntryTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
                                     validEntry = True
                                 Else
-                                    If _userInputs.AveragingType = TypeOfAveraging.FutureEntry Then
+                                    If _userInputs.AveragingType = TypeOfAveraging.Fut Then
                                         If currentCandle.PreviousCandlePayload.Close <= Val(lastEntryTrade.EntryPrice) - atr Then
                                             validEntry = True
                                         End If
-                                    ElseIf _userInputs.AveragingType = TypeOfAveraging.SpotSignal Then
+                                    ElseIf _userInputs.AveragingType = TypeOfAveraging.Spt Then
                                         If currentCandle.PreviousCandlePayload.Close <= Val(lastEntryTrade.SignalCandle.Close) - atr Then
                                             validEntry = True
                                         End If

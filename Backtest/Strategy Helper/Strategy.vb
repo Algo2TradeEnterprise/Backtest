@@ -1453,6 +1453,7 @@ Namespace StrategyHelper
                     End If
                     If allTradesData IsNot Nothing AndAlso allTradesData.Count > 0 Then
                         Dim cts As New CancellationTokenSource
+
                         Dim maxDrawUp As Decimal = Decimal.MinValue
                         Dim maxDrawDown As Decimal = Decimal.MinValue
                         If allTradesData.Count = 1 Then
@@ -1587,6 +1588,31 @@ Namespace StrategyHelper
                                                                                                              End Function)
                                                                                      End Function)
 
+                        Dim maxNumberOfDays As Decimal = allTradesData.Values.Max(Function(x)
+                                                                                      Return x.Values.Max(Function(y)
+                                                                                                              Return y.Max(Function(z)
+                                                                                                                               If z.Supporting8 IsNot Nothing AndAlso IsNumeric(z.Supporting8) Then
+                                                                                                                                   Return z.Supporting8
+                                                                                                                               Else
+                                                                                                                                   Return Decimal.MinValue
+                                                                                                                               End If
+                                                                                                                           End Function)
+                                                                                                          End Function)
+                                                                                  End Function)
+
+                        Dim distinctTagList As List(Of String) = New List(Of String)
+                        For Each runningDate In allTradesData
+                            For Each runningStock In runningDate.Value
+                                If runningStock.Value IsNot Nothing AndAlso runningStock.Value.Count > 0 Then
+                                    For Each runningTrade In runningStock.Value
+                                        If Not distinctTagList.Contains(runningTrade.Tag) Then
+                                            distinctTagList.Add(runningTrade.Tag)
+                                        End If
+                                    Next
+                                End If
+                            Next
+                        Next
+
                         Dim winRatio As Decimal = Math.Round((totalPositiveTrades / totalTrades) * 100, 2)
                         Dim riskReward As Decimal = 0
                         If totalPositiveTrades <> 0 AndAlso (totalTrades - totalPositiveTrades) <> 0 Then
@@ -1614,10 +1640,12 @@ Namespace StrategyHelper
                         End With
 
                         Dim roi As Decimal = (strategyOutputData.NetProfit / maxCapital) * 100
-                        fileName = String.Format("PL {0},Cap {1},ROI {2},{3}.xlsx",
+                        fileName = String.Format("PL {0},Cap {1},ROI {2},TrdNmbr {3},MaxDays {4},{5}.xlsx",
                                                  Math.Round(strategyOutputData.NetProfit, 0),
                                                  Math.Round(maxCapital, 0),
                                                  Math.Round(roi, 0),
+                                                 distinctTagList.Count,
+                                                 maxNumberOfDays,
                                                  fileName)
 
                         Dim filepath As String = Path.Combine(My.Application.Info.DirectoryPath, "BackTest Output", fileName)
