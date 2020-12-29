@@ -30,7 +30,7 @@ Public Class HourlyRainbowStrategyRule
 
     Private _dependentInstruments As Dictionary(Of String, Dictionary(Of Date, Payload)) = Nothing
 
-    Private ReadOnly _strikeGap As Decimal = 100
+    'Private ReadOnly _strikeGap As Decimal = 100
     Private ReadOnly _userInputs As StrategyRuleEntities
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -180,10 +180,11 @@ Public Class HourlyRainbowStrategyRule
                     _parentStrategy.ExitTradeByForce(currentTrade, currentFOTick, "Contract Rollover")
 
                     If Not currentTrade.SupportingTradingSymbol.EndsWith("FUT") Then
-                        Dim currentFutTick As Payload = GetCurrentTick(GetFutureInstrumentNameFromCore(Me.TradingSymbol, _nextTradingDay), currentTick.PayloadDate)
+                        'Dim currentFutTick As Payload = GetCurrentTick(GetFutureInstrumentNameFromCore(Me.TradingSymbol, _nextTradingDay), currentTick.PayloadDate)
 
-                        Dim atm As Decimal = Math.Ceiling(currentFutTick.Open / _strikeGap) * _strikeGap
-                        currentTradingSymbol = String.Format("{0}{1}PE", GetOptionInstrumentNameFromCore(Me.TradingSymbol, _nextTradingDay), atm)
+                        'Dim atm As Decimal = Math.Ceiling(currentTick.Open / _strikeGap) * _strikeGap
+                        'currentTradingSymbol = String.Format("{0}{1}PE", GetOptionInstrumentNameFromCore(Me.TradingSymbol, _nextTradingDay), atm)
+                        currentTradingSymbol = GetCurrentATMOption(currentTick, GetOptionInstrumentNameFromCore(Me.TradingSymbol, _nextTradingDay))
                     End If
 
                     currentFOTick = GetCurrentTick(currentTradingSymbol, currentTick.PayloadDate)
@@ -376,8 +377,9 @@ Public Class HourlyRainbowStrategyRule
                                              SupportingTradingSymbol:=currentFutureTradingSymbol)
 
                 If _parentStrategy.PlaceOrModifyOrder(runningFutTrade, Nothing) Then
-                    Dim atm As Decimal = Math.Ceiling(currentFutTick.Open / _strikeGap) * _strikeGap
-                    Dim currentOptionTradingSymbol As String = String.Format("{0}{1}PE", GetOptionInstrumentNameFromCore(Me.TradingSymbol, _tradingDate), atm)
+                    'Dim atm As Decimal = Math.Ceiling(currentSpotTick.Open / _strikeGap) * _strikeGap
+                    'Dim currentOptionTradingSymbol As String = String.Format("{0}{1}PE", GetOptionInstrumentNameFromCore(Me.TradingSymbol, _tradingDate), atm)
+                    Dim currentOptionTradingSymbol As String = GetCurrentATMOption(currentSpotTick, GetOptionInstrumentNameFromCore(Me.TradingSymbol, _tradingDate))
                     Dim currentOptTick As Payload = GetCurrentTick(currentOptionTradingSymbol, currentSpotTick.PayloadDate)
                     If currentOptTick IsNot Nothing Then
                         Dim runningOptTrade As Trade = New Trade(originatingStrategy:=_parentStrategy,
@@ -424,43 +426,112 @@ Public Class HourlyRainbowStrategyRule
 
     Private Function EnterDuplicateTrade(ByVal existingTrade As Trade, ByVal currentTick As Payload) As Boolean
         Dim ret As Boolean = False
-        Dim runningFutTrade As Trade = New Trade(originatingStrategy:=_parentStrategy,
-                                                  tradingSymbol:=existingTrade.SignalCandle.TradingSymbol,
-                                                  stockType:=Trade.TypeOfStock.Futures,
-                                                  orderType:=Trade.TypeOfOrder.Market,
-                                                  tradingDate:=currentTick.PayloadDate,
-                                                  entryDirection:=Trade.TradeExecutionDirection.Buy,
-                                                  entryPrice:=currentTick.Open,
-                                                  entryBuffer:=0,
-                                                  squareOffType:=Trade.TypeOfTrade.CNC,
-                                                  entryCondition:=Trade.TradeEntryCondition.Original,
-                                                  entryRemark:="Original Entry",
-                                                  quantity:=Me.LotSize,
-                                                  lotSize:=Me.LotSize,
-                                                  potentialTarget:=currentTick.Open + 100000,
-                                                  targetRemark:=100000,
-                                                  potentialStopLoss:=currentTick.Open - 100000,
-                                                  stoplossBuffer:=0,
-                                                  slRemark:=100000,
-                                                  signalCandle:=existingTrade.SignalCandle)
+        Try
+            Dim runningFutTrade As Trade = New Trade(originatingStrategy:=_parentStrategy,
+                                                      tradingSymbol:=existingTrade.SignalCandle.TradingSymbol,
+                                                      stockType:=Trade.TypeOfStock.Futures,
+                                                      orderType:=Trade.TypeOfOrder.Market,
+                                                      tradingDate:=currentTick.PayloadDate,
+                                                      entryDirection:=Trade.TradeExecutionDirection.Buy,
+                                                      entryPrice:=currentTick.Open,
+                                                      entryBuffer:=0,
+                                                      squareOffType:=Trade.TypeOfTrade.CNC,
+                                                      entryCondition:=Trade.TradeEntryCondition.Original,
+                                                      entryRemark:="Original Entry",
+                                                      quantity:=Me.LotSize,
+                                                      lotSize:=Me.LotSize,
+                                                      potentialTarget:=currentTick.Open + 100000,
+                                                      targetRemark:=100000,
+                                                      potentialStopLoss:=currentTick.Open - 100000,
+                                                      stoplossBuffer:=0,
+                                                      slRemark:=100000,
+                                                      signalCandle:=existingTrade.SignalCandle)
 
-        runningFutTrade.UpdateTrade(Tag:=existingTrade.Tag,
-                                    SquareOffValue:=100000,
-                                    Supporting1:=existingTrade.Supporting1,
-                                    Supporting2:=existingTrade.Supporting2,
-                                    Supporting3:=existingTrade.Supporting3,
-                                    Supporting4:=existingTrade.Supporting4,
-                                    Supporting5:=existingTrade.Supporting5,
-                                    Supporting6:=existingTrade.Supporting6,
-                                    SupportingTradingSymbol:=currentTick.TradingSymbol)
+            runningFutTrade.UpdateTrade(Tag:=existingTrade.Tag,
+                                        SquareOffValue:=100000,
+                                        Supporting1:=existingTrade.Supporting1,
+                                        Supporting2:=existingTrade.Supporting2,
+                                        Supporting3:=existingTrade.Supporting3,
+                                        Supporting4:=existingTrade.Supporting4,
+                                        Supporting5:=existingTrade.Supporting5,
+                                        Supporting6:=existingTrade.Supporting6,
+                                        SupportingTradingSymbol:=currentTick.TradingSymbol)
 
-        If _parentStrategy.PlaceOrModifyOrder(runningFutTrade, Nothing) Then
-            ret = _parentStrategy.EnterTradeIfPossible(runningFutTrade, currentTick)
-        End If
+            If _parentStrategy.PlaceOrModifyOrder(runningFutTrade, Nothing) Then
+                ret = _parentStrategy.EnterTradeIfPossible(runningFutTrade, currentTick)
+            End If
+        Catch ex As Exception
+            Throw ex
+        End Try
         Return ret
     End Function
 
 #Region "Contract Helper"
+    Private Function GetCurrentATMOption(ByVal currentTick As Payload, ByVal expiryString As String) As String
+        Dim ret As String = Nothing
+        Dim query As String = Nothing
+        If currentTick.PayloadDate.Hour >= 12 AndAlso currentTick.PayloadDate.Minute >= 15 Then
+            query = "SELECT `TradingSymbol`,SUM(`Volume`) Vol
+                        FROM `intraday_prices_opt_futures`
+                        WHERE `SnapshotDate`='{0}'
+                        AND `SnapshotTime`<='{1}'
+                        AND `TradingSymbol` LIKE '{2}%PE'
+                        GROUP BY `TradingSymbol`
+                        ORDER BY Vol DESC"
+            query = String.Format(query, currentTick.PayloadDate.ToString("yyyy-MM-dd"), currentTick.PayloadDate.ToString("HH:mm:ss"), expiryString)
+        Else
+            query = "SELECT `TradingSymbol`,`Volume` Vol
+                        FROM `eod_prices_opt_futures`
+                        WHERE `SnapshotDate`='{0}'
+                        AND `TradingSymbol` LIKE '{1}%PE'
+                        ORDER BY Vol DESC"
+
+            Dim previousTradingDay As Date = _parentStrategy.Cmn.GetPreviousTradingDay(Common.DataBaseTable.EOD_Futures, _tradingDate)
+            query = String.Format(query, previousTradingDay.ToString("yyyy-MM-dd"), expiryString)
+        End If
+
+        Dim dt As DataTable = _parentStrategy.Cmn.RunSelect(query)
+        If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
+            Dim contracts As Dictionary(Of Decimal, Long) = New Dictionary(Of Decimal, Long)
+            For Each runningRow As DataRow In dt.Rows
+                Dim tradingSymbol As String = runningRow.Item("TradingSymbol")
+                Dim volume As Long = runningRow.Item("Vol")
+                Dim strike As String = Utilities.Strings.GetTextBetween(expiryString, "PE", tradingSymbol)
+                If strike IsNot Nothing AndAlso strike.Trim <> "" AndAlso IsNumeric(strike.Trim) Then
+                    contracts.Add(Val(strike.Trim), volume)
+                End If
+            Next
+            If contracts IsNot Nothing AndAlso contracts.Count > 0 Then
+                Dim sumVol As Double = contracts.Sum(Function(x)
+                                                         If x.Key >= currentTick.Open Then
+                                                             Return x.Value
+                                                         Else
+                                                             Return 0
+                                                         End If
+                                                     End Function)
+                Dim countVol As Double = contracts.Sum(Function(x)
+                                                           If x.Key >= currentTick.Open Then
+                                                               Return 1
+                                                           Else
+                                                               Return 0
+                                                           End If
+                                                       End Function)
+                Dim avgVol As Double = sumVol / countVol
+                For Each runningContract In contracts.OrderBy(Function(x)
+                                                                  Return x.Key
+                                                              End Function)
+                    If runningContract.Key >= currentTick.Open Then
+                        If runningContract.Value >= avgVol Then
+                            ret = String.Format("{0}{1}PE", expiryString, runningContract.Key)
+                            Exit For
+                        End If
+                    End If
+                Next
+            End If
+        End If
+        Return ret
+    End Function
+
     Private Function GetFutureInstrumentNameFromCore(ByVal coreInstrumentName As String, ByVal tradingDate As Date) As String
         Dim ret As String = Nothing
         If coreInstrumentName = "NIFTY 50" Then
