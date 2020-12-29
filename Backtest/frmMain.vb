@@ -339,7 +339,8 @@ Public Class frmMain
                             .RuleEntityData = New HourlyRainbowStrategyRule.StrategyRuleEntities With
                             {
                              .ExitType = extTyp,
-                             .ExitValue = extVal
+                             .ExitValue = extVal,
+                             .Averaging = False
                             }
 
                             .NumberOfTradeableStockPerDay = Integer.MaxValue

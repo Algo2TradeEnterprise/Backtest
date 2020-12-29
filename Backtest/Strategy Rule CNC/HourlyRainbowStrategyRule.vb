@@ -15,6 +15,7 @@ Public Class HourlyRainbowStrategyRule
 
         Public ExitType As TypeOfExit
         Public ExitValue As Decimal
+        Public Averaging As Boolean
     End Class
 #End Region
 
@@ -22,7 +23,7 @@ Public Class HourlyRainbowStrategyRule
     Private _rainbowPayload As Dictionary(Of Date, Indicator.RainbowMA)
 
     Private _dependentInstruments As Dictionary(Of String, Dictionary(Of Date, Payload)) = Nothing
-    Private _strikeGap As Decimal = 50
+    Private _strikeGap As Decimal = 100
 
     Private ReadOnly _userInputs As StrategyRuleEntities
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
@@ -78,6 +79,15 @@ Public Class HourlyRainbowStrategyRule
                         If IsValidRainbow(currentCandle) Then
                             If lastEntryTrade Is Nothing OrElse lastEntryTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close OrElse
                                 currentCandle.PreviousCandlePayload.Close <= Val(lastEntryTrade.EntryPrice) - atr Then
+                                If Not _userInputs.Averaging Then
+                                    Dim runningTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentCandle, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
+                                    If runningTrades IsNot Nothing AndAlso runningTrades.Count > 0 Then
+                                        For Each runningTrade In runningTrades
+                                            Dim currentFOTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTick.PayloadDate)
+                                            _parentStrategy.ExitTradeByForce(runningTrade, currentFOTick, "Loss Exit")
+                                        Next
+                                    End If
+                                End If
                                 If Not EnterTrade(currentCandle.PreviousCandlePayload, currentTick) Then
                                     Throw New NotImplementedException()
                                 End If
@@ -106,15 +116,38 @@ Public Class HourlyRainbowStrategyRule
                             totalPL += _parentStrategy.CalculatePL(runningTrade.SupportingTradingSymbol, runningTrade.EntryPrice, currentFOTick.Open, runningTrade.Quantity, runningTrade.LotSize, runningTrade.StockType)
                         End If
                     Next
-                    If totalPL >= currentTrade.Supporting5 * 30000 * _userInputs.ExitValue / 100 Then
-                        ret = New Tuple(Of Boolean, String)(True, "Percentage Target Hit")
+
+                    Dim plToAchive As Decimal = currentTrade.Supporting5 * 30000 * _userInputs.ExitValue / 100
+
+                    If Not _userInputs.Averaging Then
+                        Dim closedTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentTick, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Close)
+                        If closedTrades IsNot Nothing AndAlso closedTrades.Count > 0 Then
+                            Dim pl As Decimal = 0
+                            For Each runningTrade In closedTrades.OrderByDescending(Function(x)
+                                                                                        Return x.ExitTime
+                                                                                    End Function)
+                                If runningTrade.Tag <> currentTrade.Tag Then
+                                    If runningTrade.ExitRemark.ToUpper = "TARGET HIT" Then
+                                        Exit For
+                                    Else
+                                        pl += _parentStrategy.CalculatePL(runningTrade.SupportingTradingSymbol, runningTrade.EntryPrice, runningTrade.ExitPrice, runningTrade.Quantity, runningTrade.LotSize, runningTrade.StockType)
+                                    End If
+                                End If
+                            Next
+
+                            plToAchive = plToAchive - pl
+                        End If
+                    End If
+
+                    If totalPL >= plToAchive Then
+                        ret = New Tuple(Of Boolean, String)(True, "Target Hit")
                     End If
                 End If
             ElseIf _userInputs.ExitType = TypeOfExit.ATR Then
                 Dim avgPrice As Decimal = currentTrade.Supporting1
                 Dim atr As Decimal = currentTrade.Supporting4
                 If currentTick.Open >= avgPrice + atr * _userInputs.ExitValue Then
-                    ret = New Tuple(Of Boolean, String)(True, "ATR Target Hit")
+                    ret = New Tuple(Of Boolean, String)(True, "Target Hit")
                 End If
             End If
             If ret Is Nothing AndAlso currentTick.PayloadDate.Hour >= 15 AndAlso currentTick.PayloadDate.Minute >= 25 Then
