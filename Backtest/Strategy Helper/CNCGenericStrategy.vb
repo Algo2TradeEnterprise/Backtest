@@ -533,7 +533,7 @@ Namespace StrategyHelper
                             End While   'Minute Loop
                         End If
                         If tradeCheckingDate.Date = endDate.Date Then
-                            ExitAllTradeByForce(tradeCheckingDate.AddDays(1).Date, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.CNC, "Open Trade")
+                            'ExitAllTradeByForce(tradeCheckingDate.AddDays(1).Date, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.CNC, "Open Trade")
                         End If
                     End If
                     SetOverallDrawUpDrawDownForTheDay(tradeCheckingDate)

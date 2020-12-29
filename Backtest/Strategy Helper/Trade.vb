@@ -146,6 +146,9 @@ Namespace StrategyHelper
         Public ReadOnly Property Supporting3 As String
         Public ReadOnly Property Supporting4 As String
         Public ReadOnly Property Supporting5 As String
+        Public ReadOnly Property Supporting6 As String
+        Public ReadOnly Property Supporting7 As String
+        Public ReadOnly Property Supporting8 As String
         Public ReadOnly Property SupportingTradingSymbol As String
 
         Private _CurrentLTP As Double
@@ -406,6 +409,9 @@ Namespace StrategyHelper
                                 Optional ByVal Supporting3 As String = Nothing,
                                 Optional ByVal Supporting4 As String = Nothing,
                                 Optional ByVal Supporting5 As String = Nothing,
+                                Optional ByVal Supporting6 As String = Nothing,
+                                Optional ByVal Supporting7 As String = Nothing,
+                                Optional ByVal Supporting8 As String = Nothing,
                                 Optional ByVal SupportingTradingSymbol As String = Nothing)
 
 
@@ -440,6 +446,9 @@ Namespace StrategyHelper
             If Supporting3 IsNot Nothing Then _Supporting3 = Supporting3
             If Supporting4 IsNot Nothing Then _Supporting4 = Supporting4
             If Supporting5 IsNot Nothing Then _Supporting5 = Supporting5
+            If Supporting6 IsNot Nothing Then _Supporting6 = Supporting6
+            If Supporting7 IsNot Nothing Then _Supporting7 = Supporting7
+            If Supporting8 IsNot Nothing Then _Supporting8 = Supporting8
             If SupportingTradingSymbol IsNot Nothing Then _SupportingTradingSymbol = SupportingTradingSymbol
 
             If Me._ExitTime <> Nothing OrElse Me._ExitTime <> Date.MinValue Then
@@ -483,6 +492,9 @@ Namespace StrategyHelper
                 If .Supporting3 IsNot Nothing Then _Supporting3 = .Supporting3
                 If .Supporting4 IsNot Nothing Then _Supporting4 = .Supporting4
                 If .Supporting5 IsNot Nothing Then _Supporting5 = .Supporting5
+                If .Supporting6 IsNot Nothing Then _Supporting6 = .Supporting6
+                If .Supporting7 IsNot Nothing Then _Supporting7 = .Supporting7
+                If .Supporting8 IsNot Nothing Then _Supporting8 = .Supporting8
                 If .SupportingTradingSymbol IsNot Nothing Then _SupportingTradingSymbol = .SupportingTradingSymbol
             End With
 

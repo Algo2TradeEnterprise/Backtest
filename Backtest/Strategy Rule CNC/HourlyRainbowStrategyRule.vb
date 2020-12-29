@@ -6,16 +6,22 @@ Public Class HourlyRainbowStrategyRule
     Inherits StrategyRule
 
 #Region "Entity"
-    Enum TypeOfExit
+    Enum TypeOfTarget
         ATR = 1
         Percentage
+    End Enum
+    Enum TypeOfAveraging
+        SpotSignal = 1
+        FutureEntry
     End Enum
     Public Class StrategyRuleEntities
         Inherits RuleEntities
 
-        Public ExitType As TypeOfExit
-        Public ExitValue As Decimal
-        Public Averaging As Boolean
+        Public RainbowPeriod As Integer
+        Public TargetType As TypeOfTarget
+        Public TargetValue As Decimal
+        Public ExitAtAveraging As Boolean
+        Public AveragingType As TypeOfAveraging
     End Class
 #End Region
 
@@ -23,8 +29,8 @@ Public Class HourlyRainbowStrategyRule
     Private _rainbowPayload As Dictionary(Of Date, Indicator.RainbowMA)
 
     Private _dependentInstruments As Dictionary(Of String, Dictionary(Of Date, Payload)) = Nothing
-    Private _strikeGap As Decimal = 100
 
+    Private ReadOnly _strikeGap As Decimal = 100
     Private ReadOnly _userInputs As StrategyRuleEntities
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -41,7 +47,7 @@ Public Class HourlyRainbowStrategyRule
     Public Overrides Sub CompletePreProcessing()
         MyBase.CompletePreProcessing()
         Indicator.ATR.CalculateATR(14, _signalPayload, _atrPayload)
-        Indicator.RainbowMovingAverage.CalculateRainbowMovingAverage(7, _signalPayload, _rainbowPayload)
+        Indicator.RainbowMovingAverage.CalculateRainbowMovingAverage(_userInputs.RainbowPeriod, _signalPayload, _rainbowPayload)
 
         Dim sampleCandle As Payload = _signalPayload.LastOrDefault.Value
         Dim runningTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(sampleCandle, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
@@ -77,9 +83,30 @@ Public Class HourlyRainbowStrategyRule
                     Dim atr As Decimal = _atrPayload(currentCandle.PreviousCandlePayload.PayloadDate)
                     If currentCandle.PreviousCandlePayload.Close > Math.Max(rainbow.SMA1, Math.Max(rainbow.SMA2, Math.Max(rainbow.SMA3, Math.Max(rainbow.SMA4, Math.Max(rainbow.SMA5, Math.Max(rainbow.SMA6, Math.Max(rainbow.SMA7, Math.Max(rainbow.SMA8, Math.Max(rainbow.SMA9, rainbow.SMA10))))))))) Then
                         If IsValidRainbow(currentCandle) Then
+                            Dim validEntry As Boolean = False
+                            If lastEntryTrade Is Nothing Then
+                                validEntry = True
+                            Else
+                                If lastEntryTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
+                                    validEntry = True
+                                Else
+                                    If _userInputs.AveragingType = TypeOfAveraging.FutureEntry Then
+                                        If currentCandle.PreviousCandlePayload.Close <= Val(lastEntryTrade.EntryPrice) - atr Then
+                                            validEntry = True
+                                        End If
+                                    ElseIf _userInputs.AveragingType = TypeOfAveraging.SpotSignal Then
+                                        If currentCandle.PreviousCandlePayload.Close <= Val(lastEntryTrade.SignalCandle.Close) - atr Then
+                                            validEntry = True
+                                        End If
+                                    End If
+                                End If
+                            End If
                             If lastEntryTrade Is Nothing OrElse lastEntryTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close OrElse
                                 currentCandle.PreviousCandlePayload.Close <= Val(lastEntryTrade.EntryPrice) - atr Then
-                                If Not _userInputs.Averaging Then
+
+                            End If
+                            If validEntry Then
+                                If _userInputs.ExitAtAveraging Then
                                     Dim runningTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentCandle, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
                                     If runningTrades IsNot Nothing AndAlso runningTrades.Count > 0 Then
                                         For Each runningTrade In runningTrades
@@ -104,7 +131,7 @@ Public Class HourlyRainbowStrategyRule
         Dim ret As Tuple(Of Boolean, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-            If _userInputs.ExitType = TypeOfExit.Percentage Then
+            If _userInputs.TargetType = TypeOfTarget.Percentage Then
                 Dim allTrades As List(Of Trade) = _parentStrategy.GetAllTradesByTag(currentTrade.Tag, currentTick)
                 If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
                     Dim totalPL As Decimal = 0
@@ -117,9 +144,9 @@ Public Class HourlyRainbowStrategyRule
                         End If
                     Next
 
-                    Dim plToAchive As Decimal = currentTrade.Supporting5 * 30000 * _userInputs.ExitValue / 100
+                    Dim plToAchive As Decimal = currentTrade.Supporting5 * 30000 * _userInputs.TargetValue / 100
 
-                    If Not _userInputs.Averaging Then
+                    If _userInputs.ExitAtAveraging Then
                         Dim closedTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentTick, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Close)
                         If closedTrades IsNot Nothing AndAlso closedTrades.Count > 0 Then
                             Dim pl As Decimal = 0
@@ -143,10 +170,10 @@ Public Class HourlyRainbowStrategyRule
                         ret = New Tuple(Of Boolean, String)(True, "Target Hit")
                     End If
                 End If
-            ElseIf _userInputs.ExitType = TypeOfExit.ATR Then
+            ElseIf _userInputs.TargetType = TypeOfTarget.ATR Then
                 Dim avgPrice As Decimal = currentTrade.Supporting1
                 Dim atr As Decimal = currentTrade.Supporting4
-                If currentTick.Open >= avgPrice + atr * _userInputs.ExitValue Then
+                If currentTick.Open >= avgPrice + atr * _userInputs.TargetValue Then
                     ret = New Tuple(Of Boolean, String)(True, "Target Hit")
                 End If
             End If
@@ -181,6 +208,13 @@ Public Class HourlyRainbowStrategyRule
                         Dim currentFOTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTick.PayloadDate)
                         _parentStrategy.ExitTradeByForce(runningTrade, currentFOTick, ret.Item2)
                     End If
+                Next
+
+                Dim entryDate As Date = Date.ParseExact(allTrades.LastOrDefault.Supporting6, "dd-MMM-yyyy", Nothing)
+                Dim exitDate As Date = _tradingDate.ToString("dd-MMM-yyyy")
+                Dim numberOfDays As Integer = _tradingDate.Subtract(entryDate).Days
+                For Each runningTrade In allTrades
+                    runningTrade.UpdateTrade(Supporting7:=exitDate, Supporting8:=numberOfDays)
                 Next
             End If
         End If
@@ -267,6 +301,7 @@ Public Class HourlyRainbowStrategyRule
         Dim ret As Boolean = False
         Dim tradeID As String = System.Guid.NewGuid.ToString()
         Dim tradeNumber As Integer = 1
+        Dim entryDate As String = _tradingDate.ToString("dd-MMM-yyyy")
         Dim currentFutureTradingSymbol As String = GetFutureInstrumentNameFromCore(Me.TradingSymbol, _tradingDate)
         If currentFutureTradingSymbol IsNot Nothing Then
             Dim currentFutTick As Payload = GetCurrentTick(currentFutureTradingSymbol, currentSpotTick.PayloadDate)
@@ -275,7 +310,7 @@ Public Class HourlyRainbowStrategyRule
                 Dim avgPrice As Decimal = currentFutTick.Open
                 Dim entryATR As Decimal = _atrPayload(signalCandle.PayloadDate)
                 Dim exitHelper As Decimal = Decimal.MinValue
-                If _userInputs.ExitType = TypeOfExit.ATR Then
+                If _userInputs.TargetType = TypeOfTarget.ATR Then
                     exitHelper = _atrPayload(signalCandle.PayloadDate)
                 Else
                     exitHelper = currentFutTick.Open * Me.LotSize
@@ -293,8 +328,9 @@ Public Class HourlyRainbowStrategyRule
                     entryATR = entryTrades.LastOrDefault.Supporting4
                     tradeID = entryTrades.LastOrDefault.Tag
                     tradeNumber = Val(entryTrades.LastOrDefault.Supporting5) + 1
+                    entryDate = entryTrades.LastOrDefault.Supporting6
 
-                    If _userInputs.ExitType = TypeOfExit.ATR Then
+                    If _userInputs.TargetType = TypeOfTarget.ATR Then
                         exitHelper = Math.Max(Val(entryTrades.LastOrDefault.Supporting3), _atrPayload(signalCandle.PayloadDate))
                     Else
                         exitHelper += Val(entryTrades.LastOrDefault.Supporting3)
@@ -332,6 +368,7 @@ Public Class HourlyRainbowStrategyRule
                                              Supporting3:=exitHelper,
                                              Supporting4:=entryATR,
                                              Supporting5:=tradeNumber,
+                                             Supporting6:=entryDate,
                                              SupportingTradingSymbol:=currentFutureTradingSymbol)
 
                 If _parentStrategy.PlaceOrModifyOrder(runningFutTrade, Nothing) Then
@@ -366,6 +403,7 @@ Public Class HourlyRainbowStrategyRule
                                                      Supporting3:=exitHelper,
                                                      Supporting4:=entryATR,
                                                      Supporting5:=tradeNumber,
+                                                     Supporting6:=entryDate,
                                                      SupportingTradingSymbol:=currentOptionTradingSymbol)
 
                         If _parentStrategy.PlaceOrModifyOrder(runningOptTrade, Nothing) Then
@@ -409,6 +447,7 @@ Public Class HourlyRainbowStrategyRule
                                     Supporting3:=existingTrade.Supporting3,
                                     Supporting4:=existingTrade.Supporting4,
                                     Supporting5:=existingTrade.Supporting5,
+                                    Supporting6:=existingTrade.Supporting6,
                                     SupportingTradingSymbol:=currentTick.TradingSymbol)
 
         If _parentStrategy.PlaceOrModifyOrder(runningFutTrade, Nothing) Then
