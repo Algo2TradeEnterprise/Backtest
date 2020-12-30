@@ -513,26 +513,55 @@ Public Class HourlyRainbowStrategyRule
                                                              Return 0
                                                          End If
                                                      End Function)
-                Dim countVol As Double = contracts.Sum(Function(x)
-                                                           If x.Key >= currentTick.Open Then
-                                                               Return 1
-                                                           Else
-                                                               Return 0
-                                                           End If
-                                                       End Function)
-                Dim avgVol As Double = sumVol / countVol
-                For Each runningContract In contracts.OrderBy(Function(x)
-                                                                  Return x.Key
-                                                              End Function)
-                    If runningContract.Key >= currentTick.Open Then
-                        If runningContract.Value >= avgVol Then
-                            ret = String.Format("{0}{1}PE", expiryString, runningContract.Key)
-                            Exit For
+                If sumVol > 0 Then
+                    Dim countVol As Double = contracts.Sum(Function(x)
+                                                               If x.Key >= currentTick.Open Then
+                                                                   Return 1
+                                                               Else
+                                                                   Return 0
+                                                               End If
+                                                           End Function)
+                    Dim avgVol As Double = sumVol / countVol
+                    For Each runningContract In contracts.OrderBy(Function(x)
+                                                                      Return x.Key
+                                                                  End Function)
+                        If runningContract.Key >= currentTick.Open Then
+                            If runningContract.Value >= avgVol Then
+                                ret = String.Format("{0}{1}PE", expiryString, runningContract.Key)
+                                Exit For
+                            End If
                         End If
-                    End If
-                Next
+                    Next
+                Else
+                    sumVol = contracts.Sum(Function(x)
+                                               If x.Key <= currentTick.Open Then
+                                                   Return x.Value
+                                               Else
+                                                   Return 0
+                                               End If
+                                           End Function)
+
+                    Dim countVol As Double = contracts.Sum(Function(x)
+                                                               If x.Key <= currentTick.Open Then
+                                                                   Return 1
+                                                               Else
+                                                                   Return 0
+                                                               End If
+                                                           End Function)
+                    Dim avgVol As Double = sumVol / countVol
+                    For Each runningContract In contracts.OrderByDescending(Function(x)
+                                                                                Return x.Key
+                                                                            End Function)
+                        If runningContract.Key <= currentTick.Open Then
+                            If runningContract.Value >= avgVol Then
+                                ret = String.Format("{0}{1}PE", expiryString, runningContract.Key)
+                                Exit For
+                            End If
+                        End If
+                    Next
+                End If
             End If
-        End If
+            End If
         Return ret
     End Function
 
