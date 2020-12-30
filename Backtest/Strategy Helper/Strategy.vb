@@ -1452,6 +1452,8 @@ Namespace StrategyHelper
                         allCapitalData = CapitalMovement
                     End If
                     If allTradesData IsNot Nothing AndAlso allTradesData.Count > 0 Then
+                        OnHeartbeat("Calculating supporting values")
+
                         Dim cts As New CancellationTokenSource
 
                         Dim maxDrawUp As Decimal = Decimal.MinValue
@@ -1475,12 +1477,6 @@ Namespace StrategyHelper
                             Next
                         End If
 
-                        Dim maxCapital As Decimal = allCapitalData.Values.Max(Function(x)
-                                                                                  Return x.Max(Function(y)
-                                                                                                   Return y.RunningCapital
-                                                                                               End Function)
-                                                                              End Function)
-
                         Dim totalTrades As Integer = allTradesData.Values.Sum(Function(x)
                                                                                   Return x.Values.Sum(Function(y)
                                                                                                           Return y.FindAll(Function(z)
@@ -1493,7 +1489,7 @@ Namespace StrategyHelper
                                                                                           Return x.Values.Sum(Function(y)
                                                                                                                   Return y.FindAll(Function(z)
                                                                                                                                        Return z.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel AndAlso
-                                                                                                                              z.PLAfterBrokerage > 0
+                                                                                                                                            z.PLAfterBrokerage > 0
                                                                                                                                    End Function).Count
                                                                                                               End Function)
                                                                                       End Function)
@@ -1502,7 +1498,6 @@ Namespace StrategyHelper
                                                                                           Return x.Values.Sum(Function(y)
                                                                                                                   Return y.Sum(Function(z)
                                                                                                                                    If z.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel AndAlso
-                                                                                                                                       z.TradeCurrentStatus <> Trade.TradeExecutionStatus.Inprogress AndAlso
                                                                                                                                        z.PLAfterBrokerage > 0 Then
                                                                                                                                        Return z.PLAfterBrokerage
                                                                                                                                    Else
@@ -1516,7 +1511,6 @@ Namespace StrategyHelper
                                                                                           Return x.Values.Sum(Function(y)
                                                                                                                   Return y.Sum(Function(z)
                                                                                                                                    If z.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel AndAlso
-                                                                                                                                       z.TradeCurrentStatus <> Trade.TradeExecutionStatus.Inprogress AndAlso
                                                                                                                                        z.PLAfterBrokerage <= 0 Then
                                                                                                                                        Return z.PLAfterBrokerage
                                                                                                                                    Else
@@ -1588,31 +1582,6 @@ Namespace StrategyHelper
                                                                                                              End Function)
                                                                                      End Function)
 
-                        Dim maxNumberOfDays As Decimal = allTradesData.Values.Max(Function(x)
-                                                                                      Return x.Values.Max(Function(y)
-                                                                                                              Return y.Max(Function(z)
-                                                                                                                               If z.Supporting8 IsNot Nothing AndAlso IsNumeric(z.Supporting8) Then
-                                                                                                                                   Return z.Supporting8
-                                                                                                                               Else
-                                                                                                                                   Return Decimal.MinValue
-                                                                                                                               End If
-                                                                                                                           End Function)
-                                                                                                          End Function)
-                                                                                  End Function)
-
-                        Dim distinctTagList As List(Of String) = New List(Of String)
-                        For Each runningDate In allTradesData
-                            For Each runningStock In runningDate.Value
-                                If runningStock.Value IsNot Nothing AndAlso runningStock.Value.Count > 0 Then
-                                    For Each runningTrade In runningStock.Value
-                                        If Not distinctTagList.Contains(runningTrade.Tag) Then
-                                            distinctTagList.Add(runningTrade.Tag)
-                                        End If
-                                    Next
-                                End If
-                            Next
-                        Next
-
                         Dim winRatio As Decimal = Math.Round((totalPositiveTrades / totalTrades) * 100, 2)
                         Dim riskReward As Decimal = 0
                         If totalPositiveTrades <> 0 AndAlso (totalTrades - totalPositiveTrades) <> 0 Then
@@ -1639,14 +1608,80 @@ Namespace StrategyHelper
                             .AverageDurationInLosingTrades = If((totalTrades - totalPositiveTrades) <> 0, totalDurationInNegativeTrades / (totalTrades - totalPositiveTrades), 0)
                         End With
 
-                        Dim roi As Decimal = (strategyOutputData.NetProfit / maxCapital) * 100
+
+                        Dim maxNumberOfDays As Decimal = allTradesData.Values.Max(Function(x)
+                                                                                      Return x.Values.Max(Function(y)
+                                                                                                              Return y.Max(Function(z)
+                                                                                                                               If z.Supporting8 IsNot Nothing AndAlso IsNumeric(z.Supporting8) Then
+                                                                                                                                   Return Val(z.Supporting8)
+                                                                                                                               Else
+                                                                                                                                   Return Decimal.MinValue
+                                                                                                                               End If
+                                                                                                                           End Function)
+                                                                                                          End Function)
+                                                                                  End Function)
+
+                        Dim distinctTagList As List(Of String) = New List(Of String)
+                        Dim runningTradeTag As String = Nothing
+                        For Each runningDate In allTradesData
+                            For Each runningStock In runningDate.Value
+                                If runningStock.Value IsNot Nothing AndAlso runningStock.Value.Count > 0 Then
+                                    For Each runningTrade In runningStock.Value
+                                        If Not distinctTagList.Contains(runningTrade.Tag) Then
+                                            distinctTagList.Add(runningTrade.Tag)
+                                        End If
+                                        If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                                            runningTradeTag = runningTrade.Tag
+                                        End If
+                                    Next
+                                End If
+                            Next
+                        Next
+
+                        Dim pl As Decimal = strategyOutputData.NetProfit
+                        Dim maxCapital As Decimal = allCapitalData.Values.Max(Function(x)
+                                                                                  Return x.Max(Function(y)
+                                                                                                   Return y.RunningCapital
+                                                                                               End Function)
+                                                                              End Function)
+
+                        If runningTradeTag IsNot Nothing AndAlso runningTradeTag.Trim <> "" Then
+                            Dim plToDeduct As Decimal = 0
+                            Dim startTime As Date = Date.MinValue
+                            For Each runningDate In allTradesData
+                                For Each runningStock In runningDate.Value
+                                    If runningStock.Value IsNot Nothing AndAlso runningStock.Value.Count > 0 Then
+                                        For Each runningTrade In runningStock.Value
+                                            If runningTrade.Tag = runningTradeTag Then
+                                                plToDeduct += runningTrade.PLAfterBrokerage
+                                                startTime = Date.ParseExact(runningTrade.Supporting6, "dd-MMM-yyyy HH:mm:ss", Nothing)
+                                            End If
+                                        Next
+                                    End If
+                                Next
+                            Next
+                            pl = pl - plToDeduct
+                            If startTime <> Date.MinValue Then
+                                maxCapital = allCapitalData.Values.Max(Function(x)
+                                                                           Return x.Max(Function(y)
+                                                                                            If y.CapitalExhaustedDateTime < startTime Then
+                                                                                                Return y.RunningCapital
+                                                                                            Else
+                                                                                                Return Decimal.MinValue
+                                                                                            End If
+                                                                                        End Function)
+                                                                       End Function)
+                            End If
+                        End If
+
+                        Dim roi As Decimal = (pl / maxCapital) * 100
                         fileName = String.Format("PL {0},Cap {1},ROI {2},TrdNmbr {3},MaxDays {4},{5}.xlsx",
-                                                 Math.Round(strategyOutputData.NetProfit, 0),
-                                                 Math.Round(maxCapital, 0),
-                                                 Math.Round(roi, 0),
-                                                 distinctTagList.Count,
-                                                 maxNumberOfDays,
-                                                 fileName)
+                                             Math.Round(pl, 0),
+                                             Math.Round(maxCapital, 0),
+                                             Math.Round(roi, 0),
+                                             distinctTagList.Count,
+                                             Math.Round(maxNumberOfDays, 0),
+                                             fileName)
 
                         Dim filepath As String = Path.Combine(My.Application.Info.DirectoryPath, "BackTest Output", fileName)
                         If File.Exists(filepath) Then File.Delete(filepath)
