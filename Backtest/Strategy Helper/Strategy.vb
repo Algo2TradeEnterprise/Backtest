@@ -149,6 +149,8 @@ Namespace StrategyHelper
         Public MTMSlab As Decimal = Decimal.MinValue
         Public MovementSlab As Decimal = Decimal.MinValue
         Public RealtimeTrailingPercentage As Decimal = Decimal.MinValue
+
+        Public MaxZSCore As Decimal = Decimal.MinValue
 #End Region
 
 #Region "Public Calculated Property"
@@ -435,7 +437,6 @@ Namespace StrategyHelper
                     ret = tradeList IsNot Nothing AndAlso tradeList.Count > 0
                 End If
             End If
-
             Return ret
         End Function
 
@@ -577,21 +578,21 @@ Namespace StrategyHelper
             Return ret
         End Function
 
-        Public Function GetSpecificTrades(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TypeOfTrade, ByVal tradeStatus As Trade.TradeExecutionStatus) As List(Of Trade)
+        Public Function GetSpecificTrades(ByVal tradingSymbol As String, ByVal tradingDate As Date, ByVal tradeType As Trade.TypeOfTrade, ByVal tradeStatus As Trade.TradeExecutionStatus) As List(Of Trade)
             Dim ret As List(Of Trade) = Nothing
-            If currentMinutePayload IsNot Nothing Then
-                Dim tradeDate As Date = currentMinutePayload.PayloadDate.Date
+            If tradingSymbol IsNot Nothing Then
+                Dim tradeDate As Date = tradingDate.Date
                 If tradeType = Trade.TypeOfTrade.MIS Then
-                    If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(tradeDate) AndAlso TradesTaken(tradeDate).ContainsKey(currentMinutePayload.TradingSymbol) Then
-                        ret = TradesTaken(tradeDate)(currentMinutePayload.TradingSymbol).FindAll(Function(x)
-                                                                                                     Return x.SquareOffType = tradeType AndAlso x.TradeCurrentStatus = tradeStatus
-                                                                                                 End Function)
+                    If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(tradeDate) AndAlso TradesTaken(tradeDate).ContainsKey(tradingSymbol) Then
+                        ret = TradesTaken(tradeDate)(tradingSymbol).FindAll(Function(x)
+                                                                                Return x.SquareOffType = tradeType AndAlso x.TradeCurrentStatus = tradeStatus
+                                                                            End Function)
                     End If
                 ElseIf tradeType = Trade.TypeOfTrade.CNC Then
                     If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
                         For Each runningDate In TradesTaken.Keys
-                            If TradesTaken(runningDate).ContainsKey(currentMinutePayload.TradingSymbol) Then
-                                For Each runningTrade In TradesTaken(runningDate)(currentMinutePayload.TradingSymbol)
+                            If TradesTaken(runningDate).ContainsKey(tradingSymbol) Then
+                                For Each runningTrade In TradesTaken(runningDate)(tradingSymbol)
                                     If runningTrade.SquareOffType = tradeType AndAlso runningTrade.TradeCurrentStatus = tradeStatus Then
                                         If ret Is Nothing Then ret = New List(Of Trade)
                                         ret.Add(runningTrade)
@@ -605,22 +606,30 @@ Namespace StrategyHelper
             Return ret
         End Function
 
-        Public Function GetLastSpecificTrades(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TypeOfTrade, ByVal tradeStatus As Trade.TradeExecutionStatus) As Trade
+        Public Function GetLastEntryTradeOfTheStock(ByVal tradingSymbol As String, ByVal tradingDate As Date, ByVal tradeType As Trade.TypeOfTrade) As Trade
             Dim ret As Trade = Nothing
-            Dim specificTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, tradeStatus)
-            If specificTrades IsNot Nothing AndAlso specificTrades.Count > 0 Then
-                ret = specificTrades.LastOrDefault
+            If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
+                Dim completeTrades As List(Of Trade) = GetSpecificTrades(tradingSymbol, tradingDate, tradeType, Trade.TradeExecutionStatus.Close)
+                Dim inprogressTrades As List(Of Trade) = GetSpecificTrades(tradingSymbol, tradingDate, tradeType, Trade.TradeExecutionStatus.Inprogress)
+                Dim allTrades As List(Of Trade) = New List(Of Trade)
+                If completeTrades IsNot Nothing AndAlso completeTrades.Count > 0 Then allTrades.AddRange(completeTrades)
+                If inprogressTrades IsNot Nothing AndAlso inprogressTrades.Count > 0 Then allTrades.AddRange(inprogressTrades)
+                If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
+                    ret = allTrades.OrderBy(Function(x)
+                                                Return x.EntryTime
+                                            End Function).LastOrDefault
+                End If
             End If
             Return ret
         End Function
 
-        Public Function GetAllTradesByTag(ByVal tag As String, ByVal currentMinutePayload As Payload) As List(Of Trade)
+        Public Function GetAllTradesByTag(ByVal tag As String, ByVal tradingSymbol As String) As List(Of Trade)
             Dim ret As List(Of Trade) = Nothing
-            If currentMinutePayload IsNot Nothing Then
+            If tradingSymbol IsNot Nothing Then
                 If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
                     For Each runningDate In TradesTaken.Keys
-                        If TradesTaken(runningDate).ContainsKey(currentMinutePayload.TradingSymbol) Then
-                            For Each runningTrade In TradesTaken(runningDate)(currentMinutePayload.TradingSymbol)
+                        If TradesTaken(runningDate).ContainsKey(tradingSymbol) Then
+                            For Each runningTrade In TradesTaken(runningDate)(tradingSymbol)
                                 If runningTrade.Tag = tag Then
                                     If ret Is Nothing Then ret = New List(Of Trade)
                                     ret.Add(runningTrade)
@@ -649,165 +658,44 @@ Namespace StrategyHelper
             End If
         End Sub
 
-        Public Sub ExitStockTradesByForce(ByVal currentPayload As Payload, ByVal tradeType As Trade.TypeOfTrade, ByVal exitRemark As String)
-            'If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentPayload.PayloadDate.Date) AndAlso TradesTaken(currentPayload.PayloadDate.Date).ContainsKey(currentPayload.TradingSymbol) Then
-            If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
-                Dim forceExitTrades As List(Of Trade) = New List(Of Trade)
-                Dim inprogessTrades As List(Of Trade) = GetSpecificTrades(currentPayload, tradeType, Trade.TradeExecutionStatus.Inprogress)
-                Dim openTrades As List(Of Trade) = GetSpecificTrades(currentPayload, tradeType, Trade.TradeExecutionStatus.Open)
-                If inprogessTrades IsNot Nothing Then
-                    forceExitTrades.AddRange(inprogessTrades)
-                End If
-                If openTrades IsNot Nothing Then
-                    forceExitTrades.AddRange(openTrades)
-                End If
-
-                If forceExitTrades IsNot Nothing AndAlso forceExitTrades.Count > 0 Then
-                    For Each forceExitTrade In forceExitTrades
-                        ExitTradeByForce(forceExitTrade, currentPayload, exitRemark)
-                    Next
-                End If
-            End If
-        End Sub
-
-        Public Sub ExitAllTradeByForce(ByVal currentTimeOfExit As Date, ByVal allOneMinutePayload As Dictionary(Of String, Dictionary(Of Date, Payload)), ByVal tradeType As Trade.TypeOfTrade, ByVal exitRemark As String)
-            If tradeType = Trade.TypeOfTrade.MIS Then
-                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentTimeOfExit.Date) Then
-                    Dim allStockTrades As Dictionary(Of String, List(Of Trade)) = TradesTaken(currentTimeOfExit.Date)
-                    If allStockTrades IsNot Nothing AndAlso allStockTrades.Count > 0 Then
-                        For Each stockName In allStockTrades.Keys
-                            Dim candleTime As Date = New Date(currentTimeOfExit.Year, currentTimeOfExit.Month, currentTimeOfExit.Day, currentTimeOfExit.Hour, currentTimeOfExit.Minute, 0)
-                            Dim currentPayload As Payload = Nothing
-                            Dim stock As String = stockName
-                            If stockName.ToUpper.Contains("FUT") Then
-                                stock = stockName.Remove(stockName.Count - 8)
-                            End If
-                            If allOneMinutePayload.ContainsKey(stock) AndAlso allOneMinutePayload(stock).ContainsKey(candleTime) Then
-                                currentPayload = allOneMinutePayload(stock)(candleTime).Ticks.FindAll(Function(x)
-                                                                                                          Return x.PayloadDate >= currentTimeOfExit
-                                                                                                      End Function).FirstOrDefault
-                            End If
-                            If currentPayload Is Nothing Then           'If the current time is more than last available Tick then move to the next available minute
-                                currentPayload = allOneMinutePayload(stock).Where(Function(x)
-                                                                                      Return x.Key >= currentTimeOfExit
-                                                                                  End Function).FirstOrDefault.Value
-                            End If
-                            If currentPayload Is Nothing Then           'If current time payload is not available then pick last available payload
-                                Dim lastPayloadTime As Date = allOneMinutePayload(stock).Keys.LastOrDefault
-                                currentPayload = allOneMinutePayload(stock)(lastPayloadTime.AddMinutes(-5))
-                            End If
-                            If currentPayload IsNot Nothing Then
-                                ExitStockTradesByForce(currentPayload, tradeType, exitRemark)
-                            Else
-                                Throw New ApplicationException("Current Payload is NULL in 'ExitAllTradeByForce'")
-                            End If
-                        Next
-                    End If
-                End If
-            ElseIf tradeType = Trade.TypeOfTrade.CNC Then
-                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
-                    For Each runningDate In TradesTaken.Keys
-                        Dim allStockTrades As Dictionary(Of String, List(Of Trade)) = TradesTaken(runningDate.Date)
-                        If allStockTrades IsNot Nothing AndAlso allStockTrades.Count > 0 Then
-                            For Each stockName In allStockTrades.Keys
-                                Dim candleTime As Date = New Date(currentTimeOfExit.Year, currentTimeOfExit.Month, currentTimeOfExit.Day, currentTimeOfExit.Hour, currentTimeOfExit.Minute, 0)
-                                Dim currentPayload As Payload = Nothing
-                                Dim stock As String = stockName
-                                'If stockName.ToUpper.Contains("FUT") Then
-                                '    stock = stockName.Remove(stockName.Count - 8)
-                                'End If
-                                If allOneMinutePayload.ContainsKey(stock) AndAlso allOneMinutePayload(stock).ContainsKey(candleTime) Then
-                                    currentPayload = allOneMinutePayload(stock)(candleTime).Ticks.FindAll(Function(x)
-                                                                                                              Return x.PayloadDate >= currentTimeOfExit
-                                                                                                          End Function).FirstOrDefault
-                                End If
-                                If currentPayload Is Nothing Then           'If the current time is more than last available Tick then move to the next available minute
-                                    currentPayload = allOneMinutePayload(stock).Where(Function(x)
-                                                                                          Return x.Key >= currentTimeOfExit
-                                                                                      End Function).FirstOrDefault.Value
-                                End If
-                                If currentPayload Is Nothing Then           'If current time payload is not available then pick last available payload
-                                    Dim lastPayloadTime As Date = allOneMinutePayload(stock).Keys.LastOrDefault
-                                    currentPayload = allOneMinutePayload(stock)(lastPayloadTime)
-                                End If
-                                If currentPayload IsNot Nothing Then
-                                    If currentPayload.PayloadDate.Date <> currentTimeOfExit.Date Then exitRemark = String.Format("Open Trade No Candle {0}", currentPayload.PayloadDate.ToShortDateString)
-                                    ExitStockTradesByForce(currentPayload, tradeType, exitRemark)
-                                Else
-                                    Throw New ApplicationException("Current Payload is NULL in 'ExitAllTradeByForce'")
-                                End If
-                            Next
-                        End If
-                    Next
-                End If
-            End If
-        End Sub
-
-        Public Function EnterTradeIfPossible(ByVal currentTrade As Trade, ByVal currentPayload As Payload, Optional ByVal reverseSignalExitOnly As Boolean = False) As Boolean
+        Public Function EnterTradeIfPossible(ByVal tradingSymbol As String, ByVal tradingDate As Date, ByVal currentTrade As Trade, ByVal currentPayload As Payload) As Boolean
             Dim ret As Boolean = False
             Dim reverseSignalExit As Boolean = False
             If currentTrade Is Nothing OrElse currentTrade.TradeCurrentStatus <> Trade.TradeExecutionStatus.Open Then Throw New ApplicationException("Supplied trade is not open, cannot enter")
 
-            Dim previousRunningTrades As List(Of Trade) = GetSpecificTrades(currentPayload, currentTrade.SquareOffType, Trade.TradeExecutionStatus.Inprogress)
+            'Dim previousRunningTrades As List(Of Trade) = GetSpecificTrades(tradingSymbol, tradingDate, currentTrade.SquareOffType, Trade.TradeExecutionStatus.Inprogress)
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                 If currentPayload.High >= currentTrade.EntryPrice Then
-                    If Not AllowBothDirectionEntryAtSameTime AndAlso previousRunningTrades IsNot Nothing AndAlso previousRunningTrades.Count > 0 Then
-                        For Each previousRunningTrade In previousRunningTrades
-                            If previousRunningTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                                ExitTradeByForce(previousRunningTrade, currentPayload, "Opposite direction trade trigerred")
-                                reverseSignalExit = True
-                            End If
-                        Next
-                    End If
+                    'If Not AllowBothDirectionEntryAtSameTime AndAlso previousRunningTrades IsNot Nothing AndAlso previousRunningTrades.Count > 0 Then
+                    '    For Each previousRunningTrade In previousRunningTrades
+                    '        If previousRunningTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                    '            ExitTradeByForce(previousRunningTrade, currentPayload, "Opposite direction trade trigerred")
+                    '            reverseSignalExit = True
+                    '        End If
+                    '    Next
+                    'End If
                     Dim targetPoint As Decimal = currentTrade.PotentialTarget - currentTrade.EntryPrice
-                    If reverseSignalExitOnly Then
-                        If reverseSignalExit OrElse StockNumberOfTrades(currentPayload.PayloadDate, currentPayload.TradingSymbol) >= 1 Then
-                            ExitTradeByForce(currentTrade, currentPayload, "Opposite direction trade exited")
-                            If StockNumberOfTradeBuffer Is Nothing Then StockNumberOfTradeBuffer = New Dictionary(Of Date, Dictionary(Of String, Integer))
-                            If Not StockNumberOfTradeBuffer.ContainsKey(currentPayload.PayloadDate.Date) Then
-                                StockNumberOfTradeBuffer.Add(currentPayload.PayloadDate.Date, New Dictionary(Of String, Integer) From {{currentPayload.TradingSymbol, 1}})
-                            End If
-                            StockNumberOfTradeBuffer(currentPayload.PayloadDate.Date)(currentPayload.TradingSymbol) = 1
-                        Else
-                            currentTrade.UpdateTrade(EntryPrice:=currentPayload.Open, EntryTime:=currentPayload.PayloadDate, TradeCurrentStatus:=Trade.TradeExecutionStatus.Inprogress)
-                        End If
-                    Else
-                        currentTrade.UpdateTrade(EntryPrice:=currentPayload.Open, EntryTime:=currentPayload.PayloadDate, TradeCurrentStatus:=Trade.TradeExecutionStatus.Inprogress)
-                    End If
+                    currentTrade.UpdateTrade(EntryPrice:=currentPayload.Open, EntryTime:=currentPayload.PayloadDate, TradeCurrentStatus:=Trade.TradeExecutionStatus.Inprogress)
                     currentTrade.UpdateTrade(PotentialTarget:=currentTrade.EntryPrice + targetPoint)
                     ret = True
                 End If
             ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
                 If currentPayload.Low <= currentTrade.EntryPrice Then
-                    If Not AllowBothDirectionEntryAtSameTime AndAlso previousRunningTrades IsNot Nothing AndAlso previousRunningTrades.Count > 0 Then
-                        For Each previousRunningTrade In previousRunningTrades
-                            If previousRunningTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                                ExitTradeByForce(previousRunningTrade, currentPayload, "Opposite direction trade trigerred")
-                                reverseSignalExit = True
-                            End If
-                        Next
-                    End If
+                    'If Not AllowBothDirectionEntryAtSameTime AndAlso previousRunningTrades IsNot Nothing AndAlso previousRunningTrades.Count > 0 Then
+                    '    For Each previousRunningTrade In previousRunningTrades
+                    '        If previousRunningTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                    '            ExitTradeByForce(previousRunningTrade, currentPayload, "Opposite direction trade trigerred")
+                    '            reverseSignalExit = True
+                    '        End If
+                    '    Next
+                    'End If
                     Dim targetPoint As Decimal = currentTrade.EntryPrice - currentTrade.PotentialTarget
-                    If reverseSignalExitOnly Then
-                        If reverseSignalExit OrElse StockNumberOfTrades(currentPayload.PayloadDate, currentPayload.TradingSymbol) >= 1 Then
-                            ExitTradeByForce(currentTrade, currentPayload, "Opposite direction trade exited")
-                            If StockNumberOfTradeBuffer Is Nothing Then StockNumberOfTradeBuffer = New Dictionary(Of Date, Dictionary(Of String, Integer))
-                            If Not StockNumberOfTradeBuffer.ContainsKey(currentPayload.PayloadDate.Date) Then
-                                StockNumberOfTradeBuffer.Add(currentPayload.PayloadDate.Date, New Dictionary(Of String, Integer) From {{currentPayload.TradingSymbol, 1}})
-                            End If
-                            StockNumberOfTradeBuffer(currentPayload.PayloadDate.Date)(currentPayload.TradingSymbol) = 1
-                        Else
-                            currentTrade.UpdateTrade(EntryPrice:=currentPayload.Open, EntryTime:=currentPayload.PayloadDate, TradeCurrentStatus:=Trade.TradeExecutionStatus.Inprogress)
-                        End If
-                    Else
-                        currentTrade.UpdateTrade(EntryPrice:=currentPayload.Open, EntryTime:=currentPayload.PayloadDate, TradeCurrentStatus:=Trade.TradeExecutionStatus.Inprogress)
-                    End If
+                    currentTrade.UpdateTrade(EntryPrice:=currentPayload.Open, EntryTime:=currentPayload.PayloadDate, TradeCurrentStatus:=Trade.TradeExecutionStatus.Inprogress)
                     currentTrade.UpdateTrade(PotentialTarget:=currentTrade.EntryPrice - targetPoint)
                     ret = True
                 End If
             End If
 
-            If ret Then SetCurrentLTPForStock(currentPayload, currentPayload, currentTrade.SquareOffType)
             Return ret
         End Function
 
@@ -824,57 +712,6 @@ Namespace StrategyHelper
 
             'TradesTaken(currentTrade.TradingDate.Date)(currentTrade.TradingSymbol).Remove(currentTrade)
         End Sub
-
-        Public Function ExitTradeIfPossible(ByVal currentTrade As Trade, ByVal currentPayload As Payload) As Boolean
-            Dim ret As Boolean = False
-            If currentTrade Is Nothing OrElse currentTrade.TradeCurrentStatus <> Trade.TradeExecutionStatus.Inprogress Then Throw New ApplicationException("Supplied trade is not active, cannot exit")
-            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                If currentPayload.Low <= currentTrade.PotentialStopLoss Then
-                    currentTrade.UpdateTrade(ExitTime:=currentPayload.PayloadDate,
-                                             ExitPrice:=currentPayload.Open,                'Assuming this is tick and OHLC=tickprice
-                                             ExitCondition:=Trade.TradeExitCondition.StopLoss,
-                                             ExitRemark:="SL hit under normal condition",
-                                             TradeCurrentStatus:=Trade.TradeExecutionStatus.Close)
-                    ret = True
-                ElseIf currentPayload.High >= currentTrade.PotentialTarget Then
-                    currentTrade.UpdateTrade(ExitTime:=currentPayload.PayloadDate,
-                                             ExitPrice:=currentPayload.Open,                'Assuming this is tick and OHLC=tickprice
-                                             ExitCondition:=Trade.TradeExitCondition.Target,
-                                             ExitRemark:="Target hit under normal condition",
-                                             TradeCurrentStatus:=Trade.TradeExecutionStatus.Close)
-                    ret = True
-                End If
-            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                If currentPayload.High >= currentTrade.PotentialStopLoss Then
-                    currentTrade.UpdateTrade(ExitTime:=currentPayload.PayloadDate,
-                                             ExitPrice:=currentPayload.Open,            'Assuming this is tick and OHLC=tickprice
-                                             ExitCondition:=Trade.TradeExitCondition.StopLoss,
-                                             ExitRemark:="SL hit under normal condition",
-                                             TradeCurrentStatus:=Trade.TradeExecutionStatus.Close)
-                    ret = True
-                ElseIf currentPayload.Low <= currentTrade.PotentialTarget Then
-                    currentTrade.UpdateTrade(ExitTime:=currentPayload.PayloadDate,
-                                             ExitPrice:=currentPayload.Open,            'Assuming this is tick and OHLC=tickprice
-                                             ExitCondition:=Trade.TradeExitCondition.Target,
-                                             ExitRemark:="Target hit under normal condition",
-                                             TradeCurrentStatus:=Trade.TradeExecutionStatus.Close)
-                    ret = True
-                End If
-            End If
-
-            If Not ret AndAlso currentTrade.SquareOffType = Trade.TypeOfTrade.MIS AndAlso
-                currentPayload.PayloadDate.TimeOfDay.Hours = EODExitTime.Hours And currentPayload.PayloadDate.TimeOfDay.Minutes = EODExitTime.Minutes Then
-                currentTrade.UpdateTrade(ExitTime:=currentPayload.PayloadDate,
-                                         ExitPrice:=currentPayload.Open,            'Assuming this is tick and OHLC=tickprice
-                                         ExitCondition:=Trade.TradeExitCondition.EndOfDay,
-                                         ExitRemark:="EOD Exit",
-                                         TradeCurrentStatus:=Trade.TradeExecutionStatus.Close)
-                ret = True
-            End If
-
-            If ret Then InsertCapitalRequired(currentTrade.ExitTime, 0, currentTrade.CapitalRequiredWithMargin + currentTrade.PLAfterBrokerage, "Exit Trade If Possible")
-            Return ret
-        End Function
 
         Public Function CalculatePL(ByVal stockName As String, ByVal buyPrice As Decimal, ByVal sellPrice As Decimal, ByVal quantity As Integer, ByVal lotSize As Integer, ByVal typeOfStock As Trade.TypeOfStock) As Decimal
             Dim potentialBrokerage As New Calculator.BrokerageAttributes
@@ -900,440 +737,26 @@ Namespace StrategyHelper
             Return potentialBrokerage.NetProfitLoss
         End Function
 
-        Public Function CalculateQuantityFromTargetSL(ByVal stockName As String, ByVal buyPrice As Decimal, ByVal sellPrice As Decimal, ByVal NetProfitLossOfTrade As Decimal, ByVal typeOfStock As Trade.TypeOfStock) As Integer
-            Dim potentialBrokerage As Calculator.BrokerageAttributes = Nothing
-            Dim calculator As New Calculator.BrokerageCalculator(_canceller)
-
-            Dim quantity As Integer = 1
-            Dim previousQuantity As Integer = 1
-            For quantity = 1 To Integer.MaxValue
-                potentialBrokerage = New Calculator.BrokerageAttributes
-                Select Case typeOfStock
-                    Case Trade.TypeOfStock.Cash
-                        calculator.Intraday_Equity(buyPrice, sellPrice, quantity, potentialBrokerage)
-                    Case Trade.TypeOfStock.Commodity
-                        stockName = stockName.Remove(stockName.Count - 8)
-                        calculator.Commodity_MCX(stockName, buyPrice, sellPrice, quantity, potentialBrokerage)
-                    Case Trade.TypeOfStock.Currency
-                        Throw New ApplicationException("Not Implemented")
-                    Case Trade.TypeOfStock.Futures
-                        calculator.FO_Futures(buyPrice, sellPrice, quantity, potentialBrokerage)
-                End Select
-
-                If NetProfitLossOfTrade > 0 Then
-                    If potentialBrokerage.NetProfitLoss > NetProfitLossOfTrade Then
-                        Exit For
-                    Else
-                        previousQuantity = quantity
-                    End If
-                ElseIf NetProfitLossOfTrade < 0 Then
-                    If potentialBrokerage.NetProfitLoss < NetProfitLossOfTrade Then
-                        Exit For
-                    Else
-                        previousQuantity = quantity
-                    End If
-                End If
-            Next
-            Return previousQuantity
-        End Function
-
-        Public Function CalculateQuantityFromInvestment(ByVal lotSize As Integer, ByVal totalInvestment As Decimal, ByVal stockPrice As Decimal, ByVal typeOfStock As Trade.TypeOfStock, ByVal allowIncreaseCapital As Boolean) As Integer
-            Dim quantity As Integer = lotSize
-            If typeOfStock = Trade.TypeOfStock.Cash Then quantity = 1
-            Dim quantityMultiplier As Integer = 1
-            If allowIncreaseCapital Then
-                quantityMultiplier = Math.Ceiling(totalInvestment / (quantity * stockPrice / Me.MarginMultiplier))
+        Public Function GetCurrentXMinuteCandleTime(ByVal lowerTFTime As Date) As Date
+            Dim ret As Date = Nothing
+            If Me.ExchangeStartTime.Minutes Mod Me.SignalTimeFrame = 0 Then
+                ret = New Date(lowerTFTime.Year,
+                                lowerTFTime.Month,
+                                lowerTFTime.Day,
+                                lowerTFTime.Hour,
+                                Math.Floor(lowerTFTime.Minute / Me.SignalTimeFrame) * Me.SignalTimeFrame, 0)
             Else
-                quantityMultiplier = Math.Floor(totalInvestment / (quantity * stockPrice / Me.MarginMultiplier))
-            End If
-            If quantityMultiplier = 0 Then quantityMultiplier = 1
-            Return quantity * quantityMultiplier
-        End Function
-
-        Public Function CalculatorTargetOrStoploss(ByVal coreStockName As String, ByVal entryPrice As Decimal, ByVal quantity As Integer, ByVal desiredProfitLossOfTrade As Decimal, ByVal tradeDirection As Trade.TradeExecutionDirection, ByVal typeOfStock As Trade.TypeOfStock) As Decimal
-            Dim potentialBrokerage As Calculator.BrokerageAttributes = Nothing
-            Dim calculator As New Calculator.BrokerageCalculator(_canceller)
-
-            Dim exitPrice As Decimal = entryPrice
-            potentialBrokerage = New Calculator.BrokerageAttributes
-
-            If desiredProfitLossOfTrade > 0 Then 'To check target
-                While Not potentialBrokerage.NetProfitLoss > desiredProfitLossOfTrade
-                    If tradeDirection = Trade.TradeExecutionDirection.Buy Then
-                        Select Case typeOfStock
-                            Case Trade.TypeOfStock.Cash
-                                calculator.Intraday_Equity(entryPrice, exitPrice, quantity, potentialBrokerage)
-                            Case Trade.TypeOfStock.Commodity
-                                calculator.Commodity_MCX(coreStockName, entryPrice, exitPrice, quantity, potentialBrokerage)
-                            Case Trade.TypeOfStock.Currency
-                                calculator.Currency_Futures(entryPrice, exitPrice, quantity, potentialBrokerage)
-                            Case Trade.TypeOfStock.Futures
-                                calculator.FO_Futures(entryPrice, exitPrice, quantity, potentialBrokerage)
-                        End Select
-                        If potentialBrokerage.NetProfitLoss > desiredProfitLossOfTrade Then Exit While
-                        exitPrice += TickSize
-                    ElseIf tradeDirection = Trade.TradeExecutionDirection.Sell Then
-                        Select Case typeOfStock
-                            Case Trade.TypeOfStock.Cash
-                                calculator.Intraday_Equity(exitPrice, entryPrice, quantity, potentialBrokerage)
-                            Case Trade.TypeOfStock.Commodity
-                                calculator.Commodity_MCX(coreStockName, exitPrice, entryPrice, quantity, potentialBrokerage)
-                            Case Trade.TypeOfStock.Currency
-                                Throw New ApplicationException("Not Implemented")
-                            Case Trade.TypeOfStock.Futures
-                                calculator.FO_Futures(exitPrice, entryPrice, quantity, potentialBrokerage)
-                        End Select
-                        If potentialBrokerage.NetProfitLoss > desiredProfitLossOfTrade Then Exit While
-                        exitPrice -= TickSize
-                    End If
-                End While
-            ElseIf desiredProfitLossOfTrade < 0 Then 'To check SL
-                While Not potentialBrokerage.NetProfitLoss < desiredProfitLossOfTrade
-                    If tradeDirection = Trade.TradeExecutionDirection.Buy Then
-                        Select Case typeOfStock
-                            Case Trade.TypeOfStock.Cash
-                                calculator.Intraday_Equity(entryPrice, exitPrice, quantity, potentialBrokerage)
-                            Case Trade.TypeOfStock.Commodity
-                                calculator.Commodity_MCX(coreStockName, entryPrice, exitPrice, quantity, potentialBrokerage)
-                            Case Trade.TypeOfStock.Currency
-                                Throw New ApplicationException("Not Implemented")
-                            Case Trade.TypeOfStock.Futures
-                                calculator.FO_Futures(entryPrice, exitPrice, quantity, potentialBrokerage)
-                        End Select
-                        If potentialBrokerage.NetProfitLoss < desiredProfitLossOfTrade Then Exit While
-                        exitPrice -= TickSize
-                    ElseIf tradeDirection = Trade.TradeExecutionDirection.Sell Then
-                        Select Case typeOfStock
-                            Case Trade.TypeOfStock.Cash
-                                calculator.Intraday_Equity(exitPrice, entryPrice, quantity, potentialBrokerage)
-                            Case Trade.TypeOfStock.Commodity
-                                calculator.Commodity_MCX(coreStockName, exitPrice, entryPrice, quantity, potentialBrokerage)
-                            Case Trade.TypeOfStock.Currency
-                                Throw New ApplicationException("Not Implemented")
-                            Case Trade.TypeOfStock.Futures
-                                calculator.FO_Futures(exitPrice, entryPrice, quantity, potentialBrokerage)
-                        End Select
-                        If potentialBrokerage.NetProfitLoss < desiredProfitLossOfTrade Then Exit While
-                        exitPrice += TickSize
-                    End If
-                End While
-            End If
-
-            Return exitPrice
-        End Function
-
-        ''' <summary>
-        ''' If in a lower timeframe, we want to know the previous higher timeframe time, then we need to use this
-        ''' It will take the lower timeframe
-        ''' </summary>
-        Public Function GetPreviousXMinuteCandleTime(ByVal lowerTFTime As Date, ByVal higherTFPayload As Dictionary(Of Date, Payload), ByVal higherTF As Integer) As Date
-            Dim ret As Date = Nothing
-            Throw New NotImplementedException()
-            'Change this according to GetCurrentXMinuteCandleTime
-            'If higherTFPayload IsNot Nothing AndAlso higherTFPayload.Count > 0 Then
-            '    ret = higherTFPayload.Keys.LastOrDefault(Function(x)
-            '                                                 Return x <= lowerTFTime.AddMinutes(-higherTF)
-            '                                             End Function)
-            'End If
-            Return ret
-        End Function
-
-        Public Function GetCurrentXMinuteCandleTime(ByVal lowerTFTime As Date, ByVal higherTFPayload As Dictionary(Of Date, Payload)) As Date
-            Dim ret As Date = Nothing
-
-            If higherTFPayload IsNot Nothing AndAlso higherTFPayload.Count > 0 Then
-                'ret = higherTFPayload.Keys.LastOrDefault(Function(x)
-                '                                             Return x <= lowerTFTime
-                '                                         End Function)
-                'For Each runningPayload In higherTFPayload.Keys
-                '    If runningPayload > lowerTFTime AndAlso higherTFPayload(runningPayload).PreviousCandlePayload IsNot Nothing AndAlso
-                '        higherTFPayload(runningPayload).PreviousCandlePayload.PayloadDate <= lowerTFTime Then
-                '        ret = higherTFPayload(runningPayload).PreviousCandlePayload.PayloadDate
-                '        Exit For
-                '    End If
-                'Next
-
-                If Me.ExchangeStartTime.Minutes Mod Me.SignalTimeFrame = 0 Then
-                    ret = New Date(lowerTFTime.Year,
-                                    lowerTFTime.Month,
-                                    lowerTFTime.Day,
-                                    lowerTFTime.Hour,
-                                    Math.Floor(lowerTFTime.Minute / Me.SignalTimeFrame) * Me.SignalTimeFrame, 0)
-                Else
-                    Dim exchangeTime As Date = New Date(lowerTFTime.Year, lowerTFTime.Month, lowerTFTime.Day, Me.ExchangeStartTime.Hours, Me.ExchangeStartTime.Minutes, 0)
-                    Dim currentTime As Date = New Date(lowerTFTime.Year, lowerTFTime.Month, lowerTFTime.Day, lowerTFTime.Hour, lowerTFTime.Minute, 0)
-                    Dim timeDifference As Double = currentTime.Subtract(exchangeTime).TotalMinutes
-                    Dim adjustedTimeDifference As Integer = Math.Floor(timeDifference / Me.SignalTimeFrame) * Me.SignalTimeFrame
-                    ret = exchangeTime.AddMinutes(adjustedTimeDifference)
-                    'Dim currentMinute As Date = exchangeTime.AddMinutes(adjustedTimeDifference)
-                    'ret = New Date(lowerTFTime.Year,
-                    '                lowerTFTime.Month,
-                    '                lowerTFTime.Day,
-                    '                currentMinute.Hour,
-                    '                currentMinute.Minute, 0)
-                End If
-            End If
-            Return ret
-        End Function
-
-        Public Function GetDaysPLAfterBrokerageForThePortfolio(ByVal currentDate As Date) As Decimal
-            Dim ret As Decimal = Nothing
-            currentDate = currentDate.Date
-            If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentDate) Then
-                ret = TradesTaken(currentDate).Sum(Function(x)
-                                                       Return x.Value.Sum(Function(y)
-                                                                              If y.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Or y.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
-                                                                                  Return y.PLAfterBrokerage
-                                                                              Else
-                                                                                  Return 0
-                                                                              End If
-                                                                          End Function)
-                                                   End Function)
-            End If
-            Return ret
-        End Function
-
-        Public Sub SetCurrentLTPForStock(ByVal currentMinutePayload As Payload, ByVal currentTickPayload As Payload, ByVal tradeType As Trade.TypeOfTrade)
-            'If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentMinutePayload.PayloadDate.Date) AndAlso TradesTaken(currentMinutePayload.PayloadDate.Date).ContainsKey(currentMinutePayload.TradingSymbol) Then
-            If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
-                Dim ltpUpdateTrades As List(Of Trade) = New List(Of Trade)
-                Dim inprogessTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Inprogress)
-                Dim openTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Open)
-                If inprogessTrades IsNot Nothing Then
-                    ltpUpdateTrades.AddRange(inprogessTrades)
-                End If
-                If openTrades IsNot Nothing Then
-                    ltpUpdateTrades.AddRange(openTrades)
-                End If
-
-                If ltpUpdateTrades IsNot Nothing AndAlso ltpUpdateTrades.Count > 0 Then
-                    For Each ltpUpdateTrade In ltpUpdateTrades
-                        ltpUpdateTrade.CurrentLTPTime = currentTickPayload.PayloadDate
-                        ltpUpdateTrade.CurrentLTP = currentTickPayload.Open  'Assuming OHCL of tick is same
-                    Next
-                    Dim a = Me.TotalMaxDrawDownPLAfterBrokerage(currentTickPayload.PayloadDate.Date, currentTickPayload.PayloadDate)
-                    Dim b = Me.TotalMaxDrawUpPLAfterBrokerage(currentTickPayload.PayloadDate.Date, currentTickPayload.PayloadDate)
-                End If
-            End If
-        End Sub
-
-        Public Sub SetOverallDrawUpDrawDownForTheDay(ByVal currentDate As Date)
-            If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentDate.Date) Then
-                Dim stockTrades As Dictionary(Of String, List(Of Trade)) = TradesTaken(currentDate.Date)
-                If stockTrades IsNot Nothing AndAlso stockTrades.Count > 0 Then
-                    For Each stock In stockTrades.Keys
-                        Dim trades As List(Of Trade) = TradesTaken(currentDate.Date)(stock)
-                        For Each runningTrade In trades
-                            runningTrade.OverAllMaxDrawDownPL = Me.TotalMaxDrawDownPLAfterBrokerage(currentDate, Date.MinValue)
-                            runningTrade.OverAllMaxDrawUpPL = Me.TotalMaxDrawUpPLAfterBrokerage(currentDate, Date.MinValue)
-                            runningTrade.OverAllMaxDrawUpTime = Me._TotalMaxDrawUpTime
-                            runningTrade.OverAllMaxDrawDownTime = Me._TotalMaxDrawDownTime
-                        Next
-                    Next
-                End If
-            End If
-            _TotalMaxDrawDownPLAfterBrokerage = Decimal.MaxValue
-            _TotalMaxDrawUpPLAfterBrokerage = Decimal.MinValue
-        End Sub
-
-        Public Function IsAnyTradeOfTheStockTargetReached(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TypeOfTrade) As Boolean
-            Dim ret As Boolean = False
-            If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentMinutePayload.PayloadDate.Date) AndAlso
-                TradesTaken(currentMinutePayload.PayloadDate.Date).ContainsKey(currentMinutePayload.TradingSymbol) Then
-                Dim completeTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Close)
-                If completeTrades IsNot Nothing AndAlso completeTrades.Count > 0 Then
-                    Dim targetTrades As List(Of Trade) = completeTrades.FindAll(Function(x)
-                                                                                    Return x.ExitCondition = Trade.TradeExitCondition.Target AndAlso
-                                                                                    x.AdditionalTrade = False
-                                                                                End Function)
-                    If targetTrades IsNot Nothing AndAlso targetTrades.Count > 0 Then
-                        ret = True
-                    End If
-                End If
-            End If
-            Return ret
-        End Function
-
-        Public Function GetNumberOfUniqueSignalTradeOfTheStock(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TypeOfTrade) As Integer
-            Dim ret As Integer = 0
-            If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentMinutePayload.PayloadDate.Date) AndAlso
-                TradesTaken(currentMinutePayload.PayloadDate.Date).ContainsKey(currentMinutePayload.TradingSymbol) Then
-                Dim completeTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Close)
-                Dim inprogressTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Inprogress)
-                Dim allTrades As List(Of Trade) = New List(Of Trade)
-                If completeTrades IsNot Nothing AndAlso completeTrades.Count > 0 Then
-                    allTrades.AddRange(completeTrades)
-                End If
-                If inprogressTrades IsNot Nothing AndAlso inprogressTrades.Count > 0 Then
-                    allTrades.AddRange(inprogressTrades)
-                End If
-
-                If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
-                    Dim lastSignalCandleTime As Date = Date.MinValue
-                    For Each runningTrade In allTrades
-                        If runningTrade.SignalCandle IsNot Nothing Then
-                            If lastSignalCandleTime <> runningTrade.SignalCandle.PayloadDate Then
-                                ret += 1
-                                lastSignalCandleTime = runningTrade.SignalCandle.PayloadDate
-                            End If
-                        End If
-                    Next
-                End If
-            End If
-            Return ret
-        End Function
-
-        Public Function GetLastExecutedTradeOfTheStock(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TypeOfTrade, Optional ByVal direction As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None) As Trade
-            Dim ret As Trade = Nothing
-            'If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentMinutePayload.PayloadDate.Date) AndAlso TradesTaken(currentMinutePayload.PayloadDate.Date).ContainsKey(currentMinutePayload.TradingSymbol) Then
-            If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
-                Dim completeTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Close)
-                Dim inprogressTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Inprogress)
-                Dim allTrades As List(Of Trade) = New List(Of Trade)
-                If completeTrades IsNot Nothing AndAlso completeTrades.Count > 0 Then allTrades.AddRange(completeTrades)
-                If inprogressTrades IsNot Nothing AndAlso inprogressTrades.Count > 0 Then allTrades.AddRange(inprogressTrades)
-                If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
-                    If direction = Trade.TradeExecutionDirection.None Then
-                        ret = allTrades.OrderBy(Function(x)
-                                                    Return x.EntryTime
-                                                End Function).LastOrDefault
-                    Else
-                        Dim directionBasedTrades As List(Of Trade) = allTrades.FindAll(Function(x)
-                                                                                           Return x.EntryDirection = direction
-                                                                                       End Function)
-                        If directionBasedTrades IsNot Nothing AndAlso directionBasedTrades.Count > 0 Then
-                            ret = directionBasedTrades.OrderBy(Function(x)
-                                                                   Return x.EntryTime
-                                                               End Function).LastOrDefault
-                        End If
-                    End If
-                End If
-            End If
-            Return ret
-        End Function
-
-        Public Function GetLastEntryTradeOfTheStock(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TypeOfTrade) As Trade
-            Dim ret As Trade = Nothing
-            'If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentMinutePayload.PayloadDate.Date) AndAlso TradesTaken(currentMinutePayload.PayloadDate.Date).ContainsKey(currentMinutePayload.TradingSymbol) Then
-            If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
-                Dim completeTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Close)
-                Dim inprogressTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Inprogress)
-                Dim allTrades As List(Of Trade) = New List(Of Trade)
-                If completeTrades IsNot Nothing AndAlso completeTrades.Count > 0 Then allTrades.AddRange(completeTrades)
-                If inprogressTrades IsNot Nothing AndAlso inprogressTrades.Count > 0 Then allTrades.AddRange(inprogressTrades)
-                If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
-                    ret = allTrades.OrderBy(Function(x)
-                                                Return x.EntryTime
-                                            End Function).LastOrDefault
-                End If
-            End If
-            Return ret
-        End Function
-
-        Public Function GetLastExitTradeOfTheStock(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TypeOfTrade) As Trade
-            Dim ret As Trade = Nothing
-            'If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentMinutePayload.PayloadDate.Date) AndAlso TradesTaken(currentMinutePayload.PayloadDate.Date).ContainsKey(currentMinutePayload.TradingSymbol) Then
-            If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
-                Dim completeTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Close)
-                If completeTrades IsNot Nothing AndAlso completeTrades.Count > 0 Then
-                    ret = completeTrades.OrderBy(Function(x)
-                                                     Return x.ExitTime
-                                                 End Function).LastOrDefault
-                End If
-            End If
-            Return ret
-        End Function
-
-        Public Function GetLastTradeOfTheStock(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TypeOfTrade) As Trade
-            Dim ret As Trade = Nothing
-            'If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentMinutePayload.PayloadDate.Date) AndAlso TradesTaken(currentMinutePayload.PayloadDate.Date).ContainsKey(currentMinutePayload.TradingSymbol) Then
-            If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
-                Dim cancelTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Cancel)
-                Dim closeTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Close)
-                Dim inprogressTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Inprogress)
-                Dim openTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Open)
-                Dim allTrades As List(Of Trade) = New List(Of Trade)
-                If cancelTrades IsNot Nothing AndAlso cancelTrades.Count > 0 Then allTrades.AddRange(cancelTrades)
-                If closeTrades IsNot Nothing AndAlso closeTrades.Count > 0 Then allTrades.AddRange(closeTrades)
-                If inprogressTrades IsNot Nothing AndAlso inprogressTrades.Count > 0 Then allTrades.AddRange(inprogressTrades)
-                If openTrades IsNot Nothing AndAlso openTrades.Count > 0 Then allTrades.AddRange(openTrades)
-                If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
-                    ret = allTrades.OrderBy(Function(x)
-                                                Return x.ExitTime
-                                            End Function).LastOrDefault
-                End If
-            End If
-            Return ret
-        End Function
-
-        Public Function IsAnyCandleClosesAboveOrBelow(ByVal currentMinute As Date, ByVal lastExitTime As Date, ByVal totalXMinutePayload As Dictionary(Of Date, Payload), ByVal potentialEntryTrade As Trade) As Boolean
-            Dim ret As Boolean = False
-            If totalXMinutePayload IsNot Nothing AndAlso totalXMinutePayload.Count > 0 Then
-                Dim payloadsToCheck As IEnumerable(Of KeyValuePair(Of Date, Payload)) = totalXMinutePayload.Where(Function(x)
-                                                                                                                      Return x.Key >= lastExitTime AndAlso
-                                                                                                                  x.Key < currentMinute
-                                                                                                                  End Function)
-                If payloadsToCheck IsNot Nothing AndAlso payloadsToCheck.Count > 0 Then
-                    If potentialEntryTrade IsNot Nothing Then
-                        If potentialEntryTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                            For Each runningPayload In payloadsToCheck
-                                If runningPayload.Value.Close <= potentialEntryTrade.EntryPrice Then
-                                    ret = True
-                                    Exit For
-                                End If
-                            Next
-                        ElseIf potentialEntryTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                            For Each runningPayload In payloadsToCheck
-                                If runningPayload.Value.Close >= potentialEntryTrade.EntryPrice Then
-                                    ret = True
-                                    Exit For
-                                End If
-                            Next
-                        End If
-                    End If
-                End If
-            End If
-            Return ret
-        End Function
-
-        Public Function GetBreakevenPoint(ByVal tradingSymbol As String, ByVal entryPrice As Decimal, ByVal quantity As Integer, ByVal direction As Trade.TradeExecutionDirection, ByVal lotsize As Integer, ByVal stockType As Trade.TypeOfStock) As Decimal
-            Dim ret As Decimal = Me.TickSize
-            If direction = Trade.TradeExecutionDirection.Buy Then
-                For exitPrice As Decimal = entryPrice To Decimal.MaxValue Step ret
-                    Dim pl As Decimal = CalculatePL(tradingSymbol, entryPrice, exitPrice, quantity, lotsize, stockType)
-                    If pl >= 0 Then
-                        ret = ConvertFloorCeling(exitPrice - entryPrice, Me.TickSize, RoundOfType.Celing)
-                        Exit For
-                    End If
-                Next
-            ElseIf direction = Trade.TradeExecutionDirection.Sell Then
-                For exitPrice As Decimal = entryPrice To Decimal.MinValue Step ret * -1
-                    Dim pl As Decimal = CalculatePL(tradingSymbol, exitPrice, entryPrice, quantity, lotsize, stockType)
-                    If pl >= 0 Then
-                        ret = ConvertFloorCeling(entryPrice - exitPrice, Me.TickSize, RoundOfType.Celing)
-                        Exit For
-                    End If
-                Next
-            End If
-            Return ret
-        End Function
-
-        Public Function CalculateTrailingMTM(ByVal mtmSlab As Decimal, ByVal mvmntSlab As Decimal, ByVal pl As Decimal) As Decimal
-            Dim ret As Decimal = Decimal.MinValue
-            If pl >= mtmSlab Then
-                Dim multiplier As Decimal = pl / mtmSlab
-                ret = Math.Floor(multiplier) * mvmntSlab
-            End If
-            Return ret
-        End Function
-
-        Public Function CalculateLogTrailingMTM(ByVal mtmSlab As Decimal, ByVal pl As Decimal) As Decimal
-            Dim ret As Decimal = Decimal.MinValue
-            If pl >= mtmSlab Then
-                Dim plmultiplier As Decimal = Math.Floor(pl / mtmSlab)
-                Dim multiplier As Decimal = Math.Log(mtmSlab * plmultiplier, mtmSlab)
-                ret = Math.Round((mtmSlab * (plmultiplier - 1)) * multiplier, 4)
-                If ret = 0 Then ret = mtmSlab / 2
+                Dim exchangeTime As Date = New Date(lowerTFTime.Year, lowerTFTime.Month, lowerTFTime.Day, Me.ExchangeStartTime.Hours, Me.ExchangeStartTime.Minutes, 0)
+                Dim currentTime As Date = New Date(lowerTFTime.Year, lowerTFTime.Month, lowerTFTime.Day, lowerTFTime.Hour, lowerTFTime.Minute, 0)
+                Dim timeDifference As Double = currentTime.Subtract(exchangeTime).TotalMinutes
+                Dim adjustedTimeDifference As Integer = Math.Floor(timeDifference / Me.SignalTimeFrame) * Me.SignalTimeFrame
+                ret = exchangeTime.AddMinutes(adjustedTimeDifference)
+                'Dim currentMinute As Date = exchangeTime.AddMinutes(adjustedTimeDifference)
+                'ret = New Date(lowerTFTime.Year,
+                '                lowerTFTime.Month,
+                '                lowerTFTime.Day,
+                '                currentMinute.Hour,
+                '                currentMinute.Minute, 0)
             End If
             Return ret
         End Function
@@ -1455,27 +878,6 @@ Namespace StrategyHelper
                         OnHeartbeat("Calculating supporting values")
 
                         Dim cts As New CancellationTokenSource
-
-                        Dim maxDrawUp As Decimal = Decimal.MinValue
-                        Dim maxDrawDown As Decimal = Decimal.MinValue
-                        If allTradesData.Count = 1 Then
-                            For Each runningDate In allTradesData
-                                For Each runningStock In runningDate.Value
-                                    If runningStock.Value IsNot Nothing AndAlso runningStock.Value.Count > 0 Then
-                                        For Each runningTrade In runningStock.Value
-                                            If runningTrade.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel Then
-                                                maxDrawDown = runningTrade.OverAllMaxDrawDownPL
-                                                maxDrawUp = runningTrade.OverAllMaxDrawUpPL
-
-                                                Exit For
-                                            End If
-                                        Next
-                                        Exit For
-                                    End If
-                                Next
-                                Exit For
-                            Next
-                        End If
 
                         Dim totalTrades As Integer = allTradesData.Values.Sum(Function(x)
                                                                                   Return x.Values.Sum(Function(y)
@@ -1737,12 +1139,6 @@ Namespace StrategyHelper
                                 mainRawData(rowCtr, colCtr) = "Trading Symbol"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Capital Required With Margin"
-                                colCtr += 1
-                                If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Square Off Type"
-                                colCtr += 1
-                                If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                 mainRawData(rowCtr, colCtr) = "Entry Direction"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
@@ -1761,25 +1157,7 @@ Namespace StrategyHelper
                                 mainRawData(rowCtr, colCtr) = "Exit Time"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Duration Of Trade"
-                                colCtr += 1
-                                If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Entry Condition"
-                                colCtr += 1
-                                If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Entry Remark"
-                                colCtr += 1
-                                If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Exit Condition"
-                                colCtr += 1
-                                If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                 mainRawData(rowCtr, colCtr) = "Exit Remark"
-                                colCtr += 1
-                                If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "SL Remark"
-                                colCtr += 1
-                                If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Target Remark"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                 mainRawData(rowCtr, colCtr) = "PL Point"
@@ -1791,79 +1169,37 @@ Namespace StrategyHelper
                                 mainRawData(rowCtr, colCtr) = "PL After Brokerage"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Maximum DrawUp Point"
-                                colCtr += 1
-                                If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Maximum DrawDown Point"
-                                colCtr += 1
-                                If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Maximum Draw Up PL"
-                                colCtr += 1
-                                If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Maximum Draw Down PL"
-                                colCtr += 1
-                                If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Maximum Draw Up Time"
-                                colCtr += 1
-                                If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Maximum Draw Down Time"
-                                colCtr += 1
-                                If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                 mainRawData(rowCtr, colCtr) = "Signal Candle Time"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                 mainRawData(rowCtr, colCtr) = "Month"
                                 colCtr += 1
-                                'If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                'mainRawData(rowCtr, colCtr) = "Entry Buffer"
-                                'colCtr += 1
-                                'If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                'mainRawData(rowCtr, colCtr) = "SL Buffer"
-                                'colCtr += 1
-                                ''If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                ''mainRawData(rowCtr, colCtr) = "SquareOffValue"
-                                ''colCtr += 1
-                                'If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                'mainRawData(rowCtr, colCtr) = "Exit Before PL"
-                                'colCtr += 1
-                                If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Overall Draw Up PL for the day"
-                                colCtr += 1
-                                If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Overall Draw Down PL for the day"
-                                colCtr += 1
-                                'If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                'mainRawData(rowCtr, colCtr) = "Overall Draw Up Time"
-                                'colCtr += 1
-                                'If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                'mainRawData(rowCtr, colCtr) = "Overall Draw Down Time"
-                                'colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                 mainRawData(rowCtr, colCtr) = "Tag"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Supporting1"
+                                mainRawData(rowCtr, colCtr) = "Trade Number"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Supporting2"
+                                mainRawData(rowCtr, colCtr) = "Entry Z-Score"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Supporting3"
+                                mainRawData(rowCtr, colCtr) = "Mean"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Supporting4"
+                                mainRawData(rowCtr, colCtr) = "SD"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                 mainRawData(rowCtr, colCtr) = "Supporting5"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Supporting6"
+                                mainRawData(rowCtr, colCtr) = "Start Date"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Supporting7"
+                                mainRawData(rowCtr, colCtr) = "End Date"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Supporting8"
+                                mainRawData(rowCtr, colCtr) = "Duration"
 
                                 rowCtr += 1
                             End If
@@ -1896,12 +1232,6 @@ Namespace StrategyHelper
                                                     mainRawData(rowCtr, colCtr) = tradeTaken.SupportingTradingSymbol
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.CapitalRequiredWithMargin
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.SquareOffType.ToString
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                                     mainRawData(rowCtr, colCtr) = tradeTaken.EntryDirection.ToString
                                                     colCtr += 1
                                                     If tradeTaken.EntryDirection = Trade.TradeExecutionDirection.Buy Then
@@ -1929,25 +1259,7 @@ Namespace StrategyHelper
                                                     mainRawData(rowCtr, colCtr) = tradeTaken.ExitTime.ToString("yyyy-MM-dd HH:mm:ss")
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = Math.Round(tradeTaken.DurationOfTrade.TotalMinutes, 4)
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.EntryCondition.ToString
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.EntryRemark
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.ExitCondition.ToString
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                                     mainRawData(rowCtr, colCtr) = tradeTaken.ExitRemark
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.SLRemark
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.TargetRemark
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                                     mainRawData(rowCtr, colCtr) = Math.Round(tradeTaken.PLPoint, 4)
@@ -1959,53 +1271,11 @@ Namespace StrategyHelper
                                                     mainRawData(rowCtr, colCtr) = tradeTaken.PLAfterBrokerage
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = If(tradeTaken.EntryDirection = Trade.TradeExecutionDirection.Buy, tradeTaken.MaximumDrawUp - tradeTaken.EntryPrice, tradeTaken.EntryPrice - tradeTaken.MaximumDrawUp)
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = If(tradeTaken.EntryDirection = Trade.TradeExecutionDirection.Buy, tradeTaken.MaximumDrawDown - tradeTaken.EntryPrice, tradeTaken.EntryPrice - tradeTaken.MaximumDrawDown)
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.MaximumDrawUpPL
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.MaximumDrawDownPL
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.MaximumDrawUpTime.ToString("HH:mm:ss")
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.MaximumDrawDownTime.ToString("HH:mm:ss")
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                                     mainRawData(rowCtr, colCtr) = tradeTaken.SignalCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss")
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                                     mainRawData(rowCtr, colCtr) = String.Format("{0}-{1}", tradeTaken.TradingDate.ToString("yyyy"), tradeTaken.TradingDate.ToString("MM"))
                                                     colCtr += 1
-                                                    'If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    'mainRawData(rowCtr, colCtr) = tradeTaken.EntryBuffer
-                                                    'colCtr += 1
-                                                    'If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    'mainRawData(rowCtr, colCtr) = tradeTaken.StoplossBuffer
-                                                    'colCtr += 1
-                                                    ''If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    ''mainRawData(rowCtr, colCtr) = tradeTaken.SquareOffValue
-                                                    ''colCtr += 1
-                                                    'If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    'mainRawData(rowCtr, colCtr) = If(Math.Round(tradeTaken.PLPoint, 4) = Math.Round(tradeTaken.WarningPLPoint, 4), "FALSE", "TRUE")
-                                                    'colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.OverAllMaxDrawUpPL
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.OverAllMaxDrawDownPL
-                                                    colCtr += 1
-                                                    'If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    'mainRawData(rowCtr, colCtr) = tradeTaken.OverAllMaxDrawUpTime.ToString("HH:mm:ss")
-                                                    'colCtr += 1
-                                                    'If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    'mainRawData(rowCtr, colCtr) = tradeTaken.OverAllMaxDrawDownTime.ToString("HH:mm:ss")
-                                                    'colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                                     mainRawData(rowCtr, colCtr) = tradeTaken.Tag
                                                     colCtr += 1
@@ -2126,57 +1396,10 @@ Namespace StrategyHelper
                             Erase capitalRawData
                             capitalRawData = Nothing
 
-                            excelWriter.CreateNewSheet("Summary")
-                            excelWriter.SetActiveSheet("Summary")
-                            excelWriter.SetCellWidth(1, 6, 33)
-                            excelWriter.SetCellWidth(1, 7, 15)
-                            Dim n As Integer = 1
-                            excelWriter.SetData(n + 10, 6, "Trade Win Ratio")
-                            excelWriter.SetData(n + 10, 7, strategyOutputData.WinRatio, "##,##,##0.00", ExcelHelper.XLAlign.Right)
-                            n = 2
-                            excelWriter.SetData(n + 11, 6, "Net Profit")
-                            excelWriter.SetData(n + 11, 7, strategyOutputData.NetProfit, "##,##,##0.00", ExcelHelper.XLAlign.Right)
-                            excelWriter.SetData(n + 12, 6, "Gross Profit")
-                            excelWriter.SetData(n + 12, 7, strategyOutputData.GrossProfit, "##,##,##0.00", ExcelHelper.XLAlign.Right)
-                            excelWriter.SetData(n + 13, 6, "Gross Loss")
-                            excelWriter.SetData(n + 13, 7, strategyOutputData.GrossLoss, "##,##,##0.00", ExcelHelper.XLAlign.Right)
-                            n = 6
-                            excelWriter.SetData(n + 15, 6, "Total Trades")
-                            excelWriter.SetData(n + 15, 7, strategyOutputData.TotalTrades, "##,##,##0", ExcelHelper.XLAlign.Right)
-                            excelWriter.SetData(n + 16, 6, "Total Winning Trades")
-                            excelWriter.SetData(n + 16, 7, strategyOutputData.TotalWinningTrades, "##,##,##0", ExcelHelper.XLAlign.Right)
-                            excelWriter.SetData(n + 17, 6, "Total Losing Trades")
-                            excelWriter.SetData(n + 17, 7, strategyOutputData.TotalLosingTrades, "##,##,##0", ExcelHelper.XLAlign.Right)
-                            excelWriter.SetData(n + 18, 6, "Average Trades")
-                            excelWriter.SetData(n + 18, 7, strategyOutputData.AverageTrades, "##,##,##0.00", ExcelHelper.XLAlign.Right)
-                            excelWriter.SetData(n + 19, 6, "Average Winning Trades")
-                            excelWriter.SetData(n + 19, 7, strategyOutputData.AverageWinningTrades, "##,##,##0.00", ExcelHelper.XLAlign.Right)
-                            excelWriter.SetData(n + 20, 6, "Average Losing Trades")
-                            excelWriter.SetData(n + 20, 7, strategyOutputData.AverageLosingTrades, "##,##,##0.00", ExcelHelper.XLAlign.Right)
-                            excelWriter.SetData(n + 21, 6, "Risk Reward")
-                            excelWriter.SetData(n + 21, 7, strategyOutputData.RiskReward, "##,##,##0.00", ExcelHelper.XLAlign.Right)
-                            excelWriter.SetData(n + 22, 6, "Largest Winning Trade")
-                            excelWriter.SetData(n + 22, 7, strategyOutputData.LargestWinningTrade, "##,##,##0.00", ExcelHelper.XLAlign.Right)
-                            excelWriter.SetData(n + 23, 6, "Largest Losing Trade")
-                            excelWriter.SetData(n + 23, 7, strategyOutputData.LargestLosingTrade, "##,##,##0.00", ExcelHelper.XLAlign.Right)
-                            excelWriter.SetData(n + 24, 6, "Average Duration In Trades")
-                            excelWriter.SetData(n + 24, 7, strategyOutputData.AverageDurationInTrades, "##,##,##0.00", ExcelHelper.XLAlign.Right)
-                            excelWriter.SetData(n + 25, 6, "Average Duration In Winning Trades")
-                            excelWriter.SetData(n + 25, 7, strategyOutputData.AverageDurationInWinningTrades, "##,##,##0.00", ExcelHelper.XLAlign.Right)
-                            excelWriter.SetData(n + 26, 6, "Average Duration In Losing Trades")
-                            excelWriter.SetData(n + 26, 7, strategyOutputData.AverageDurationInLosingTrades, "##,##,##0.00", ExcelHelper.XLAlign.Right)
-
                             excelWriter.SetActiveSheet("Data")
                             OnHeartbeat("Saving excel...")
                             excelWriter.SaveExcel()
                         End Using
-
-                        Dim p As Process = New Process()
-                        Dim pi As ProcessStartInfo = New ProcessStartInfo()
-                        pi.Arguments = String.Format(" ""{0}"" {1} {2} {3} {4}", filepath, InitialCapital, UsableCapital, MinimumEarnedCapitalToWithdraw, AmountToBeWithdrawn)
-                        pi.FileName = "BacktesterExcelModifier.exe"
-                        p.StartInfo = pi
-                        p.Start()
 
                         If tradesFilename IsNot Nothing AndAlso File.Exists(tradesFilename) Then File.Delete(tradesFilename)
                         If capitalFileName IsNot Nothing AndAlso File.Exists(capitalFileName) Then File.Delete(capitalFileName)

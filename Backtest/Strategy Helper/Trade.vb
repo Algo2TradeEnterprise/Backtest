@@ -152,34 +152,6 @@ Namespace StrategyHelper
         Public ReadOnly Property Supporting8 As String
         Public ReadOnly Property SupportingTradingSymbol As String
 
-        Private _CurrentLTP As Double
-        Public Property CurrentLTP As Double
-            Get
-                Return _CurrentLTP
-            End Get
-            Set(value As Double)
-                _CurrentLTP = value
-                'Trigger lazy properties
-                Dim x = Me.MaximumDrawDown
-                Dim y = Me.MaximumDrawUp
-                If Me.MaximumDrawDown = 0 Or Me.MaximumDrawUp = 0 Then
-                    Throw New ApplicationException(String.Format("{0} Value: 0", If(Me.MaximumDrawUp = 0, Me.MaximumDrawUp.ToString, Me.MaximumDrawDown.ToString)))
-                End If
-                'Dim a = _OriginatingStrategy.TotalMaxDrawDownPLAfterBrokerage(Me.TradingDate, CurrentLTPTime)
-                'Dim b = _OriginatingStrategy.TotalMaxDrawUpPLAfterBrokerage(Me.TradingDate, CurrentLTPTime)
-            End Set
-        End Property
-
-        Private _CurrentLTPTime As Date
-        Public Property CurrentLTPTime As Date
-            Get
-                Return _CurrentLTPTime
-            End Get
-            Set(value As Date)
-                _CurrentLTPTime = value
-            End Set
-        End Property
-
         Public ReadOnly Property PLAfterBrokerage As Double
             Get
                 If Me.TradeCurrentStatus = TradeExecutionStatus.Close Then
@@ -192,15 +164,16 @@ Namespace StrategyHelper
                     End If
                 Else
                     If EntryDirection = TradeExecutionDirection.Buy Then
-                        Return _OriginatingStrategy.CalculatePL(CoreTradingSymbol, EntryPrice, CurrentLTP, Quantity, LotSize, StockType)
+                        Return 0
                     ElseIf EntryDirection = TradeExecutionDirection.Sell Then
-                        Return _OriginatingStrategy.CalculatePL(CoreTradingSymbol, CurrentLTP, EntryPrice, Quantity, LotSize, StockType)
+                        Return 0
                     Else
                         Return Double.MinValue
                     End If
                 End If
             End Get
         End Property
+
         Public ReadOnly Property PLBeforeBrokerage As Double
             Get
                 If Me.TradeCurrentStatus = TradeExecutionStatus.Close Then
@@ -213,9 +186,9 @@ Namespace StrategyHelper
                     End If
                 Else
                     If Me.EntryDirection = TradeExecutionDirection.Buy Then
-                        Return ((Me.CurrentLTP - Me.EntryPrice) * Me.Quantity)
+                        Return 0
                     ElseIf Me.EntryDirection = TradeExecutionDirection.Sell Then
-                        Return ((Me.EntryPrice - Me.CurrentLTP) * Me.Quantity)
+                        Return 0
                     Else
                         Return Double.MinValue
                     End If
@@ -228,96 +201,6 @@ Namespace StrategyHelper
                 Return 15000
             End Get
         End Property
-
-        Private _MaximumDrawUp As Double = Double.MinValue
-        Public ReadOnly Property MaximumDrawUp As Double
-            Get
-                If TradeCurrentStatus = TradeExecutionStatus.Inprogress Then
-                    If _MaximumDrawUp = Double.MinValue Then
-                        _MaximumDrawUp = Me.EntryPrice
-                        _MaximumDrawUpTime = Me.EntryTime
-                    End If
-                    If EntryDirection = TradeExecutionDirection.Buy Then
-                        '_MaximumDrawUp = Math.Max(_MaximumDrawUp, CurrentLTP)
-                        If CurrentLTP >= _MaximumDrawUp Then
-                            _MaximumDrawUp = CurrentLTP
-                            _MaximumDrawUpTime = CurrentLTPTime
-                        End If
-                    ElseIf EntryDirection = TradeExecutionDirection.Sell Then
-                        '_MaximumDrawUp = Math.Min(_MaximumDrawUp, CurrentLTP)
-                        If CurrentLTP <= _MaximumDrawUp Then
-                            _MaximumDrawUp = CurrentLTP
-                            _MaximumDrawUpTime = CurrentLTPTime
-                        End If
-                    End If
-                End If
-                Return _MaximumDrawUp
-            End Get
-        End Property
-
-        Private _MaximumDrawUpTime As Date = Date.MinValue
-        Public ReadOnly Property MaximumDrawUpTime As Date
-            Get
-                Return _MaximumDrawUpTime
-            End Get
-        End Property
-
-        Private _MaximumDrawDown As Double = Double.MinValue
-        Public ReadOnly Property MaximumDrawDown As Double
-            Get
-                If TradeCurrentStatus = TradeExecutionStatus.Inprogress Then
-                    If _MaximumDrawDown = Double.MinValue Then
-                        _MaximumDrawDown = Me.EntryPrice
-                        _MaximumDrawDownTime = Me.EntryTime
-                    End If
-                    If EntryDirection = TradeExecutionDirection.Buy Then
-                        '_MaximumDrawDown = Math.Min(_MaximumDrawDown, CurrentLTP)
-                        If CurrentLTP <= _MaximumDrawDown Then
-                            _MaximumDrawDown = CurrentLTP
-                            _MaximumDrawDownTime = CurrentLTPTime
-                        End If
-                    ElseIf EntryDirection = TradeExecutionDirection.Sell Then
-                        '_MaximumDrawDown = Math.Max(_MaximumDrawDown, CurrentLTP)
-                        If CurrentLTP >= _MaximumDrawDown Then
-                            _MaximumDrawDown = CurrentLTP
-                            _MaximumDrawDownTime = CurrentLTPTime
-                        End If
-                    End If
-                End If
-                Return _MaximumDrawDown
-            End Get
-        End Property
-
-        Private _MaximumDrawDownTime As Date = Date.MinValue
-        Public ReadOnly Property MaximumDrawDownTime As Date
-            Get
-                Return _MaximumDrawDownTime
-            End Get
-        End Property
-
-        Public ReadOnly Property MaximumDrawUpPL As Double
-            Get
-                If EntryDirection = TradeExecutionDirection.Buy Then
-                    Return _OriginatingStrategy.CalculatePL(CoreTradingSymbol, EntryPrice, MaximumDrawUp, Quantity, LotSize, StockType)
-                ElseIf EntryDirection = TradeExecutionDirection.Sell Then
-                    Return _OriginatingStrategy.CalculatePL(CoreTradingSymbol, MaximumDrawUp, EntryPrice, Quantity, LotSize, StockType)
-                Else
-                    Return Double.MinValue
-                End If
-            End Get
-        End Property
-        Public ReadOnly Property MaximumDrawDownPL As Double
-            Get
-                If EntryDirection = TradeExecutionDirection.Buy Then
-                    Return _OriginatingStrategy.CalculatePL(CoreTradingSymbol, EntryPrice, MaximumDrawDown, Quantity, LotSize, StockType)
-                ElseIf EntryDirection = TradeExecutionDirection.Sell Then
-                    Return _OriginatingStrategy.CalculatePL(CoreTradingSymbol, MaximumDrawDown, EntryPrice, Quantity, LotSize, StockType)
-                Else
-                    Return Double.MinValue
-                End If
-            End Get
-        End Property
-
         Public ReadOnly Property DurationOfTrade As TimeSpan
             Get
                 Return Me.ExitTime - Me.EntryTime
@@ -335,51 +218,18 @@ Namespace StrategyHelper
                     End If
                 Else
                     If Me.EntryDirection = TradeExecutionDirection.Buy Then
-                        Return (Me.CurrentLTP - Me.EntryPrice)
+                        Return 0
                     ElseIf Me.EntryDirection = TradeExecutionDirection.Sell Then
-                        Return (Me.EntryPrice - Me.CurrentLTP)
+                        Return 0
                     Else
                         Return Double.MinValue
                     End If
                 End If
             End Get
         End Property
-        'Start Indibar
-        Public ReadOnly Property WarningPLPoint As Double
-            Get
-                If Me.EntryDirection = TradeExecutionDirection.Buy Then
-                    Return (Me.ExitPrice - Me.EntryPrice)
-                ElseIf Me.EntryDirection = TradeExecutionDirection.Sell Then
-                    Return (Me.EntryPrice - Me.ExitPrice)
-                Else
-                    Return Double.MinValue
-                End If
-            End Get
-        End Property
-        Public Property OverAllMaxDrawUpPL As Double
-        Public Property OverAllMaxDrawDownPL As Double
-        Public Property OverAllMaxDrawUpTime As Date
-        Public Property OverAllMaxDrawDownTime As Date
-        'End Indibar
 #End Region
 
 #Region "Public Fuction"
-        'Public Overrides Function ToString() As String
-        '    Return String.Format("TradingSymbol:{0},Direction:{1},EntryTime:{2},EntryPrice:{3},EntryRemark:{4},TP:{5},TPRemark:{6},SL:{7},SLRemark:{8},ExitTime:{9},ExitPrice:{10},ExitRemark:{11},Status:{12}",
-        '                                                                                                                                            Me.TradingSymbol,
-        '                                                                                                                                            Me.EntryDirection,
-        '                                                                                                                                            Me.EntryTime.ToString("yyyy-MM-dd HH:mm:ss"),
-        '                                                                                                                                            Me.EntryPrice,
-        '                                                                                                                                            Me.EntryRemark,
-        '                                                                                                                                            Me.PotentialTarget,
-        '                                                                                                                                            Me.TargetRemark,
-        '                                                                                                                                            Me.PotentialStopLoss,
-        '                                                                                                                                            Me.SLRemark,
-        '                                                                                                                                            Me.ExitTime.ToString("yyyy-MM-dd HH:mm:ss"),
-        '                                                                                                                                            Me.ExitPrice,
-        '                                                                                                                                            Me.ExitRemark,
-        '                                                                                                                                            Me.TradeCurrentStatus)
-        'End Function
         Public Sub UpdateTrade(Optional ByVal TradingSymbol As String = Nothing,
                                 Optional ByVal StockType As TypeOfStock = TypeOfStock.None,
                                 Optional ByVal EntryTime As Date = Nothing,
