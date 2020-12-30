@@ -1608,18 +1608,24 @@ Namespace StrategyHelper
                             .AverageDurationInLosingTrades = If((totalTrades - totalPositiveTrades) <> 0, totalDurationInNegativeTrades / (totalTrades - totalPositiveTrades), 0)
                         End With
 
-
-                        Dim maxNumberOfDays As Decimal = allTradesData.Values.Max(Function(x)
-                                                                                      Return x.Values.Max(Function(y)
-                                                                                                              Return y.Max(Function(z)
-                                                                                                                               If z.Supporting8 IsNot Nothing AndAlso IsNumeric(z.Supporting8) Then
-                                                                                                                                   Return Val(z.Supporting8)
-                                                                                                                               Else
-                                                                                                                                   Return Decimal.MinValue
-                                                                                                                               End If
-                                                                                                                           End Function)
-                                                                                                          End Function)
-                                                                                  End Function)
+                        Dim maxNumberOfDays As Decimal = Decimal.MinValue
+                        For Each runningDate In allTradesData
+                            For Each runningStock In runningDate.Value
+                                If runningStock.Value IsNot Nothing AndAlso runningStock.Value.Count > 0 Then
+                                    For Each runningTrade In runningStock.Value
+                                        Try
+                                            If runningTrade.Supporting8 IsNot Nothing AndAlso
+                                            runningTrade.Supporting8.Trim <> "" AndAlso
+                                            IsNumeric(runningTrade.Supporting8) Then
+                                                maxNumberOfDays = Math.Max(Val(runningTrade.Supporting8), maxNumberOfDays)
+                                            End If
+                                        Catch ex As Exception
+                                            Throw ex
+                                        End Try
+                                    Next
+                                End If
+                            Next
+                        Next
 
                         Dim distinctTagList As List(Of String) = New List(Of String)
                         Dim runningTradeTag As String = Nothing
@@ -1638,6 +1644,7 @@ Namespace StrategyHelper
                             Next
                         Next
 
+                        Dim tradeCount As Integer = distinctTagList.Count
                         Dim pl As Decimal = strategyOutputData.NetProfit
                         Dim maxCapital As Decimal = allCapitalData.Values.Max(Function(x)
                                                                                   Return x.Max(Function(y)
@@ -1660,6 +1667,8 @@ Namespace StrategyHelper
                                     End If
                                 Next
                             Next
+
+                            tradeCount = tradeCount - 1
                             pl = pl - plToDeduct
                             If startTime <> Date.MinValue Then
                                 maxCapital = allCapitalData.Values.Max(Function(x)
@@ -1674,14 +1683,24 @@ Namespace StrategyHelper
                             End If
                         End If
 
-                        Dim roi As Decimal = (pl / maxCapital) * 100
-                        fileName = String.Format("PL {0},Cap {1},ROI {2},TrdNmbr {3},MaxDays {4},{5}.xlsx",
+                        If tradeCount = 0 Then
+                            fileName = String.Format("PL {0},Cap {1},ROI {2},TrdNmbr {3},MaxDays {4},{5}.xlsx",
+                                             Math.Round(pl, 0),
+                                             "∞",
+                                             "∞",
+                                             tradeCount,
+                                             "∞",
+                                             fileName)
+                        Else
+                            Dim roi As Decimal = (pl / maxCapital) * 100
+                            fileName = String.Format("PL {0},Cap {1},ROI {2},TrdNmbr {3},MaxDays {4},{5}.xlsx",
                                              Math.Round(pl, 0),
                                              Math.Round(maxCapital, 0),
                                              Math.Round(roi, 0),
-                                             distinctTagList.Count,
+                                             tradeCount,
                                              Math.Round(maxNumberOfDays, 0),
                                              fileName)
+                        End If
 
                         Dim filepath As String = Path.Combine(My.Application.Info.DirectoryPath, "BackTest Output", fileName)
                         If File.Exists(filepath) Then File.Delete(filepath)
