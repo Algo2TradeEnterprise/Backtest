@@ -522,7 +522,7 @@ Public Class OutsidexSDStrategyRule
                                                       stockType:=existingTrade.StockType,
                                                       orderType:=Trade.TypeOfOrder.Market,
                                                       tradingDate:=currentTick.PayloadDate,
-                                                      entryDirection:=Trade.TradeExecutionDirection.Buy,
+                                                      entryDirection:=existingTrade.EntryDirection,
                                                       entryPrice:=currentTick.Open,
                                                       entryBuffer:=0,
                                                       squareOffType:=Trade.TypeOfTrade.CNC,
