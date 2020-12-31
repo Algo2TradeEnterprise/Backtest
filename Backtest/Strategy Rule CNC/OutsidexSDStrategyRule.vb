@@ -389,7 +389,7 @@ Public Class OutsidexSDStrategyRule
         Dim zScore As Decimal = (ratio - mean) / sd
         Dim currentFutureTradingSymbol As String = GetFutureInstrumentNameFromCore(tradingSymbol, _TradingDate)
         Dim currentOptionTradingSymbol As String = GetCurrentATMOption(currentSpotTick.PayloadDate, GetOptionInstrumentNameFromCore(tradingSymbol, _TradingDate), currentSpotTick.Open, "PE")
-        If currentFutureTradingSymbol IsNot Nothing AndAlso currentOptionTradingSymbol Then
+        If currentFutureTradingSymbol IsNot Nothing AndAlso currentOptionTradingSymbol IsNot Nothing Then
             Dim currentFutTick As Payload = GetCurrentTick(currentFutureTradingSymbol, currentSpotTick.PayloadDate)
             If currentFutTick IsNot Nothing Then
                 Dim runningFutTrade As Trade = New Trade(originatingStrategy:=_ParentStrategy,
