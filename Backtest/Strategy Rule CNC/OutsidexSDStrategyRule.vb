@@ -388,7 +388,8 @@ Public Class OutsidexSDStrategyRule
                                                    End Function).LastOrDefault.Value
         Dim zScore As Decimal = (ratio - mean) / sd
         Dim currentFutureTradingSymbol As String = GetFutureInstrumentNameFromCore(tradingSymbol, _TradingDate)
-        If currentFutureTradingSymbol IsNot Nothing Then
+        Dim currentOptionTradingSymbol As String = GetCurrentATMOption(currentSpotTick.PayloadDate, GetOptionInstrumentNameFromCore(tradingSymbol, _TradingDate), currentSpotTick.Open, "PE")
+        If currentFutureTradingSymbol IsNot Nothing AndAlso currentOptionTradingSymbol Then
             Dim currentFutTick As Payload = GetCurrentTick(currentFutureTradingSymbol, currentSpotTick.PayloadDate)
             If currentFutTick IsNot Nothing Then
                 Dim runningFutTrade As Trade = New Trade(originatingStrategy:=_ParentStrategy,
@@ -423,7 +424,7 @@ Public Class OutsidexSDStrategyRule
                                              SupportingTradingSymbol:=currentFutureTradingSymbol)
 
                 If _ParentStrategy.PlaceOrModifyOrder(runningFutTrade, Nothing) Then
-                    Dim currentOptionTradingSymbol As String = GetCurrentATMOption(currentSpotTick.PayloadDate, GetOptionInstrumentNameFromCore(tradingSymbol, _TradingDate), currentSpotTick.Open, "PE")
+                    'Dim currentOptionTradingSymbol As String = GetCurrentATMOption(currentSpotTick.PayloadDate, GetOptionInstrumentNameFromCore(tradingSymbol, _TradingDate), currentSpotTick.Open, "PE")
                     Dim currentOptTick As Payload = GetCurrentTick(currentOptionTradingSymbol, currentSpotTick.PayloadDate)
                     If currentOptTick IsNot Nothing Then
                         Dim runningOptTrade As Trade = New Trade(originatingStrategy:=_ParentStrategy,
@@ -467,6 +468,8 @@ Public Class OutsidexSDStrategyRule
                     End If
                 End If
             End If
+        Else
+            Console.WriteLine(String.Format("Option Symbol not available. Core:{0}, DateTime:{1}", tradingSymbol, currentSpotTick.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss")))
         End If
         Return ret
     End Function
@@ -484,7 +487,8 @@ Public Class OutsidexSDStrategyRule
                                                    End Function).LastOrDefault.Value
         Dim zScore As Decimal = (ratio - mean) / sd
         Dim currentFutureTradingSymbol As String = GetFutureInstrumentNameFromCore(tradingSymbol, _TradingDate)
-        If currentFutureTradingSymbol IsNot Nothing Then
+        Dim currentOptionTradingSymbol As String = GetCurrentATMOption(currentSpotTick.PayloadDate, GetOptionInstrumentNameFromCore(tradingSymbol, _TradingDate), currentSpotTick.Open, "CE")
+        If currentFutureTradingSymbol IsNot Nothing AndAlso currentOptionTradingSymbol IsNot Nothing Then
             Dim currentFutTick As Payload = GetCurrentTick(currentFutureTradingSymbol, currentSpotTick.PayloadDate)
             If currentFutTick IsNot Nothing Then
                 Dim runningFutTrade As Trade = New Trade(originatingStrategy:=_ParentStrategy,
@@ -519,7 +523,7 @@ Public Class OutsidexSDStrategyRule
                                              SupportingTradingSymbol:=currentFutureTradingSymbol)
 
                 If _ParentStrategy.PlaceOrModifyOrder(runningFutTrade, Nothing) Then
-                    Dim currentOptionTradingSymbol As String = GetCurrentATMOption(currentSpotTick.PayloadDate, GetOptionInstrumentNameFromCore(tradingSymbol, _TradingDate), currentSpotTick.Open, "CE")
+                    'Dim currentOptionTradingSymbol As String = GetCurrentATMOption(currentSpotTick.PayloadDate, GetOptionInstrumentNameFromCore(tradingSymbol, _TradingDate), currentSpotTick.Open, "CE")
                     Dim currentOptTick As Payload = GetCurrentTick(currentOptionTradingSymbol, currentSpotTick.PayloadDate)
                     If currentOptTick IsNot Nothing Then
                         Dim runningOptTrade As Trade = New Trade(originatingStrategy:=_ParentStrategy,
@@ -563,6 +567,8 @@ Public Class OutsidexSDStrategyRule
                     End If
                 End If
             End If
+        Else
+            Console.WriteLine(String.Format("Option Symbol not available. Core:{0}, DateTime:{1}", tradingSymbol, currentSpotTick.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss")))
         End If
         Return ret
     End Function
