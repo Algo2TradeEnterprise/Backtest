@@ -299,69 +299,79 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
-                                                             exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                             exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                             tradeStartTime:=TimeSpan.Parse("9:16:00"),
-                                                             lastTradeEntryTime:=TimeSpan.Parse("15:30:00"),
-                                                             eodExitTime:=TimeSpan.Parse("15:30:00"),
-                                                             tickSize:=tick,
-                                                             marginMultiplier:=margin,
-                                                             timeframe:=15,
-                                                             heikenAshiCandle:=False,
-                                                             stockType:=stockType,
-                                                             databaseTable:=database,
-                                                             dataSource:=sourceData,
-                                                             initialCapital:=Decimal.MaxValue / 2,
-                                                             usableCapital:=Decimal.MaxValue / 2,
-                                                             minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
-                                                             amountToBeWithdrawn:=0)
-                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+            Dim tfList As List(Of Integer) = New List(Of Integer) From {15, 5, 1}
+            Dim tgtPerList As List(Of Integer) = New List(Of Integer) From {10, 12, 15}
+            Dim sdList As List(Of Integer) = New List(Of Integer) From {3, 4, 5}
 
-                With backtestStrategy
-                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Cash Future Pair Stock List.csv")
-                    .StockFileName = Nothing
+            For Each runningTF In tfList
+                For Each runningSD In sdList
+                    For Each runningTgtPer In tgtPerList
+                        Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
+                                                                         exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                         exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                         tradeStartTime:=TimeSpan.Parse("9:16:00"),
+                                                                         lastTradeEntryTime:=TimeSpan.Parse("15:30:00"),
+                                                                         eodExitTime:=TimeSpan.Parse("15:30:00"),
+                                                                         tickSize:=tick,
+                                                                         marginMultiplier:=margin,
+                                                                         timeframe:=runningTF,
+                                                                         heikenAshiCandle:=False,
+                                                                         stockType:=stockType,
+                                                                         databaseTable:=database,
+                                                                         dataSource:=sourceData,
+                                                                         initialCapital:=Decimal.MaxValue / 2,
+                                                                         usableCapital:=Decimal.MaxValue / 2,
+                                                                         minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                                         amountToBeWithdrawn:=0)
+                            AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                    .AllowBothDirectionEntryAtSameTime = False
-                    .TrailingStoploss = False
-                    .TickBasedStrategy = True
-                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+                            With backtestStrategy
+                                '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Cash Future Pair Stock List.csv")
+                                .StockFileName = Nothing
 
-                    .RuleEntityData = New OutsidexSDStrategyRule.StrategyRuleEntities With
-                    {
-                     .EntrySD = 3,
-                     .TargetPercentage = 10
-                    }
+                                .AllowBothDirectionEntryAtSameTime = False
+                                .TrailingStoploss = False
+                                .TickBasedStrategy = True
+                                .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                    .NumberOfTradeableStockPerDay = Integer.MaxValue
+                                .RuleEntityData = New OutsidexSDStrategyRule.StrategyRuleEntities With
+                                {
+                                 .EntrySD = runningSD,
+                                 .TargetPercentage = runningTgtPer
+                                }
 
-                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
+                                .NumberOfTradeableStockPerDay = Integer.MaxValue
 
-                    .StockMaxProfitPercentagePerDay = Decimal.MaxValue
-                    .StockMaxLossPercentagePerDay = Decimal.MinValue
+                                .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
-                    .ExitOnStockFixedTargetStoploss = False
-                    .StockMaxProfitPerDay = Decimal.MaxValue
-                    .StockMaxLossPerDay = Decimal.MinValue
+                                .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                                .StockMaxLossPercentagePerDay = Decimal.MinValue
 
-                    .ExitOnOverAllFixedTargetStoploss = False
-                    .OverAllProfitPerDay = Decimal.MaxValue
-                    .OverAllLossPerDay = Decimal.MinValue
+                                .ExitOnStockFixedTargetStoploss = False
+                                .StockMaxProfitPerDay = Decimal.MaxValue
+                                .StockMaxLossPerDay = Decimal.MinValue
 
-                    .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
-                    .MTMSlab = Math.Abs(.OverAllLossPerDay)
-                    .MovementSlab = .MTMSlab / 2
-                    .RealtimeTrailingPercentage = 50
-                End With
+                                .ExitOnOverAllFixedTargetStoploss = False
+                                .OverAllProfitPerDay = Decimal.MaxValue
+                                .OverAllLossPerDay = Decimal.MinValue
 
-                Dim ruleData As OutsidexSDStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                Dim filename As String = String.Format("OtSdxSDPairFutOptCNC,TF {0},EtrySD {1},TrgtPer {2}",
-                                                       backtestStrategy.SignalTimeFrame,
-                                                       ruleData.EntrySD,
-                                                       ruleData.TargetPercentage)
+                                .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+                                .MTMSlab = Math.Abs(.OverAllLossPerDay)
+                                .MovementSlab = .MTMSlab / 2
+                                .RealtimeTrailingPercentage = 50
+                            End With
 
-                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-            End Using
+                            Dim ruleData As OutsidexSDStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                            Dim filename As String = String.Format("OtSdxSDPairFutOptCNC,TF {0},EtrySD {1},TrgtPer {2}",
+                                                                   backtestStrategy.SignalTimeFrame,
+                                                                   ruleData.EntrySD,
+                                                                   ruleData.TargetPercentage)
+
+                            Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                        End Using
+                    Next
+                Next
+            Next
         Catch ex As Exception
             MsgBox(ex.ToString, MsgBoxStyle.Critical)
         Finally
