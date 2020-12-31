@@ -470,6 +470,7 @@ Public Class OutsidexSDStrategyRule
             End If
         Else
             Console.WriteLine(String.Format("Option Symbol not available. Core:{0}, DateTime:{1}", tradingSymbol, currentSpotTick.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss")))
+            ret = True
         End If
         Return ret
     End Function
@@ -569,6 +570,7 @@ Public Class OutsidexSDStrategyRule
             End If
         Else
             Console.WriteLine(String.Format("Option Symbol not available. Core:{0}, DateTime:{1}", tradingSymbol, currentSpotTick.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss")))
+            ret = True
         End If
         Return ret
     End Function
