@@ -299,9 +299,9 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            Dim tfList As List(Of Integer) = New List(Of Integer) From {15, 5, 1}
-            Dim tgtPerList As List(Of Integer) = New List(Of Integer) From {10, 12, 15}
-            Dim sdList As List(Of Integer) = New List(Of Integer) From {3, 4, 5}
+            Dim tfList As List(Of Integer) = New List(Of Integer) From {15}
+            Dim tgtPerList As List(Of Integer) = New List(Of Integer) From {10}
+            Dim sdList As List(Of Integer) = New List(Of Integer) From {3}
 
             For Each runningTF In tfList
                 For Each runningSD In sdList
@@ -337,7 +337,8 @@ Public Class frmMain
                                 .RuleEntityData = New OutsidexSDStrategyRule.StrategyRuleEntities With
                                 {
                                  .EntrySD = runningSD,
-                                 .TargetPercentage = runningTgtPer
+                                 .TargetPercentage = runningTgtPer,
+                                 .LookBackPeriod = 200
                                 }
 
                                 .NumberOfTradeableStockPerDay = Integer.MaxValue

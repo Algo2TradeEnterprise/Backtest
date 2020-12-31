@@ -540,6 +540,17 @@ Public Class Common
         End If
         Return ret
     End Function
+
+    Public Shared Function CalculateCorrelation(ByVal values1 As Decimal(), ByVal values2 As Decimal()) As Double
+        If values1.Length <> values2.Length Then Throw New ArgumentException("values must be the same length")
+        Dim avg1 = values1.Average()
+        Dim avg2 = values2.Average()
+        Dim sum1 = values1.Zip(values2, Function(x1, y1) (x1 - avg1) * (y1 - avg2)).Sum()
+        Dim sumSqr1 = values1.Sum(Function(x) Math.Pow((x - avg1), 2.0))
+        Dim sumSqr2 = values2.Sum(Function(y) Math.Pow((y - avg2), 2.0))
+        Dim result = sum1 / Math.Sqrt(sumSqr1 * sumSqr2)
+        Return result
+    End Function
 #End Region
 
 #Region "Public Functions"

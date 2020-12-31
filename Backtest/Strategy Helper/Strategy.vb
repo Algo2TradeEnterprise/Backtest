@@ -1192,7 +1192,7 @@ Namespace StrategyHelper
                                 mainRawData(rowCtr, colCtr) = "SD"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Supporting5"
+                                mainRawData(rowCtr, colCtr) = "Correlation"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                 mainRawData(rowCtr, colCtr) = "Start Date"
@@ -1202,6 +1202,9 @@ Namespace StrategyHelper
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                 mainRawData(rowCtr, colCtr) = "Duration"
+                                colCtr += 1
+                                If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                mainRawData(rowCtr, colCtr) = "Continues Z-Score"
 
                                 rowCtr += 1
                             End If
@@ -1304,6 +1307,9 @@ Namespace StrategyHelper
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                                     mainRawData(rowCtr, colCtr) = tradeTaken.Supporting8
+                                                    colCtr += 1
+                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                                    mainRawData(rowCtr, colCtr) = tradeTaken.Supporting9
 
                                                     rowCtr += 1
                                                 Next

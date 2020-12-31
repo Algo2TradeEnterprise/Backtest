@@ -150,6 +150,7 @@ Namespace StrategyHelper
         Public ReadOnly Property Supporting6 As String
         Public ReadOnly Property Supporting7 As String
         Public ReadOnly Property Supporting8 As String
+        Public ReadOnly Property Supporting9 As String
         Public ReadOnly Property SupportingTradingSymbol As String
 
         Public ReadOnly Property PLAfterBrokerage As Double
@@ -264,6 +265,7 @@ Namespace StrategyHelper
                                 Optional ByVal Supporting6 As String = Nothing,
                                 Optional ByVal Supporting7 As String = Nothing,
                                 Optional ByVal Supporting8 As String = Nothing,
+                                Optional ByVal Supporting9 As String = Nothing,
                                 Optional ByVal SupportingTradingSymbol As String = Nothing)
 
 
@@ -301,6 +303,7 @@ Namespace StrategyHelper
             If Supporting6 IsNot Nothing Then _Supporting6 = Supporting6
             If Supporting7 IsNot Nothing Then _Supporting7 = Supporting7
             If Supporting8 IsNot Nothing Then _Supporting8 = Supporting8
+            If Supporting9 IsNot Nothing Then _Supporting9 = Supporting9
             If SupportingTradingSymbol IsNot Nothing Then _SupportingTradingSymbol = SupportingTradingSymbol
 
             If Me._ExitTime <> Nothing OrElse Me._ExitTime <> Date.MinValue Then
@@ -347,6 +350,7 @@ Namespace StrategyHelper
                 If .Supporting6 IsNot Nothing Then _Supporting6 = .Supporting6
                 If .Supporting7 IsNot Nothing Then _Supporting7 = .Supporting7
                 If .Supporting8 IsNot Nothing Then _Supporting8 = .Supporting8
+                If .Supporting9 IsNot Nothing Then _Supporting9 = .Supporting9
                 If .SupportingTradingSymbol IsNot Nothing Then _SupportingTradingSymbol = .SupportingTradingSymbol
             End With
 
