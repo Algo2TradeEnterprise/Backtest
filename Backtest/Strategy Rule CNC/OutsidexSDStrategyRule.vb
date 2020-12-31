@@ -342,6 +342,7 @@ Public Class OutsidexSDStrategyRule
         Dim tradeID As String = System.Guid.NewGuid.ToString()
         Dim tradeNumber As Integer = 1
         Dim entryDate As String = currentTickTime.ToString("dd-MMM-yyyy HH:mm:ss")
+        Dim remark As String = "Fresh"
 
         Dim entryTrades As List(Of Trade) = _ParentStrategy.GetSpecificTrades(_PairName, _TradingDate, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
         If entryTrades IsNot Nothing AndAlso entryTrades.Count Then
@@ -351,21 +352,22 @@ Public Class OutsidexSDStrategyRule
             sd = Val(entryTrades.LastOrDefault.Supporting4)
             correl = Val(entryTrades.LastOrDefault.Supporting5)
             entryDate = entryTrades.LastOrDefault.Supporting6
+            remark = "Average"
         End If
 
         If entryZScore < 0 Then
             Dim currentSpotTick As Payload = GetCurrentTick(_TradingSymbol1, currentTickTime)
-            If EnterBuyTrade(signalCandle, currentSpotTick, _TradingSymbol1, _LotSize1, tradeID, tradeNumber, entryZScore, entryDate, mean, sd, correl) Then
+            If EnterBuyTrade(signalCandle, currentSpotTick, _TradingSymbol1, _LotSize1, tradeID, tradeNumber, entryZScore, entryDate, mean, sd, correl, remark) Then
                 currentSpotTick = GetCurrentTick(_TradingSymbol2, currentTickTime)
-                If EnterSellTrade(signalCandle, currentSpotTick, _TradingSymbol2, _LotSize2, tradeID, tradeNumber, entryZScore, entryDate, mean, sd, correl) Then
+                If EnterSellTrade(signalCandle, currentSpotTick, _TradingSymbol2, _LotSize2, tradeID, tradeNumber, entryZScore, entryDate, mean, sd, correl, remark) Then
                     ret = True
                 End If
             End If
         Else
             Dim currentSpotTick As Payload = GetCurrentTick(_TradingSymbol1, currentTickTime)
-            If EnterSellTrade(signalCandle, currentSpotTick, _TradingSymbol1, _LotSize1, tradeID, tradeNumber, entryZScore, entryDate, mean, sd, correl) Then
+            If EnterSellTrade(signalCandle, currentSpotTick, _TradingSymbol1, _LotSize1, tradeID, tradeNumber, entryZScore, entryDate, mean, sd, correl, remark) Then
                 currentSpotTick = GetCurrentTick(_TradingSymbol2, currentTickTime)
-                If EnterBuyTrade(signalCandle, currentSpotTick, _TradingSymbol2, _LotSize2, tradeID, tradeNumber, entryZScore, entryDate, mean, sd, correl) Then
+                If EnterBuyTrade(signalCandle, currentSpotTick, _TradingSymbol2, _LotSize2, tradeID, tradeNumber, entryZScore, entryDate, mean, sd, correl, remark) Then
                     ret = True
                 End If
             End If
@@ -377,7 +379,8 @@ Public Class OutsidexSDStrategyRule
                                    ByVal tradingSymbol As String, ByVal lotSize As Integer,
                                    ByVal tradeID As String, ByVal tradeNumber As Integer,
                                    ByVal entryZScore As Decimal, ByVal entryDate As String,
-                                   ByVal mean As Decimal, ByVal sd As Decimal, ByVal correl As Decimal) As Boolean
+                                   ByVal mean As Decimal, ByVal sd As Decimal,
+                                   ByVal correl As Decimal, ByVal remark As String) As Boolean
         Dim ret As Boolean = False
         Dim currentMinute As Date = _ParentStrategy.GetCurrentXMinuteCandleTime(currentSpotTick.PayloadDate)
         Dim ratio As Decimal = _ratioPayload.Where(Function(x)
@@ -416,7 +419,7 @@ Public Class OutsidexSDStrategyRule
                                              Supporting4:=sd,
                                              Supporting5:=correl,
                                              Supporting6:=entryDate,
-                                             Supporting9:=String.Format("Entry Z-Score:{0}", Math.Round(zScore, 2)),
+                                             Supporting9:=String.Format("{0} Entry Z-Score:{1}", remark, Math.Round(zScore, 2)),
                                              SupportingTradingSymbol:=currentFutureTradingSymbol)
 
                 If _ParentStrategy.PlaceOrModifyOrder(runningFutTrade, Nothing) Then
@@ -451,7 +454,7 @@ Public Class OutsidexSDStrategyRule
                                                      Supporting4:=sd,
                                                      Supporting5:=correl,
                                                      Supporting6:=entryDate,
-                                                     Supporting9:=String.Format("Entry Z-Score:{0}", Math.Round(zScore, 2)),
+                                                     Supporting9:=String.Format("{0} Entry Z-Score:{1}", remark, Math.Round(zScore, 2)),
                                                      SupportingTradingSymbol:=currentOptionTradingSymbol)
 
                         If _ParentStrategy.PlaceOrModifyOrder(runningOptTrade, Nothing) Then
@@ -472,7 +475,8 @@ Public Class OutsidexSDStrategyRule
                                     ByVal tradingSymbol As String, ByVal lotSize As Integer,
                                     ByVal tradeID As String, ByVal tradeNumber As Integer,
                                     ByVal entryZScore As Decimal, ByVal entryDate As String,
-                                    ByVal mean As Decimal, ByVal sd As Decimal, ByVal correl As Decimal) As Boolean
+                                    ByVal mean As Decimal, ByVal sd As Decimal,
+                                    ByVal correl As Decimal, ByVal remark As String) As Boolean
         Dim ret As Boolean = False
         Dim currentMinute As Date = _ParentStrategy.GetCurrentXMinuteCandleTime(currentSpotTick.PayloadDate)
         Dim ratio As Decimal = _ratioPayload.Where(Function(x)
@@ -511,7 +515,7 @@ Public Class OutsidexSDStrategyRule
                                              Supporting4:=sd,
                                              Supporting5:=correl,
                                              Supporting6:=entryDate,
-                                             Supporting9:=String.Format("Entry Z-Score:{0}", Math.Round(zScore, 2)),
+                                             Supporting9:=String.Format("{0} Entry Z-Score:{1}", remark, Math.Round(zScore, 2)),
                                              SupportingTradingSymbol:=currentFutureTradingSymbol)
 
                 If _ParentStrategy.PlaceOrModifyOrder(runningFutTrade, Nothing) Then
@@ -546,7 +550,7 @@ Public Class OutsidexSDStrategyRule
                                                      Supporting4:=sd,
                                                      Supporting5:=correl,
                                                      Supporting6:=entryDate,
-                                                     Supporting9:=String.Format("Entry Z-Score:{0}", Math.Round(zScore, 2)),
+                                                     Supporting9:=String.Format("{0} Entry Z-Score:{1}", remark, Math.Round(zScore, 2)),
                                                      SupportingTradingSymbol:=currentOptionTradingSymbol)
 
                         If _ParentStrategy.PlaceOrModifyOrder(runningOptTrade, Nothing) Then
@@ -602,7 +606,7 @@ Public Class OutsidexSDStrategyRule
                                         Supporting4:=existingTrade.Supporting4,
                                         Supporting5:=existingTrade.Supporting5,
                                         Supporting6:=existingTrade.Supporting6,
-                                        Supporting9:=String.Format("Entry Z-Score:{0}", Math.Round(zScore, 2)),
+                                        Supporting9:=String.Format("Rollover Entry Z-Score:{0}", Math.Round(zScore, 2)),
                                         SupportingTradingSymbol:=currentTick.TradingSymbol)
 
             If _ParentStrategy.PlaceOrModifyOrder(runningFutTrade, Nothing) Then
