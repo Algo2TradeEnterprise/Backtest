@@ -102,7 +102,7 @@ Public Class OutsidexSDStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         Dim currentMinute As Date = _ParentStrategy.GetCurrentXMinuteCandleTime(currentTickTime)
         Dim tradeStartTime As Date = New Date(_TradingDate.Year, _TradingDate.Month, _TradingDate.Day, _ParentStrategy.TradeStartTime.Hours, _ParentStrategy.TradeStartTime.Minutes, _ParentStrategy.TradeStartTime.Seconds)
-        If currentMinute >= tradeStartTime Then
+        If currentTickTime >= tradeStartTime Then
             Dim lastEntryTrade As Trade = _ParentStrategy.GetLastEntryTradeOfTheStock(_PairName, _TradingDate, Trade.TypeOfTrade.CNC)
             If lastEntryTrade Is Nothing OrElse (lastEntryTrade.ExitRemark IsNot Nothing AndAlso lastEntryTrade.ExitRemark.ToUpper = "TARGET HIT") Then
                 'Fresh Entry
@@ -299,6 +299,7 @@ Public Class OutsidexSDStrategyRule
                 ret = currentCandle.Ticks.FindAll(Function(x)
                                                       Return x.PayloadDate <= currentTime
                                                   End Function).LastOrDefault
+
                 If ret Is Nothing Then ret = currentCandle.Ticks.FirstOrDefault
             End If
         End If
@@ -567,25 +568,25 @@ Public Class OutsidexSDStrategyRule
     Private Function GetCurrentATMPEOption(ByVal currentTickTime As Date, ByVal expiryString As String, ByVal price As Decimal) As String
         Dim ret As String = Nothing
         Dim query As String = Nothing
-        If currentTickTime.Hour >= 12 AndAlso currentTickTime.Minute >= 15 Then
-            query = "SELECT `TradingSymbol`,SUM(`Volume`) Vol
+        'If currentTickTime.Hour >= 12 AndAlso currentTickTime.Minute >= 15 Then
+        query = "SELECT `TradingSymbol`,SUM(`Volume`) Vol
                         FROM `intraday_prices_opt_futures`
                         WHERE `SnapshotDate`='{0}'
                         AND `SnapshotTime`<='{1}'
                         AND `TradingSymbol` LIKE '{2}%{3}'
                         GROUP BY `TradingSymbol`
                         ORDER BY Vol DESC"
-            query = String.Format(query, currentTickTime.ToString("yyyy-MM-dd"), currentTickTime.ToString("HH:mm:ss"), expiryString, "PE")
-        Else
-            query = "SELECT `TradingSymbol`,`Volume` Vol
-                        FROM `eod_prices_opt_futures`
-                        WHERE `SnapshotDate`='{0}'
-                        AND `TradingSymbol` LIKE '{1}%{2}'
-                        ORDER BY Vol DESC"
+        query = String.Format(query, currentTickTime.ToString("yyyy-MM-dd"), currentTickTime.AddMinutes(-1).ToString("HH:mm:ss"), expiryString, "PE")
+        'Else
+        '    query = "SELECT `TradingSymbol`,`Volume` Vol
+        '                FROM `eod_prices_opt_futures`
+        '                WHERE `SnapshotDate`='{0}'
+        '                AND `TradingSymbol` LIKE '{1}%{2}'
+        '                ORDER BY Vol DESC"
 
-            Dim previousTradingDay As Date = _ParentStrategy.Cmn.GetPreviousTradingDay(Common.DataBaseTable.EOD_Futures, _TradingDate)
-            query = String.Format(query, previousTradingDay.ToString("yyyy-MM-dd"), expiryString, "PE")
-        End If
+        '    Dim previousTradingDay As Date = _ParentStrategy.Cmn.GetPreviousTradingDay(Common.DataBaseTable.EOD_Futures, _TradingDate)
+        '    query = String.Format(query, previousTradingDay.ToString("yyyy-MM-dd"), expiryString, "PE")
+        'End If
 
         Dim dt As DataTable = _ParentStrategy.Cmn.RunSelect(query)
         If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
@@ -608,7 +609,7 @@ Public Class OutsidexSDStrategyRule
                                                      End Function)
                 If sumVol > 0 Then
                     Dim countVol As Double = contracts.Sum(Function(x)
-                                                               If x.Key >= price Then
+                                                               If x.Key >= price AndAlso x.Value > 0 Then
                                                                    Return 1
                                                                Else
                                                                    Return 0
@@ -635,7 +636,7 @@ Public Class OutsidexSDStrategyRule
                                            End Function)
 
                     Dim countVol As Double = contracts.Sum(Function(x)
-                                                               If x.Key <= price Then
+                                                               If x.Key <= price AndAlso x.Value > 0 Then
                                                                    Return 1
                                                                Else
                                                                    Return 0
@@ -661,25 +662,25 @@ Public Class OutsidexSDStrategyRule
     Private Function GetCurrentATMCEOption(ByVal currentTickTime As Date, ByVal expiryString As String, ByVal price As Decimal) As String
         Dim ret As String = Nothing
         Dim query As String = Nothing
-        If currentTickTime.Hour >= 12 AndAlso currentTickTime.Minute >= 15 Then
-            query = "SELECT `TradingSymbol`,SUM(`Volume`) Vol
+        'If currentTickTime.Hour >= 12 AndAlso currentTickTime.Minute >= 15 Then
+        query = "SELECT `TradingSymbol`,SUM(`Volume`) Vol
                         FROM `intraday_prices_opt_futures`
                         WHERE `SnapshotDate`='{0}'
                         AND `SnapshotTime`<='{1}'
                         AND `TradingSymbol` LIKE '{2}%{3}'
                         GROUP BY `TradingSymbol`
                         ORDER BY Vol DESC"
-            query = String.Format(query, currentTickTime.ToString("yyyy-MM-dd"), currentTickTime.ToString("HH:mm:ss"), expiryString, "CE")
-        Else
-            query = "SELECT `TradingSymbol`,`Volume` Vol
-                        FROM `eod_prices_opt_futures`
-                        WHERE `SnapshotDate`='{0}'
-                        AND `TradingSymbol` LIKE '{1}%{2}'
-                        ORDER BY Vol DESC"
+        query = String.Format(query, currentTickTime.ToString("yyyy-MM-dd"), currentTickTime.AddMinutes(-1).ToString("HH:mm:ss"), expiryString, "CE")
+        'Else
+        '    query = "SELECT `TradingSymbol`,`Volume` Vol
+        '                FROM `eod_prices_opt_futures`
+        '                WHERE `SnapshotDate`='{0}'
+        '                AND `TradingSymbol` LIKE '{1}%{2}'
+        '                ORDER BY Vol DESC"
 
-            Dim previousTradingDay As Date = _ParentStrategy.Cmn.GetPreviousTradingDay(Common.DataBaseTable.EOD_Futures, _TradingDate)
-            query = String.Format(query, previousTradingDay.ToString("yyyy-MM-dd"), expiryString, "CE")
-        End If
+        '    Dim previousTradingDay As Date = _ParentStrategy.Cmn.GetPreviousTradingDay(Common.DataBaseTable.EOD_Futures, _TradingDate)
+        '    query = String.Format(query, previousTradingDay.ToString("yyyy-MM-dd"), expiryString, "CE")
+        'End If
 
         Dim dt As DataTable = _ParentStrategy.Cmn.RunSelect(query)
         If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
@@ -702,7 +703,7 @@ Public Class OutsidexSDStrategyRule
                                                      End Function)
                 If sumVol > 0 Then
                     Dim countVol As Double = contracts.Sum(Function(x)
-                                                               If x.Key <= price Then
+                                                               If x.Key <= price AndAlso x.Value > 0 Then
                                                                    Return 1
                                                                Else
                                                                    Return 0
@@ -729,7 +730,7 @@ Public Class OutsidexSDStrategyRule
                                            End Function)
 
                     Dim countVol As Double = contracts.Sum(Function(x)
-                                                               If x.Key >= price Then
+                                                               If x.Key >= price AndAlso x.Value > 0 Then
                                                                    Return 1
                                                                Else
                                                                    Return 0

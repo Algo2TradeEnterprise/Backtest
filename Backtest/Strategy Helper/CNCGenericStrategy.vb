@@ -134,6 +134,7 @@ Namespace StrategyHelper
                         If checkForEntryExit Then
                             OnHeartbeat(String.Format("Checking Trade on {0}", tradeCheckingDate.ToShortDateString))
                             _canceller.Token.ThrowIfCancellationRequested()
+                            Dim tradeStartTime As Date = New Date(tradeCheckingDate.Year, tradeCheckingDate.Month, tradeCheckingDate.Day, Me.TradeStartTime.Hours, Me.TradeStartTime.Minutes, Me.TradeStartTime.Seconds)
                             Dim startMinute As TimeSpan = Me.ExchangeStartTime
                             Dim endMinute As TimeSpan = ExchangeEndTime
                             While startMinute < endMinute
@@ -160,7 +161,8 @@ Namespace StrategyHelper
                                                 Await stockStrategyRule.IsTriggerReceivedForExitOrderAsync(potentialTickSignalTime, potentialRuleExitTrades).ConfigureAwait(False)
                                             End If
 
-                                            If potentialTickSignalTime = GetCurrentXMinuteCandleTime(potentialTickSignalTime) Then
+                                            If potentialTickSignalTime = GetCurrentXMinuteCandleTime(potentialTickSignalTime) OrElse
+                                                potentialTickSignalTime = tradeStartTime Then
                                                 _canceller.Token.ThrowIfCancellationRequested()
                                                 Await stockStrategyRule.IsTriggerReceivedForPlaceOrderAsync(potentialTickSignalTime).ConfigureAwait(False)
                                             End If
