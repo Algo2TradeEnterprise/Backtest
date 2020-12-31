@@ -151,6 +151,7 @@ Namespace StrategyHelper
         Public RealtimeTrailingPercentage As Decimal = Decimal.MinValue
 
         Public MaxZSCore As Decimal = Decimal.MinValue
+        Public NeglectedTradeCount As Integer = 0
 #End Region
 
 #Region "Public Calculated Property"
@@ -1095,11 +1096,12 @@ Namespace StrategyHelper
                                              fileName)
                         Else
                             Dim roi As Decimal = (pl / maxCapital) * 100
-                            fileName = String.Format("PL {0},Cap {1},ROI {2},TrdNmbr {3},MaxDays {4},{5}.xlsx",
+                            fileName = String.Format("PL {0},Cap {1},ROI {2},LgclTrd {3},NglctTrd {4},MaxDays {5},{6}.xlsx",
                                              Math.Round(pl, 0),
                                              Math.Round(maxCapital, 0),
                                              Math.Round(roi, 0),
                                              tradeCount,
+                                             Me.NeglectedTradeCount,
                                              Math.Round(maxNumberOfDays, 0),
                                              fileName)
                         End If

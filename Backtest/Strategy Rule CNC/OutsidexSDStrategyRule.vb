@@ -107,19 +107,31 @@ Public Class OutsidexSDStrategyRule
             If lastEntryTrade Is Nothing OrElse (lastEntryTrade.ExitRemark IsNot Nothing AndAlso lastEntryTrade.ExitRemark.ToUpper = "TARGET HIT") Then
                 'Fresh Entry
                 If _SignalPayload1.ContainsKey(currentMinute) AndAlso _SignalPayload2.ContainsKey(currentMinute) Then
-                    Dim currentMinuteCandle As Payload = _SignalPayload1(currentMinute)
-                    If currentMinuteCandle IsNot Nothing AndAlso currentMinuteCandle.PreviousCandlePayload IsNot Nothing Then
-                        Dim ratio As Decimal = _ratioPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
-                        Dim plusSD As Decimal = _plusSDPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
-                        Dim minusSD As Decimal = _minusSDPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
-                        Dim mean As Decimal = _smaPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
+                    Dim currentMinuteCandle1 As Payload = _SignalPayload1(currentMinute)
+                    Dim currentMinuteCandle2 As Payload = _SignalPayload2(currentMinute)
+                    If currentMinuteCandle1 IsNot Nothing AndAlso currentMinuteCandle1.PreviousCandlePayload IsNot Nothing AndAlso
+                        currentMinuteCandle2 IsNot Nothing AndAlso currentMinuteCandle2.PreviousCandlePayload IsNot Nothing Then
+                        Dim ratio As Decimal = _ratioPayload(currentMinuteCandle1.PreviousCandlePayload.PayloadDate)
+                        Dim plusSD As Decimal = _plusSDPayload(currentMinuteCandle1.PreviousCandlePayload.PayloadDate)
+                        Dim minusSD As Decimal = _minusSDPayload(currentMinuteCandle1.PreviousCandlePayload.PayloadDate)
+                        Dim mean As Decimal = _smaPayload(currentMinuteCandle1.PreviousCandlePayload.PayloadDate)
                         Dim sd As Decimal = (plusSD - mean) / _userInputs.EntrySD
                         Dim zScore As Decimal = (ratio - mean) / sd
                         If zScore >= _userInputs.EntrySD OrElse
                             zScore <= _userInputs.EntrySD * -1 Then
-                            _ParentStrategy.MaxZSCore = zScore
-                            If Not EnterTrade(currentMinuteCandle.PreviousCandlePayload, currentTickTime, zScore, mean, sd) Then
-                                Throw New NotImplementedException()
+                            Dim turnover1 As Decimal = currentMinuteCandle1.PreviousCandlePayload.Close * _LotSize1
+                            Dim turnover2 As Decimal = currentMinuteCandle2.PreviousCandlePayload.Close * _LotSize2
+                            Dim turnoverPer As Decimal = (turnover1 / (turnover1 + turnover2)) * 100
+                            If turnoverPer >= 45 AndAlso turnoverPer <= 55 Then
+                                _ParentStrategy.MaxZSCore = zScore
+                                If Not EnterTrade(currentMinuteCandle1.PreviousCandlePayload, currentTickTime, zScore, mean, sd) Then
+                                    Throw New NotImplementedException()
+                                End If
+                            Else
+                                _ParentStrategy.NeglectedTradeCount += 1
+                                Console.WriteLine(String.Format("Trade Ignored. Date:{0}, ZScore:{1}, Turnover%:{2}",
+                                                                currentMinuteCandle1.PreviousCandlePayload.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss"),
+                                                                zScore, Math.Round(turnoverPer, 2)))
                             End If
                         End If
                     End If
