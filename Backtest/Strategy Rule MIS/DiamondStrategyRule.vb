@@ -15,6 +15,9 @@ Public Class DiamondStrategyRule
     End Class
 #End Region
 
+    Private _eligibleToBuy As Boolean
+    Private _eligibleToSell As Boolean
+
     Private _buyLevels As Dictionary(Of Decimal, Integer)
     Private _sellLevels As Dictionary(Of Decimal, Integer)
     Private _slPoint As Decimal
@@ -143,8 +146,15 @@ Public Class DiamondStrategyRule
                     ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                 Else
                     Dim lastExitTrade As Trade = _parentStrategy.GetLastExitTradeOfTheStock(currentTick, Trade.TypeOfTrade.MIS, currentTrade.EntryDirection)
-                    If lastExitTrade IsNot Nothing AndAlso lastExitTrade.ExitCondition = Trade.TradeExitCondition.StopLoss Then
+                    If lastExitTrade IsNot Nothing AndAlso lastExitTrade.ExitCondition = Trade.TradeExitCondition.StopLoss AndAlso
+                        lastExitTrade.Supporting2 = currentTrade.Supporting2 Then
                         ret = New Tuple(Of Boolean, String)(True, "Group SL Hit")
+                    End If
+                End If
+                If ret Is Nothing Then
+                    Dim lastEntryTime As Date = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, _parentStrategy.LastTradeEntryTime.Hours, _parentStrategy.LastTradeEntryTime.Minutes, _parentStrategy.LastTradeEntryTime.Seconds)
+                    If currentTick.PayloadDate > lastEntryTime Then
+                        ret = New Tuple(Of Boolean, String)(True, "Invalid Signal")
                     End If
                 End If
             ElseIf currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
@@ -175,19 +185,39 @@ Public Class DiamondStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
             Dim triggerPrice As Decimal = Decimal.MinValue
+            Dim remark As String = Nothing
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                 Dim lastSlab As Decimal = _buyLevels.FirstOrDefault.Key + Math.Floor((currentTick.Open - _buyLevels.FirstOrDefault.Key) / _slab) * _slab
                 If lastSlab - _slPoint > currentTrade.PotentialStopLoss Then
                     triggerPrice = lastSlab - _slPoint
+                    remark = triggerPrice - currentTrade.EntryPrice
                 End If
             ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
                 Dim lastSlab As Decimal = _sellLevels.FirstOrDefault.Key - Math.Floor((_sellLevels.FirstOrDefault.Key - currentTick.Open) / _slab) * _slab
                 If lastSlab + _slPoint < currentTrade.PotentialStopLoss Then
                     triggerPrice = lastSlab + _slPoint
+                    remark = currentTrade.EntryPrice - triggerPrice
+                End If
+            End If
+            If triggerPrice = Decimal.MinValue Then
+                Dim lastExitTrade As Trade = _parentStrategy.GetLastExitTradeOfTheStock(currentTick, Trade.TypeOfTrade.MIS, currentTrade.EntryDirection)
+                If lastExitTrade IsNot Nothing AndAlso lastExitTrade.ExitRemark.ToUpper = "PARTIAL TARGET" Then
+                    Dim brkevnPoint As Decimal = _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, currentTrade.LotSize, currentTrade.StockType)
+                    If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                        If currentTrade.EntryPrice + brkevnPoint > currentTrade.PotentialStopLoss Then
+                            triggerPrice = currentTrade.EntryPrice + brkevnPoint
+                            remark = "Breakeven"
+                        End If
+                    ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                        If currentTrade.EntryPrice - brkevnPoint < currentTrade.PotentialStopLoss Then
+                            triggerPrice = currentTrade.EntryPrice - brkevnPoint
+                            remark = "Breakeven"
+                        End If
+                    End If
                 End If
             End If
             If triggerPrice <> Decimal.MinValue AndAlso currentTrade.PotentialStopLoss <> triggerPrice Then
-                ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, Math.Abs(triggerPrice - currentTrade.EntryPrice))
+                ret = New Tuple(Of Boolean, Decimal, String)(True, triggerPrice, remark)
             End If
         End If
         Return ret
@@ -210,36 +240,55 @@ Public Class DiamondStrategyRule
     Private Function GetEntrySignal(ByVal currentCandle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, String)
         Dim ret As Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, String) = Nothing
         If currentCandle IsNot Nothing AndAlso currentCandle.PreviousCandlePayload IsNot Nothing Then
+            If currentTick.Open <= _buyLevels.FirstOrDefault.Key - _slab Then
+                _eligibleToBuy = True
+            ElseIf currentTick.Open >= _buyLevels.FirstOrDefault.Key Then
+                _eligibleToBuy = False
+            ElseIf currentTick.Open >= _sellLevels.FirstOrDefault.Key + _slab Then
+                _eligibleToSell = True
+            ElseIf currentTick.Open <= _sellLevels.FirstOrDefault.Key Then
+                _eligibleToSell = False
+            End If
             If _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS) Then
                 Dim runningTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentCandle, Trade.TypeOfTrade.MIS)
-                Dim nextEntryLevel As Decimal = Decimal.MinValue
+                Dim buyEntryLevel As Decimal = Decimal.MinValue
+                Dim sellEntryLevel As Decimal = Decimal.MinValue
                 If runningTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                     If Val(runningTrade.Supporting1) < _buyLevels.LastOrDefault.Key Then
-                        nextEntryLevel = _buyLevels.Keys.Where(Function(x)
-                                                                   Return x > Val(runningTrade.Supporting1)
-                                                               End Function).FirstOrDefault
+                        buyEntryLevel = _buyLevels.Keys.Where(Function(x)
+                                                                  Return x > Val(runningTrade.Supporting1)
+                                                              End Function).FirstOrDefault
+                        sellEntryLevel = _sellLevels.FirstOrDefault.Key
                     End If
                 ElseIf runningTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
                     If Val(runningTrade.Supporting1) > _sellLevels.LastOrDefault.Key Then
-                        nextEntryLevel = _sellLevels.Keys.Where(Function(x)
+                        sellEntryLevel = _sellLevels.Keys.Where(Function(x)
                                                                     Return x < Val(runningTrade.Supporting1)
                                                                 End Function).FirstOrDefault
+                        buyEntryLevel = _buyLevels.FirstOrDefault.Key
                     End If
                 End If
-                If nextEntryLevel <> Decimal.MinValue Then
-                    ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, String)(True, nextEntryLevel, runningTrade.EntryDirection, runningTrade.Supporting2)
+                If buyEntryLevel <> Decimal.MinValue AndAlso sellEntryLevel <> Decimal.MinValue Then
+                    Dim middle As Decimal = (buyEntryLevel + sellEntryLevel) / 2
+                    Dim range As Decimal = buyEntryLevel - middle
+                    Dim tag As String = System.Guid.NewGuid().ToString
+                    If currentTick.Open >= middle + range * 70 / 100 Then
+                        If runningTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then tag = runningTrade.Supporting2
+                        ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, String)(True, buyEntryLevel, Trade.TradeExecutionDirection.Buy, tag)
+                    ElseIf currentTick.Open <= middle - range * 70 / 100 Then
+                        If runningTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then tag = runningTrade.Supporting2
+                        ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, String)(True, sellEntryLevel, Trade.TradeExecutionDirection.Sell, tag)
+                    End If
                 End If
             Else
                 Dim buyPrice As Decimal = _buyLevels.FirstOrDefault.Key
                 Dim sellPrice As Decimal = _sellLevels.FirstOrDefault.Key
                 Dim middle As Decimal = (buyPrice + sellPrice) / 2
-                If currentCandle.PreviousCandlePayload.Close < buyPrice AndAlso currentCandle.PreviousCandlePayload.Close > sellPrice Then
-                    Dim range As Decimal = buyPrice - middle
-                    If currentTick.Open >= middle + range * 70 / 100 Then
-                        ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, String)(True, buyPrice, Trade.TradeExecutionDirection.Buy, System.Guid.NewGuid().ToString)
-                    ElseIf currentTick.Open <= middle - range * 70 / 100 Then
-                        ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, String)(True, sellPrice, Trade.TradeExecutionDirection.Sell, System.Guid.NewGuid().ToString)
-                    End If
+                Dim range As Decimal = buyPrice - middle
+                If currentTick.Open >= middle + range * 70 / 100 Then
+                    If _eligibleToBuy Then ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, String)(True, buyPrice, Trade.TradeExecutionDirection.Buy, System.Guid.NewGuid().ToString)
+                ElseIf currentTick.Open <= middle - range * 70 / 100 Then
+                    If _eligibleToSell Then ret = New Tuple(Of Boolean, Decimal, Trade.TradeExecutionDirection, String)(True, sellPrice, Trade.TradeExecutionDirection.Sell, System.Guid.NewGuid().ToString)
                 End If
             End If
         End If

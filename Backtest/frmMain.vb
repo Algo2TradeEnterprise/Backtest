@@ -6736,7 +6736,7 @@ Public Class frmMain
                                               {.PartialTargetSlabMultiplier = 12,
                                                .InitialTargetSlabMultiplier = 16}
 
-                            .NumberOfTradeableStockPerDay = 5
+                            .NumberOfTradeableStockPerDay = Integer.MaxValue
 
                             .NumberOfTradesPerStockPerDay = Integer.MaxValue
 

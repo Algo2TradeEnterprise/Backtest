@@ -1888,7 +1888,7 @@ Namespace StrategyHelper
                                             Dim xMinutePayload As Dictionary(Of Date, Payload) = Common.ConvertPayloadsToXMinutes(intradayPayload, Me.SignalTimeFrame, exchangeStartTime)
                                             If xMinutePayload IsNot Nothing AndAlso xMinutePayload.Count > 0 Then
                                                 Dim slPoint As Decimal = xMinutePayload.FirstOrDefault.Value.CandleRange
-                                                If slPoint <= dayATR * 50 / 100 Then
+                                                If slPoint <= (slab / 2) * 4 Then
                                                     Dim detailsOfStock As StockDetails = New StockDetails With
                                                                                     {.StockName = instrumentName,
                                                                                      .TradingSymbol = tradingSymbol,
