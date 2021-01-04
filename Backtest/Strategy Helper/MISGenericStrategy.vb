@@ -264,6 +264,8 @@ Namespace StrategyHelper
                                             stockRule = New EMADirectionBasedHammerCandleBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).SupportingDate)
                                         Case 71
                                             stockRule = New FirstFavourableFractalTopGainerLooserStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2, stockList(stock).SupportingDate)
+                                        Case 72
+                                            stockRule = New DiamondStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Slab)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select

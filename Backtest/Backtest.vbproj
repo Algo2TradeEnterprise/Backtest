@@ -146,6 +146,7 @@
     <Compile Include="Strategy Rule MIS\FavourableCandleBreakoutAfterVStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\FibonacciBacktestStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\FibonacciOpeningRangeBreakoutStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\DiamondStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\FirstFavourableFractalTopGainerLooserStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\FravourableFractalPreviousLevelBreakoutAdaptiveMartingaleStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\HigherTimeframeDirectionMartingaleStrategyRule.vb" />
