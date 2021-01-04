@@ -10,8 +10,8 @@ Public Class DiamondStrategyRule
     Public Class StrategyRuleEntities
         Inherits RuleEntities
 
-        Public InitialTargetPercentageOfEachTrade As Decimal
-        Public PartialTargetPercentage As Decimal
+        Public InitialTargetSlabMultiplier As Decimal
+        Public PartialTargetSlabMultiplier As Decimal
     End Class
 #End Region
 
@@ -19,9 +19,8 @@ Public Class DiamondStrategyRule
     Private _sellLevels As Dictionary(Of Decimal, Integer)
     Private _slPoint As Decimal
     Private _quantityMultiplier As Decimal
-    Private _slab As Decimal
 
-    Private ReadOnly _slabList As List(Of Integer)
+    Private ReadOnly _slab As Decimal
     Private ReadOnly _userInputs As StrategyRuleEntities
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -33,9 +32,7 @@ Public Class DiamondStrategyRule
                    ByVal slab As Decimal)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _userInputs = _entities
-        _slab = slab
-
-        _slabList = New List(Of Integer) From {0.5, 1, 2.5, 5, 10, 25, 50}
+        _slab = slab / 2
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -47,13 +44,6 @@ Public Class DiamondStrategyRule
         If firstCandleOfTheDay IsNot Nothing Then
             _slPoint = firstCandleOfTheDay.CandleRange
             Dim qtyList As List(Of Integer) = New List(Of Integer) From {1, 2, 4, 8, 16, 8, 4, 2, 1}
-            Dim firstPrice As Decimal = firstCandleOfTheDay.High
-            Dim lastPrice As Decimal = firstPrice + _slab * (qtyList.Count - 1)
-            If ((lastPrice - firstPrice) / firstPrice) * 100 > 2.5 Then
-                _slab = _slabList.FindAll(Function(x)
-                                              Return x < _slab
-                                          End Function).LastOrDefault
-            End If
 
             _buyLevels = New Dictionary(Of Decimal, Integer)
             _sellLevels = New Dictionary(Of Decimal, Integer)
@@ -96,7 +86,7 @@ Public Class DiamondStrategyRule
                 If signal.Item3 = Trade.TradeExecutionDirection.Buy Then
                     Dim entryPrice As Decimal = signal.Item2
                     Dim stoploss As Decimal = entryPrice - _slPoint
-                    Dim target As Decimal = entryPrice + ConvertFloorCeling(entryPrice * _userInputs.InitialTargetPercentageOfEachTrade / 100, _parentStrategy.TickSize, RoundOfType.Floor)
+                    Dim target As Decimal = entryPrice + ConvertFloorCeling(_slab * _userInputs.InitialTargetSlabMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
                     Dim quantity As Integer = _buyLevels(entryPrice) * _quantityMultiplier
 
                     parameter = New PlaceOrderParameters With {
@@ -110,12 +100,13 @@ Public Class DiamondStrategyRule
                                 .OrderType = Trade.TypeOfOrder.SL,
                                 .Supporting1 = entryPrice,
                                 .Supporting2 = signal.Item4,
-                                .Supporting3 = _slab
+                                .Supporting3 = _slab,
+                                .Supporting4 = _slPoint
                             }
                 ElseIf signal.Item3 = Trade.TradeExecutionDirection.Sell Then
                     Dim entryPrice As Decimal = signal.Item2
                     Dim stoploss As Decimal = entryPrice + _slPoint
-                    Dim target As Decimal = entryPrice - ConvertFloorCeling(entryPrice * _userInputs.InitialTargetPercentageOfEachTrade / 100, _parentStrategy.TickSize, RoundOfType.Floor)
+                    Dim target As Decimal = entryPrice - ConvertFloorCeling(_slab * _userInputs.InitialTargetSlabMultiplier, _parentStrategy.TickSize, RoundOfType.Floor)
                     Dim quantity As Integer = _sellLevels(entryPrice) * _quantityMultiplier
 
                     parameter = New PlaceOrderParameters With {
@@ -129,7 +120,8 @@ Public Class DiamondStrategyRule
                                 .OrderType = Trade.TypeOfOrder.SL,
                                 .Supporting1 = entryPrice,
                                 .Supporting2 = signal.Item4,
-                                .Supporting3 = _slab
+                                .Supporting3 = _slab,
+                                .Supporting4 = _slPoint
                             }
                 End If
             End If
@@ -158,7 +150,7 @@ Public Class DiamondStrategyRule
             ElseIf currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
                 If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                     Dim startPrice As Decimal = _buyLevels.FirstOrDefault.Key
-                    If currentTick.Open >= startPrice + startPrice * _userInputs.PartialTargetPercentage / 100 Then
+                    If currentTick.Open >= startPrice + _slab * _userInputs.PartialTargetSlabMultiplier Then
                         Dim eligibleTrades As List(Of Decimal) = New List(Of Decimal) From {startPrice, startPrice + _slab * 1, startPrice + _slab * 2, startPrice + _slab * 3}
                         If eligibleTrades.Contains(currentTrade.Supporting1) Then
                             ret = New Tuple(Of Boolean, String)(True, "Partial Target")
@@ -166,7 +158,7 @@ Public Class DiamondStrategyRule
                     End If
                 ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
                     Dim startPrice As Decimal = _sellLevels.FirstOrDefault.Key
-                    If currentTick.Open <= startPrice - startPrice * _userInputs.PartialTargetPercentage / 100 Then
+                    If currentTick.Open <= startPrice - _slab * _userInputs.PartialTargetSlabMultiplier Then
                         Dim eligibleTrades As List(Of Decimal) = New List(Of Decimal) From {startPrice, startPrice - _slab * 1, startPrice - _slab * 2, startPrice - _slab * 3}
                         If eligibleTrades.Contains(currentTrade.Supporting1) Then
                             ret = New Tuple(Of Boolean, String)(True, "Partial Target")
@@ -184,22 +176,14 @@ Public Class DiamondStrategyRule
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
             Dim triggerPrice As Decimal = Decimal.MinValue
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                If currentTick.Close > currentTrade.EntryPrice Then
-                    Dim lastBuyLevel As Decimal = _buyLevels.Keys.Where(Function(x)
-                                                                            Return x <= currentTick.Close
-                                                                        End Function).LastOrDefault
-                    If lastBuyLevel - _slPoint > currentTrade.PotentialStopLoss Then
-                        triggerPrice = lastBuyLevel - _slPoint
-                    End If
+                Dim lastSlab As Decimal = _buyLevels.FirstOrDefault.Key + Math.Floor((currentTick.Open - _buyLevels.FirstOrDefault.Key) / _slab) * _slab
+                If lastSlab - _slPoint > currentTrade.PotentialStopLoss Then
+                    triggerPrice = lastSlab - _slPoint
                 End If
             ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                If currentTick.Close < currentTrade.EntryPrice Then
-                    Dim lastSellLevel As Decimal = _sellLevels.Keys.Where(Function(x)
-                                                                              Return x >= currentTick.Close
-                                                                          End Function).LastOrDefault
-                    If lastSellLevel + _slPoint < currentTrade.PotentialStopLoss Then
-                        triggerPrice = lastSellLevel + _slPoint
-                    End If
+                Dim lastSlab As Decimal = _sellLevels.FirstOrDefault.Key - Math.Floor((_sellLevels.FirstOrDefault.Key - currentTick.Open) / _slab) * _slab
+                If lastSlab + _slPoint < currentTrade.PotentialStopLoss Then
+                    triggerPrice = lastSlab + _slPoint
                 End If
             End If
             If triggerPrice <> Decimal.MinValue AndAlso currentTrade.PotentialStopLoss <> triggerPrice Then
@@ -232,13 +216,13 @@ Public Class DiamondStrategyRule
                 If runningTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                     If Val(runningTrade.Supporting1) < _buyLevels.LastOrDefault.Key Then
                         nextEntryLevel = _buyLevels.Keys.Where(Function(x)
-                                                                   Return x >= Val(runningTrade.Supporting1)
+                                                                   Return x > Val(runningTrade.Supporting1)
                                                                End Function).FirstOrDefault
                     End If
                 ElseIf runningTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
                     If Val(runningTrade.Supporting1) > _sellLevels.LastOrDefault.Key Then
                         nextEntryLevel = _sellLevels.Keys.Where(Function(x)
-                                                                    Return x <= Val(runningTrade.Supporting1)
+                                                                    Return x < Val(runningTrade.Supporting1)
                                                                 End Function).FirstOrDefault
                     End If
                 End If

@@ -6725,18 +6725,18 @@ Public Class frmMain
                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                         With backtestStrategy
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Cash Stock Modified Price Range.csv")
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Narrow Range Stocks.csv")
 
                             .AllowBothDirectionEntryAtSameTime = False
                             .TrailingStoploss = False
-                            .TickBasedStrategy = False
+                            .TickBasedStrategy = True
                             .RuleNumber = ruleNumber
 
                             .RuleEntityData = New DiamondStrategyRule.StrategyRuleEntities With
-                                              {.PartialTargetPercentage = 2.5,
-                                              .InitialTargetPercentageOfEachTrade = 5}
+                                              {.PartialTargetSlabMultiplier = 12,
+                                               .InitialTargetSlabMultiplier = 16}
 
-                            .NumberOfTradeableStockPerDay = Integer.MaxValue
+                            .NumberOfTradeableStockPerDay = 5
 
                             .NumberOfTradesPerStockPerDay = Integer.MaxValue
 

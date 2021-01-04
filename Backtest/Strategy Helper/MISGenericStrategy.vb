@@ -1866,6 +1866,47 @@ Namespace StrategyHelper
                                     End If
                                 Next
                             End If
+                        Case 72
+                            Dim counter As Integer = 0
+                            For i = 0 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i).Item("Date")
+                                If rowDate.Date = tradingDate.Date Then
+                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
+                                    Dim instrumentName As String = Nothing
+                                    If tradingSymbol.Contains("FUT") Then
+                                        instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                                    Else
+                                        instrumentName = tradingSymbol
+                                    End If
+                                    Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
+                                    Dim slab As Decimal = dt.Rows(i).Item("Slab")
+                                    Dim dayATR As Decimal = dt.Rows(i).Item("Day ATR")
+                                    If slab >= 0.5 Then
+                                        Dim intradayPayload As Dictionary(Of Date, Payload) = Cmn.GetRawPayload(Me.DatabaseTable, tradingSymbol, tradingDate, tradingDate)
+                                        If intradayPayload IsNot Nothing AndAlso intradayPayload.Count > 0 Then
+                                            Dim exchangeStartTime As Date = New Date(tradingDate.Year, tradingDate.Month, tradingDate.Day, Me.ExchangeStartTime.Hours, Me.ExchangeStartTime.Minutes, Me.ExchangeStartTime.Seconds)
+                                            Dim xMinutePayload As Dictionary(Of Date, Payload) = Common.ConvertPayloadsToXMinutes(intradayPayload, Me.SignalTimeFrame, exchangeStartTime)
+                                            If xMinutePayload IsNot Nothing AndAlso xMinutePayload.Count > 0 Then
+                                                Dim slPoint As Decimal = xMinutePayload.FirstOrDefault.Value.CandleRange
+                                                If slPoint <= dayATR * 50 / 100 Then
+                                                    Dim detailsOfStock As StockDetails = New StockDetails With
+                                                                                    {.StockName = instrumentName,
+                                                                                     .TradingSymbol = tradingSymbol,
+                                                                                     .LotSize = lotsize,
+                                                                                     .Slab = slab,
+                                                                                     .EligibleToTakeTrade = True}
+
+                                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                                    ret.Add(instrumentName, detailsOfStock)
+
+                                                    counter += 1
+                                                    If counter = Me.NumberOfTradeableStockPerDay Then Exit For
+                                                End If
+                                            End If
+                                        End If
+                                    End If
+                                End If
+                            Next
                         Case Else
                             Dim counter As Integer = 0
                             For i = 0 To dt.Rows.Count - 1
