@@ -328,7 +328,7 @@ Public Class frmMain
 
                     .RuleEntityData = New OutsideBuyStrategyRule.StrategyRuleEntities With
                                 {
-                                 .ATRMultiplier = 2
+                                 .ATRMultiplier = 1
                                 }
 
                     .NumberOfTradeableStockPerDay = Integer.MaxValue

@@ -95,9 +95,9 @@ Public Class OutsideBuyStrategyRule
             If typeOfExit = ExitType.Target Then
                 If currentTrade.Supporting2.Contains("Fresh") Then
                     Dim currentSpotTick As Payload = GetCurrentTick(_TradingSymbol, currentTickTime)
-                    If optionType = "CE" AndAlso currentSpotTick.Open >= Val(currentTrade.Supporting3) + Val(currentTrade.Supporting4) Then
+                    If optionType = "CE" AndAlso currentSpotTick.Open >= Val(currentTrade.Supporting3) + Val(currentTrade.Supporting4) * _userInputs.ATRMultiplier Then
                         ret = True
-                    ElseIf optionType = "PE" AndAlso currentSpotTick.Open <= Val(currentTrade.Supporting3) - Val(currentTrade.Supporting4) Then
+                    ElseIf optionType = "PE" AndAlso currentSpotTick.Open <= Val(currentTrade.Supporting3) - Val(currentTrade.Supporting4) * _userInputs.ATRMultiplier Then
                         ret = True
                     End If
                 Else
@@ -172,27 +172,6 @@ Public Class OutsideBuyStrategyRule
                 Next
             End If
 
-            'Half Premium
-            If currentTickTime.Hour >= 9 AndAlso currentTickTime.Minute >= 16 Then
-                For Each runningTrade In availableTrades
-                    If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-                        If IsExitSignalReceived(currentTickTime, ExitType.HalfPremium, runningTrade) Then
-                            Dim currentOptTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
-                            Dim currentSpotTick As Payload = GetCurrentTick(_TradingSymbol, currentTickTime)
-                            Dim currentOptionExpiryString As String = GetOptionInstrumentExpiryString(_TradingSymbol, _TradingDate)
-                            Dim optionType As String = runningTrade.SupportingTradingSymbol.Substring(runningTrade.SupportingTradingSymbol.Count - 2)
-                            Dim optionTradingSymbol As String = GetCurrentATMOption(currentTickTime, currentOptionExpiryString, currentSpotTick.Open, optionType)
-                            If optionTradingSymbol <> runningTrade.SupportingTradingSymbol Then
-                                _ParentStrategy.ExitTradeByForce(runningTrade, currentOptTick, "Half Premium")
-
-                                currentOptTick = GetCurrentTick(optionTradingSymbol, currentTickTime)
-                                EnterDuplicateTrade(runningTrade, currentOptTick)
-                            End If
-                        End If
-                    End If
-                Next
-            End If
-
             'Contract Rollover
             If currentTickTime.Hour >= 15 AndAlso currentTickTime.Minute >= 29 Then
                 For Each runningTrade In availableTrades
@@ -208,6 +187,27 @@ Public Class OutsideBuyStrategyRule
 
                             currentOptTick = GetCurrentTick(optionTradingSymbol, currentTickTime)
                             EnterDuplicateTrade(runningTrade, currentOptTick)
+                        End If
+                    End If
+                Next
+            End If
+
+            'Half Premium
+            If currentTickTime.Hour >= 15 AndAlso currentTickTime.Minute >= 29 Then
+                For Each runningTrade In availableTrades
+                    If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                        If IsExitSignalReceived(currentTickTime, ExitType.HalfPremium, runningTrade) Then
+                            Dim currentOptTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
+                            Dim currentSpotTick As Payload = GetCurrentTick(_TradingSymbol, currentTickTime)
+                            Dim currentOptionExpiryString As String = GetOptionInstrumentExpiryString(_TradingSymbol, _TradingDate)
+                            Dim optionType As String = runningTrade.SupportingTradingSymbol.Substring(runningTrade.SupportingTradingSymbol.Count - 2)
+                            Dim optionTradingSymbol As String = GetCurrentATMOption(currentTickTime, currentOptionExpiryString, currentSpotTick.Open, optionType)
+                            If optionTradingSymbol <> runningTrade.SupportingTradingSymbol Then
+                                _ParentStrategy.ExitTradeByForce(runningTrade, currentOptTick, "Half Premium")
+
+                                currentOptTick = GetCurrentTick(optionTradingSymbol, currentTickTime)
+                                EnterDuplicateTrade(runningTrade, currentOptTick)
+                            End If
                         End If
                     End If
                 Next
@@ -427,11 +427,13 @@ Public Class OutsideBuyStrategyRule
                 End If
             Next
             If contracts IsNot Nothing AndAlso contracts.Count > 0 Then
-                For Each runningContract In contracts.OrderBy(Function(x)
-                                                                  Return x.Key
-                                                              End Function)
-                    ret = String.Format("{0}{1}PE", expiryString, runningContract.Key)
-                    Exit For
+                For Each runningContract In contracts.OrderByDescending(Function(x)
+                                                                            Return x.Value
+                                                                        End Function)
+                    If runningContract.Key <= price Then
+                        ret = String.Format("{0}{1}PE", expiryString, runningContract.Key)
+                        Exit For
+                    End If
                 Next
             End If
         End If
@@ -463,10 +465,12 @@ Public Class OutsideBuyStrategyRule
             Next
             If contracts IsNot Nothing AndAlso contracts.Count > 0 Then
                 For Each runningContract In contracts.OrderByDescending(Function(x)
-                                                                            Return x.Key
+                                                                            Return x.Value
                                                                         End Function)
-                    ret = String.Format("{0}{1}CE", expiryString, runningContract.Key)
-                    Exit For
+                    If runningContract.Key >= price Then
+                        ret = String.Format("{0}{1}CE", expiryString, runningContract.Key)
+                        Exit For
+                    End If
                 Next
             End If
         End If
