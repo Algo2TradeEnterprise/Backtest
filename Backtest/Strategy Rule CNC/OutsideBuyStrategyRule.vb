@@ -100,6 +100,23 @@ Public Class OutsideBuyStrategyRule
                     ElseIf optionType = "PE" AndAlso currentSpotTick.Open <= Val(currentTrade.Supporting3) - Val(currentTrade.Supporting4) * _userInputs.ATRMultiplier Then
                         ret = True
                     End If
+                    If ret Then
+                        Dim allTrades As List(Of Trade) = _ParentStrategy.GetAllTradesByTag(currentTrade.Tag, _TradingSymbol)
+                        If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
+                            Dim lossToRecover As Decimal = currentTrade.Supporting5
+                            Dim plAchieved As Decimal = 0
+                            For Each runningTrade In allTrades
+                                If Not runningTrade.Supporting2.Contains("Fresh") Then
+                                    ret = False
+                                    Dim currentOptTick As Payload = GetCurrentTick(currentTrade.SupportingTradingSymbol, currentTickTime)
+                                    plAchieved += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.EntryPrice, currentOptTick.Open, runningTrade.Quantity, runningTrade.LotSize, runningTrade.StockType)
+                                End If
+                            Next
+                            If plAchieved >= Math.Abs(lossToRecover) Then
+                                ret = True
+                            End If
+                        End If
+                    End If
                 Else
                     Dim lossToRecover As Decimal = currentTrade.Supporting5
                     Dim allTrades As List(Of Trade) = _ParentStrategy.GetAllTradesByTag(currentTrade.Tag, _TradingSymbol)
@@ -275,6 +292,7 @@ Public Class OutsideBuyStrategyRule
         Dim tradeID As String = System.Guid.NewGuid.ToString()
         Dim tradeNumber As Integer = 1
         Dim remark As String = "Fresh"
+        Dim lossToRecover As Decimal = 0
 
         Dim spotTick As Payload = GetCurrentTick(_TradingSymbol, currentTickTime)
         Dim closeTrades As List(Of Trade) = _ParentStrategy.GetSpecificTrades(_TradingSymbol, _TradingDate, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Close)
@@ -296,12 +314,13 @@ Public Class OutsideBuyStrategyRule
                 'tradeID = closeTrades.LastOrDefault.Tag
                 tradeNumber = Val(closeTrades.LastOrDefault.Supporting1) + 1
                 remark = "SL Makeup + Fresh"
+                lossToRecover = pl
 
-                EnterBuyTrade(signalCandle, spotTick, tradeID, tradeNumber, "SL Makeup", direction, qty, spotTick.Open, _atrPayload(signalCandle.PayloadDate), pl)
+                EnterBuyTrade(signalCandle, spotTick, tradeID, tradeNumber, "SL Makeup", direction, qty, spotTick.Open, _atrPayload(signalCandle.PayloadDate), lossToRecover)
             End If
         End If
 
-        ret = EnterBuyTrade(signalCandle, spotTick, tradeID, tradeNumber, remark, direction, _LotSize, spotTick.Open, _atrPayload(signalCandle.PayloadDate), 0)
+        ret = EnterBuyTrade(signalCandle, spotTick, tradeID, tradeNumber, remark, direction, _LotSize, spotTick.Open, _atrPayload(signalCandle.PayloadDate), lossToRecover)
 
         Return ret
     End Function
