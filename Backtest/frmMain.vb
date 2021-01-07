@@ -265,7 +265,6 @@ Public Class frmMain
         End If
     End Sub
 
-#Region "CNC Tick"
     Private Async Function ViewDataCNCAsync() As Task
         Try
             Dim startDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrStartDate)
@@ -299,22 +298,15 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            Dim tfList As List(Of Integer) = New List(Of Integer) From {15}
-            Dim tgtPerList As List(Of Integer) = New List(Of Integer) From {10}
-            Dim sdList As List(Of Integer) = New List(Of Integer) From {3}
-
-            For Each runningTF In tfList
-                For Each runningSD In sdList
-                    For Each runningTgtPer In tgtPerList
-                        Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
+            Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
                                                                          exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                          exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                                         tradeStartTime:=TimeSpan.Parse("9:16:00"),
+                                                                         tradeStartTime:=TimeSpan.Parse("15:29:00"),
                                                                          lastTradeEntryTime:=TimeSpan.Parse("15:30:00"),
                                                                          eodExitTime:=TimeSpan.Parse("15:30:00"),
                                                                          tickSize:=tick,
                                                                          marginMultiplier:=margin,
-                                                                         timeframe:=runningTF,
+                                                                         timeframe:=1,
                                                                          heikenAshiCandle:=False,
                                                                          stockType:=stockType,
                                                                          databaseTable:=database,
@@ -323,56 +315,48 @@ Public Class frmMain
                                                                          usableCapital:=Decimal.MaxValue / 2,
                                                                          minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
                                                                          amountToBeWithdrawn:=0)
-                            AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                            With backtestStrategy
-                                '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Cash Future Pair Stock List.csv")
-                                .StockFileName = Nothing
+                With backtestStrategy
+                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Cash Future Pair Stock List.csv")
+                    .StockFileName = Nothing
 
-                                .AllowBothDirectionEntryAtSameTime = False
-                                .TrailingStoploss = False
-                                .TickBasedStrategy = True
-                                .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+                    .AllowBothDirectionEntryAtSameTime = False
+                    .TrailingStoploss = False
+                    .TickBasedStrategy = True
+                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                                .RuleEntityData = New OutsidexSDStrategyRule.StrategyRuleEntities With
+                    .RuleEntityData = New OutsideBuyStrategyRule.StrategyRuleEntities With
                                 {
-                                 .EntrySD = runningSD,
-                                 .TargetPercentage = runningTgtPer,
-                                 .LookBackPeriod = 200
+                                 .ATRMultiplier = 2
                                 }
 
-                                .NumberOfTradeableStockPerDay = Integer.MaxValue
+                    .NumberOfTradeableStockPerDay = Integer.MaxValue
 
-                                .NumberOfTradesPerStockPerDay = Integer.MaxValue
+                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
-                                .StockMaxProfitPercentagePerDay = Decimal.MaxValue
-                                .StockMaxLossPercentagePerDay = Decimal.MinValue
+                    .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                    .StockMaxLossPercentagePerDay = Decimal.MinValue
 
-                                .ExitOnStockFixedTargetStoploss = False
-                                .StockMaxProfitPerDay = Decimal.MaxValue
-                                .StockMaxLossPerDay = Decimal.MinValue
+                    .ExitOnStockFixedTargetStoploss = False
+                    .StockMaxProfitPerDay = Decimal.MaxValue
+                    .StockMaxLossPerDay = Decimal.MinValue
 
-                                .ExitOnOverAllFixedTargetStoploss = False
-                                .OverAllProfitPerDay = Decimal.MaxValue
-                                .OverAllLossPerDay = Decimal.MinValue
+                    .ExitOnOverAllFixedTargetStoploss = False
+                    .OverAllProfitPerDay = Decimal.MaxValue
+                    .OverAllLossPerDay = Decimal.MinValue
 
-                                .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
-                                .MTMSlab = Math.Abs(.OverAllLossPerDay)
-                                .MovementSlab = .MTMSlab / 2
-                                .RealtimeTrailingPercentage = 50
-                            End With
+                    .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+                    .MTMSlab = Math.Abs(.OverAllLossPerDay)
+                    .MovementSlab = .MTMSlab / 2
+                    .RealtimeTrailingPercentage = 50
+                End With
 
-                            Dim ruleData As OutsidexSDStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                            Dim filename As String = String.Format("OtSdxSDPairFutOptCNC,TF {0},EtrySD {1},TrgtPer {2}",
-                                                                   backtestStrategy.SignalTimeFrame,
-                                                                   ruleData.EntrySD,
-                                                                   ruleData.TargetPercentage)
+                Dim ruleData As OutsideBuyStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                Dim filename As String = String.Format("Option Buy")
 
-                            Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-                        End Using
-                    Next
-                Next
-            Next
+                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+            End Using
         Catch ex As Exception
             MsgBox(ex.ToString, MsgBoxStyle.Critical)
         Finally
@@ -381,7 +365,6 @@ Public Class frmMain
             SetObjectEnableDisable_ThreadSafe(btnStop, False)
         End Try
     End Function
-#End Region
 
     Private Sub btnStop_Click(sender As Object, e As EventArgs) Handles btnStop.Click
         _canceller.Cancel()

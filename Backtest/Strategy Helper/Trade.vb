@@ -198,8 +198,7 @@ Namespace StrategyHelper
         End Property
         Public ReadOnly Property CapitalRequiredWithMargin As Double
             Get
-                'Return Me.EntryPrice * Me.Quantity / _OriginatingStrategy.MarginMultiplier
-                Return 15000
+                Return Me.EntryPrice * Me.Quantity / _OriginatingStrategy.MarginMultiplier
             End Get
         End Property
         Public ReadOnly Property DurationOfTrade As TimeSpan

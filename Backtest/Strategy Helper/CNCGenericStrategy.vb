@@ -44,13 +44,13 @@ Namespace StrategyHelper
             Dim capitalFileName As String = Path.Combine(My.Application.Info.DirectoryPath, String.Format("{0}.Capital.a2t", filename))
 
             If File.Exists(tradesFileName) AndAlso File.Exists(capitalFileName) Then
-                Dim folderpath As String = Path.Combine(My.Application.Info.DirectoryPath, "BackTest Output")
-                Dim files() = Directory.GetFiles(folderpath, "*.xlsx")
-                For Each file In files
-                    If file.ToUpper.Contains(filename.ToUpper) Then
-                        Exit Function
-                    End If
-                Next
+                'Dim folderpath As String = Path.Combine(My.Application.Info.DirectoryPath, "BackTest Output")
+                'Dim files() = Directory.GetFiles(folderpath, "*.xlsx")
+                'For Each file In files
+                '    If file.ToUpper.Contains(filename.ToUpper) Then
+                '        Exit Function
+                '    End If
+                'Next
                 PrintArrayToExcel(filename, tradesFileName, capitalFileName)
             Else
                 If File.Exists(tradesFileName) Then File.Delete(tradesFileName)
@@ -61,71 +61,59 @@ Namespace StrategyHelper
                 Me.AvailableCapital = Me.UsableCapital
                 While tradeCheckingDate <= endDate.Date
                     _canceller.Token.ThrowIfCancellationRequested()
-                    Dim pairList As List(Of PairDetails) = GetStockData(tradeCheckingDate)
+                    Dim stockList As List(Of StockDetails) = GetStockData(tradeCheckingDate)
                     _canceller.Token.ThrowIfCancellationRequested()
-                    If pairList IsNot Nothing AndAlso pairList.Count > 0 Then
+                    If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
                         Dim checkForEntryExit As Boolean = False
-                        Dim stocksRuleData As Dictionary(Of String, PairStrategyRule) = Nothing
+                        Dim stocksRuleData As Dictionary(Of String, StrategyRule) = Nothing
 
                         'First lets build the payload for all the stocks
                         Dim stockCount As Integer = 0
                         Dim eligibleStockCount As Integer = 0
-                        Dim commonNextTradingDay As Date = Cmn.GetNexTradingDay(Me.DatabaseTable, tradeCheckingDate)
-                        For Each runningPair In pairList
+                        Dim nextTradingDay As Date = Cmn.GetNexTradingDay(Me.DatabaseTable, tradeCheckingDate)
+                        For Each runningPair In stockList
                             _canceller.Token.ThrowIfCancellationRequested()
                             stockCount += 1
 
-                            Dim XDayOneMinutePayload1 As Dictionary(Of Date, Payload) = Nothing
-                            Dim XDayOneMinutePayload2 As Dictionary(Of Date, Payload) = Nothing
-                            Dim currentDayOneMinutePayload1 As Dictionary(Of Date, Payload) = Nothing
-                            Dim currentDayOneMinutePayload2 As Dictionary(Of Date, Payload) = Nothing
+                            Dim XDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
+                            Dim currentDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             If Me.DataSource = SourceOfData.Database Then
-                                XDayOneMinutePayload1 = Cmn.GetRawPayloadForSpecificTradingSymbol(Me.DatabaseTable, runningPair.TradingSymbol1, tradeCheckingDate.AddDays(-30), tradeCheckingDate)
-                                XDayOneMinutePayload2 = Cmn.GetRawPayloadForSpecificTradingSymbol(Me.DatabaseTable, runningPair.TradingSymbol2, tradeCheckingDate.AddDays(-30), tradeCheckingDate)
+                                XDayOneMinutePayload = Cmn.GetRawPayloadForSpecificTradingSymbol(Me.DatabaseTable, runningPair.TradingSymbol, tradeCheckingDate.AddDays(-30), tradeCheckingDate)
                             ElseIf Me.DataSource = SourceOfData.Live Then
                                 Throw New NotImplementedException
                             End If
 
                             _canceller.Token.ThrowIfCancellationRequested()
                             'Now transfer only the current date payload into the workable payload (this will be used for the main loop and checking if the date is a valid date)
-                            If XDayOneMinutePayload1 IsNot Nothing AndAlso XDayOneMinutePayload1.Count > 0 AndAlso
-                                XDayOneMinutePayload2 IsNot Nothing AndAlso XDayOneMinutePayload2.Count > 0 Then
-                                OnHeartbeat(String.Format("Processing for {0} on {1}. Stock Counter: [ {2}/{3} ]", runningPair, tradeCheckingDate.ToShortDateString, stockCount, pairList.Count))
-                                For Each runningPayload In XDayOneMinutePayload1.Keys
+                            If XDayOneMinutePayload IsNot Nothing AndAlso XDayOneMinutePayload.Count > 0 Then
+                                OnHeartbeat(String.Format("Processing for {0} on {1}. Stock Counter: [ {2}/{3} ]", runningPair, tradeCheckingDate.ToShortDateString, stockCount, stockList.Count))
+                                For Each runningPayload In XDayOneMinutePayload.Keys
                                     _canceller.Token.ThrowIfCancellationRequested()
                                     If runningPayload.Date = tradeCheckingDate.Date Then
-                                        If currentDayOneMinutePayload1 Is Nothing Then currentDayOneMinutePayload1 = New Dictionary(Of Date, Payload)
-                                        currentDayOneMinutePayload1.Add(runningPayload, XDayOneMinutePayload1(runningPayload))
-                                    End If
-                                Next
-                                For Each runningPayload In XDayOneMinutePayload2.Keys
-                                    _canceller.Token.ThrowIfCancellationRequested()
-                                    If runningPayload.Date = tradeCheckingDate.Date Then
-                                        If currentDayOneMinutePayload2 Is Nothing Then currentDayOneMinutePayload2 = New Dictionary(Of Date, Payload)
-                                        currentDayOneMinutePayload2.Add(runningPayload, XDayOneMinutePayload2(runningPayload))
+                                        If currentDayOneMinutePayload Is Nothing Then currentDayOneMinutePayload = New Dictionary(Of Date, Payload)
+                                        currentDayOneMinutePayload.Add(runningPayload, XDayOneMinutePayload(runningPayload))
                                     End If
                                 Next
                                 'Add all these payloads into the stock collections
-                                If currentDayOneMinutePayload1 IsNot Nothing AndAlso currentDayOneMinutePayload1.Count > 0 AndAlso
-                                    currentDayOneMinutePayload2 IsNot Nothing AndAlso currentDayOneMinutePayload2.Count > 0 Then
-                                    If stocksRuleData Is Nothing Then stocksRuleData = New Dictionary(Of String, PairStrategyRule)
-                                    Dim stockRule As PairStrategyRule = Nothing
+                                If currentDayOneMinutePayload IsNot Nothing AndAlso currentDayOneMinutePayload.Count > 0 Then
+                                    If stocksRuleData Is Nothing Then stocksRuleData = New Dictionary(Of String, StrategyRule)
+                                    Dim stockRule As StrategyRule = Nothing
 
-                                    stockRule = New OutsidexSDStrategyRule(runningPair.PairName, tradeCheckingDate, commonNextTradingDay, runningPair.TradingSymbol1, runningPair.LotSize1, runningPair.TradingSymbol2, runningPair.LotSize2, Me.RuleEntityData, Me, _canceller, XDayOneMinutePayload1, XDayOneMinutePayload2)
+                                    stockRule = New OutsideBuyStrategyRule(tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me.RuleEntityData, Me, _canceller, XDayOneMinutePayload)
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
                                     stockRule.CompletePreProcessing()
-                                    stocksRuleData.Add(runningPair.PairName, stockRule)
+                                    stocksRuleData.Add(runningPair.TradingSymbol, stockRule)
 
                                     checkForEntryExit = True
                                 Else
                                     If Cmn.IsTradingDay(tradeCheckingDate) Then
-                                        Throw New NotImplementedException(String.Format("Data unavailable for {0}, {1}", runningPair.PairName, tradeCheckingDate.ToString("dd-MMM-yyyy")))
+                                        Throw New NotImplementedException(String.Format("Data unavailable for {0}, {1}", runningPair.TradingSymbol, tradeCheckingDate.ToString("dd-MMM-yyyy")))
                                     End If
                                 End If
                             Else
                                 If Cmn.IsTradingDay(tradeCheckingDate) Then
-                                    Throw New NotImplementedException(String.Format("Data unavailable for {0}, {1}", runningPair.PairName, tradeCheckingDate.ToString("dd-MMM-yyyy")))
+                                    Throw New NotImplementedException(String.Format("Data unavailable for {0}, {1}", runningPair.TradingSymbol, tradeCheckingDate.ToString("dd-MMM-yyyy")))
                                 End If
                             End If
                         Next
@@ -150,13 +138,13 @@ Namespace StrategyHelper
                                 While startSecond <= endSecond
                                     potentialTickSignalTime = New Date(tradeCheckingDate.Year, tradeCheckingDate.Month, tradeCheckingDate.Day, startSecond.Hours, startSecond.Minutes, startSecond.Seconds)
                                     If potentialTickSignalTime.Second = 0 Then
-                                        For Each runningPair In pairList
+                                        For Each runningStock In stockList
                                             _canceller.Token.ThrowIfCancellationRequested()
 
-                                            Dim stockStrategyRule As PairStrategyRule = stocksRuleData(runningPair.PairName)
+                                            Dim stockStrategyRule As StrategyRule = stocksRuleData(runningStock.TradingSymbol)
 
                                             _canceller.Token.ThrowIfCancellationRequested()
-                                            Dim potentialRuleExitTrades As List(Of Trade) = GetSpecificTrades(runningPair.PairName, tradeCheckingDate, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
+                                            Dim potentialRuleExitTrades As List(Of Trade) = GetSpecificTrades(runningStock.TradingSymbol, tradeCheckingDate, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
                                             If potentialRuleExitTrades IsNot Nothing AndAlso potentialRuleExitTrades.Count > 0 Then
                                                 Await stockStrategyRule.IsTriggerReceivedForExitOrderAsync(potentialTickSignalTime, potentialRuleExitTrades).ConfigureAwait(False)
                                             End If
@@ -191,17 +179,14 @@ Namespace StrategyHelper
         End Function
 
 #Region "Stock Selection"
-        Private Function GetStockData(ByVal tradingDate As Date) As List(Of PairDetails)
-            Dim ret As List(Of PairDetails) = Nothing
+        Private Function GetStockData(ByVal tradingDate As Date) As List(Of StockDetails)
+            Dim ret As List(Of StockDetails) = Nothing
 
-            Dim detailsOfStock As PairDetails = New PairDetails With
-                                    {.PairName = "HDFC~HDFCBANK",
-                                     .TradingSymbol1 = "HDFC",
-                                     .LotSize1 = 300,
-                                     .TradingSymbol2 = "HDFCBANK",
-                                     .LotSize2 = 550}
+            Dim detailsOfStock As StockDetails = New StockDetails With
+                                    {.TradingSymbol = "RELIANCE",
+                                     .LotSize = 250}
 
-            ret = New List(Of PairDetails)
+            ret = New List(Of StockDetails)
             ret.Add(detailsOfStock)
 
             'If Me.StockFileName IsNot Nothing Then

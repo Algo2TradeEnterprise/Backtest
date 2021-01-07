@@ -106,12 +106,12 @@
     <Compile Include="Strategy Helper\CNCGenericStrategy.vb" />
     <Compile Include="Strategy Helper\PlaceOrderParameters.vb" />
     <Compile Include="Strategy Helper\RuleEntities.vb" />
-    <Compile Include="Strategy Helper\PairDetails.vb" />
+    <Compile Include="Strategy Helper\StockDetails.vb" />
     <Compile Include="Strategy Helper\Strategy.vb" />
     <Compile Include="Strategy Helper\StrategyOutput.vb" />
-    <Compile Include="Strategy Helper\PairStrategyRule.vb" />
+    <Compile Include="Strategy Helper\StrategyRule.vb" />
     <Compile Include="Strategy Helper\Trade.vb" />
-    <Compile Include="Strategy Rule CNC\OutsidexSDStrategyRule.vb" />
+    <Compile Include="Strategy Rule CNC\OutsideBuyStrategyRule.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="frmMain.resx">

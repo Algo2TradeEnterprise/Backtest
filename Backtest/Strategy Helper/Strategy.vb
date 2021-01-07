@@ -149,9 +149,6 @@ Namespace StrategyHelper
         Public MTMSlab As Decimal = Decimal.MinValue
         Public MovementSlab As Decimal = Decimal.MinValue
         Public RealtimeTrailingPercentage As Decimal = Decimal.MinValue
-
-        Public MaxZSCore As Decimal = Decimal.MinValue
-        Public NeglectedTradeCount As Integer = 0
 #End Region
 
 #Region "Public Calculated Property"
@@ -1011,25 +1008,6 @@ Namespace StrategyHelper
                             .AverageDurationInLosingTrades = If((totalTrades - totalPositiveTrades) <> 0, totalDurationInNegativeTrades / (totalTrades - totalPositiveTrades), 0)
                         End With
 
-                        Dim maxNumberOfDays As Decimal = Decimal.MinValue
-                        For Each runningDate In allTradesData
-                            For Each runningStock In runningDate.Value
-                                If runningStock.Value IsNot Nothing AndAlso runningStock.Value.Count > 0 Then
-                                    For Each runningTrade In runningStock.Value
-                                        Try
-                                            If runningTrade.Supporting8 IsNot Nothing AndAlso
-                                            runningTrade.Supporting8.Trim <> "" AndAlso
-                                            IsNumeric(runningTrade.Supporting8) Then
-                                                maxNumberOfDays = Math.Max(Val(runningTrade.Supporting8), maxNumberOfDays)
-                                            End If
-                                        Catch ex As Exception
-                                            Throw ex
-                                        End Try
-                                    Next
-                                End If
-                            Next
-                        Next
-
                         Dim distinctTagList As List(Of String) = New List(Of String)
                         Dim runningTradeTag As String = Nothing
                         For Each runningDate In allTradesData
@@ -1057,14 +1035,12 @@ Namespace StrategyHelper
 
                         If runningTradeTag IsNot Nothing AndAlso runningTradeTag.Trim <> "" Then
                             Dim plToDeduct As Decimal = 0
-                            Dim startTime As Date = Date.MinValue
                             For Each runningDate In allTradesData
                                 For Each runningStock In runningDate.Value
                                     If runningStock.Value IsNot Nothing AndAlso runningStock.Value.Count > 0 Then
                                         For Each runningTrade In runningStock.Value
                                             If runningTrade.Tag = runningTradeTag Then
                                                 plToDeduct += runningTrade.PLAfterBrokerage
-                                                startTime = Date.ParseExact(runningTrade.Supporting6, "dd-MMM-yyyy HH:mm:ss", Nothing)
                                             End If
                                         Next
                                     End If
@@ -1073,17 +1049,6 @@ Namespace StrategyHelper
 
                             tradeCount = tradeCount - 1
                             pl = pl - plToDeduct
-                            If startTime <> Date.MinValue Then
-                                maxCapital = allCapitalData.Values.Max(Function(x)
-                                                                           Return x.Max(Function(y)
-                                                                                            If y.CapitalExhaustedDateTime < startTime Then
-                                                                                                Return y.RunningCapital
-                                                                                            Else
-                                                                                                Return Decimal.MinValue
-                                                                                            End If
-                                                                                        End Function)
-                                                                       End Function)
-                            End If
                         End If
 
                         If tradeCount = 0 Then
@@ -1096,13 +1061,11 @@ Namespace StrategyHelper
                                              fileName)
                         Else
                             Dim roi As Decimal = (pl / maxCapital) * 100
-                            fileName = String.Format("PL {0},Cap {1},ROI {2},LgclTrd {3},NglctTrd {4},MaxDays {5},{6}.xlsx",
+                            fileName = String.Format("PL {0},Cap {1},ROI {2},LgclTrd {3},{4}.xlsx",
                                              Math.Round(pl, 0),
                                              Math.Round(maxCapital, 0),
                                              Math.Round(roi, 0),
                                              tradeCount,
-                                             Me.NeglectedTradeCount,
-                                             Math.Round(maxNumberOfDays, 0),
                                              fileName)
                         End If
 
@@ -1183,28 +1146,28 @@ Namespace StrategyHelper
                                 mainRawData(rowCtr, colCtr) = "Trade Number"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Entry Z-Score"
+                                mainRawData(rowCtr, colCtr) = "Ramark"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Mean"
+                                mainRawData(rowCtr, colCtr) = "Spot Price"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "SD"
+                                mainRawData(rowCtr, colCtr) = "Spot ATR"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Correlation"
+                                mainRawData(rowCtr, colCtr) = "Supporting 5"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Start Date"
+                                mainRawData(rowCtr, colCtr) = "Supporting 6"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "End Date"
+                                mainRawData(rowCtr, colCtr) = "Supporting 7"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Duration"
+                                mainRawData(rowCtr, colCtr) = "Supporting 8"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Continues Z-Score"
+                                mainRawData(rowCtr, colCtr) = "Supporting 9"
 
                                 rowCtr += 1
                             End If
