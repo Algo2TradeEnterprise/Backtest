@@ -1,4 +1,6 @@
-﻿Namespace Indicator
+﻿Imports System.Drawing
+
+Namespace Indicator
     Public Module PivotHighLow
         Public Class Pivot
             Public Property PivotHigh As Decimal
@@ -6,6 +8,7 @@
             Public Property PivotLow As Decimal
             Public Property PivotLowTime As Date
         End Class
+
         Public Sub CalculatePivotHighLow(ByVal period As Integer, ByVal inputPayload As Dictionary(Of Date, Payload), ByRef outputPayload As Dictionary(Of Date, Pivot))
             If inputPayload IsNot Nothing AndAlso inputPayload.Count > 0 Then
                 If inputPayload.Count <= period * 2 + 1 Then
@@ -86,6 +89,63 @@
                     outputPayload.Add(runningPayload, pivotData)
                 Next
             End If
+        End Sub
+
+        Public Sub CalculatePivotHighLowTrend(ByVal period As Integer, ByVal trendPeriod As Integer, ByVal inputPayload As Dictionary(Of Date, Payload), ByRef outputHighPayload As Dictionary(Of Date, Decimal), ByRef outputLowPayload As Dictionary(Of Date, Decimal), ByRef outputTrendPayload As Dictionary(Of Date, Color))
+            Dim pivotPayload As Dictionary(Of Date, Pivot) = Nothing
+            CalculatePivotHighLow(period, inputPayload, pivotPayload)
+
+            Dim trend As Color = Color.White
+            For Each runningPayload In inputPayload.Keys
+                Dim highTrend As Decimal = 0
+                Dim lowTrend As Decimal = 0
+
+
+                Dim lastPivotHighTime As Date = Date.MinValue
+                Dim lastPivotLowTime As Date = Date.MinValue
+                Dim highCount As Integer = 0
+                Dim lowCount As Integer = 0
+                Dim highSum As Decimal = 0
+                Dim lowSum As Decimal = 0
+                Dim previousPayloads As IEnumerable(Of KeyValuePair(Of Date, Payload)) = inputPayload.Where(Function(x)
+                                                                                                                Return x.Key <= runningPayload
+                                                                                                            End Function)
+                If previousPayloads IsNot Nothing AndAlso previousPayloads.Count > 0 Then
+                    For Each innerPayload In previousPayloads.OrderByDescending(Function(x)
+                                                                                    Return x.Key
+                                                                                End Function)
+                        If pivotPayload.ContainsKey(innerPayload.Key) AndAlso pivotPayload(innerPayload.Key) IsNot Nothing Then
+                            If highCount < trendPeriod AndAlso pivotPayload(innerPayload.Key).PivotHighTime <> Date.MinValue AndAlso pivotPayload(innerPayload.Key).PivotHighTime <> lastPivotHighTime Then
+                                lastPivotHighTime = pivotPayload(innerPayload.Key).PivotHighTime
+                                highCount += 1
+                                highSum += (inputPayload(runningPayload).Close - pivotPayload(innerPayload.Key).PivotHigh) / pivotPayload(innerPayload.Key).PivotHigh
+                            End If
+                            If lowCount < trendPeriod AndAlso pivotPayload(innerPayload.Key).PivotLowTime <> Date.MinValue AndAlso pivotPayload(innerPayload.Key).PivotLowTime <> lastPivotLowTime Then
+                                lastPivotLowTime = pivotPayload(innerPayload.Key).PivotLowTime
+                                lowCount += 1
+                                lowSum += (inputPayload(runningPayload).Close - pivotPayload(innerPayload.Key).PivotLow) / pivotPayload(innerPayload.Key).PivotLow
+                            End If
+                        End If
+                        If highCount >= trendPeriod AndAlso lowCount >= trendPeriod Then
+                            Exit For
+                        End If
+                    Next
+                End If
+                highTrend = highSum / trendPeriod
+                lowTrend = lowSum / trendPeriod
+
+                If outputHighPayload Is Nothing Then outputHighPayload = New Dictionary(Of Date, Decimal)
+                outputHighPayload.Add(runningPayload, highTrend)
+                If outputLowPayload Is Nothing Then outputLowPayload = New Dictionary(Of Date, Decimal)
+                outputLowPayload.Add(runningPayload, lowTrend)
+                If highTrend > 0 AndAlso lowTrend > 0 Then
+                    trend = Color.Green
+                ElseIf highTrend < 0 AndAlso lowTrend < 0 Then
+                    trend = Color.Red
+                End If
+                If outputTrendPayload Is Nothing Then outputTrendPayload = New Dictionary(Of Date, Color)
+                outputTrendPayload.Add(runningPayload, trend)
+            Next
         End Sub
     End Module
 End Namespace
