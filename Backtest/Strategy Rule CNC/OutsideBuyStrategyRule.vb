@@ -150,6 +150,20 @@ Public Class OutsideBuyStrategyRule
     Public Overrides Async Function IsTriggerReceivedForExitOrderAsync(ByVal currentTickTime As Date, ByVal availableTrades As List(Of Trade)) As Task
         Await Task.Delay(0).ConfigureAwait(False)
         If availableTrades IsNot Nothing AndAlso availableTrades.Count > 0 Then
+            'Set Drawup Drawdown
+            For Each runningTrade In availableTrades
+                If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                    Dim currentFOTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
+                    If runningTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                        If currentFOTick.Open > runningTrade.MaxDrawUp Then runningTrade.MaxDrawUp = currentFOTick.Open
+                        If currentFOTick.Open < runningTrade.MaxDrawDown Then runningTrade.MaxDrawDown = currentFOTick.Open
+                    ElseIf runningTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                        If currentFOTick.Open < runningTrade.MaxDrawUp Then runningTrade.MaxDrawUp = currentFOTick.Open
+                        If currentFOTick.Open > runningTrade.MaxDrawDown Then runningTrade.MaxDrawDown = currentFOTick.Open
+                    End If
+                End If
+            Next
+
             'Target Exit
             For Each runningTrade In availableTrades
                 If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
