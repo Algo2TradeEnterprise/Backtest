@@ -111,7 +111,8 @@
     <Compile Include="Strategy Helper\StrategyOutput.vb" />
     <Compile Include="Strategy Helper\StrategyRule.vb" />
     <Compile Include="Strategy Helper\Trade.vb" />
-    <Compile Include="Strategy Rule CNC\OutsideBuyStrategyRule.vb" />
+    <Compile Include="Strategy Rule CNC\HKStrongOutsideBuyStrategyRule.vb" />
+    <Compile Include="Strategy Rule CNC\PivotTrendOutsideBuyStrategyRule.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="frmMain.resx">

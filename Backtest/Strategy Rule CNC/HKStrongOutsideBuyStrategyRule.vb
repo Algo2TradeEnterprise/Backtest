@@ -2,7 +2,7 @@
 Imports System.Threading
 Imports Backtest.StrategyHelper
 
-Public Class OutsideBuyStrategyRule
+Public Class HKStrongOutsideBuyStrategyRule
     Inherits StrategyRule
 
 #Region "Entity"

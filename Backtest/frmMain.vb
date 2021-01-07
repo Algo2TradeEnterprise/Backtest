@@ -318,20 +318,29 @@ Public Class frmMain
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
-                    '.StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Cash Future Pair Stock List.csv")
-                    .StockFileName = Nothing
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "High ATR High Volume Stocks.csv")
 
                     .AllowBothDirectionEntryAtSameTime = False
                     .TrailingStoploss = False
                     .TickBasedStrategy = True
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                    .RuleEntityData = New OutsideBuyStrategyRule.StrategyRuleEntities With
+                    Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
+                        Case 0
+                            .RuleEntityData = New HKStrongOutsideBuyStrategyRule.StrategyRuleEntities With
                                 {
                                  .ATRMultiplier = 1
                                 }
+                        Case 1
+                            .RuleEntityData = New PivotTrendOutsideBuyStrategyRule.StrategyRuleEntities With
+                                {
+                                 .ATRMultiplier = 1
+                                }
+                        Case Else
+                            Throw New NotImplementedException
+                    End Select
 
-                    .NumberOfTradeableStockPerDay = Integer.MaxValue
+                    .NumberOfTradeableStockPerDay = 1
 
                     .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
@@ -352,8 +361,17 @@ Public Class frmMain
                     .RealtimeTrailingPercentage = 50
                 End With
 
-                Dim ruleData As OutsideBuyStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
                 Dim filename As String = String.Format("Option Buy")
+                Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
+                    Case 0
+                        Dim ruleData As HKStrongOutsideBuyStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                        filename = String.Format("HK Strong Option Buy")
+                    Case 1
+                        Dim ruleData As PivotTrendOutsideBuyStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                        filename = String.Format("Pivot Trend Option Buy")
+                    Case Else
+                        Throw New NotImplementedException
+                End Select
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using

@@ -64,6 +64,29 @@ Namespace StrategyHelper
                     Dim stockList As List(Of StockDetails) = GetStockData(tradeCheckingDate)
                     _canceller.Token.ThrowIfCancellationRequested()
                     If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
+                        OnHeartbeat("Adding Running stocks")
+                        If Me.TradesTaken IsNot Nothing AndAlso Me.TradesTaken.Count > 0 Then
+                            For Each runningDate In Me.TradesTaken.Keys
+                                For Each runningStock In Me.TradesTaken(runningDate).Keys
+                                    Dim availableStock As StockDetails = stockList.Find(Function(x)
+                                                                                            Return x.TradingSymbol.ToUpper = runningStock.ToUpper
+                                                                                        End Function)
+                                    If availableStock Is Nothing Then
+                                        Dim lastEntryTrade As Trade = GetLastEntryTradeOfTheStock(runningStock, tradeCheckingDate, Trade.TypeOfTrade.CNC)
+                                        If lastEntryTrade IsNot Nothing AndAlso (lastEntryTrade.ExitRemark Is Nothing OrElse
+                                            Not lastEntryTrade.ExitRemark.Contains("Target")) Then
+                                            availableStock = New StockDetails With {
+                                                .TradingSymbol = runningStock,
+                                                .LotSize = lastEntryTrade.LotSize
+                                            }
+
+                                            stockList.Add(availableStock)
+                                        End If
+                                    End If
+                                Next
+                            Next
+                        End If
+
                         Dim checkForEntryExit As Boolean = False
                         Dim stocksRuleData As Dictionary(Of String, StrategyRule) = Nothing
 
@@ -102,7 +125,14 @@ Namespace StrategyHelper
                                     If stocksRuleData Is Nothing Then stocksRuleData = New Dictionary(Of String, StrategyRule)
                                     Dim stockRule As StrategyRule = Nothing
 
-                                    stockRule = New OutsideBuyStrategyRule(tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me.RuleEntityData, Me, _canceller, XDayOneMinutePayload)
+                                    Select Case Me.RuleNumber
+                                        Case 0
+                                            stockRule = New HKStrongOutsideBuyStrategyRule(tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me.RuleEntityData, Me, _canceller, XDayOneMinutePayload)
+                                        Case 1
+                                            stockRule = New PivotTrendOutsideBuyStrategyRule(tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me.RuleEntityData, Me, _canceller, XDayOneMinutePayload)
+                                        Case Else
+                                            Throw New NotImplementedException
+                                    End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
                                     stockRule.CompletePreProcessing()
@@ -184,54 +214,35 @@ Namespace StrategyHelper
 #Region "Stock Selection"
         Private Function GetStockData(ByVal tradingDate As Date) As List(Of StockDetails)
             Dim ret As List(Of StockDetails) = Nothing
+            If Me.StockFileName IsNot Nothing Then
+                Dim dt As DataTable = Nothing
+                Using csvHelper As New Utilities.DAL.CSVHelper(Me.StockFileName, ",", _canceller)
+                    dt = csvHelper.GetDataTableFromCSV(1)
+                End Using
+                If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
+                    For Each runningRow As DataRow In dt.Rows
+                        Dim rowDate As Date = runningRow.Item("Date")
+                        If rowDate.Date = tradingDate.Date Then
+                            Dim tradingSymbol As String = runningRow.Item("Trading Symbol")
+                            Dim instrumentName As String = Nothing
+                            If tradingSymbol.Contains("FUT") Then
+                                instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                            Else
+                                instrumentName = tradingSymbol
+                            End If
+                            Dim lotSize As Integer = runningRow.Item("Lot Size")
 
-            Dim detailsOfStock As StockDetails = New StockDetails With
-                                    {.TradingSymbol = "RELIANCE",
-                                     .LotSize = 250}
+                            Dim detailsOfStock As StockDetails = New StockDetails With
+                                        {.TradingSymbol = tradingSymbol,
+                                         .LotSize = lotSize}
 
-            ret = New List(Of StockDetails)
-            ret.Add(detailsOfStock)
-
-            'If Me.StockFileName IsNot Nothing Then
-            '    Dim dt As DataTable = Nothing
-            '    Using csvHelper As New Utilities.DAL.CSVHelper(Me.StockFileName, ",", _canceller)
-            '        dt = csvHelper.GetDataTableFromCSV(1)
-            '    End Using
-            '    If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
-            '        For Each runningRow As DataRow In dt.Rows
-            '            If ret Is Nothing Then ret = New List(Of StockDetails)
-            '            Dim tradingSymbol As String = runningRow.Item(0)
-            '            Dim instrumentName As String = Nothing
-            '            If tradingSymbol.Contains("FUT") Then
-            '                instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
-            '            Else
-            '                instrumentName = tradingSymbol
-            '            End If
-            '            Dim lotSize As Integer = runningRow.Item(1)
-            '            Dim xlStockType As String = runningRow.Item(2)
-            '            Dim controller As String = runningRow.Item(3)
-            '            Dim stockTyp As Trade.TypeOfStock = Trade.TypeOfStock.None
-            '            Select Case xlStockType
-            '                Case "Cash"
-            '                    stockTyp = Trade.TypeOfStock.Cash
-            '                Case "Future"
-            '                    stockTyp = Trade.TypeOfStock.Futures
-            '                Case Else
-            '                    Throw New NotImplementedException
-            '            End Select
-
-            '            Dim detailsOfStock As StockDetails = New StockDetails With
-            '                        {.StockName = instrumentName,
-            '                         .TradingSymbol = tradingSymbol,
-            '                         .LotSize = lotSize,
-            '                         .EligibleToTakeTrade = True,
-            '                         .StockType = stockTyp,
-            '                         .Supporting1 = If(controller.ToUpper = "TRUE", 1, 0)}
-
-            '            ret.Add(detailsOfStock)
-            '        Next
-            '    End If
-            'End If
+                            If ret Is Nothing Then ret = New List(Of StockDetails)
+                            ret.Add(detailsOfStock)
+                            If ret.Count >= Me.NumberOfTradeableStockPerDay Then Exit For
+                        End If
+                    Next
+                End If
+            End If
             Return ret
         End Function
 #End Region
