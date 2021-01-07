@@ -107,7 +107,8 @@ Public Class OutsideBuyStrategyRule
                         Dim plAchieved As Decimal = 0
                         For Each runningTrade In allTrades
                             If Not runningTrade.Supporting2.Contains("Fresh") Then
-                                plAchieved += runningTrade.PLAfterBrokerage
+                                Dim currentOptTick As Payload = GetCurrentTick(currentTrade.SupportingTradingSymbol, currentTickTime)
+                                plAchieved += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.EntryPrice, currentOptTick.Open, runningTrade.Quantity, runningTrade.LotSize, runningTrade.StockType)
                             End If
                         Next
                         If plAchieved >= Math.Abs(lossToRecover) Then

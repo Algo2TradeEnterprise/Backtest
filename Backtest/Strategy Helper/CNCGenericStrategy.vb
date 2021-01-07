@@ -71,6 +71,9 @@ Namespace StrategyHelper
                         Dim stockCount As Integer = 0
                         Dim eligibleStockCount As Integer = 0
                         Dim nextTradingDay As Date = Cmn.GetNexTradingDay(Me.DatabaseTable, tradeCheckingDate)
+                        'If nextTradingDay = Date.MinValue Then
+                        '    nextTradingDay = Now.Date
+                        'End If
                         For Each runningPair In stockList
                             _canceller.Token.ThrowIfCancellationRequested()
                             stockCount += 1
