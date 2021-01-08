@@ -331,14 +331,14 @@ Public Class frmMain
                                 {
                                  .ATRMultiplier = 1,
                                  .SpotToOptionDelta = 1,
-                                 .MartingaleOnLossMakeup = False,
+                                 .MartingaleOnLossMakeup = True,
                                  .IncreaseQuantityWithHalfPremium = False
                                 }
                         Case Else
                             Throw New NotImplementedException
                     End Select
 
-                    .NumberOfTradeableStockPerDay = 1
+                    .NumberOfTradeableStockPerDay = 15
 
                     .NumberOfTradesPerStockPerDay = Integer.MaxValue
 

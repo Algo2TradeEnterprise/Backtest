@@ -230,12 +230,12 @@ Namespace StrategyHelper
                             End If
                             Dim lotSize As Integer = runningRow.Item("Lot Size")
 
-                            'Dim detailsOfStock As StockDetails = New StockDetails With
-                            '            {.TradingSymbol = tradingSymbol,
-                            '             .LotSize = lotSize}
                             Dim detailsOfStock As StockDetails = New StockDetails With
-                                        {.TradingSymbol = "ICICIBANK",
-                                         .LotSize = 1375}
+                                        {.TradingSymbol = tradingSymbol,
+                                         .LotSize = lotSize}
+                            'Dim detailsOfStock As StockDetails = New StockDetails With
+                            '            {.TradingSymbol = "ICICIBANK",
+                            '             .LotSize = 1375}
 
                             If ret Is Nothing Then ret = New List(Of StockDetails)
                             ret.Add(detailsOfStock)
