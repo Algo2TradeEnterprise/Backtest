@@ -543,23 +543,32 @@ Public Class PivotTrendOutsideBuyStrategyRule
 
                 Dim sumVol As Long = 0
                 Dim count As Integer = 0
+                Dim volList As List(Of Long) = Nothing
                 If upperContract IsNot Nothing AndAlso upperContract.Count > 0 Then
                     sumVol += upperContract.Sum(Function(x)
                                                     Return x.Value
                                                 End Function)
                     count += upperContract.Count
+                    If volList Is Nothing Then volList = New List(Of Long)
+                    volList.AddRange(upperContract.Values.ToList)
                 End If
                 If lowerContract IsNot Nothing AndAlso lowerContract.Count > 0 Then
                     sumVol += lowerContract.Sum(Function(x)
                                                     Return x.Value
                                                 End Function)
                     count += lowerContract.Count
+                    If volList Is Nothing Then volList = New List(Of Long)
+                    volList.AddRange(lowerContract.Values.ToList)
                 End If
                 Dim avgVol As Decimal = sumVol
-                If count > 0 Then avgVol = sumVol / count
+                If count > 0 Then
+                    avgVol = sumVol / count
+                    Dim std As Long = CalculateStandardDeviationPA(volList.ToArray())
+                    avgVol = avgVol - std
+                End If
 
                 For Each runningContract In contracts.OrderByDescending(Function(x)
-                                                                            Return x.Value
+                                                                            Return x.Key
                                                                         End Function)
                     If runningContract.Key <= price AndAlso runningContract.Value >= avgVol Then
                         ret = String.Format("{0}{1}PE", expiryString, runningContract.Key)
@@ -631,24 +640,33 @@ Public Class PivotTrendOutsideBuyStrategyRule
 
                 Dim sumVol As Long = 0
                 Dim count As Integer = 0
+                Dim volList As List(Of Long) = Nothing
                 If upperContract IsNot Nothing AndAlso upperContract.Count > 0 Then
                     sumVol += upperContract.Sum(Function(x)
                                                     Return x.Value
                                                 End Function)
                     count += upperContract.Count
+                    If volList Is Nothing Then volList = New List(Of Long)
+                    volList.AddRange(upperContract.Values.ToList)
                 End If
                 If lowerContract IsNot Nothing AndAlso lowerContract.Count > 0 Then
                     sumVol += lowerContract.Sum(Function(x)
                                                     Return x.Value
                                                 End Function)
                     count += lowerContract.Count
+                    If volList Is Nothing Then volList = New List(Of Long)
+                    volList.AddRange(lowerContract.Values.ToList)
                 End If
                 Dim avgVol As Decimal = sumVol
-                If count > 0 Then avgVol = sumVol / count
+                If count > 0 Then
+                    avgVol = sumVol / count
+                    Dim std As Long = CalculateStandardDeviationPA(volList.ToArray())
+                    avgVol = avgVol - std
+                End If
 
-                For Each runningContract In contracts.OrderByDescending(Function(x)
-                                                                            Return x.Value
-                                                                        End Function)
+                For Each runningContract In contracts.OrderBy(Function(x)
+                                                                  Return x.Key
+                                                              End Function)
                     If runningContract.Key >= price AndAlso runningContract.Value >= avgVol Then
                         ret = String.Format("{0}{1}CE", expiryString, runningContract.Key)
                         Exit For
@@ -690,6 +708,25 @@ Public Class PivotTrendOutsideBuyStrategyRule
             End If
             lastDayOfMonth = lastDayOfMonth.AddDays(-1)
         End While
+        Return ret
+    End Function
+
+    Private Function CalculateStandardDeviationPA(ParamArray numbers() As Long) As Long
+        Dim ret As Long = Nothing
+        If numbers.Count > 0 Then
+            Dim sum As Long = 0
+            For i = 0 To numbers.Count - 1
+                sum = sum + numbers(i)
+            Next
+            Dim mean As Long = sum / numbers.Count
+            Dim sumVariance As Long = 0
+            For j = 0 To numbers.Count - 1
+                sumVariance = sumVariance + Math.Pow((numbers(j) - mean), 2)
+            Next
+            Dim sampleVariance As Long = sumVariance / numbers.Count
+            Dim standardDeviation As Long = Math.Sqrt(sampleVariance)
+            ret = standardDeviation
+        End If
         Return ret
     End Function
 #End Region
