@@ -9,4 +9,5 @@
     Public ROI As Decimal
     Public Result As String
     Public Reference As String
+    Public Month As String
 End Class

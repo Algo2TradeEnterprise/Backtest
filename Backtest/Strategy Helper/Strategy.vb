@@ -958,6 +958,7 @@ Namespace StrategyHelper
                                             summaryData.ROI = (summaryData.TotalPL / summaryData.TotalCapital) * 100
                                             summaryData.Result = If(summaryData.ROI > 0, "Profit", "Loss")
                                             summaryData.Reference = tagTrades.LastOrDefault.ChildTag
+                                            summaryData.Month = String.Format("{0}-{1}", tagTrades.FirstOrDefault.TradingDate.ToString("yyyy"), tagTrades.FirstOrDefault.TradingDate.ToString("MM"))
 
                                             If summaryList Is Nothing Then summaryList = New List(Of Summary)
                                             summaryList.Add(summaryData)
@@ -1491,6 +1492,7 @@ Namespace StrategyHelper
                                 excelWriter.SetData(1, 8, "ROI")
                                 excelWriter.SetData(1, 9, "Result")
                                 excelWriter.SetData(1, 10, "Reference")
+                                excelWriter.SetData(1, 11, "Month")
 
                                 Dim rowNumber As Integer = 1
                                 For Each runningSummary In summaryList
@@ -1505,6 +1507,7 @@ Namespace StrategyHelper
                                     excelWriter.SetData(rowNumber, 8, runningSummary.ROI, "##,##,##0.00", ExcelHelper.XLAlign.Right)
                                     excelWriter.SetData(rowNumber, 9, runningSummary.Result)
                                     excelWriter.SetData(rowNumber, 10, runningSummary.Reference)
+                                    excelWriter.SetData(rowNumber, 11, runningSummary.Month)
                                 Next
                             End If
 
