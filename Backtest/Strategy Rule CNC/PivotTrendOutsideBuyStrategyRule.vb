@@ -55,11 +55,7 @@ Public Class PivotTrendOutsideBuyStrategyRule
             For Each runningTrade In allRunningTrades
                 If Not _dependentInstruments.ContainsKey(runningTrade.SupportingTradingSymbol) Then
                     Dim inputPayload As Dictionary(Of Date, Payload) = Nothing
-                    If runningTrade.SupportingTradingSymbol.EndsWith("FUT") Then
-                        inputPayload = _ParentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.Intraday_Futures, runningTrade.SupportingTradingSymbol, _TradingDate.AddDays(-5), _TradingDate)
-                    Else
-                        inputPayload = _ParentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.Intraday_Futures_Options, runningTrade.SupportingTradingSymbol, _TradingDate.AddDays(-5), _TradingDate)
-                    End If
+                    inputPayload = _ParentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.Intraday_Futures_Options, runningTrade.SupportingTradingSymbol, _TradingDate.AddDays(-30), _TradingDate)
                     If inputPayload IsNot Nothing AndAlso inputPayload.Count > 0 Then
                         _dependentInstruments.Add(runningTrade.SupportingTradingSymbol, inputPayload)
                     End If
@@ -205,17 +201,13 @@ Public Class PivotTrendOutsideBuyStrategyRule
             For Each runningTrade In availableTrades
                 If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
                     Dim currentFOTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
-                    Try
-                        If runningTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                            If currentFOTick.Open > runningTrade.MaxDrawUp Then runningTrade.MaxDrawUp = currentFOTick.Open
-                            If currentFOTick.Open < runningTrade.MaxDrawDown Then runningTrade.MaxDrawDown = currentFOTick.Open
-                        ElseIf runningTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                            If currentFOTick.Open < runningTrade.MaxDrawUp Then runningTrade.MaxDrawUp = currentFOTick.Open
-                            If currentFOTick.Open > runningTrade.MaxDrawDown Then runningTrade.MaxDrawDown = currentFOTick.Open
-                        End If
-                    Catch ex As Exception
-                        Throw ex
-                    End Try
+                    If runningTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                        If currentFOTick.Open > runningTrade.MaxDrawUp Then runningTrade.MaxDrawUp = currentFOTick.Open
+                        If currentFOTick.Open < runningTrade.MaxDrawDown Then runningTrade.MaxDrawDown = currentFOTick.Open
+                    ElseIf runningTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                        If currentFOTick.Open < runningTrade.MaxDrawUp Then runningTrade.MaxDrawUp = currentFOTick.Open
+                        If currentFOTick.Open > runningTrade.MaxDrawDown Then runningTrade.MaxDrawDown = currentFOTick.Open
+                    End If
                 End If
             Next
 
