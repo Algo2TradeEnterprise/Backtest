@@ -48,6 +48,11 @@ Namespace StrategyHelper
             Market
             SL
         End Enum
+        Enum TypeOfEntry
+            Fresh = 1
+            LossMakeup
+            None
+        End Enum
 #End Region
 
 #Region "Constructor"
@@ -119,7 +124,6 @@ Namespace StrategyHelper
         Public ReadOnly Property TradingDate As Date '''''
         Public ReadOnly Property EntryDirection As TradeExecutionDirection
         Public ReadOnly Property FirstEntryDirection As TradeExecutionDirection
-        Public ReadOnly Property AdditionalTrade As Boolean
         Public ReadOnly Property EntryPrice As Decimal
         Public ReadOnly Property EntryBuffer As Decimal
         Public ReadOnly Property SquareOffType As TypeOfTrade
@@ -140,17 +144,18 @@ Namespace StrategyHelper
         Public ReadOnly Property ExitPrice As Decimal
         Public ReadOnly Property ExitCondition As TradeExitCondition
         Public ReadOnly Property ExitRemark As String
-        Public ReadOnly Property Tag As String
-        Public ReadOnly Property SquareOffValue As Decimal
-        Public ReadOnly Property Supporting1 As String
-        Public ReadOnly Property Supporting2 As String
-        Public ReadOnly Property Supporting3 As String
-        Public ReadOnly Property Supporting4 As String
-        Public ReadOnly Property Supporting5 As String
-        Public ReadOnly Property Supporting6 As String
-        Public ReadOnly Property Supporting7 As String
-        Public ReadOnly Property Supporting8 As String
-        Public ReadOnly Property Supporting9 As String
+        Public ReadOnly Property ChildTag As String
+        Public ReadOnly Property ParentTag As String
+        Public ReadOnly Property TradeNumber As Integer
+        Public ReadOnly Property EntryType As TypeOfEntry
+        Public ReadOnly Property SpotPrice As Decimal
+        Public ReadOnly Property SpotATR As Decimal
+        Public ReadOnly Property PreviousLoss As Decimal
+        Public ReadOnly Property Remark1 As String
+        Public ReadOnly Property Remark2 As String
+        'Public ReadOnly Property Supporting7 As String
+        'Public ReadOnly Property Supporting8 As String
+        'Public ReadOnly Property Supporting9 As String
         Public ReadOnly Property SupportingTradingSymbol As String
 
         Public ReadOnly Property CapitalRequiredWithMargin As Decimal
@@ -283,20 +288,16 @@ Namespace StrategyHelper
                                 Optional ByVal ExitPrice As Decimal = Decimal.MinValue,
                                 Optional ByVal ExitCondition As TradeExitCondition = TradeExitCondition.None,
                                 Optional ByVal ExitRemark As String = Nothing,
-                                Optional ByVal Tag As String = Nothing,
-                                Optional ByVal SquareOffValue As Decimal = Decimal.MinValue,
-                                Optional ByVal AdditionalTrade As Boolean = False,
-                                Optional ByVal Supporting1 As String = Nothing,
-                                Optional ByVal Supporting2 As String = Nothing,
-                                Optional ByVal Supporting3 As String = Nothing,
-                                Optional ByVal Supporting4 As String = Nothing,
-                                Optional ByVal Supporting5 As String = Nothing,
-                                Optional ByVal Supporting6 As String = Nothing,
-                                Optional ByVal Supporting7 As String = Nothing,
-                                Optional ByVal Supporting8 As String = Nothing,
-                                Optional ByVal Supporting9 As String = Nothing,
+                                Optional ByVal ChildTag As String = Nothing,
+                                Optional ByVal ParentTag As String = Nothing,
+                                Optional ByVal TradeNumber As Integer = Integer.MinValue,
+                                Optional ByVal EntryType As TypeOfEntry = TypeOfEntry.None,
+                                Optional ByVal SpotPrice As Decimal = Decimal.MinValue,
+                                Optional ByVal SpotATR As Decimal = Decimal.MinValue,
+                                Optional ByVal PreviousLoss As Decimal = Decimal.MinValue,
+                                Optional ByVal Remark1 As String = Nothing,
+                                Optional ByVal Remark2 As String = Nothing,
                                 Optional ByVal SupportingTradingSymbol As String = Nothing)
-
 
             If TradingSymbol IsNot Nothing Then _TradingSymbol = TradingSymbol
             If StockType <> TypeOfStock.None Then _StockType = StockType
@@ -321,18 +322,15 @@ Namespace StrategyHelper
             If ExitPrice <> Decimal.MinValue Then _ExitPrice = ExitPrice
             If ExitCondition <> TradeExitCondition.None Then _ExitCondition = ExitCondition
             If ExitRemark IsNot Nothing Then _ExitRemark = ExitRemark
-            If Tag IsNot Nothing Then _Tag = Tag
-            If SquareOffValue <> Decimal.MinValue Then _SquareOffValue = SquareOffValue
-            If AdditionalTrade Then _AdditionalTrade = AdditionalTrade
-            If Supporting1 IsNot Nothing Then _Supporting1 = Supporting1
-            If Supporting2 IsNot Nothing Then _Supporting2 = Supporting2
-            If Supporting3 IsNot Nothing Then _Supporting3 = Supporting3
-            If Supporting4 IsNot Nothing Then _Supporting4 = Supporting4
-            If Supporting5 IsNot Nothing Then _Supporting5 = Supporting5
-            If Supporting6 IsNot Nothing Then _Supporting6 = Supporting6
-            If Supporting7 IsNot Nothing Then _Supporting7 = Supporting7
-            If Supporting8 IsNot Nothing Then _Supporting8 = Supporting8
-            If Supporting9 IsNot Nothing Then _Supporting9 = Supporting9
+            If ChildTag IsNot Nothing Then _ChildTag = ChildTag
+            If ParentTag IsNot Nothing Then _ParentTag = ParentTag
+            If TradeNumber <> Integer.MinValue Then _TradeNumber = TradeNumber
+            If EntryType <> TypeOfEntry.None Then _EntryType = EntryType
+            If SpotPrice <> Decimal.MinValue Then _SpotPrice = SpotPrice
+            If SpotATR <> Decimal.MinValue Then _SpotATR = SpotATR
+            If PreviousLoss <> Decimal.MinValue Then _PreviousLoss = PreviousLoss
+            If Remark1 IsNot Nothing Then _Remark1 = Remark1
+            If Remark2 IsNot Nothing Then _Remark2 = Remark2
             If SupportingTradingSymbol IsNot Nothing Then _SupportingTradingSymbol = SupportingTradingSymbol
 
             If Me._ExitTime <> Nothing OrElse Me._ExitTime <> Date.MinValue Then
@@ -343,6 +341,7 @@ Namespace StrategyHelper
                 Me._TradeUpdateTimeStamp = Me._EntryTime
             End If
         End Sub
+
         Public Sub UpdateTrade(ByVal tradeToBeUsed As Trade)
             If tradeToBeUsed Is Nothing Then Exit Sub
             With tradeToBeUsed
@@ -369,17 +368,18 @@ Namespace StrategyHelper
                 If .ExitPrice <> Decimal.MinValue Then _ExitPrice = .ExitPrice
                 If .ExitCondition <> TradeExitCondition.None Then _ExitCondition = .ExitCondition
                 If .ExitRemark IsNot Nothing Then _ExitRemark = .ExitRemark
-                If .Tag IsNot Nothing Then _Tag = .Tag
-                If .SquareOffValue <> Decimal.MinValue Then _SquareOffValue = .SquareOffValue
-                If .Supporting1 IsNot Nothing Then _Supporting1 = .Supporting1
-                If .Supporting2 IsNot Nothing Then _Supporting2 = .Supporting2
-                If .Supporting3 IsNot Nothing Then _Supporting3 = .Supporting3
-                If .Supporting4 IsNot Nothing Then _Supporting4 = .Supporting4
-                If .Supporting5 IsNot Nothing Then _Supporting5 = .Supporting5
-                If .Supporting6 IsNot Nothing Then _Supporting6 = .Supporting6
-                If .Supporting7 IsNot Nothing Then _Supporting7 = .Supporting7
-                If .Supporting8 IsNot Nothing Then _Supporting8 = .Supporting8
-                If .Supporting9 IsNot Nothing Then _Supporting9 = .Supporting9
+                If .ChildTag IsNot Nothing Then _ChildTag = .ChildTag
+                If .ParentTag IsNot Nothing Then _ParentTag = .ParentTag
+                If .TradeNumber <> Integer.MinValue Then _TradeNumber = .TradeNumber
+                If .EntryType <> TypeOfEntry.None Then _EntryType = .EntryType
+                If .SpotPrice <> Decimal.MinValue Then _SpotPrice = .SpotPrice
+                If .SpotATR <> Decimal.MinValue Then _SpotATR = .SpotATR
+                If .PreviousLoss <> Decimal.MinValue Then _PreviousLoss = .PreviousLoss
+                If .Remark1 IsNot Nothing Then _Remark1 = .Remark1
+                If .Remark2 IsNot Nothing Then _Remark2 = .Remark2
+                'If .Supporting7 IsNot Nothing Then _Supporting7 = .Supporting7
+                'If .Supporting8 IsNot Nothing Then _Supporting8 = .Supporting8
+                'If .Supporting9 IsNot Nothing Then _Supporting9 = .Supporting9
                 If .SupportingTradingSymbol IsNot Nothing Then _SupportingTradingSymbol = .SupportingTradingSymbol
             End With
 

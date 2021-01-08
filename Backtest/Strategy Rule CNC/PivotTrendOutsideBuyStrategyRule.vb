@@ -1,5 +1,6 @@
 ﻿Imports Algo2TradeBLL
 Imports System.Threading
+Imports Utilities.Numbers
 Imports Backtest.StrategyHelper
 
 Public Class PivotTrendOutsideBuyStrategyRule
@@ -10,6 +11,7 @@ Public Class PivotTrendOutsideBuyStrategyRule
         Inherits RuleEntities
 
         Public ATRMultiplier As Decimal
+        Public IncreaseQuantityWithHalfPremium As Boolean
     End Class
 
     Private Enum ExitType
@@ -94,45 +96,29 @@ Public Class PivotTrendOutsideBuyStrategyRule
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
             Dim optionType As String = currentTrade.SupportingTradingSymbol.Substring(currentTrade.SupportingTradingSymbol.Count - 2)
             If typeOfExit = ExitType.Target Then
-                If currentTrade.Supporting2.Contains("Fresh") Then
+                If currentTrade.EntryType = Trade.TypeOfEntry.Fresh Then      'Fresh Trade
                     Dim currentSpotTick As Payload = GetCurrentTick(_TradingSymbol, currentTickTime)
-                    If optionType = "CE" AndAlso currentSpotTick.Open >= Val(currentTrade.Supporting3) + Val(currentTrade.Supporting4) * _userInputs.ATRMultiplier Then
-                        ret = True
-                    ElseIf optionType = "PE" AndAlso currentSpotTick.Open <= Val(currentTrade.Supporting3) - Val(currentTrade.Supporting4) * _userInputs.ATRMultiplier Then
-                        ret = True
-                    End If
-                    If ret Then
-                        Dim allTrades As List(Of Trade) = _ParentStrategy.GetAllTradesByTag(currentTrade.Tag, _TradingSymbol)
-                        If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
-                            Dim lossToRecover As Decimal = currentTrade.Supporting5
-                            Dim plAchieved As Decimal = 0
-                            For Each runningTrade In allTrades
-                                If Not runningTrade.Supporting2.Contains("Fresh") Then
-                                    ret = False
-                                    Dim currentOptTick As Payload = GetCurrentTick(currentTrade.SupportingTradingSymbol, currentTickTime)
-                                    plAchieved += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.EntryPrice, currentOptTick.Open, runningTrade.Quantity, runningTrade.LotSize, runningTrade.StockType)
-                                End If
-                            Next
-                            If plAchieved >= Math.Abs(lossToRecover) Then
-                                ret = True
-                            End If
-                        End If
-                    End If
-                Else
-                    Dim lossToRecover As Decimal = currentTrade.Supporting5
-                    Dim allTrades As List(Of Trade) = _ParentStrategy.GetAllTradesByTag(currentTrade.Tag, _TradingSymbol)
-                    If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
-                        Dim plAchieved As Decimal = 0
-                        For Each runningTrade In allTrades
-                            If Not runningTrade.Supporting2.Contains("Fresh") Then
-                                Dim currentOptTick As Payload = GetCurrentTick(currentTrade.SupportingTradingSymbol, currentTickTime)
-                                plAchieved += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.EntryPrice, currentOptTick.Open, runningTrade.Quantity, runningTrade.LotSize, runningTrade.StockType)
-                            End If
-                        Next
-                        If plAchieved >= Math.Abs(lossToRecover) Then
+                    If optionType = "CE" AndAlso currentSpotTick.Open >= currentTrade.SpotPrice + currentTrade.SpotATR * _userInputs.ATRMultiplier Then
+                        Dim pl As Decimal = GetFreshTradePL(currentTrade, currentTickTime)
+                        If pl > 0 Then
                             ret = True
+                        Else
+                            If currentTrade.Remark1 Is Nothing Then
+                                currentTrade.UpdateTrade(Remark1:=String.Format("ATR Reached but PL {0}", pl))
+                            End If
+                        End If
+                    ElseIf optionType = "PE" AndAlso currentSpotTick.Open <= currentTrade.SpotPrice - currentTrade.SpotATR * _userInputs.ATRMultiplier Then
+                        Dim pl As Decimal = GetFreshTradePL(currentTrade, currentTickTime)
+                        If pl > 0 Then
+                            ret = True
+                        Else
+                            If currentTrade.Remark1 Is Nothing Then
+                                currentTrade.UpdateTrade(Remark1:=String.Format("ATR Reached but PL {0}", pl))
+                            End If
                         End If
                     End If
+                Else    'SL Makeup Trade
+                    ret = GetLossMakeupTradePL(currentTrade, currentTickTime) > Math.Abs(currentTrade.PreviousLoss)
                 End If
             ElseIf typeOfExit = ExitType.Reverse Then
                 If _pivotTrendPayload IsNot Nothing AndAlso _pivotTrendPayload.ContainsKey(_TradingDate) Then
@@ -154,6 +140,41 @@ Public Class PivotTrendOutsideBuyStrategyRule
         Return ret
     End Function
 
+    Private Function GetLossMakeupTradePL(ByVal currentTrade As Trade, ByVal currentTickTime As Date) As Decimal
+        Dim ret As Decimal = 0
+        Dim allTrades As List(Of Trade) = _ParentStrategy.GetAllTradesByChildTag(currentTrade.ChildTag, _TradingSymbol)
+        If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
+            For Each runningTrade In allTrades
+                If runningTrade.EntryType = Trade.TypeOfEntry.LossMakeup Then
+                    If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                        Dim currentOptTick As Payload = GetCurrentTick(currentTrade.SupportingTradingSymbol, currentTickTime)
+                        ret += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.EntryPrice, currentOptTick.Open, runningTrade.Quantity - runningTrade.LotSize, runningTrade.LotSize, runningTrade.StockType)
+                    Else
+                        ret += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.EntryPrice, runningTrade.ExitPrice, runningTrade.Quantity - runningTrade.LotSize, runningTrade.LotSize, runningTrade.StockType)
+                    End If
+                End If
+            Next
+        End If
+        Return ret
+    End Function
+
+    Private Function GetFreshTradePL(ByVal currentTrade As Trade, ByVal currentTickTime As Date) As Decimal
+        Dim ret As Decimal = 0
+        Dim allTrades As List(Of Trade) = _ParentStrategy.GetAllTradesByChildTag(currentTrade.ChildTag, _TradingSymbol)
+        If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
+            For Each runningTrade In allTrades
+                If runningTrade.EntryType = Trade.TypeOfEntry.Fresh Then
+                    If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                        Dim currentOptTick As Payload = GetCurrentTick(currentTrade.SupportingTradingSymbol, currentTickTime)
+                        ret += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.EntryPrice, currentOptTick.Open, runningTrade.Quantity, runningTrade.LotSize, runningTrade.StockType)
+                    Else
+                        ret += runningTrade.PLAfterBrokerage
+                    End If
+                End If
+            Next
+        End If
+        Return ret
+    End Function
 
 #Region "Public Functions"
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(ByVal currentTickTime As Date) As Task
@@ -220,7 +241,7 @@ Public Class PivotTrendOutsideBuyStrategyRule
                             Dim optionTradingSymbol As String = GetCurrentATMOption(currentTickTime, currentOptionExpiryString, currentSpotTick.Open, optionType)
 
                             currentOptTick = GetCurrentTick(optionTradingSymbol, currentTickTime)
-                            EnterDuplicateTrade(runningTrade, currentOptTick)
+                            EnterDuplicateTrade(runningTrade, currentOptTick, False)
                         End If
                     End If
                 Next
@@ -240,7 +261,7 @@ Public Class PivotTrendOutsideBuyStrategyRule
                                 _ParentStrategy.ExitTradeByForce(runningTrade, currentOptTick, "Half Premium")
 
                                 currentOptTick = GetCurrentTick(optionTradingSymbol, currentTickTime)
-                                EnterDuplicateTrade(runningTrade, currentOptTick)
+                                EnterDuplicateTrade(runningTrade, currentOptTick, True)
                             End If
                         End If
                     End If
@@ -291,46 +312,39 @@ Public Class PivotTrendOutsideBuyStrategyRule
 #Region "Place Trade"
     Private Function EnterTrade(ByVal signalCandle As Payload, ByVal currentTickTime As Date, ByVal direction As Trade.TradeExecutionDirection) As Boolean
         Dim ret As Boolean = False
-        Dim tradeID As String = System.Guid.NewGuid.ToString()
+        Dim childTag As String = System.Guid.NewGuid.ToString()
+        Dim parentTag As String = childTag
         Dim tradeNumber As Integer = 1
-        Dim remark As String = "Fresh"
+        Dim entryType As Trade.TypeOfEntry = Trade.TypeOfEntry.Fresh
         Dim lossToRecover As Decimal = 0
 
         Dim spotTick As Payload = GetCurrentTick(_TradingSymbol, currentTickTime)
-        Dim closeTrades As List(Of Trade) = _ParentStrategy.GetSpecificTrades(_TradingSymbol, _TradingDate, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Close)
-        If closeTrades IsNot Nothing AndAlso closeTrades.Count Then
-            Dim pl As Decimal = 0
-            Dim qty As Integer = 0
-            For Each runningTrade In closeTrades.OrderByDescending(Function(x)
-                                                                       Return x.EntryTime
-                                                                   End Function)
-                If runningTrade.ExitRemark.ToUpper = "TARGET HIT" Then
-                    Exit For
-                Else
-                    pl += runningTrade.PLAfterBrokerage
-                    qty += runningTrade.Quantity
+        Dim spotATR As Decimal = _atrPayload(signalCandle.PayloadDate)
+        Dim lastTrade As Trade = _ParentStrategy.GetLastEntryTradeOfTheStock(_TradingSymbol, _TradingDate, Trade.TypeOfTrade.CNC)
+        If lastTrade IsNot Nothing Then
+            Dim allTrades As List(Of Trade) = _ParentStrategy.GetAllTradesByParentTag(lastTrade.ParentTag, _TradingSymbol)
+            If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
+                Dim pl As Decimal = allTrades.Sum(Function(x)
+                                                      Return x.PLAfterBrokerage
+                                                  End Function)
+                If pl < 0 Then
+                    parentTag = lastTrade.ParentTag
+                    tradeNumber = lastTrade.TradeNumber + 1
+                    entryType = Trade.TypeOfEntry.LossMakeup
+                    lossToRecover = pl
                 End If
-            Next
-
-            If pl < 0 Then
-                'tradeID = closeTrades.LastOrDefault.Tag
-                tradeNumber = Val(closeTrades.LastOrDefault.Supporting1) + 1
-                remark = "SL Makeup + Fresh"
-                lossToRecover = pl
-
-                EnterBuyTrade(signalCandle, spotTick, tradeID, tradeNumber, "SL Makeup", direction, qty, spotTick.Open, _atrPayload(signalCandle.PayloadDate), lossToRecover)
             End If
         End If
 
-        ret = EnterBuyTrade(signalCandle, spotTick, tradeID, tradeNumber, remark, direction, _LotSize, spotTick.Open, _atrPayload(signalCandle.PayloadDate), lossToRecover)
+        ret = EnterBuyTrade(signalCandle, spotTick, spotATR, childTag, parentTag, tradeNumber, entryType, direction, lossToRecover)
 
         Return ret
     End Function
 
-    Private Function EnterBuyTrade(ByVal signalCandle As Payload, ByVal currentSpotTick As Payload,
-                                   ByVal tradeID As String, ByVal tradeNumber As Integer, ByVal remark As String,
-                                   ByVal diretion As Trade.TradeExecutionDirection, ByVal quantity As Integer,
-                                   ByVal spotPrice As Decimal, ByVal spotAtr As Decimal, ByVal previousLoss As Decimal) As Boolean
+    Private Function EnterBuyTrade(ByVal signalCandle As Payload, ByVal currentSpotTick As Payload, ByVal currentSpotATR As Decimal,
+                                   ByVal childTag As String, ByVal parentTag As String,
+                                   ByVal tradeNumber As Integer, ByVal entryType As Trade.TypeOfEntry,
+                                   ByVal diretion As Trade.TradeExecutionDirection, ByVal previousLoss As Decimal) As Boolean
         Dim ret As Boolean = False
         Dim currentMinute As Date = _ParentStrategy.GetCurrentXMinuteCandleTime(currentSpotTick.PayloadDate)
         Dim optionExpiryString As String = GetOptionInstrumentExpiryString(_TradingSymbol, _NextTradingDay)
@@ -344,6 +358,19 @@ Public Class PivotTrendOutsideBuyStrategyRule
         If currentOptionTradingSymbol IsNot Nothing Then
             Dim currentOptTick As Payload = GetCurrentTick(currentOptionTradingSymbol, currentSpotTick.PayloadDate)
             If currentOptTick IsNot Nothing Then
+                Dim quantity As Integer = _LotSize
+                If entryType = Trade.TypeOfEntry.LossMakeup Then
+                    Dim entryPrice As Decimal = currentOptTick.Open
+                    Dim targetPrice As Decimal = ConvertFloorCeling(entryPrice + currentSpotATR / 2, _ParentStrategy.TickSize, RoundOfType.Celing)
+                    For ctr As Integer = 1 To Integer.MaxValue
+                        Dim pl As Decimal = _ParentStrategy.CalculatePL(_TradingSymbol, entryPrice, targetPrice, ctr * _LotSize, _LotSize, Trade.TypeOfStock.Options)
+                        If pl >= Math.Abs(previousLoss) Then
+                            quantity = ctr * _LotSize + _LotSize
+                            Exit For
+                        End If
+                    Next
+                End If
+
                 Dim runningOptTrade As Trade = New Trade(originatingStrategy:=_ParentStrategy,
                                                          tradingSymbol:=_TradingSymbol,
                                                          stockType:=Trade.TypeOfStock.Options,
@@ -364,12 +391,13 @@ Public Class PivotTrendOutsideBuyStrategyRule
                                                          slRemark:=100000,
                                                          signalCandle:=signalCandle)
 
-                runningOptTrade.UpdateTrade(Tag:=tradeID,
-                                            Supporting1:=tradeNumber,
-                                            Supporting2:=remark,
-                                            Supporting3:=spotPrice,
-                                            Supporting4:=spotAtr,
-                                            Supporting5:=previousLoss,
+                runningOptTrade.UpdateTrade(ChildTag:=childTag,
+                                            ParentTag:=parentTag,
+                                            TradeNumber:=tradeNumber,
+                                            EntryType:=entryType,
+                                            SpotPrice:=currentSpotTick.Open,
+                                            SpotATR:=currentSpotATR,
+                                            PreviousLoss:=previousLoss,
                                             SupportingTradingSymbol:=currentOptionTradingSymbol)
 
                 If _ParentStrategy.PlaceOrModifyOrder(runningOptTrade, Nothing) Then
@@ -385,43 +413,54 @@ Public Class PivotTrendOutsideBuyStrategyRule
         Return ret
     End Function
 
-    Private Function EnterDuplicateTrade(ByVal existingTrade As Trade, ByVal currentTick As Payload) As Boolean
+    Private Function EnterDuplicateTrade(ByVal existingTrade As Trade, ByVal currentTick As Payload, ByVal increaseQuantityIfRequired As Boolean) As Boolean
         Dim ret As Boolean = False
         Try
-            Dim runningFutTrade As Trade = New Trade(originatingStrategy:=_ParentStrategy,
-                                                      tradingSymbol:=existingTrade.TradingSymbol,
-                                                      stockType:=existingTrade.StockType,
-                                                      orderType:=Trade.TypeOfOrder.Market,
-                                                      tradingDate:=currentTick.PayloadDate,
-                                                      entryDirection:=existingTrade.EntryDirection,
-                                                      entryPrice:=currentTick.Open,
-                                                      entryBuffer:=0,
-                                                      squareOffType:=Trade.TypeOfTrade.CNC,
-                                                      entryCondition:=Trade.TradeEntryCondition.Original,
-                                                      entryRemark:="Original Entry",
-                                                      quantity:=existingTrade.Quantity,
-                                                      lotSize:=existingTrade.LotSize,
-                                                      potentialTarget:=currentTick.Open + 100000,
-                                                      targetRemark:=100000,
-                                                      potentialStopLoss:=currentTick.Open - 100000,
-                                                      stoplossBuffer:=0,
-                                                      slRemark:=100000,
-                                                      signalCandle:=existingTrade.SignalCandle)
+            Dim quantity As Integer = existingTrade.Quantity
+            Dim remark As String = Nothing
+            If increaseQuantityIfRequired AndAlso _userInputs.IncreaseQuantityWithHalfPremium Then
+                Dim increasedCapital As Decimal = currentTick.Open * quantity * 2
+                If increasedCapital <= existingTrade.CapitalRequiredWithMargin * 120 / 100 Then
+                    quantity = quantity * 2
+                Else
+                    remark = "Unable to increase quantity"
+                End If
+            End If
+            Dim runningTrade As Trade = New Trade(originatingStrategy:=_ParentStrategy,
+                                                    tradingSymbol:=existingTrade.TradingSymbol,
+                                                    stockType:=existingTrade.StockType,
+                                                    orderType:=Trade.TypeOfOrder.Market,
+                                                    tradingDate:=currentTick.PayloadDate,
+                                                    entryDirection:=existingTrade.EntryDirection,
+                                                    entryPrice:=currentTick.Open,
+                                                    entryBuffer:=0,
+                                                    squareOffType:=Trade.TypeOfTrade.CNC,
+                                                    entryCondition:=Trade.TradeEntryCondition.Original,
+                                                    entryRemark:="Original Entry",
+                                                    quantity:=quantity,
+                                                    lotSize:=existingTrade.LotSize,
+                                                    potentialTarget:=currentTick.Open + 100000,
+                                                    targetRemark:=100000,
+                                                    potentialStopLoss:=currentTick.Open - 100000,
+                                                    stoplossBuffer:=0,
+                                                    slRemark:=100000,
+                                                    signalCandle:=existingTrade.SignalCandle)
 
-            runningFutTrade.UpdateTrade(Tag:=existingTrade.Tag,
-                                        Supporting1:=existingTrade.Supporting1,
-                                        Supporting2:=existingTrade.Supporting2,
-                                        Supporting3:=existingTrade.Supporting3,
-                                        Supporting4:=existingTrade.Supporting4,
-                                        Supporting5:=existingTrade.Supporting5,
-                                        Supporting6:=existingTrade.Supporting6,
-                                        Supporting7:=existingTrade.Supporting7,
-                                        Supporting8:=existingTrade.Supporting8,
-                                        Supporting9:=existingTrade.Supporting9,
-                                        SupportingTradingSymbol:=currentTick.TradingSymbol)
+            runningTrade.UpdateTrade(ChildTag:=existingTrade.ChildTag,
+                                    ParentTag:=existingTrade.ParentTag,
+                                    TradeNumber:=existingTrade.TradeNumber,
+                                    EntryType:=existingTrade.EntryType,
+                                    SpotPrice:=existingTrade.SpotPrice,
+                                    SpotATR:=existingTrade.SpotATR,
+                                    PreviousLoss:=existingTrade.PreviousLoss,
+                                    SupportingTradingSymbol:=currentTick.TradingSymbol)
 
-            If _ParentStrategy.PlaceOrModifyOrder(runningFutTrade, Nothing) Then
-                ret = _ParentStrategy.EnterTradeIfPossible(runningFutTrade.TradingSymbol, _TradingDate, runningFutTrade, currentTick)
+            If remark IsNot Nothing AndAlso remark.Trim <> "" Then
+                runningTrade.UpdateTrade(Remark2:=remark)
+            End If
+
+            If _ParentStrategy.PlaceOrModifyOrder(runningTrade, Nothing) Then
+                ret = _ParentStrategy.EnterTradeIfPossible(runningTrade.TradingSymbol, _TradingDate, runningTrade, currentTick)
             End If
         Catch ex As Exception
             Throw ex
@@ -443,12 +482,12 @@ Public Class PivotTrendOutsideBuyStrategyRule
         Dim ret As String = Nothing
         Dim query As String = Nothing
         query = "SELECT `TradingSymbol`,SUM(`Volume`) Vol
-                        FROM `intraday_prices_opt_futures`
-                        WHERE `SnapshotDate`='{0}'
-                        AND `SnapshotTime`<='{1}'
-                        AND `TradingSymbol` LIKE '{2}%{3}'
-                        GROUP BY `TradingSymbol`
-                        ORDER BY Vol DESC"
+                FROM `intraday_prices_opt_futures`
+                WHERE `SnapshotDate`='{0}'
+                AND `SnapshotTime`<='{1}'
+                AND `TradingSymbol` LIKE '{2}%{3}'
+                GROUP BY `TradingSymbol`
+                ORDER BY Vol DESC"
         query = String.Format(query, currentTickTime.ToString("yyyy-MM-dd"), currentTickTime.AddMinutes(-1).ToString("HH:mm:ss"), expiryString, "PE")
 
         Dim dt As DataTable = _ParentStrategy.Cmn.RunSelect(query)
@@ -463,10 +502,51 @@ Public Class PivotTrendOutsideBuyStrategyRule
                 End If
             Next
             If contracts IsNot Nothing AndAlso contracts.Count > 0 Then
+                Dim upperContract As Dictionary(Of Decimal, Long) = Nothing
+                For Each runningContract In contracts.OrderBy(Function(x)
+                                                                  Return x.Key
+                                                              End Function)
+                    If runningContract.Key >= price Then
+                        If upperContract Is Nothing Then upperContract = New Dictionary(Of Decimal, Long)
+                        upperContract.Add(runningContract.Key, runningContract.Value)
+
+                        If upperContract.Count >= 2 Then Exit For
+                    End If
+                Next
+
+                Dim lowerContract As Dictionary(Of Decimal, Long) = Nothing
+                For Each runningContract In contracts.OrderByDescending(Function(x)
+                                                                            Return x.Key
+                                                                        End Function)
+                    If runningContract.Key <= price Then
+                        If lowerContract Is Nothing Then lowerContract = New Dictionary(Of Decimal, Long)
+                        lowerContract.Add(runningContract.Key, runningContract.Value)
+
+                        If lowerContract.Count >= 2 Then Exit For
+                    End If
+                Next
+
+                Dim sumVol As Long = 0
+                Dim count As Integer = 0
+                If upperContract IsNot Nothing AndAlso upperContract.Count > 0 Then
+                    sumVol += upperContract.Sum(Function(x)
+                                                    Return x.Value
+                                                End Function)
+                    count += upperContract.Count
+                End If
+                If lowerContract IsNot Nothing AndAlso lowerContract.Count > 0 Then
+                    sumVol += lowerContract.Sum(Function(x)
+                                                    Return x.Value
+                                                End Function)
+                    count += lowerContract.Count
+                End If
+                Dim avgVol As Decimal = sumVol
+                If count > 0 Then avgVol = sumVol / count
+
                 For Each runningContract In contracts.OrderByDescending(Function(x)
                                                                             Return x.Value
                                                                         End Function)
-                    If runningContract.Key <= price Then
+                    If runningContract.Key <= price AndAlso runningContract.Value >= avgVol Then
                         ret = String.Format("{0}{1}PE", expiryString, runningContract.Key)
                         Exit For
                     End If
@@ -480,12 +560,12 @@ Public Class PivotTrendOutsideBuyStrategyRule
         Dim ret As String = Nothing
         Dim query As String = Nothing
         query = "SELECT `TradingSymbol`,SUM(`Volume`) Vol
-                        FROM `intraday_prices_opt_futures`
-                        WHERE `SnapshotDate`='{0}'
-                        AND `SnapshotTime`<='{1}'
-                        AND `TradingSymbol` LIKE '{2}%{3}'
-                        GROUP BY `TradingSymbol`
-                        ORDER BY Vol DESC"
+                FROM `intraday_prices_opt_futures`
+                WHERE `SnapshotDate`='{0}'
+                AND `SnapshotTime`<='{1}'
+                AND `TradingSymbol` LIKE '{2}%{3}'
+                GROUP BY `TradingSymbol`
+                ORDER BY Vol DESC"
         query = String.Format(query, currentTickTime.ToString("yyyy-MM-dd"), currentTickTime.AddMinutes(-1).ToString("HH:mm:ss"), expiryString, "CE")
 
         Dim dt As DataTable = _ParentStrategy.Cmn.RunSelect(query)
@@ -500,10 +580,51 @@ Public Class PivotTrendOutsideBuyStrategyRule
                 End If
             Next
             If contracts IsNot Nothing AndAlso contracts.Count > 0 Then
+                Dim upperContract As Dictionary(Of Decimal, Long) = Nothing
+                For Each runningContract In contracts.OrderBy(Function(x)
+                                                                  Return x.Key
+                                                              End Function)
+                    If runningContract.Key >= price Then
+                        If upperContract Is Nothing Then upperContract = New Dictionary(Of Decimal, Long)
+                        upperContract.Add(runningContract.Key, runningContract.Value)
+
+                        If upperContract.Count >= 2 Then Exit For
+                    End If
+                Next
+
+                Dim lowerContract As Dictionary(Of Decimal, Long) = Nothing
+                For Each runningContract In contracts.OrderByDescending(Function(x)
+                                                                            Return x.Key
+                                                                        End Function)
+                    If runningContract.Key <= price Then
+                        If lowerContract Is Nothing Then lowerContract = New Dictionary(Of Decimal, Long)
+                        lowerContract.Add(runningContract.Key, runningContract.Value)
+
+                        If lowerContract.Count >= 2 Then Exit For
+                    End If
+                Next
+
+                Dim sumVol As Long = 0
+                Dim count As Integer = 0
+                If upperContract IsNot Nothing AndAlso upperContract.Count > 0 Then
+                    sumVol += upperContract.Sum(Function(x)
+                                                    Return x.Value
+                                                End Function)
+                    count += upperContract.Count
+                End If
+                If lowerContract IsNot Nothing AndAlso lowerContract.Count > 0 Then
+                    sumVol += lowerContract.Sum(Function(x)
+                                                    Return x.Value
+                                                End Function)
+                    count += lowerContract.Count
+                End If
+                Dim avgVol As Decimal = sumVol
+                If count > 0 Then avgVol = sumVol / count
+
                 For Each runningContract In contracts.OrderByDescending(Function(x)
                                                                             Return x.Value
                                                                         End Function)
-                    If runningContract.Key >= price Then
+                    If runningContract.Key >= price AndAlso runningContract.Value >= avgVol Then
                         ret = String.Format("{0}{1}CE", expiryString, runningContract.Key)
                         Exit For
                     End If

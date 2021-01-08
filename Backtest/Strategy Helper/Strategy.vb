@@ -235,7 +235,7 @@ Namespace StrategyHelper
                                                                                                                 End Function)
                     If tradeList IsNot Nothing AndAlso tradeList.Count > 0 Then
                         Dim artnrGroups = From a In tradeList
-                                          Group a By Key = a.Tag Into Group
+                                          Group a By Key = a.ChildTag Into Group
                                           Select artnr = Key, numbersCount = Group.Count()
 
                         If artnrGroups IsNot Nothing AndAlso artnrGroups.Count > 0 Then
@@ -261,7 +261,7 @@ Namespace StrategyHelper
                                                                                                                 End Function)
                     If tradeList IsNot Nothing AndAlso tradeList.Count > 0 Then
                         Dim artnrGroups = From a In tradeList
-                                          Group a By Key = a.Tag Into Group
+                                          Group a By Key = a.ChildTag Into Group
                                           Select artnr = Key, numbersCount = Group.Count()
 
                         If artnrGroups IsNot Nothing AndAlso artnrGroups.Count > 0 Then
@@ -283,7 +283,7 @@ Namespace StrategyHelper
                                                                                                                 End Function)
                     If tradeList IsNot Nothing AndAlso tradeList.Count > 0 Then
                         Dim artnrGroups = From a In tradeList
-                                          Group a By Key = a.Tag Into Group
+                                          Group a By Key = a.ChildTag Into Group
                                           Select artnr = Key, numbersCount = Group.Count()
 
                         If artnrGroups IsNot Nothing AndAlso artnrGroups.Count > 0 Then
@@ -318,7 +318,7 @@ Namespace StrategyHelper
                                                                                                                         End Function)
                     If beakevenTradeList IsNot Nothing AndAlso beakevenTradeList.Count > 0 Then
                         Dim artnrGroups = From a In beakevenTradeList
-                                          Group a By Key = a.Tag Into Group
+                                          Group a By Key = a.ChildTag Into Group
                                           Select artnr = Key, numbersCount = Group.Count()
 
                         If artnrGroups IsNot Nothing AndAlso artnrGroups.Count > 0 Then
@@ -621,14 +621,33 @@ Namespace StrategyHelper
             Return ret
         End Function
 
-        Public Function GetAllTradesByTag(ByVal tag As String, ByVal tradingSymbol As String) As List(Of Trade)
+        Public Function GetAllTradesByChildTag(ByVal tag As String, ByVal tradingSymbol As String) As List(Of Trade)
             Dim ret As List(Of Trade) = Nothing
             If tradingSymbol IsNot Nothing Then
                 If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
                     For Each runningDate In TradesTaken.Keys
                         If TradesTaken(runningDate).ContainsKey(tradingSymbol) Then
                             For Each runningTrade In TradesTaken(runningDate)(tradingSymbol)
-                                If runningTrade.Tag = tag Then
+                                If runningTrade.ChildTag = tag Then
+                                    If ret Is Nothing Then ret = New List(Of Trade)
+                                    ret.Add(runningTrade)
+                                End If
+                            Next
+                        End If
+                    Next
+                End If
+            End If
+            Return ret
+        End Function
+
+        Public Function GetAllTradesByParentTag(ByVal tag As String, ByVal tradingSymbol As String) As List(Of Trade)
+            Dim ret As List(Of Trade) = Nothing
+            If tradingSymbol IsNot Nothing Then
+                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
+                    For Each runningDate In TradesTaken.Keys
+                        If TradesTaken(runningDate).ContainsKey(tradingSymbol) Then
+                            For Each runningTrade In TradesTaken(runningDate)(tradingSymbol)
+                                If runningTrade.ParentTag = tag Then
                                     If ret Is Nothing Then ret = New List(Of Trade)
                                     ret.Add(runningTrade)
                                 End If
@@ -1018,11 +1037,11 @@ Namespace StrategyHelper
                             For Each runningStock In runningDate.Value
                                 If runningStock.Value IsNot Nothing AndAlso runningStock.Value.Count > 0 Then
                                     For Each runningTrade In runningStock.Value
-                                        If Not distinctTagList.Contains(runningTrade.Tag) Then
-                                            distinctTagList.Add(runningTrade.Tag)
+                                        If Not distinctTagList.Contains(runningTrade.ChildTag) Then
+                                            distinctTagList.Add(runningTrade.ChildTag)
                                         End If
                                         If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-                                            runningTradeTag = runningTrade.Tag
+                                            runningTradeTag = runningTrade.ChildTag
                                         End If
                                     Next
                                 End If
@@ -1043,7 +1062,7 @@ Namespace StrategyHelper
                                 For Each runningStock In runningDate.Value
                                     If runningStock.Value IsNot Nothing AndAlso runningStock.Value.Count > 0 Then
                                         For Each runningTrade In runningStock.Value
-                                            If runningTrade.Tag = runningTradeTag Then
+                                            If runningTrade.ChildTag = runningTradeTag Then
                                                 plToDeduct += runningTrade.PLAfterBrokerage
                                             End If
                                         Next
@@ -1156,13 +1175,16 @@ Namespace StrategyHelper
                                 mainRawData(rowCtr, colCtr) = "Month"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Tag"
+                                mainRawData(rowCtr, colCtr) = "Child Tag"
+                                colCtr += 1
+                                If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
+                                mainRawData(rowCtr, colCtr) = "Parent Tag"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                 mainRawData(rowCtr, colCtr) = "Trade Number"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Ramark"
+                                mainRawData(rowCtr, colCtr) = "Entry Type"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                 mainRawData(rowCtr, colCtr) = "Spot Price"
@@ -1171,19 +1193,13 @@ Namespace StrategyHelper
                                 mainRawData(rowCtr, colCtr) = "Spot ATR"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Supporting 5"
+                                mainRawData(rowCtr, colCtr) = "Previous Loss"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Supporting 6"
+                                mainRawData(rowCtr, colCtr) = "Remark1"
                                 colCtr += 1
                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Supporting 7"
-                                colCtr += 1
-                                If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Supporting 8"
-                                colCtr += 1
-                                If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                mainRawData(rowCtr, colCtr) = "Supporting 9"
+                                mainRawData(rowCtr, colCtr) = "Remark2"
 
                                 rowCtr += 1
                             End If
@@ -1273,34 +1289,31 @@ Namespace StrategyHelper
                                                     mainRawData(rowCtr, colCtr) = String.Format("{0}-{1}", tradeTaken.TradingDate.ToString("yyyy"), tradeTaken.TradingDate.ToString("MM"))
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.Tag
+                                                    mainRawData(rowCtr, colCtr) = tradeTaken.ChildTag
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.Supporting1
+                                                    mainRawData(rowCtr, colCtr) = tradeTaken.ParentTag
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.Supporting2
+                                                    mainRawData(rowCtr, colCtr) = tradeTaken.TradeNumber
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.Supporting3
+                                                    mainRawData(rowCtr, colCtr) = tradeTaken.EntryType.ToString
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.Supporting4
+                                                    mainRawData(rowCtr, colCtr) = tradeTaken.SpotPrice
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.Supporting5
+                                                    mainRawData(rowCtr, colCtr) = tradeTaken.SpotATR
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.Supporting6
+                                                    mainRawData(rowCtr, colCtr) = tradeTaken.PreviousLoss
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.Supporting7
+                                                    mainRawData(rowCtr, colCtr) = tradeTaken.Remark1
                                                     colCtr += 1
                                                     If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.Supporting8
-                                                    colCtr += 1
-                                                    If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                    mainRawData(rowCtr, colCtr) = tradeTaken.Supporting9
+                                                    mainRawData(rowCtr, colCtr) = tradeTaken.Remark2
 
                                                     rowCtr += 1
                                                 Next

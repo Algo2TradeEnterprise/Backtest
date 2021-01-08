@@ -219,7 +219,7 @@ Public Class frmMain
     Private _canceller As CancellationTokenSource
 
     Private Sub frmMain_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        If cmbRule.Items.Count >= My.Settings.Rule Then
+        If cmbRule.Items.Count > My.Settings.Rule Then
             cmbRule.SelectedIndex = My.Settings.Rule
         Else
             cmbRule.SelectedIndex = 0
@@ -327,20 +327,16 @@ Public Class frmMain
 
                     Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
                         Case 0
-                            .RuleEntityData = New HKStrongOutsideBuyStrategyRule.StrategyRuleEntities With
-                                {
-                                 .ATRMultiplier = 1
-                                }
-                        Case 1
                             .RuleEntityData = New PivotTrendOutsideBuyStrategyRule.StrategyRuleEntities With
                                 {
-                                 .ATRMultiplier = 1
+                                 .ATRMultiplier = 1,
+                                 .IncreaseQuantityWithHalfPremium = False
                                 }
                         Case Else
                             Throw New NotImplementedException
                     End Select
 
-                    .NumberOfTradeableStockPerDay = 5
+                    .NumberOfTradeableStockPerDay = 1
 
                     .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
@@ -364,11 +360,8 @@ Public Class frmMain
                 Dim filename As String = String.Format("Option Buy")
                 Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
                     Case 0
-                        Dim ruleData As HKStrongOutsideBuyStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                        filename = String.Format("HK Strong Option Buy")
-                    Case 1
                         Dim ruleData As PivotTrendOutsideBuyStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                        filename = String.Format("Pivot Trend Option Buy")
+                        filename = String.Format("Pivot Trend Option Buy,HlfPrmIncrs {0}", ruleData.IncreaseQuantityWithHalfPremium)
                     Case Else
                         Throw New NotImplementedException
                 End Select

@@ -127,8 +127,6 @@ Namespace StrategyHelper
 
                                     Select Case Me.RuleNumber
                                         Case 0
-                                            stockRule = New HKStrongOutsideBuyStrategyRule(tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me.RuleEntityData, Me, _canceller, XDayOneMinutePayload)
-                                        Case 1
                                             stockRule = New PivotTrendOutsideBuyStrategyRule(tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me.RuleEntityData, Me, _canceller, XDayOneMinutePayload)
                                         Case Else
                                             Throw New NotImplementedException
@@ -232,9 +230,12 @@ Namespace StrategyHelper
                             End If
                             Dim lotSize As Integer = runningRow.Item("Lot Size")
 
+                            'Dim detailsOfStock As StockDetails = New StockDetails With
+                            '            {.TradingSymbol = tradingSymbol,
+                            '             .LotSize = lotSize}
                             Dim detailsOfStock As StockDetails = New StockDetails With
-                                        {.TradingSymbol = tradingSymbol,
-                                         .LotSize = lotSize}
+                                        {.TradingSymbol = "ICICIBANK",
+                                         .LotSize = 1375}
 
                             If ret Is Nothing Then ret = New List(Of StockDetails)
                             ret.Add(detailsOfStock)
