@@ -332,7 +332,7 @@ Public Class frmMain
                                  .ATRMultiplier = 1,
                                  .SpotToOptionDelta = 1,
                                  .MartingaleOnLossMakeup = True,
-                                 .IncreaseQuantityWithHalfPremium = False
+                                 .ExitAtATRPL = False
                                 }
                         Case Else
                             Throw New NotImplementedException
@@ -363,7 +363,8 @@ Public Class frmMain
                 Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
                     Case 0
                         Dim ruleData As PivotTrendOutsideBuyStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                        filename = String.Format("Pivot Trend Option Buy,Mrtgl {0}", ruleData.MartingaleOnLossMakeup)
+                        filename = String.Format("Pivot Trend Option Buy,Mrtgl {0}, ExtATRPL {1}",
+                                                 ruleData.MartingaleOnLossMakeup, ruleData.ExitAtATRPL)
                     Case Else
                         Throw New NotImplementedException
                 End Select

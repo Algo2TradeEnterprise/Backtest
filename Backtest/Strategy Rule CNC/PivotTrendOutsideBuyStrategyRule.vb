@@ -12,7 +12,7 @@ Public Class PivotTrendOutsideBuyStrategyRule
 
         Public ATRMultiplier As Decimal
         Public SpotToOptionDelta As Decimal
-        Public IncreaseQuantityWithHalfPremium As Boolean
+        Public ExitAtATRPL As Boolean
         Public MartingaleOnLossMakeup As Boolean
     End Class
 
@@ -205,13 +205,17 @@ Public Class PivotTrendOutsideBuyStrategyRule
             For Each runningTrade In availableTrades
                 If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
                     Dim currentFOTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
-                    If runningTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                        If currentFOTick.Open > runningTrade.MaxDrawUp Then runningTrade.MaxDrawUp = currentFOTick.Open
-                        If currentFOTick.Open < runningTrade.MaxDrawDown Then runningTrade.MaxDrawDown = currentFOTick.Open
-                    ElseIf runningTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                        If currentFOTick.Open < runningTrade.MaxDrawUp Then runningTrade.MaxDrawUp = currentFOTick.Open
-                        If currentFOTick.Open > runningTrade.MaxDrawDown Then runningTrade.MaxDrawDown = currentFOTick.Open
-                    End If
+                    Try
+                        If runningTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                            If currentFOTick.Open > runningTrade.MaxDrawUp Then runningTrade.MaxDrawUp = currentFOTick.Open
+                            If currentFOTick.Open < runningTrade.MaxDrawDown Then runningTrade.MaxDrawDown = currentFOTick.Open
+                        ElseIf runningTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                            If currentFOTick.Open < runningTrade.MaxDrawUp Then runningTrade.MaxDrawUp = currentFOTick.Open
+                            If currentFOTick.Open > runningTrade.MaxDrawDown Then runningTrade.MaxDrawDown = currentFOTick.Open
+                        End If
+                    Catch ex As Exception
+                        Throw ex
+                    End Try
                 End If
             Next
 
@@ -376,6 +380,7 @@ Public Class PivotTrendOutsideBuyStrategyRule
                         For ctr As Integer = 1 To Integer.MaxValue
                             Dim pl As Decimal = _ParentStrategy.CalculatePL(_TradingSymbol, entryPrice, targetPrice, ctr * _LotSize, _LotSize, Trade.TypeOfStock.Options)
                             If pl >= Math.Abs(previousLoss) Then
+                                If _userInputs.ExitAtATRPL Then previousLoss = (pl - 1) * -1
                                 quantity = ctr * _LotSize + _LotSize
                                 Exit For
                             End If
@@ -433,14 +438,14 @@ Public Class PivotTrendOutsideBuyStrategyRule
         Try
             Dim quantity As Integer = existingTrade.Quantity
             Dim remark As String = Nothing
-            If increaseQuantityIfRequired AndAlso _userInputs.IncreaseQuantityWithHalfPremium Then
-                Dim increasedCapital As Decimal = currentTick.Open * quantity * 2
-                If increasedCapital <= existingTrade.CapitalRequiredWithMargin * 120 / 100 Then
-                    quantity = quantity * 2
-                Else
-                    remark = "Unable to increase quantity"
-                End If
-            End If
+            'If increaseQuantityIfRequired AndAlso _userInputs.IncreaseQuantityWithHalfPremium Then
+            '    Dim increasedCapital As Decimal = currentTick.Open * quantity * 2
+            '    If increasedCapital <= existingTrade.CapitalRequiredWithMargin * 120 / 100 Then
+            '        quantity = quantity * 2
+            '    Else
+            '        remark = "Unable to increase quantity"
+            '    End If
+            'End If
             Dim runningTrade As Trade = New Trade(originatingStrategy:=_ParentStrategy,
                                                     tradingSymbol:=existingTrade.TradingSymbol,
                                                     stockType:=existingTrade.StockType,
