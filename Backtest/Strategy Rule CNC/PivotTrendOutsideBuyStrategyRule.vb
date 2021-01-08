@@ -244,7 +244,7 @@ Public Class PivotTrendOutsideBuyStrategyRule
                             _ParentStrategy.ExitTradeByForce(runningTrade, currentOptTick, "Contract Rollover")
 
                             Dim optionType As String = runningTrade.SupportingTradingSymbol.Substring(runningTrade.SupportingTradingSymbol.Count - 2)
-                            Dim optionTradingSymbol As String = GetCurrentATMOption(currentTickTime, currentOptionExpiryString, currentSpotTick.Open, optionType)
+                            Dim optionTradingSymbol As String = GetCurrentATMOption(currentTickTime, currentOptionExpiryString, currentSpotTick.Open, optionType, runningTrade.SpotATR)
 
                             currentOptTick = GetCurrentTick(optionTradingSymbol, currentTickTime)
                             EnterDuplicateTrade(runningTrade, currentOptTick, False)
@@ -262,7 +262,7 @@ Public Class PivotTrendOutsideBuyStrategyRule
                             Dim currentSpotTick As Payload = GetCurrentTick(_TradingSymbol, currentTickTime)
                             Dim currentOptionExpiryString As String = GetOptionInstrumentExpiryString(_TradingSymbol, _TradingDate)
                             Dim optionType As String = runningTrade.SupportingTradingSymbol.Substring(runningTrade.SupportingTradingSymbol.Count - 2)
-                            Dim optionTradingSymbol As String = GetCurrentATMOption(currentTickTime, currentOptionExpiryString, currentSpotTick.Open, optionType)
+                            Dim optionTradingSymbol As String = GetCurrentATMOption(currentTickTime, currentOptionExpiryString, currentSpotTick.Open, optionType, runningTrade.SpotATR)
                             If optionTradingSymbol <> runningTrade.SupportingTradingSymbol Then
                                 _ParentStrategy.ExitTradeByForce(runningTrade, currentOptTick, "Half Premium")
 
@@ -356,9 +356,9 @@ Public Class PivotTrendOutsideBuyStrategyRule
         Dim optionExpiryString As String = GetOptionInstrumentExpiryString(_TradingSymbol, _NextTradingDay)
         Dim currentOptionTradingSymbol As String = Nothing
         If diretion = Trade.TradeExecutionDirection.Buy Then
-            currentOptionTradingSymbol = GetCurrentATMOption(currentSpotTick.PayloadDate, optionExpiryString, currentSpotTick.Open, "CE")
+            currentOptionTradingSymbol = GetCurrentATMOption(currentSpotTick.PayloadDate, optionExpiryString, currentSpotTick.Open, "CE", currentSpotATR)
         ElseIf diretion = Trade.TradeExecutionDirection.Sell Then
-            currentOptionTradingSymbol = GetCurrentATMOption(currentSpotTick.PayloadDate, optionExpiryString, currentSpotTick.Open, "PE")
+            currentOptionTradingSymbol = GetCurrentATMOption(currentSpotTick.PayloadDate, optionExpiryString, currentSpotTick.Open, "PE", currentSpotATR)
         End If
 
         If currentOptionTradingSymbol IsNot Nothing Then
@@ -482,15 +482,15 @@ Public Class PivotTrendOutsideBuyStrategyRule
 #End Region
 
 #Region "Contract Helper"
-    Private Function GetCurrentATMOption(ByVal currentTickTime As Date, ByVal expiryString As String, ByVal price As Decimal, ByVal optionType As String) As String
+    Private Function GetCurrentATMOption(ByVal currentTickTime As Date, ByVal expiryString As String, ByVal price As Decimal, ByVal optionType As String, ByVal atr As Decimal) As String
         If optionType = "PE" Then
-            Return GetCurrentATMPEOption(currentTickTime, expiryString, price)
+            Return GetCurrentATMPEOption(currentTickTime, expiryString, price, atr)
         Else
-            Return GetCurrentATMCEOption(currentTickTime, expiryString, price)
+            Return GetCurrentATMCEOption(currentTickTime, expiryString, price, atr)
         End If
     End Function
 
-    Private Function GetCurrentATMPEOption(ByVal currentTickTime As Date, ByVal expiryString As String, ByVal price As Decimal) As String
+    Private Function GetCurrentATMPEOption(ByVal currentTickTime As Date, ByVal expiryString As String, ByVal price As Decimal, ByVal atr As Decimal) As String
         Dim ret As String = Nothing
         Dim query As String = Nothing
         query = "SELECT `TradingSymbol`,SUM(`Volume`) Vol
@@ -514,80 +514,20 @@ Public Class PivotTrendOutsideBuyStrategyRule
                 End If
             Next
             If contracts IsNot Nothing AndAlso contracts.Count > 0 Then
-                Dim upperContract As Dictionary(Of Decimal, Long) = Nothing
-                For Each runningContract In contracts.OrderBy(Function(x)
-                                                                  Return x.Key
-                                                              End Function)
-                    If runningContract.Key >= price Then
-                        If upperContract Is Nothing Then upperContract = New Dictionary(Of Decimal, Long)
-                        upperContract.Add(runningContract.Key, runningContract.Value)
-
-                        If upperContract.Count >= 2 Then Exit For
-                    End If
-                Next
-
-                Dim lowerContract As Dictionary(Of Decimal, Long) = Nothing
                 For Each runningContract In contracts.OrderByDescending(Function(x)
                                                                             Return x.Key
                                                                         End Function)
-                    If runningContract.Key <= price Then
-                        If lowerContract Is Nothing Then lowerContract = New Dictionary(Of Decimal, Long)
-                        lowerContract.Add(runningContract.Key, runningContract.Value)
-
-                        If lowerContract.Count >= 2 Then Exit For
-                    End If
-                Next
-
-                Dim sumVol As Long = 0
-                Dim count As Integer = 0
-                Dim volList As List(Of Long) = Nothing
-                If upperContract IsNot Nothing AndAlso upperContract.Count > 0 Then
-                    sumVol += upperContract.Sum(Function(x)
-                                                    Return x.Value
-                                                End Function)
-                    count += upperContract.Count
-                    If volList Is Nothing Then volList = New List(Of Long)
-                    volList.AddRange(upperContract.Values.ToList)
-                End If
-                If lowerContract IsNot Nothing AndAlso lowerContract.Count > 0 Then
-                    sumVol += lowerContract.Sum(Function(x)
-                                                    Return x.Value
-                                                End Function)
-                    count += lowerContract.Count
-                    If volList Is Nothing Then volList = New List(Of Long)
-                    volList.AddRange(lowerContract.Values.ToList)
-                End If
-                Dim avgVol As Decimal = sumVol
-                If count > 0 Then
-                    avgVol = sumVol / count
-                    Dim std As Long = CalculateStandardDeviationPA(volList.ToArray())
-                    avgVol = avgVol - std
-                End If
-
-                For Each runningContract In contracts.OrderByDescending(Function(x)
-                                                                            Return x.Key
-                                                                        End Function)
-                    If runningContract.Key <= price AndAlso runningContract.Value >= avgVol Then
+                    If runningContract.Key <= price - atr Then
                         ret = String.Format("{0}{1}PE", expiryString, runningContract.Key)
                         Exit For
                     End If
                 Next
-                If ret Is Nothing Then
-                    For Each runningContract In contracts.OrderByDescending(Function(x)
-                                                                                Return x.Key
-                                                                            End Function)
-                        If runningContract.Key <= price Then
-                            ret = String.Format("{0}{1}PE", expiryString, runningContract.Key)
-                            Exit For
-                        End If
-                    Next
-                End If
             End If
         End If
         Return ret
     End Function
 
-    Private Function GetCurrentATMCEOption(ByVal currentTickTime As Date, ByVal expiryString As String, ByVal price As Decimal) As String
+    Private Function GetCurrentATMCEOption(ByVal currentTickTime As Date, ByVal expiryString As String, ByVal price As Decimal, ByVal atr As Decimal) As String
         Dim ret As String = Nothing
         Dim query As String = Nothing
         query = "SELECT `TradingSymbol`,SUM(`Volume`) Vol
@@ -611,74 +551,14 @@ Public Class PivotTrendOutsideBuyStrategyRule
                 End If
             Next
             If contracts IsNot Nothing AndAlso contracts.Count > 0 Then
-                Dim upperContract As Dictionary(Of Decimal, Long) = Nothing
                 For Each runningContract In contracts.OrderBy(Function(x)
                                                                   Return x.Key
                                                               End Function)
-                    If runningContract.Key >= price Then
-                        If upperContract Is Nothing Then upperContract = New Dictionary(Of Decimal, Long)
-                        upperContract.Add(runningContract.Key, runningContract.Value)
-
-                        If upperContract.Count >= 2 Then Exit For
-                    End If
-                Next
-
-                Dim lowerContract As Dictionary(Of Decimal, Long) = Nothing
-                For Each runningContract In contracts.OrderByDescending(Function(x)
-                                                                            Return x.Key
-                                                                        End Function)
-                    If runningContract.Key <= price Then
-                        If lowerContract Is Nothing Then lowerContract = New Dictionary(Of Decimal, Long)
-                        lowerContract.Add(runningContract.Key, runningContract.Value)
-
-                        If lowerContract.Count >= 2 Then Exit For
-                    End If
-                Next
-
-                Dim sumVol As Long = 0
-                Dim count As Integer = 0
-                Dim volList As List(Of Long) = Nothing
-                If upperContract IsNot Nothing AndAlso upperContract.Count > 0 Then
-                    sumVol += upperContract.Sum(Function(x)
-                                                    Return x.Value
-                                                End Function)
-                    count += upperContract.Count
-                    If volList Is Nothing Then volList = New List(Of Long)
-                    volList.AddRange(upperContract.Values.ToList)
-                End If
-                If lowerContract IsNot Nothing AndAlso lowerContract.Count > 0 Then
-                    sumVol += lowerContract.Sum(Function(x)
-                                                    Return x.Value
-                                                End Function)
-                    count += lowerContract.Count
-                    If volList Is Nothing Then volList = New List(Of Long)
-                    volList.AddRange(lowerContract.Values.ToList)
-                End If
-                Dim avgVol As Decimal = sumVol
-                If count > 0 Then
-                    avgVol = sumVol / count
-                    Dim std As Long = CalculateStandardDeviationPA(volList.ToArray())
-                    avgVol = avgVol - std
-                End If
-
-                For Each runningContract In contracts.OrderBy(Function(x)
-                                                                  Return x.Key
-                                                              End Function)
-                    If runningContract.Key >= price AndAlso runningContract.Value >= avgVol Then
+                    If runningContract.Key >= price + atr Then
                         ret = String.Format("{0}{1}CE", expiryString, runningContract.Key)
                         Exit For
                     End If
                 Next
-                If ret Is Nothing Then
-                    For Each runningContract In contracts.OrderBy(Function(x)
-                                                                      Return x.Key
-                                                                  End Function)
-                        If runningContract.Key >= price Then
-                            ret = String.Format("{0}{1}CE", expiryString, runningContract.Key)
-                            Exit For
-                        End If
-                    Next
-                End If
             End If
         End If
         Return ret
