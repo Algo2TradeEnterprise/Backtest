@@ -299,22 +299,22 @@ Public Class frmMain
             End Select
 
             Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
-                                                                         exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                                         exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                                         tradeStartTime:=TimeSpan.Parse("15:29:00"),
-                                                                         lastTradeEntryTime:=TimeSpan.Parse("15:30:00"),
-                                                                         eodExitTime:=TimeSpan.Parse("15:30:00"),
-                                                                         tickSize:=tick,
-                                                                         marginMultiplier:=margin,
-                                                                         timeframe:=1,
-                                                                         heikenAshiCandle:=False,
-                                                                         stockType:=stockType,
-                                                                         databaseTable:=database,
-                                                                         dataSource:=sourceData,
-                                                                         initialCapital:=Decimal.MaxValue / 2,
-                                                                         usableCapital:=Decimal.MaxValue / 2,
-                                                                         minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
-                                                                         amountToBeWithdrawn:=0)
+                                                            exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                            exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                            tradeStartTime:=TimeSpan.Parse("15:29:00"),
+                                                            lastTradeEntryTime:=TimeSpan.Parse("15:30:00"),
+                                                            eodExitTime:=TimeSpan.Parse("15:30:00"),
+                                                            tickSize:=tick,
+                                                            marginMultiplier:=margin,
+                                                            timeframe:=1,
+                                                            heikenAshiCandle:=False,
+                                                            stockType:=stockType,
+                                                            databaseTable:=database,
+                                                            dataSource:=sourceData,
+                                                            initialCapital:=Decimal.MaxValue / 2,
+                                                            usableCapital:=Decimal.MaxValue / 2,
+                                                            minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                            amountToBeWithdrawn:=0)
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
@@ -330,6 +330,8 @@ Public Class frmMain
                             .RuleEntityData = New PivotTrendOutsideBuyStrategyRule.StrategyRuleEntities With
                                 {
                                  .ATRMultiplier = 1,
+                                 .SpotToOptionDelta = 1,
+                                 .MartingaleOnLossMakeup = False,
                                  .IncreaseQuantityWithHalfPremium = False
                                 }
                         Case Else
@@ -361,7 +363,7 @@ Public Class frmMain
                 Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
                     Case 0
                         Dim ruleData As PivotTrendOutsideBuyStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                        filename = String.Format("Pivot Trend Option Buy,HlfPrmIncrs {0}", ruleData.IncreaseQuantityWithHalfPremium)
+                        filename = String.Format("Pivot Trend Option Buy,Mrtgl {0}", ruleData.MartingaleOnLossMakeup)
                     Case Else
                         Throw New NotImplementedException
                 End Select

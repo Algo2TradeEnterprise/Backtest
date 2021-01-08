@@ -798,6 +798,23 @@ Namespace StrategyHelper
             End If
             Return ret
         End Function
+
+        Public Function GetAllTradesByStock() As Dictionary(Of String, List(Of Trade))
+            Dim ret As Dictionary(Of String, List(Of Trade)) = Nothing
+            If Me.TradesTaken IsNot Nothing AndAlso Me.TradesTaken.Count > 0 Then
+                For Each runningDate In Me.TradesTaken.Keys
+                    For Each runningStock In Me.TradesTaken(runningDate)
+                        If ret Is Nothing Then ret = New Dictionary(Of String, List(Of Trade))
+                        If Not ret.ContainsKey(runningStock.Key) Then
+                            ret.Add(runningStock.Key, runningStock.Value)
+                        Else
+                            ret(runningStock.Key).AddRange(runningStock.Value)
+                        End If
+                    Next
+                Next
+            End If
+            Return ret
+        End Function
 #End Region
 
 #Region "Public MustOverride Function"
@@ -896,10 +913,62 @@ Namespace StrategyHelper
                         allCapitalData = CapitalMovement
                     End If
                     If allTradesData IsNot Nothing AndAlso allTradesData.Count > 0 Then
-                        OnHeartbeat("Calculating supporting values")
-
                         Dim cts As New CancellationTokenSource
+                        OnHeartbeat("Calculating summary")
+                        Dim allTradesByStock As Dictionary(Of String, List(Of Trade)) = GetAllTradesByStock()
+                        Dim summaryList As List(Of Summary) = Nothing
+                        If allTradesByStock IsNot Nothing AndAlso allTradesByStock.Count > 0 Then
+                            For Each runningStock In allTradesByStock
+                                Dim uniqueTagList As List(Of String) = New List(Of String)
+                                For Each runningTrade In runningStock.Value
+                                    If Not uniqueTagList.Contains(runningTrade.ChildTag) Then
+                                        uniqueTagList.Add(runningTrade.ChildTag)
+                                    End If
+                                Next
+                                If uniqueTagList IsNot Nothing AndAlso uniqueTagList.Count > 0 Then
+                                    For Each runningTag In uniqueTagList
+                                        Dim tagTrades As List(Of Trade) = runningStock.Value.FindAll(Function(x)
+                                                                                                         Return x.ChildTag = runningTag
+                                                                                                     End Function)
+                                        If tagTrades IsNot Nothing AndAlso tagTrades.Count > 0 Then
+                                            Dim halfPremiumCount As Integer = 0
+                                            Dim contractRolloverCount As Integer = 0
+                                            For Each runningTagTrade In tagTrades
+                                                If runningTagTrade.ExitRemark IsNot Nothing Then
+                                                    If runningTagTrade.ExitRemark.ToUpper = "HALF PREMIUM" Then
+                                                        halfPremiumCount += 1
+                                                    ElseIf runningTagTrade.ExitRemark.ToUpper = "CONTRACT ROLLOVER" Then
+                                                        contractRolloverCount += 1
+                                                    End If
+                                                End If
+                                            Next
 
+                                            Dim summaryData As Summary = New Summary
+                                            summaryData.TradingSymbol = runningStock.Key
+                                            summaryData.Type = tagTrades.LastOrDefault.EntryType.ToString
+                                            summaryData.ChildReference = If(tagTrades.LastOrDefault.ParentTag = tagTrades.LastOrDefault.ChildTag, "", tagTrades.LastOrDefault.ParentTag)
+                                            summaryData.HalfPremium = halfPremiumCount
+                                            summaryData.ContractRollover = contractRolloverCount
+                                            summaryData.TotalCapital = tagTrades.Max(Function(x)
+                                                                                         Return x.CapitalRequiredWithMargin
+                                                                                     End Function)
+                                            summaryData.TotalPL = tagTrades.Sum(Function(x)
+                                                                                    Return x.PLAfterBrokerage
+                                                                                End Function)
+                                            summaryData.ROI = (summaryData.TotalPL / summaryData.TotalCapital) * 100
+                                            summaryData.Result = If(summaryData.ROI > 0, "Profit", "Loss")
+                                            summaryData.Reference = tagTrades.LastOrDefault.ChildTag
+
+                                            If summaryList Is Nothing Then summaryList = New List(Of Summary)
+                                            summaryList.Add(summaryData)
+                                        End If
+                                    Next
+                                End If
+                            Next
+                        End If
+
+
+                        OnHeartbeat("Calculating supporting values")
                         Dim totalTrades As Integer = allTradesData.Values.Sum(Function(x)
                                                                                   Return x.Values.Sum(Function(y)
                                                                                                           Return y.FindAll(Function(z)
@@ -1407,6 +1476,37 @@ Namespace StrategyHelper
                             excelWriter.WriteArrayToExcel(capitalRawData, range)
                             Erase capitalRawData
                             capitalRawData = Nothing
+
+                            If summaryList IsNot Nothing AndAlso summaryList.Count > 0 Then
+                                excelWriter.CreateNewSheet("Summary")
+                                excelWriter.SetActiveSheet("Summary")
+
+                                excelWriter.SetData(1, 1, "Trading Symbol")
+                                excelWriter.SetData(1, 2, "Type")
+                                excelWriter.SetData(1, 3, "Child Reference")
+                                excelWriter.SetData(1, 4, "Half Premium")
+                                excelWriter.SetData(1, 5, "Contract Rollover")
+                                excelWriter.SetData(1, 6, "Capital")
+                                excelWriter.SetData(1, 7, "PL")
+                                excelWriter.SetData(1, 8, "ROI")
+                                excelWriter.SetData(1, 9, "Result")
+                                excelWriter.SetData(1, 10, "Reference")
+
+                                Dim rowNumber As Integer = 1
+                                For Each runningSummary In summaryList
+                                    rowNumber += 1
+                                    excelWriter.SetData(rowNumber, 1, runningSummary.TradingSymbol)
+                                    excelWriter.SetData(rowNumber, 2, runningSummary.Type)
+                                    excelWriter.SetData(rowNumber, 3, runningSummary.ChildReference)
+                                    excelWriter.SetData(rowNumber, 4, runningSummary.HalfPremium, "##,##,##0.00", ExcelHelper.XLAlign.Right)
+                                    excelWriter.SetData(rowNumber, 5, runningSummary.ContractRollover, "##,##,##0.00", ExcelHelper.XLAlign.Right)
+                                    excelWriter.SetData(rowNumber, 6, runningSummary.TotalCapital, "##,##,##0.00", ExcelHelper.XLAlign.Right)
+                                    excelWriter.SetData(rowNumber, 7, runningSummary.TotalPL, "##,##,##0.00", ExcelHelper.XLAlign.Right)
+                                    excelWriter.SetData(rowNumber, 8, runningSummary.ROI, "##,##,##0.00", ExcelHelper.XLAlign.Right)
+                                    excelWriter.SetData(rowNumber, 9, runningSummary.Result)
+                                    excelWriter.SetData(rowNumber, 10, runningSummary.Reference)
+                                Next
+                            End If
 
                             excelWriter.SetActiveSheet("Data")
                             OnHeartbeat("Saving excel...")

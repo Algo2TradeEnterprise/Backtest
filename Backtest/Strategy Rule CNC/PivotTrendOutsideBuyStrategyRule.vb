@@ -11,7 +11,9 @@ Public Class PivotTrendOutsideBuyStrategyRule
         Inherits RuleEntities
 
         Public ATRMultiplier As Decimal
+        Public SpotToOptionDelta As Decimal
         Public IncreaseQuantityWithHalfPremium As Boolean
+        Public MartingaleOnLossMakeup As Boolean
     End Class
 
     Private Enum ExitType
@@ -148,9 +150,17 @@ Public Class PivotTrendOutsideBuyStrategyRule
                 If runningTrade.EntryType = Trade.TypeOfEntry.LossMakeup Then
                     If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
                         Dim currentOptTick As Payload = GetCurrentTick(currentTrade.SupportingTradingSymbol, currentTickTime)
-                        ret += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.EntryPrice, currentOptTick.Open, runningTrade.Quantity - runningTrade.LotSize, runningTrade.LotSize, runningTrade.StockType)
+                        If _userInputs.MartingaleOnLossMakeup Then
+                            ret += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.EntryPrice, currentOptTick.Open, runningTrade.Quantity - runningTrade.LotSize, runningTrade.LotSize, runningTrade.StockType)
+                        Else
+                            ret += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.EntryPrice, currentOptTick.Open, runningTrade.Quantity, runningTrade.LotSize, runningTrade.StockType)
+                        End If
                     Else
-                        ret += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.EntryPrice, runningTrade.ExitPrice, runningTrade.Quantity - runningTrade.LotSize, runningTrade.LotSize, runningTrade.StockType)
+                        If _userInputs.MartingaleOnLossMakeup Then
+                            ret += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.EntryPrice, runningTrade.ExitPrice, runningTrade.Quantity - runningTrade.LotSize, runningTrade.LotSize, runningTrade.StockType)
+                        Else
+                            ret += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.EntryPrice, runningTrade.ExitPrice, runningTrade.Quantity, runningTrade.LotSize, runningTrade.StockType)
+                        End If
                     End If
                 End If
             Next
@@ -361,14 +371,19 @@ Public Class PivotTrendOutsideBuyStrategyRule
                 Dim quantity As Integer = _LotSize
                 If entryType = Trade.TypeOfEntry.LossMakeup Then
                     Dim entryPrice As Decimal = currentOptTick.Open
-                    Dim targetPrice As Decimal = ConvertFloorCeling(entryPrice + currentSpotATR / 2, _ParentStrategy.TickSize, RoundOfType.Celing)
-                    For ctr As Integer = 1 To Integer.MaxValue
-                        Dim pl As Decimal = _ParentStrategy.CalculatePL(_TradingSymbol, entryPrice, targetPrice, ctr * _LotSize, _LotSize, Trade.TypeOfStock.Options)
-                        If pl >= Math.Abs(previousLoss) Then
-                            quantity = ctr * _LotSize + _LotSize
-                            Exit For
-                        End If
-                    Next
+                    Dim targetPrice As Decimal = ConvertFloorCeling(entryPrice + currentSpotATR / _userInputs.SpotToOptionDelta, _ParentStrategy.TickSize, RoundOfType.Celing)
+                    If _userInputs.MartingaleOnLossMakeup Then
+                        For ctr As Integer = 1 To Integer.MaxValue
+                            Dim pl As Decimal = _ParentStrategy.CalculatePL(_TradingSymbol, entryPrice, targetPrice, ctr * _LotSize, _LotSize, Trade.TypeOfStock.Options)
+                            If pl >= Math.Abs(previousLoss) Then
+                                quantity = ctr * _LotSize + _LotSize
+                                Exit For
+                            End If
+                        Next
+                    Else
+                        Dim pl As Decimal = _ParentStrategy.CalculatePL(_TradingSymbol, entryPrice, targetPrice, _LotSize, _LotSize, Trade.TypeOfStock.Options)
+                        previousLoss = previousLoss - pl
+                    End If
                 End If
 
                 Dim runningOptTrade As Trade = New Trade(originatingStrategy:=_ParentStrategy,
@@ -551,6 +566,16 @@ Public Class PivotTrendOutsideBuyStrategyRule
                         Exit For
                     End If
                 Next
+                If ret Is Nothing Then
+                    For Each runningContract In contracts.OrderByDescending(Function(x)
+                                                                                Return x.Key
+                                                                            End Function)
+                        If runningContract.Key <= price Then
+                            ret = String.Format("{0}{1}PE", expiryString, runningContract.Key)
+                            Exit For
+                        End If
+                    Next
+                End If
             End If
         End If
         Return ret
@@ -629,6 +654,16 @@ Public Class PivotTrendOutsideBuyStrategyRule
                         Exit For
                     End If
                 Next
+                If ret Is Nothing Then
+                    For Each runningContract In contracts.OrderBy(Function(x)
+                                                                      Return x.Key
+                                                                  End Function)
+                        If runningContract.Key >= price Then
+                            ret = String.Format("{0}{1}CE", expiryString, runningContract.Key)
+                            Exit For
+                        End If
+                    Next
+                End If
             End If
         End If
         Return ret
