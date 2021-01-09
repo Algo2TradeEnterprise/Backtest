@@ -298,7 +298,11 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
+            Dim optnStrkList As List(Of Integer) = New List(Of Integer) From {-3, -2, -1, 1, 2, 3}
+            For hlfPrm As Integer = 0 To 1
+                For atrPL As Integer = 0 To 1
+                    For Each optnStrk In optnStrkList
+                        Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
                                                             exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                             exchangeEndTime:=TimeSpan.Parse("15:29:59"),
                                                             tradeStartTime:=TimeSpan.Parse("15:29:00"),
@@ -315,62 +319,66 @@ Public Class frmMain
                                                             usableCapital:=Decimal.MaxValue / 2,
                                                             minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
                                                             amountToBeWithdrawn:=0)
-                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+                            AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                With backtestStrategy
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "High ATR High Volume Stocks.csv")
+                            With backtestStrategy
+                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "High ATR High Volume Stocks.csv")
 
-                    .AllowBothDirectionEntryAtSameTime = False
-                    .TrailingStoploss = False
-                    .TickBasedStrategy = True
-                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+                                .AllowBothDirectionEntryAtSameTime = False
+                                .TrailingStoploss = False
+                                .TickBasedStrategy = True
+                                .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                    Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
-                        Case 0
-                            .RuleEntityData = New PivotTrendOutsideBuyStrategyRule.StrategyRuleEntities With
-                                {
-                                 .ATRMultiplier = 1,
-                                 .SpotToOptionDelta = 1,
-                                 .MartingaleOnLossMakeup = True,
-                                 .ExitAtATRPL = False
-                                }
-                        Case Else
-                            Throw New NotImplementedException
-                    End Select
+                                Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
+                                    Case 0
+                                        .RuleEntityData = New PivotTrendOutsideBuyStrategyRule.StrategyRuleEntities With
+                                            {
+                                             .ATRMultiplier = 1,
+                                             .SpotToOptionDelta = 1,
+                                             .HalfPremiumExit = hlfPrm,
+                                             .ExitAtATRPL = atrPL,
+                                             .OptionStrikeDistance = optnStrk
+                                            }
+                                    Case Else
+                                        Throw New NotImplementedException
+                                End Select
 
-                    .NumberOfTradeableStockPerDay = 15
+                                .NumberOfTradeableStockPerDay = 15
 
-                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
+                                .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
-                    .StockMaxProfitPercentagePerDay = Decimal.MaxValue
-                    .StockMaxLossPercentagePerDay = Decimal.MinValue
+                                .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                                .StockMaxLossPercentagePerDay = Decimal.MinValue
 
-                    .ExitOnStockFixedTargetStoploss = False
-                    .StockMaxProfitPerDay = Decimal.MaxValue
-                    .StockMaxLossPerDay = Decimal.MinValue
+                                .ExitOnStockFixedTargetStoploss = False
+                                .StockMaxProfitPerDay = Decimal.MaxValue
+                                .StockMaxLossPerDay = Decimal.MinValue
 
-                    .ExitOnOverAllFixedTargetStoploss = False
-                    .OverAllProfitPerDay = Decimal.MaxValue
-                    .OverAllLossPerDay = Decimal.MinValue
+                                .ExitOnOverAllFixedTargetStoploss = False
+                                .OverAllProfitPerDay = Decimal.MaxValue
+                                .OverAllLossPerDay = Decimal.MinValue
 
-                    .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
-                    .MTMSlab = Math.Abs(.OverAllLossPerDay)
-                    .MovementSlab = .MTMSlab / 2
-                    .RealtimeTrailingPercentage = 50
-                End With
+                                .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+                                .MTMSlab = Math.Abs(.OverAllLossPerDay)
+                                .MovementSlab = .MTMSlab / 2
+                                .RealtimeTrailingPercentage = 50
+                            End With
 
-                Dim filename As String = String.Format("Option Buy")
-                Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
-                    Case 0
-                        Dim ruleData As PivotTrendOutsideBuyStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                        filename = String.Format("Pivot Trend Option Buy,Mrtgl {0}, ExtATRPL {1}",
-                                                 ruleData.MartingaleOnLossMakeup, ruleData.ExitAtATRPL)
-                    Case Else
-                        Throw New NotImplementedException
-                End Select
+                            Dim filename As String = String.Format("Option Buy")
+                            Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
+                                Case 0
+                                    Dim ruleData As PivotTrendOutsideBuyStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                                    filename = String.Format("Pivot Trend Option Buy,HlfPrmExt {0},ExtATRPL {1},OptnDstnc {2}",
+                                                             ruleData.HalfPremiumExit, ruleData.ExitAtATRPL, ruleData.OptionStrikeDistance)
+                                Case Else
+                                    Throw New NotImplementedException
+                            End Select
 
-                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-            End Using
+                            Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                        End Using
+                    Next
+                Next
+            Next
         Catch ex As Exception
             MsgBox(ex.ToString, MsgBoxStyle.Critical)
         Finally
