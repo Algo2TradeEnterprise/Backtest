@@ -510,21 +510,21 @@ Public Class PivotTrendOutsideBuyStrategyRule
             If contracts IsNot Nothing AndAlso contracts.Count > 0 Then
                 If _userInputs.OptionStrikeDistance > 0 Then
                     Dim ctr As Integer = 0
-                    For Each runningContract In contracts.OrderBy(Function(x)
-                                                                      Return x.Key
-                                                                  End Function)
-                        If runningContract.Key >= price Then
-                            ret = String.Format("{0}{1}PE", expiryString, runningContract.Key)
-                            ctr += 1
-                            If ctr = _userInputs.OptionStrikeDistance Then Exit For
-                        End If
-                    Next
-                Else
-                    Dim ctr As Integer = 0
                     For Each runningContract In contracts.OrderByDescending(Function(x)
                                                                                 Return x.Key
                                                                             End Function)
                         If runningContract.Key <= price Then
+                            ret = String.Format("{0}{1}PE", expiryString, runningContract.Key)
+                            ctr += 1
+                            If ctr = Math.Abs(_userInputs.OptionStrikeDistance) Then Exit For
+                        End If
+                    Next
+                Else
+                    Dim ctr As Integer = 0
+                    For Each runningContract In contracts.OrderBy(Function(x)
+                                                                      Return x.Key
+                                                                  End Function)
+                        If runningContract.Key >= price Then
                             ret = String.Format("{0}{1}PE", expiryString, runningContract.Key)
                             ctr += 1
                             If ctr = Math.Abs(_userInputs.OptionStrikeDistance) Then Exit For
@@ -568,7 +568,7 @@ Public Class PivotTrendOutsideBuyStrategyRule
                         If runningContract.Key >= price Then
                             ret = String.Format("{0}{1}CE", expiryString, runningContract.Key)
                             ctr += 1
-                            If ctr = _userInputs.OptionStrikeDistance Then Exit For
+                            If ctr = Math.Abs(_userInputs.OptionStrikeDistance) Then Exit For
                         End If
                     Next
                 Else
