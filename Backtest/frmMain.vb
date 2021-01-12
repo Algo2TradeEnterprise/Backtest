@@ -331,7 +331,7 @@ Public Class frmMain
 
                                 Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
                                     Case 0
-                                        .RuleEntityData = New PivotTrendOutsideBuyStrategyRule.StrategyRuleEntities With
+                                        .RuleEntityData = New HourlyRainbowStrategyRule.StrategyRuleEntities With
                                             {
                                              .ATRMultiplier = 1,
                                              .SpotToOptionDelta = 1,
@@ -367,7 +367,7 @@ Public Class frmMain
                             Dim filename As String = String.Format("Option Buy")
                             Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
                                 Case 0
-                                    Dim ruleData As PivotTrendOutsideBuyStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                                    Dim ruleData As HourlyRainbowStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
                                     filename = String.Format("Pivot Trend Option Buy,HlfPrmExt {0},ExtATRPL {1},OptnDstnc {2}",
                                                              ruleData.HalfPremiumExit, ruleData.ExitAtATRPL, ruleData.OptionStrikeDistance)
                                 Case Else

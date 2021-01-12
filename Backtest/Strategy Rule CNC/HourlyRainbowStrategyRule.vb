@@ -3,13 +3,14 @@ Imports System.Threading
 Imports Utilities.Numbers
 Imports Backtest.StrategyHelper
 
-Public Class PivotTrendOutsideBuyStrategyRule
+Public Class HourlyRainbowStrategyRule
     Inherits StrategyRule
 
 #Region "Entity"
     Public Class StrategyRuleEntities
         Inherits RuleEntities
 
+        Public RainbowPeriod As Integer
         Public ATRMultiplier As Decimal
         Public SpotToOptionDelta As Decimal
         Public ExitAtATRPL As Boolean
@@ -24,9 +25,8 @@ Public Class PivotTrendOutsideBuyStrategyRule
     End Enum
 #End Region
 
-    Private _eodPayload As Dictionary(Of Date, Payload)
-    Private _pivotTrendPayload As Dictionary(Of Date, Color)
     Private _atrPayload As Dictionary(Of Date, Decimal)
+    Private _rainbowPayload As Dictionary(Of Date, Indicator.RainbowMA)
 
     Private _dependentInstruments As Dictionary(Of String, Dictionary(Of Date, Payload)) = Nothing
 
@@ -46,9 +46,8 @@ Public Class PivotTrendOutsideBuyStrategyRule
     Public Overrides Sub CompletePreProcessing()
         MyBase.CompletePreProcessing()
 
-        _eodPayload = _ParentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.EOD_POSITIONAL, _TradingSymbol, _TradingDate.AddDays(-200), _TradingDate)
-        Indicator.PivotHighLow.CalculatePivotHighLowTrend(4, 3, _eodPayload, Nothing, Nothing, _pivotTrendPayload)
-        Indicator.ATR.CalculateATR(14, _eodPayload, _atrPayload)
+        Indicator.ATR.CalculateATR(14, _SignalPayload, _atrPayload)
+        Indicator.RainbowMovingAverage.CalculateRainbowMovingAverage(_userInputs.RainbowPeriod, _SignalPayload, _rainbowPayload)
 
         Dim allRunningTrades As List(Of Trade) = _ParentStrategy.GetSpecificTrades(_TradingSymbol, _TradingDate, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
         If allRunningTrades IsNot Nothing AndAlso allRunningTrades.Count > 0 Then
@@ -56,7 +55,11 @@ Public Class PivotTrendOutsideBuyStrategyRule
             For Each runningTrade In allRunningTrades
                 If Not _dependentInstruments.ContainsKey(runningTrade.SupportingTradingSymbol) Then
                     Dim inputPayload As Dictionary(Of Date, Payload) = Nothing
-                    inputPayload = _ParentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.Intraday_Futures_Options, runningTrade.SupportingTradingSymbol, _TradingDate.AddDays(-30), _TradingDate)
+                    If runningTrade.SupportingTradingSymbol.EndsWith("FUT") Then
+                        inputPayload = _ParentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.Intraday_Futures, runningTrade.SupportingTradingSymbol, _TradingDate.AddDays(-30), _TradingDate)
+                    Else
+                        inputPayload = _ParentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.Intraday_Futures_Options, runningTrade.SupportingTradingSymbol, _TradingDate.AddDays(-30), _TradingDate)
+                    End If
                     If inputPayload IsNot Nothing AndAlso inputPayload.Count > 0 Then
                         _dependentInstruments.Add(runningTrade.SupportingTradingSymbol, inputPayload)
                     End If
@@ -72,18 +75,13 @@ Public Class PivotTrendOutsideBuyStrategyRule
     Private Function IsEntrySignalReceived(ByVal currentTickTime As Date) As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)
         Dim ret As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection) = Nothing
         If Not _ParentStrategy.IsTradeActive(GetCurrentTick(_TradingSymbol, currentTickTime), Trade.TypeOfTrade.CNC) Then
-            If _pivotTrendPayload IsNot Nothing AndAlso _pivotTrendPayload.ContainsKey(_TradingDate) Then
-                Dim trend As Color = _pivotTrendPayload(_TradingDate)
-                Dim previousTrend As Color = _pivotTrendPayload(_eodPayload(_TradingDate).PreviousCandlePayload.PayloadDate)
-                Dim lastTrade As Trade = _ParentStrategy.GetLastEntryTradeOfTheStock(_TradingSymbol, _TradingDate, Trade.TypeOfTrade.CNC)
-                Dim optionType As String = ""
-                If lastTrade IsNot Nothing AndAlso lastTrade.SupportingTradingSymbol IsNot Nothing Then
-                    optionType = lastTrade.SupportingTradingSymbol.Substring(lastTrade.SupportingTradingSymbol.Count - 2)
-                End If
-                If trend = Color.Green AndAlso previousTrend = Color.Red AndAlso optionType <> "CE" Then
-                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(_TradingDate), Trade.TradeExecutionDirection.Buy)
-                ElseIf trend = Color.Red AndAlso previousTrend = Color.Green AndAlso optionType <> "PE" Then
-                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(_TradingDate), Trade.TradeExecutionDirection.Sell)
+            Dim currentCandle As Payload = _SignalPayload(_ParentStrategy.GetCurrentXMinuteCandleTime(currentTickTime))
+            If currentCandle IsNot Nothing AndAlso currentCandle.PreviousCandlePayload IsNot Nothing Then
+                Dim signalCandle As Payload = currentCandle.PreviousCandlePayload
+                If signalCandle.CandleColor = Color.Green AndAlso IsValidRainbowForBuy(signalCandle) Then
+                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, signalCandle, Trade.TradeExecutionDirection.Buy)
+                ElseIf signalCandle.CandleColor = Color.Red AndAlso IsValidRainbowForBuy(signalCandle) Then
+                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, signalCandle, Trade.TradeExecutionDirection.Sell)
                 End If
             End If
         End If
@@ -96,36 +94,17 @@ Public Class PivotTrendOutsideBuyStrategyRule
             Dim optionType As String = currentTrade.SupportingTradingSymbol.Substring(currentTrade.SupportingTradingSymbol.Count - 2)
             If typeOfExit = ExitType.Target Then
                 If currentTrade.EntryType = Trade.TypeOfEntry.Fresh Then      'Fresh Trade
-                    Dim currentSpotTick As Payload = GetCurrentTick(_TradingSymbol, currentTickTime)
-                    If optionType = "CE" AndAlso currentSpotTick.Open >= currentTrade.SpotPrice + currentTrade.SpotATR * _userInputs.ATRMultiplier Then
-                        Dim pl As Decimal = GetFreshTradePL(currentTrade, currentTickTime)
-                        If pl > 0 Then
-                            ret = True
-                        Else
-                            If currentTrade.Remark1 Is Nothing Then
-                                currentTrade.UpdateTrade(Remark1:=String.Format("ATR Reached but PL {0}", pl))
-                            End If
-                        End If
-                    ElseIf optionType = "PE" AndAlso currentSpotTick.Open <= currentTrade.SpotPrice - currentTrade.SpotATR * _userInputs.ATRMultiplier Then
-                        Dim pl As Decimal = GetFreshTradePL(currentTrade, currentTickTime)
-                        If pl > 0 Then
-                            ret = True
-                        Else
-                            If currentTrade.Remark1 Is Nothing Then
-                                currentTrade.UpdateTrade(Remark1:=String.Format("ATR Reached but PL {0}", pl))
-                            End If
-                        End If
-                    End If
+                    ret = GetFreshTradePL(currentTrade, currentTickTime) > Math.Abs(currentTrade.PreviousLoss)
                 Else    'SL Makeup Trade
                     ret = GetLossMakeupTradePL(currentTrade, currentTickTime) > Math.Abs(currentTrade.PreviousLoss)
                 End If
             ElseIf typeOfExit = ExitType.Reverse Then
-                If _pivotTrendPayload IsNot Nothing AndAlso _pivotTrendPayload.ContainsKey(_TradingDate) Then
-                    Dim trend As Color = _pivotTrendPayload(_TradingDate)
-                    Dim previousTrend As Color = _pivotTrendPayload(_eodPayload(_TradingDate).PreviousCandlePayload.PayloadDate)
-                    If trend = Color.Green AndAlso previousTrend = Color.Red AndAlso optionType <> "CE" Then
+                Dim currentCandle As Payload = _SignalPayload(_ParentStrategy.GetCurrentXMinuteCandleTime(currentTickTime))
+                If currentCandle IsNot Nothing AndAlso currentCandle.PreviousCandlePayload IsNot Nothing Then
+                    Dim signalCandle As Payload = currentCandle.PreviousCandlePayload
+                    If signalCandle.CandleColor = Color.Green AndAlso IsValidRainbowForBuy(signalCandle) Then
                         ret = True
-                    ElseIf trend = Color.Red AndAlso previousTrend = Color.Green AndAlso optionType <> "PE" Then
+                    ElseIf signalCandle.CandleColor = Color.Red AndAlso IsValidRainbowForBuy(signalCandle) Then
                         ret = True
                     End If
                 End If
@@ -151,11 +130,20 @@ Public Class PivotTrendOutsideBuyStrategyRule
         If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
             For Each runningTrade In allTrades
                 If runningTrade.EntryType = Trade.TypeOfEntry.LossMakeup Then
-                    If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-                        Dim currentOptTick As Payload = GetCurrentTick(currentTrade.SupportingTradingSymbol, currentTickTime)
-                        ret += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.EntryPrice, currentOptTick.Open, runningTrade.Quantity - runningTrade.LotSize, runningTrade.LotSize, runningTrade.StockType)
-                    Else
-                        ret += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.EntryPrice, runningTrade.ExitPrice, runningTrade.Quantity - runningTrade.LotSize, runningTrade.LotSize, runningTrade.StockType)
+                    If runningTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                        If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                            Dim currentFOTick As Payload = GetCurrentTick(currentTrade.SupportingTradingSymbol, currentTickTime)
+                            ret += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.EntryPrice, currentFOTick.Open, runningTrade.Quantity - runningTrade.LotSize, runningTrade.LotSize, runningTrade.StockType)
+                        Else
+                            ret += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.EntryPrice, runningTrade.ExitPrice, runningTrade.Quantity - runningTrade.LotSize, runningTrade.LotSize, runningTrade.StockType)
+                        End If
+                    ElseIf runningTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                        If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                            Dim currentFOTick As Payload = GetCurrentTick(currentTrade.SupportingTradingSymbol, currentTickTime)
+                            ret += _ParentStrategy.CalculatePL(_TradingSymbol, currentFOTick.Open, runningTrade.EntryPrice, runningTrade.Quantity - runningTrade.LotSize, runningTrade.LotSize, runningTrade.StockType)
+                        Else
+                            ret += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.ExitPrice, runningTrade.EntryPrice, runningTrade.Quantity - runningTrade.LotSize, runningTrade.LotSize, runningTrade.StockType)
+                        End If
                     End If
                 End If
             Next
@@ -169,11 +157,20 @@ Public Class PivotTrendOutsideBuyStrategyRule
         If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
             For Each runningTrade In allTrades
                 If runningTrade.EntryType = Trade.TypeOfEntry.Fresh Then
-                    If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-                        Dim currentOptTick As Payload = GetCurrentTick(currentTrade.SupportingTradingSymbol, currentTickTime)
-                        ret += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.EntryPrice, currentOptTick.Open, runningTrade.Quantity, runningTrade.LotSize, runningTrade.StockType)
-                    Else
-                        ret += runningTrade.PLAfterBrokerage
+                    If runningTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                        If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                            Dim currentFOTick As Payload = GetCurrentTick(currentTrade.SupportingTradingSymbol, currentTickTime)
+                            ret += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.EntryPrice, currentFOTick.Open, runningTrade.Quantity, runningTrade.LotSize, runningTrade.StockType)
+                        Else
+                            ret += runningTrade.PLAfterBrokerage
+                        End If
+                    ElseIf runningTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                        If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                            Dim currentFOTick As Payload = GetCurrentTick(currentTrade.SupportingTradingSymbol, currentTickTime)
+                            ret += _ParentStrategy.CalculatePL(_TradingSymbol, currentFOTick.Open, runningTrade.EntryPrice, runningTrade.Quantity, runningTrade.LotSize, runningTrade.StockType)
+                        Else
+                            ret += runningTrade.PLAfterBrokerage
+                        End If
                     End If
                 End If
             Next
@@ -280,9 +277,9 @@ Public Class PivotTrendOutsideBuyStrategyRule
         If _dependentInstruments Is Nothing OrElse Not _dependentInstruments.ContainsKey(tradingSymbol) Then
             Dim inputPayload As Dictionary(Of Date, Payload) = Nothing
             If tradingSymbol.EndsWith("FUT") Then
-                inputPayload = _ParentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.Intraday_Futures, tradingSymbol, _TradingDate.AddDays(-5), _TradingDate)
+                inputPayload = _ParentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.Intraday_Futures, tradingSymbol, _TradingDate.AddDays(-30), _TradingDate)
             Else
-                inputPayload = _ParentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.Intraday_Futures_Options, tradingSymbol, _TradingDate.AddDays(-5), _TradingDate)
+                inputPayload = _ParentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.Intraday_Futures_Options, tradingSymbol, _TradingDate.AddDays(-30), _TradingDate)
             End If
             If inputPayload IsNot Nothing AndAlso inputPayload.Count > 0 Then
                 If _dependentInstruments Is Nothing Then _dependentInstruments = New Dictionary(Of String, Dictionary(Of Date, Payload))
@@ -424,14 +421,6 @@ Public Class PivotTrendOutsideBuyStrategyRule
         Try
             Dim quantity As Integer = existingTrade.Quantity
             Dim remark As String = Nothing
-            'If increaseQuantityIfRequired AndAlso _userInputs.IncreaseQuantityWithHalfPremium Then
-            '    Dim increasedCapital As Decimal = currentTick.Open * quantity * 2
-            '    If increasedCapital <= existingTrade.CapitalRequiredWithMargin * 120 / 100 Then
-            '        quantity = quantity * 2
-            '    Else
-            '        remark = "Unable to increase quantity"
-            '    End If
-            'End If
             Dim runningTrade As Trade = New Trade(originatingStrategy:=_ParentStrategy,
                                                     tradingSymbol:=existingTrade.TradingSymbol,
                                                     stockType:=existingTrade.StockType,
@@ -612,22 +601,65 @@ Public Class PivotTrendOutsideBuyStrategyRule
         Return ret
     End Function
 
-    Private Function CalculateStandardDeviationPA(ParamArray numbers() As Long) As Long
-        Dim ret As Long = Nothing
-        If numbers.Count > 0 Then
-            Dim sum As Long = 0
-            For i = 0 To numbers.Count - 1
-                sum = sum + numbers(i)
-            Next
-            Dim mean As Long = sum / numbers.Count
-            Dim sumVariance As Long = 0
-            For j = 0 To numbers.Count - 1
-                sumVariance = sumVariance + Math.Pow((numbers(j) - mean), 2)
-            Next
-            Dim sampleVariance As Long = sumVariance / numbers.Count
-            Dim standardDeviation As Long = Math.Sqrt(sampleVariance)
-            ret = standardDeviation
+    Private Function GetFutureInstrumentNameFromCore(ByVal coreInstrumentName As String, ByVal tradingDate As Date) As String
+        Dim ret As String = Nothing
+        Dim lastThursday As Date = GetLastThusrdayOfMonth(tradingDate)
+        If tradingDate.Date > lastThursday.Date.AddDays(-2) Then
+            ret = String.Format("{0}{1}FUT", coreInstrumentName, tradingDate.AddDays(10).ToString("yyMMM")).ToUpper
+        Else
+            ret = String.Format("{0}{1}FUT", coreInstrumentName, tradingDate.ToString("yyMMM")).ToUpper
         End If
+        Return ret
+    End Function
+#End Region
+
+#Region "Required Functions"
+    Private Function IsValidRainbowForBuy(ByVal signalCandle As Payload) As Boolean
+        Dim ret As Boolean = False
+        For Each runningPayload In _SignalPayload.OrderByDescending(Function(x)
+                                                                        Return x.Key
+                                                                    End Function)
+            If runningPayload.Key <= signalCandle.PayloadDate Then
+                Dim rainbow As Indicator.RainbowMA = _rainbowPayload(runningPayload.Key)
+                If runningPayload.Value.Close > Math.Max(rainbow.SMA1, Math.Max(rainbow.SMA2, Math.Max(rainbow.SMA3, Math.Max(rainbow.SMA4, Math.Max(rainbow.SMA5, Math.Max(rainbow.SMA6, Math.Max(rainbow.SMA7, Math.Max(rainbow.SMA8, Math.Max(rainbow.SMA9, rainbow.SMA10))))))))) Then
+                    If runningPayload.Value.CandleColor = Color.Green Then
+                        If runningPayload.Key <> signalCandle.PayloadDate Then
+                            ret = False
+                            Exit For
+                        End If
+                    End If
+                ElseIf runningPayload.Value.Close < Math.Min(rainbow.SMA1, Math.Min(rainbow.SMA2, Math.Min(rainbow.SMA3, Math.Min(rainbow.SMA4, Math.Min(rainbow.SMA5, Math.Min(rainbow.SMA6, Math.Min(rainbow.SMA7, Math.Min(rainbow.SMA8, Math.Min(rainbow.SMA9, rainbow.SMA10))))))))) Then
+                    If runningPayload.Value.CandleColor = Color.Red Then
+                        ret = True
+                        Exit For
+                    End If
+                End If
+            End If
+        Next
+        Return ret
+    End Function
+    Private Function IsValidRainbowForSell(ByVal signalCandle As Payload) As Boolean
+        Dim ret As Boolean = False
+        For Each runningPayload In _SignalPayload.OrderByDescending(Function(x)
+                                                                        Return x.Key
+                                                                    End Function)
+            If runningPayload.Key <= signalCandle.PayloadDate Then
+                Dim rainbow As Indicator.RainbowMA = _rainbowPayload(runningPayload.Key)
+                If runningPayload.Value.Close < Math.Min(rainbow.SMA1, Math.Min(rainbow.SMA2, Math.Min(rainbow.SMA3, Math.Min(rainbow.SMA4, Math.Min(rainbow.SMA5, Math.Min(rainbow.SMA6, Math.Min(rainbow.SMA7, Math.Min(rainbow.SMA8, Math.Min(rainbow.SMA9, rainbow.SMA10))))))))) Then
+                    If runningPayload.Value.CandleColor = Color.Red Then
+                        If runningPayload.Key <> signalCandle.PayloadDate Then
+                            ret = False
+                            Exit For
+                        End If
+                    End If
+                ElseIf runningPayload.Value.Close > Math.Max(rainbow.SMA1, Math.Max(rainbow.SMA2, Math.Max(rainbow.SMA3, Math.Max(rainbow.SMA4, Math.Max(rainbow.SMA5, Math.Max(rainbow.SMA6, Math.Max(rainbow.SMA7, Math.Max(rainbow.SMA8, Math.Max(rainbow.SMA9, rainbow.SMA10))))))))) Then
+                    If runningPayload.Value.CandleColor = Color.Green Then
+                        ret = True
+                        Exit For
+                    End If
+                End If
+            End If
+        Next
         Return ret
     End Function
 #End Region

@@ -127,7 +127,7 @@ Namespace StrategyHelper
 
                                     Select Case Me.RuleNumber
                                         Case 0
-                                            stockRule = New PivotTrendOutsideBuyStrategyRule(tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me.RuleEntityData, Me, _canceller, XDayOneMinutePayload)
+                                            stockRule = New HourlyRainbowStrategyRule(tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me.RuleEntityData, Me, _canceller, XDayOneMinutePayload)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
