@@ -298,27 +298,28 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
+            Dim tfList As List(Of Integer) = New List(Of Integer) From {60}
             Dim optnStrkList As List(Of Integer) = New List(Of Integer) From {1}
-            For hlfPrm As Integer = 0 To 0
-                For atrPL As Integer = 0 To 0
+            For Each runningTF In tfList
+                For optmstcExt As Integer = 0 To 1
                     For Each optnStrk In optnStrkList
                         Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
-                                                            exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                            exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                            tradeStartTime:=TimeSpan.Parse("9:16:00"),
-                                                            lastTradeEntryTime:=TimeSpan.Parse("15:30:00"),
-                                                            eodExitTime:=TimeSpan.Parse("15:30:00"),
-                                                            tickSize:=tick,
-                                                            marginMultiplier:=margin,
-                                                            timeframe:=60,
-                                                            heikenAshiCandle:=False,
-                                                            stockType:=stockType,
-                                                            databaseTable:=database,
-                                                            dataSource:=sourceData,
-                                                            initialCapital:=Decimal.MaxValue / 2,
-                                                            usableCapital:=Decimal.MaxValue / 2,
-                                                            minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
-                                                            amountToBeWithdrawn:=0)
+                                                                        exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                        exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                        tradeStartTime:=TimeSpan.Parse("9:16:00"),
+                                                                        lastTradeEntryTime:=TimeSpan.Parse("15:30:00"),
+                                                                        eodExitTime:=TimeSpan.Parse("15:30:00"),
+                                                                        tickSize:=tick,
+                                                                        marginMultiplier:=margin,
+                                                                        timeframe:=runningTF,
+                                                                        heikenAshiCandle:=False,
+                                                                        stockType:=stockType,
+                                                                        databaseTable:=database,
+                                                                        dataSource:=sourceData,
+                                                                        initialCapital:=Decimal.MaxValue / 2,
+                                                                        usableCapital:=Decimal.MaxValue / 2,
+                                                                        minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                                        amountToBeWithdrawn:=0)
                             AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                             With backtestStrategy
@@ -333,12 +334,9 @@ Public Class frmMain
                                     Case 0
                                         .RuleEntityData = New HourlyRainbowStrategyRule.StrategyRuleEntities With
                                             {
-                                             .ATRMultiplier = 1,
-                                             .SpotToOptionDelta = 1,
-                                             .HalfPremiumExit = hlfPrm,
-                                             .ExitAtATRPL = atrPL,
+                                             .OptimisticExit = optmstcExt,
                                              .OptionStrikeDistance = optnStrk,
-                                             .RainbowPeriod = 7
+                                             .RainbowPeriod = 5
                                             }
                                     Case Else
                                         Throw New NotImplementedException
@@ -365,12 +363,12 @@ Public Class frmMain
                                 .RealtimeTrailingPercentage = 50
                             End With
 
-                            Dim filename As String = String.Format("Option Buy")
+                            Dim filename As String = String.Format("Future Option")
                             Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
                                 Case 0
                                     Dim ruleData As HourlyRainbowStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                                    filename = String.Format("Hourly Rainbow,HlfPrmExt {0},ExtATRPL {1},OptnDstnc {2}",
-                                                             ruleData.HalfPremiumExit, ruleData.ExitAtATRPL, ruleData.OptionStrikeDistance)
+                                    filename = String.Format("Hourly Rainbow,TF {0},OptmstcExt {1},OptnDstnc {2}",
+                                                             backtestStrategy.SignalTimeFrame, ruleData.OptimisticExit, ruleData.OptionStrikeDistance)
                                 Case Else
                                     Throw New NotImplementedException
                             End Select

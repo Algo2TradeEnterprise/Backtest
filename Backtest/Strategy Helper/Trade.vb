@@ -51,6 +51,7 @@ Namespace StrategyHelper
         Enum TypeOfEntry
             Fresh = 1
             LossMakeup
+            LossMakeupFresh
             None
         End Enum
 #End Region

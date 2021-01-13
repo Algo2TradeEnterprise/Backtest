@@ -11,17 +11,14 @@ Public Class HourlyRainbowStrategyRule
         Inherits RuleEntities
 
         Public RainbowPeriod As Integer
-        Public ATRMultiplier As Decimal
-        Public SpotToOptionDelta As Decimal
-        Public ExitAtATRPL As Boolean
-        Public HalfPremiumExit As Boolean
+        Public OptimisticExit As Boolean
         Public OptionStrikeDistance As Integer
     End Class
 
     Private Enum ExitType
         Target = 1
         Reverse
-        HalfPremium
+        ZeroPremium
     End Enum
 #End Region
 
@@ -96,58 +93,52 @@ Public Class HourlyRainbowStrategyRule
             Dim optionType As String = currentTrade.SupportingTradingSymbol.Substring(currentTrade.SupportingTradingSymbol.Count - 2)
             If typeOfExit = ExitType.Target Then
                 If currentTrade.EntryType = Trade.TypeOfEntry.Fresh Then      'Fresh Trade
-                    ret = GetFreshTradePL(currentTrade, currentTickTime) > Math.Abs(currentTrade.PreviousLoss)
-                Else    'SL Makeup Trade
-                    ret = GetLossMakeupTradePL(currentTrade, currentTickTime) > Math.Abs(currentTrade.PreviousLoss)
-                End If
-            ElseIf typeOfExit = ExitType.Reverse Then
-                Dim currentCandle As Payload = _SignalPayload(_ParentStrategy.GetCurrentXMinuteCandleTime(currentTickTime))
-                If currentCandle IsNot Nothing AndAlso currentCandle.PreviousCandlePayload IsNot Nothing Then
-                    Dim signalCandle As Payload = currentCandle.PreviousCandlePayload
-                    If signalCandle.PayloadDate > currentTrade.SignalCandle.PayloadDate Then
-                        If signalCandle.CandleColor = Color.Green AndAlso IsValidRainbowForBuy(signalCandle) Then
-                            ret = True
-                        ElseIf signalCandle.CandleColor = Color.Red AndAlso IsValidRainbowForSell(signalCandle) Then
+                    ret = GetAllTradePL(currentTrade, currentTickTime, Trade.TypeOfEntry.Fresh) > Math.Abs(currentTrade.PreviousLoss)
+                ElseIf currentTrade.EntryType = Trade.TypeOfEntry.LossMakeup Then
+                    ret = GetAllTradePL(currentTrade, currentTickTime, Trade.TypeOfEntry.LossMakeup) > Math.Abs(currentTrade.PreviousLoss)
+                ElseIf currentTrade.EntryType = Trade.TypeOfEntry.LossMakeupFresh Then
+                    If IsLossMakeupDone(currentTrade, currentTickTime) Then
+                        If _userInputs.OptimisticExit Then
+                            ret = GetAllTradePL(currentTrade, currentTickTime, Trade.TypeOfEntry.LossMakeupFresh) > Math.Abs(currentTrade.PreviousLoss)
+                        Else
                             ret = True
                         End If
                     End If
                 End If
-            ElseIf typeOfExit = ExitType.HalfPremium Then
+            ElseIf typeOfExit = ExitType.Reverse Then
+                If _SignalPayload.ContainsKey(_ParentStrategy.GetCurrentXMinuteCandleTime(currentTickTime)) Then
+                    Dim currentCandle As Payload = _SignalPayload(_ParentStrategy.GetCurrentXMinuteCandleTime(currentTickTime))
+                    If currentCandle IsNot Nothing AndAlso currentCandle.PreviousCandlePayload IsNot Nothing Then
+                        Dim signalCandle As Payload = currentCandle.PreviousCandlePayload
+                        If signalCandle.PayloadDate > currentTrade.SignalCandle.PayloadDate Then
+                            If signalCandle.CandleColor = Color.Green AndAlso IsValidRainbowForBuy(signalCandle) Then
+                                ret = True
+                            ElseIf signalCandle.CandleColor = Color.Red AndAlso IsValidRainbowForSell(signalCandle) Then
+                                ret = True
+                            End If
+                        End If
+                    End If
+                End If
+            ElseIf typeOfExit = ExitType.ZeroPremium Then
                 Dim currentOptTick As Payload = GetCurrentTick(currentTrade.SupportingTradingSymbol, currentTickTime)
-                If _userInputs.HalfPremiumExit Then
-                    If currentOptTick.Open <= currentTrade.EntryPrice / 2 Then
-                        ret = True
-                    End If
-                Else
-                    If currentOptTick.Open <= 0.05 Then
-                        ret = True
-                    End If
+                If currentOptTick.Open <= 0.05 Then
+                    ret = True
                 End If
             End If
         End If
         Return ret
     End Function
 
-    Private Function GetLossMakeupTradePL(ByVal currentTrade As Trade, ByVal currentTickTime As Date) As Decimal
-        Dim ret As Decimal = 0
+    Private Function IsLossMakeupDone(ByVal currentTrade As Trade, ByVal currentTickTime As Date) As Boolean
+        Dim ret As Boolean = False
         Dim allTrades As List(Of Trade) = _ParentStrategy.GetAllTradesByChildTag(currentTrade.ChildTag, _TradingSymbol)
         If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
             For Each runningTrade In allTrades
                 If runningTrade.EntryType = Trade.TypeOfEntry.LossMakeup Then
-                    If runningTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                        If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-                            Dim currentFOTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
-                            ret += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.EntryPrice, currentFOTick.Open, runningTrade.Quantity - runningTrade.LotSize, runningTrade.LotSize, runningTrade.StockType)
-                        Else
-                            ret += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.EntryPrice, runningTrade.ExitPrice, runningTrade.Quantity - runningTrade.LotSize, runningTrade.LotSize, runningTrade.StockType)
-                        End If
-                    ElseIf runningTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                        If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-                            Dim currentFOTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
-                            ret += _ParentStrategy.CalculatePL(_TradingSymbol, currentFOTick.Open, runningTrade.EntryPrice, runningTrade.Quantity - runningTrade.LotSize, runningTrade.LotSize, runningTrade.StockType)
-                        Else
-                            ret += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.ExitPrice, runningTrade.EntryPrice, runningTrade.Quantity - runningTrade.LotSize, runningTrade.LotSize, runningTrade.StockType)
-                        End If
+                    If runningTrade.ExitRemark IsNot Nothing AndAlso
+                        runningTrade.ExitRemark.ToUpper.Trim = "TARGET HIT" Then
+                        ret = True
+                        Exit For
                     End If
                 End If
             Next
@@ -155,12 +146,12 @@ Public Class HourlyRainbowStrategyRule
         Return ret
     End Function
 
-    Private Function GetFreshTradePL(ByVal currentTrade As Trade, ByVal currentTickTime As Date) As Decimal
+    Private Function GetAllTradePL(ByVal currentTrade As Trade, ByVal currentTickTime As Date, ByVal entryType As Trade.TypeOfEntry) As Decimal
         Dim ret As Decimal = 0
         Dim allTrades As List(Of Trade) = _ParentStrategy.GetAllTradesByChildTag(currentTrade.ChildTag, _TradingSymbol)
         If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
             For Each runningTrade In allTrades
-                If runningTrade.EntryType = Trade.TypeOfEntry.Fresh Then
+                If runningTrade.EntryType = entryType Then
                     If runningTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                         If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
                             Dim currentFOTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
@@ -253,11 +244,11 @@ Public Class HourlyRainbowStrategyRule
                 Next
             End If
 
-            'Half Premium
+            'Zero Premium
             If currentTickTime.Hour >= 15 AndAlso currentTickTime.Minute >= 29 Then
                 For Each runningTrade In availableTrades
                     If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-                        If IsExitSignalReceived(currentTickTime, ExitType.HalfPremium, runningTrade) Then
+                        If IsExitSignalReceived(currentTickTime, ExitType.ZeroPremium, runningTrade) Then
                             Dim currentOptTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
                             Dim currentSpotTick As Payload = GetCurrentTick(_TradingSymbol, currentTickTime)
                             Dim currentOptionExpiryString As String = GetOptionInstrumentExpiryString(_TradingSymbol, _TradingDate)
@@ -324,8 +315,8 @@ Public Class HourlyRainbowStrategyRule
         Dim entryType As Trade.TypeOfEntry = Trade.TypeOfEntry.Fresh
         Dim spotTick As Payload = GetCurrentTick(_TradingSymbol, currentTickTime)
         Dim spotATR As Decimal = _atrPayload(signalCandle.PayloadDate)
-        Dim qunaity As Integer = _LotSize
-        Dim lossToRecover As Decimal = _ParentStrategy.CalculatePL(_TradingSymbol, spotTick.Open, ConvertFloorCeling(spotTick.Open + spotATR, _ParentStrategy.TickSize, RoundOfType.Celing), qunaity, _LotSize, Trade.TypeOfStock.Cash)
+        Dim qunaity As Integer = 0
+        Dim lossToRecover As Decimal = 0
 
         Dim lastTrade As Trade = _ParentStrategy.GetLastEntryTradeOfTheStock(_TradingSymbol, _TradingDate, Trade.TypeOfTrade.CNC)
         If lastTrade IsNot Nothing Then
@@ -339,12 +330,32 @@ Public Class HourlyRainbowStrategyRule
                     tradeNumber = lastTrade.TradeNumber + 1
                     entryType = Trade.TypeOfEntry.LossMakeup
                     lossToRecover = pl
-                    qunaity = lastTrade.Quantity * 2
+
+                    Dim allChildTrades As List(Of Trade) = _ParentStrategy.GetAllTradesByChildTag(lastTrade.ChildTag, _TradingSymbol)
+                    For Each runningTrade In allChildTrades.OrderByDescending(Function(x)
+                                                                                  Return x.ExitTime
+                                                                              End Function)
+                        If runningTrade.StockType = Trade.TypeOfStock.Futures Then
+                            If runningTrade.ExitRemark.ToUpper = "REVERSE EXIT" Then
+                                qunaity += runningTrade.Quantity * 2
+                            ElseIf runningTrade.ExitRemark.ToUpper = "TARGET HIT" Then
+                                Exit For
+                            End If
+                        End If
+                    Next
                 End If
             End If
         End If
 
-        ret = EnterBuySellTrade(signalCandle, spotTick, spotATR, childTag, parentTag, tradeNumber, entryType, direction, lossToRecover, qunaity)
+        If entryType = Trade.TypeOfEntry.Fresh Then
+            lossToRecover = _ParentStrategy.CalculatePL(_TradingSymbol, spotTick.Open, ConvertFloorCeling(spotTick.Open + spotATR, _ParentStrategy.TickSize, RoundOfType.Celing), _LotSize, _LotSize, Trade.TypeOfStock.Cash)
+            ret = EnterBuySellTrade(signalCandle, spotTick, spotATR, childTag, parentTag, tradeNumber, entryType, direction, lossToRecover, _LotSize)
+        Else
+            If EnterBuySellTrade(signalCandle, spotTick, spotATR, childTag, parentTag, tradeNumber, entryType, direction, lossToRecover, qunaity - _LotSize) Then
+                lossToRecover = _ParentStrategy.CalculatePL(_TradingSymbol, spotTick.Open, ConvertFloorCeling(spotTick.Open + spotATR, _ParentStrategy.TickSize, RoundOfType.Celing), _LotSize, _LotSize, Trade.TypeOfStock.Cash)
+                ret = EnterBuySellTrade(signalCandle, spotTick, spotATR, childTag, parentTag, tradeNumber, Trade.TypeOfEntry.LossMakeupFresh, direction, lossToRecover, _LotSize)
+            End If
+        End If
 
         Return ret
     End Function
@@ -369,19 +380,6 @@ Public Class HourlyRainbowStrategyRule
             Dim currentFutTick As Payload = GetCurrentTick(currentFutureTradingSymbol, currentSpotTick.PayloadDate)
             Dim currentOptTick As Payload = GetCurrentTick(currentOptionTradingSymbol, currentSpotTick.PayloadDate)
             If currentOptTick IsNot Nothing AndAlso currentFutTick IsNot Nothing Then
-                'Dim quantity As Integer = _LotSize
-                'If entryType = Trade.TypeOfEntry.LossMakeup Then
-                '    Dim entryPrice As Decimal = currentOptTick.Open
-                '    Dim targetPrice As Decimal = ConvertFloorCeling(entryPrice + currentSpotATR / _userInputs.SpotToOptionDelta, _ParentStrategy.TickSize, RoundOfType.Celing)
-                '    For ctr As Integer = 1 To Integer.MaxValue
-                '        Dim pl As Decimal = _ParentStrategy.CalculatePL(_TradingSymbol, entryPrice, targetPrice, ctr * _LotSize, _LotSize, Trade.TypeOfStock.Options)
-                '        If pl >= Math.Abs(previousLoss) Then
-                '            If _userInputs.ExitAtATRPL Then previousLoss = (pl - 1) * -1
-                '            quantity = ctr * _LotSize + _LotSize
-                '            Exit For
-                '        End If
-                '    Next
-                'End If
                 Dim tgt As Decimal = currentFutTick.Open + 100000
                 Dim sl As Decimal = currentFutTick.Open - 100000
                 If direction = Trade.TradeExecutionDirection.Sell Then
