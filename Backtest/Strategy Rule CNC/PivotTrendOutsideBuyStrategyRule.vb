@@ -239,14 +239,18 @@ Public Class PivotTrendOutsideBuyStrategyRule
                         Dim currentSpotTick As Payload = GetCurrentTick(_TradingSymbol, currentTickTime)
                         Dim currentOptionExpiryString As String = GetOptionInstrumentExpiryString(_TradingSymbol, _NextTradingDay)
                         If Not runningTrade.SupportingTradingSymbol.Contains(currentOptionExpiryString) Then
-                            Dim currentOptTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
-                            _ParentStrategy.ExitTradeByForce(runningTrade, currentOptTick, "Contract Rollover")
-
                             Dim optionType As String = runningTrade.SupportingTradingSymbol.Substring(runningTrade.SupportingTradingSymbol.Count - 2)
                             Dim optionTradingSymbol As String = GetCurrentATMOption(currentTickTime, currentOptionExpiryString, currentSpotTick.Open, optionType, runningTrade.SpotATR)
+                            If optionTradingSymbol IsNot Nothing Then
+                                Dim currentOptTick As Payload = GetCurrentTick(optionTradingSymbol, currentTickTime)
+                                If currentOptTick IsNot Nothing Then
+                                    currentOptTick = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
+                                    _ParentStrategy.ExitTradeByForce(runningTrade, currentOptTick, "Contract Rollover")
 
-                            currentOptTick = GetCurrentTick(optionTradingSymbol, currentTickTime)
-                            EnterDuplicateTrade(runningTrade, currentOptTick, False)
+                                    currentOptTick = GetCurrentTick(optionTradingSymbol, currentTickTime)
+                                    EnterDuplicateTrade(runningTrade, currentOptTick, False)
+                                End If
+                            End If
                         End If
                     End If
                 Next
