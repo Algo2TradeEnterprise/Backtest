@@ -161,7 +161,7 @@ Namespace StrategyHelper
         Public ReadOnly Property CapitalRequiredWithMargin As Decimal
             Get
                 'Return Me.EntryPrice * Me.Quantity / _OriginatingStrategy.MarginMultiplier
-                Return 15000
+                Return 15000 * Me.Quantity / Me.LotSize
             End Get
         End Property
 

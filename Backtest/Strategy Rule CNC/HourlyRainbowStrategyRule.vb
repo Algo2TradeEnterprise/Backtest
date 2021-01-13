@@ -359,9 +359,9 @@ Public Class HourlyRainbowStrategyRule
         Dim optionExpiryString As String = GetOptionInstrumentExpiryString(_TradingSymbol, _NextTradingDay)
         Dim currentOptionTradingSymbol As String = Nothing
         If direction = Trade.TradeExecutionDirection.Buy Then
-            currentOptionTradingSymbol = GetCurrentATMOption(currentSpotTick.PayloadDate, optionExpiryString, currentSpotTick.Open, "CE", currentSpotATR)
-        ElseIf direction = Trade.TradeExecutionDirection.Sell Then
             currentOptionTradingSymbol = GetCurrentATMOption(currentSpotTick.PayloadDate, optionExpiryString, currentSpotTick.Open, "PE", currentSpotATR)
+        ElseIf direction = Trade.TradeExecutionDirection.Sell Then
+            currentOptionTradingSymbol = GetCurrentATMOption(currentSpotTick.PayloadDate, optionExpiryString, currentSpotTick.Open, "CE", currentSpotATR)
         End If
         Dim currentFutureTradingSymbol As String = GetFutureInstrumentNameFromCore(_TradingSymbol, _NextTradingDay)
 
