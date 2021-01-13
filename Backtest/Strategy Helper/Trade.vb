@@ -159,10 +159,10 @@ Namespace StrategyHelper
         'Public ReadOnly Property Supporting9 As String
         Public ReadOnly Property SupportingTradingSymbol As String
 
-        Public ReadOnly Property CapitalRequiredWithMargin As Decimal
+        Public ReadOnly Property CapitalRequiredWithMargin As Double
             Get
                 'Return Me.EntryPrice * Me.Quantity / _OriginatingStrategy.MarginMultiplier
-                Return 15000 * Me.Quantity / Me.LotSize
+                Return 15000 * (Me.Quantity / Me.LotSize)
             End Get
         End Property
 
