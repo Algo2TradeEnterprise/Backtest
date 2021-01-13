@@ -74,13 +74,15 @@ Public Class HourlyRainbowStrategyRule
 
     Private Function IsEntrySignalReceived(ByVal currentTickTime As Date) As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)
         Dim ret As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection) = Nothing
-        If Not _ParentStrategy.IsTradeActive(GetCurrentTick(_TradingSymbol, currentTickTime), Trade.TypeOfTrade.CNC) Then
-            Dim currentCandle As Payload = _SignalPayload(_ParentStrategy.GetCurrentXMinuteCandleTime(currentTickTime))
+        Dim currentMinute As Date = _ParentStrategy.GetCurrentXMinuteCandleTime(currentTickTime)
+        If Not _ParentStrategy.IsTradeActive(GetCurrentTick(_TradingSymbol, currentTickTime), Trade.TypeOfTrade.CNC) AndAlso
+            _SignalPayload.ContainsKey(currentMinute) Then
+            Dim currentCandle As Payload = _SignalPayload(currentMinute)
             If currentCandle IsNot Nothing AndAlso currentCandle.PreviousCandlePayload IsNot Nothing Then
                 Dim signalCandle As Payload = currentCandle.PreviousCandlePayload
                 If signalCandle.CandleColor = Color.Green AndAlso IsValidRainbowForBuy(signalCandle) Then
                     ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, signalCandle, Trade.TradeExecutionDirection.Buy)
-                ElseIf signalCandle.CandleColor = Color.Red AndAlso IsValidRainbowForBuy(signalCandle) Then
+                ElseIf signalCandle.CandleColor = Color.Red AndAlso IsValidRainbowForSell(signalCandle) Then
                     ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, signalCandle, Trade.TradeExecutionDirection.Sell)
                 End If
             End If
@@ -102,10 +104,12 @@ Public Class HourlyRainbowStrategyRule
                 Dim currentCandle As Payload = _SignalPayload(_ParentStrategy.GetCurrentXMinuteCandleTime(currentTickTime))
                 If currentCandle IsNot Nothing AndAlso currentCandle.PreviousCandlePayload IsNot Nothing Then
                     Dim signalCandle As Payload = currentCandle.PreviousCandlePayload
-                    If signalCandle.CandleColor = Color.Green AndAlso IsValidRainbowForBuy(signalCandle) Then
-                        ret = True
-                    ElseIf signalCandle.CandleColor = Color.Red AndAlso IsValidRainbowForBuy(signalCandle) Then
-                        ret = True
+                    If signalCandle.PayloadDate > currentTrade.SignalCandle.PayloadDate Then
+                        If signalCandle.CandleColor = Color.Green AndAlso IsValidRainbowForBuy(signalCandle) Then
+                            ret = True
+                        ElseIf signalCandle.CandleColor = Color.Red AndAlso IsValidRainbowForSell(signalCandle) Then
+                            ret = True
+                        End If
                     End If
                 End If
             ElseIf typeOfExit = ExitType.HalfPremium Then
@@ -132,14 +136,14 @@ Public Class HourlyRainbowStrategyRule
                 If runningTrade.EntryType = Trade.TypeOfEntry.LossMakeup Then
                     If runningTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                         If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-                            Dim currentFOTick As Payload = GetCurrentTick(currentTrade.SupportingTradingSymbol, currentTickTime)
+                            Dim currentFOTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
                             ret += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.EntryPrice, currentFOTick.Open, runningTrade.Quantity - runningTrade.LotSize, runningTrade.LotSize, runningTrade.StockType)
                         Else
                             ret += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.EntryPrice, runningTrade.ExitPrice, runningTrade.Quantity - runningTrade.LotSize, runningTrade.LotSize, runningTrade.StockType)
                         End If
                     ElseIf runningTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
                         If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-                            Dim currentFOTick As Payload = GetCurrentTick(currentTrade.SupportingTradingSymbol, currentTickTime)
+                            Dim currentFOTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
                             ret += _ParentStrategy.CalculatePL(_TradingSymbol, currentFOTick.Open, runningTrade.EntryPrice, runningTrade.Quantity - runningTrade.LotSize, runningTrade.LotSize, runningTrade.StockType)
                         Else
                             ret += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.ExitPrice, runningTrade.EntryPrice, runningTrade.Quantity - runningTrade.LotSize, runningTrade.LotSize, runningTrade.StockType)
@@ -159,14 +163,14 @@ Public Class HourlyRainbowStrategyRule
                 If runningTrade.EntryType = Trade.TypeOfEntry.Fresh Then
                     If runningTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                         If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-                            Dim currentFOTick As Payload = GetCurrentTick(currentTrade.SupportingTradingSymbol, currentTickTime)
+                            Dim currentFOTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
                             ret += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.EntryPrice, currentFOTick.Open, runningTrade.Quantity, runningTrade.LotSize, runningTrade.StockType)
                         Else
                             ret += runningTrade.PLAfterBrokerage
                         End If
                     ElseIf runningTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
                         If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-                            Dim currentFOTick As Payload = GetCurrentTick(currentTrade.SupportingTradingSymbol, currentTickTime)
+                            Dim currentFOTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
                             ret += _ParentStrategy.CalculatePL(_TradingSymbol, currentFOTick.Open, runningTrade.EntryPrice, runningTrade.Quantity, runningTrade.LotSize, runningTrade.StockType)
                         Else
                             ret += runningTrade.PLAfterBrokerage
@@ -318,10 +322,11 @@ Public Class HourlyRainbowStrategyRule
         Dim parentTag As String = childTag
         Dim tradeNumber As Integer = 1
         Dim entryType As Trade.TypeOfEntry = Trade.TypeOfEntry.Fresh
-        Dim lossToRecover As Decimal = 0
-
         Dim spotTick As Payload = GetCurrentTick(_TradingSymbol, currentTickTime)
         Dim spotATR As Decimal = _atrPayload(signalCandle.PayloadDate)
+        Dim qunaity As Integer = _LotSize
+        Dim lossToRecover As Decimal = _ParentStrategy.CalculatePL(_TradingSymbol, spotTick.Open, ConvertFloorCeling(spotTick.Open + spotATR, _ParentStrategy.TickSize, RoundOfType.Celing), qunaity, _LotSize, Trade.TypeOfStock.Cash)
+
         Dim lastTrade As Trade = _ParentStrategy.GetLastEntryTradeOfTheStock(_TradingSymbol, _TradingDate, Trade.TypeOfTrade.CNC)
         If lastTrade IsNot Nothing Then
             Dim allTrades As List(Of Trade) = _ParentStrategy.GetAllTradesByParentTag(lastTrade.ParentTag, _TradingSymbol)
@@ -334,45 +339,84 @@ Public Class HourlyRainbowStrategyRule
                     tradeNumber = lastTrade.TradeNumber + 1
                     entryType = Trade.TypeOfEntry.LossMakeup
                     lossToRecover = pl
+                    qunaity = lastTrade.Quantity * 2
                 End If
             End If
         End If
 
-        ret = EnterBuyTrade(signalCandle, spotTick, spotATR, childTag, parentTag, tradeNumber, entryType, direction, lossToRecover)
+        ret = EnterBuySellTrade(signalCandle, spotTick, spotATR, childTag, parentTag, tradeNumber, entryType, direction, lossToRecover, qunaity)
 
         Return ret
     End Function
 
-    Private Function EnterBuyTrade(ByVal signalCandle As Payload, ByVal currentSpotTick As Payload, ByVal currentSpotATR As Decimal,
-                                   ByVal childTag As String, ByVal parentTag As String,
-                                   ByVal tradeNumber As Integer, ByVal entryType As Trade.TypeOfEntry,
-                                   ByVal diretion As Trade.TradeExecutionDirection, ByVal previousLoss As Decimal) As Boolean
+    Private Function EnterBuySellTrade(ByVal signalCandle As Payload, ByVal currentSpotTick As Payload, ByVal currentSpotATR As Decimal,
+                                       ByVal childTag As String, ByVal parentTag As String,
+                                       ByVal tradeNumber As Integer, ByVal entryType As Trade.TypeOfEntry,
+                                       ByVal direction As Trade.TradeExecutionDirection,
+                                       ByVal previousLoss As Decimal, ByVal quantity As Integer) As Boolean
         Dim ret As Boolean = False
         Dim currentMinute As Date = _ParentStrategy.GetCurrentXMinuteCandleTime(currentSpotTick.PayloadDate)
         Dim optionExpiryString As String = GetOptionInstrumentExpiryString(_TradingSymbol, _NextTradingDay)
         Dim currentOptionTradingSymbol As String = Nothing
-        If diretion = Trade.TradeExecutionDirection.Buy Then
+        If direction = Trade.TradeExecutionDirection.Buy Then
             currentOptionTradingSymbol = GetCurrentATMOption(currentSpotTick.PayloadDate, optionExpiryString, currentSpotTick.Open, "CE", currentSpotATR)
-        ElseIf diretion = Trade.TradeExecutionDirection.Sell Then
+        ElseIf direction = Trade.TradeExecutionDirection.Sell Then
             currentOptionTradingSymbol = GetCurrentATMOption(currentSpotTick.PayloadDate, optionExpiryString, currentSpotTick.Open, "PE", currentSpotATR)
         End If
+        Dim currentFutureTradingSymbol As String = GetFutureInstrumentNameFromCore(_TradingSymbol, _NextTradingDay)
 
-        If currentOptionTradingSymbol IsNot Nothing Then
+        If currentOptionTradingSymbol IsNot Nothing AndAlso currentFutureTradingSymbol IsNot Nothing Then
+            Dim currentFutTick As Payload = GetCurrentTick(currentFutureTradingSymbol, currentSpotTick.PayloadDate)
             Dim currentOptTick As Payload = GetCurrentTick(currentOptionTradingSymbol, currentSpotTick.PayloadDate)
-            If currentOptTick IsNot Nothing Then
-                Dim quantity As Integer = _LotSize
-                If entryType = Trade.TypeOfEntry.LossMakeup Then
-                    Dim entryPrice As Decimal = currentOptTick.Open
-                    Dim targetPrice As Decimal = ConvertFloorCeling(entryPrice + currentSpotATR / _userInputs.SpotToOptionDelta, _ParentStrategy.TickSize, RoundOfType.Celing)
-                    For ctr As Integer = 1 To Integer.MaxValue
-                        Dim pl As Decimal = _ParentStrategy.CalculatePL(_TradingSymbol, entryPrice, targetPrice, ctr * _LotSize, _LotSize, Trade.TypeOfStock.Options)
-                        If pl >= Math.Abs(previousLoss) Then
-                            If _userInputs.ExitAtATRPL Then previousLoss = (pl - 1) * -1
-                            quantity = ctr * _LotSize + _LotSize
-                            Exit For
-                        End If
-                    Next
+            If currentOptTick IsNot Nothing AndAlso currentFutTick IsNot Nothing Then
+                'Dim quantity As Integer = _LotSize
+                'If entryType = Trade.TypeOfEntry.LossMakeup Then
+                '    Dim entryPrice As Decimal = currentOptTick.Open
+                '    Dim targetPrice As Decimal = ConvertFloorCeling(entryPrice + currentSpotATR / _userInputs.SpotToOptionDelta, _ParentStrategy.TickSize, RoundOfType.Celing)
+                '    For ctr As Integer = 1 To Integer.MaxValue
+                '        Dim pl As Decimal = _ParentStrategy.CalculatePL(_TradingSymbol, entryPrice, targetPrice, ctr * _LotSize, _LotSize, Trade.TypeOfStock.Options)
+                '        If pl >= Math.Abs(previousLoss) Then
+                '            If _userInputs.ExitAtATRPL Then previousLoss = (pl - 1) * -1
+                '            quantity = ctr * _LotSize + _LotSize
+                '            Exit For
+                '        End If
+                '    Next
+                'End If
+                Dim tgt As Decimal = currentFutTick.Open + 100000
+                Dim sl As Decimal = currentFutTick.Open - 100000
+                If direction = Trade.TradeExecutionDirection.Sell Then
+                    tgt = currentFutTick.Open - 100000
+                    sl = currentFutTick.Open + 100000
                 End If
+
+                Dim runningFutTrade As Trade = New Trade(originatingStrategy:=_ParentStrategy,
+                                                         tradingSymbol:=_TradingSymbol,
+                                                         stockType:=Trade.TypeOfStock.Futures,
+                                                         orderType:=Trade.TypeOfOrder.Market,
+                                                         tradingDate:=currentFutTick.PayloadDate,
+                                                         entryDirection:=direction,
+                                                         entryPrice:=currentFutTick.Open,
+                                                         entryBuffer:=0,
+                                                         squareOffType:=Trade.TypeOfTrade.CNC,
+                                                         entryCondition:=Trade.TradeEntryCondition.Original,
+                                                         entryRemark:="Original Entry",
+                                                         quantity:=quantity,
+                                                         lotSize:=_LotSize,
+                                                         potentialTarget:=tgt,
+                                                         targetRemark:=100000,
+                                                         potentialStopLoss:=sl,
+                                                         stoplossBuffer:=0,
+                                                         slRemark:=100000,
+                                                         signalCandle:=signalCandle)
+
+                runningFutTrade.UpdateTrade(ChildTag:=childTag,
+                                            ParentTag:=parentTag,
+                                            TradeNumber:=tradeNumber,
+                                            EntryType:=entryType,
+                                            SpotPrice:=currentSpotTick.Open,
+                                            SpotATR:=currentSpotATR,
+                                            PreviousLoss:=previousLoss,
+                                            SupportingTradingSymbol:=currentFutureTradingSymbol)
 
                 Dim runningOptTrade As Trade = New Trade(originatingStrategy:=_ParentStrategy,
                                                          tradingSymbol:=_TradingSymbol,
@@ -403,9 +447,13 @@ Public Class HourlyRainbowStrategyRule
                                             PreviousLoss:=previousLoss,
                                             SupportingTradingSymbol:=currentOptionTradingSymbol)
 
-                If _ParentStrategy.PlaceOrModifyOrder(runningOptTrade, Nothing) Then
-                    If _ParentStrategy.EnterTradeIfPossible(_TradingSymbol, _TradingDate, runningOptTrade, currentOptTick) Then
-                        ret = True
+                If _ParentStrategy.PlaceOrModifyOrder(runningFutTrade, Nothing) Then
+                    If _ParentStrategy.PlaceOrModifyOrder(runningOptTrade, Nothing) Then
+                        If _ParentStrategy.EnterTradeIfPossible(_TradingSymbol, _TradingDate, runningFutTrade, currentFutTick) Then
+                            If _ParentStrategy.EnterTradeIfPossible(_TradingSymbol, _TradingDate, runningOptTrade, currentOptTick) Then
+                                ret = True
+                            End If
+                        End If
                     End If
                 End If
             End If
@@ -616,50 +664,56 @@ Public Class HourlyRainbowStrategyRule
 #Region "Required Functions"
     Private Function IsValidRainbowForBuy(ByVal signalCandle As Payload) As Boolean
         Dim ret As Boolean = False
-        For Each runningPayload In _SignalPayload.OrderByDescending(Function(x)
-                                                                        Return x.Key
-                                                                    End Function)
-            If runningPayload.Key <= signalCandle.PayloadDate Then
-                Dim rainbow As Indicator.RainbowMA = _rainbowPayload(runningPayload.Key)
-                If runningPayload.Value.Close > Math.Max(rainbow.SMA1, Math.Max(rainbow.SMA2, Math.Max(rainbow.SMA3, Math.Max(rainbow.SMA4, Math.Max(rainbow.SMA5, Math.Max(rainbow.SMA6, Math.Max(rainbow.SMA7, Math.Max(rainbow.SMA8, Math.Max(rainbow.SMA9, rainbow.SMA10))))))))) Then
-                    If runningPayload.Value.CandleColor = Color.Green Then
-                        If runningPayload.Key <> signalCandle.PayloadDate Then
-                            ret = False
+        Dim rainbow As Indicator.RainbowMA = _rainbowPayload(signalCandle.PayloadDate)
+        If signalCandle.Close > Math.Max(rainbow.SMA1, Math.Max(rainbow.SMA2, Math.Max(rainbow.SMA3, Math.Max(rainbow.SMA4, Math.Max(rainbow.SMA5, Math.Max(rainbow.SMA6, Math.Max(rainbow.SMA7, Math.Max(rainbow.SMA8, Math.Max(rainbow.SMA9, rainbow.SMA10))))))))) Then
+            For Each runningPayload In _SignalPayload.OrderByDescending(Function(x)
+                                                                            Return x.Key
+                                                                        End Function)
+                If runningPayload.Key < signalCandle.PayloadDate Then
+                    rainbow = _rainbowPayload(runningPayload.Key)
+                    If runningPayload.Value.Close > Math.Max(rainbow.SMA1, Math.Max(rainbow.SMA2, Math.Max(rainbow.SMA3, Math.Max(rainbow.SMA4, Math.Max(rainbow.SMA5, Math.Max(rainbow.SMA6, Math.Max(rainbow.SMA7, Math.Max(rainbow.SMA8, Math.Max(rainbow.SMA9, rainbow.SMA10))))))))) Then
+                        If runningPayload.Value.CandleColor = Color.Green Then
+                            If runningPayload.Key <> signalCandle.PayloadDate Then
+                                ret = False
+                                Exit For
+                            End If
+                        End If
+                    ElseIf runningPayload.Value.Close < Math.Min(rainbow.SMA1, Math.Min(rainbow.SMA2, Math.Min(rainbow.SMA3, Math.Min(rainbow.SMA4, Math.Min(rainbow.SMA5, Math.Min(rainbow.SMA6, Math.Min(rainbow.SMA7, Math.Min(rainbow.SMA8, Math.Min(rainbow.SMA9, rainbow.SMA10))))))))) Then
+                        If runningPayload.Value.CandleColor = Color.Red Then
+                            ret = True
                             Exit For
                         End If
                     End If
-                ElseIf runningPayload.Value.Close < Math.Min(rainbow.SMA1, Math.Min(rainbow.SMA2, Math.Min(rainbow.SMA3, Math.Min(rainbow.SMA4, Math.Min(rainbow.SMA5, Math.Min(rainbow.SMA6, Math.Min(rainbow.SMA7, Math.Min(rainbow.SMA8, Math.Min(rainbow.SMA9, rainbow.SMA10))))))))) Then
-                    If runningPayload.Value.CandleColor = Color.Red Then
-                        ret = True
-                        Exit For
-                    End If
                 End If
-            End If
-        Next
+            Next
+        End If
         Return ret
     End Function
     Private Function IsValidRainbowForSell(ByVal signalCandle As Payload) As Boolean
         Dim ret As Boolean = False
-        For Each runningPayload In _SignalPayload.OrderByDescending(Function(x)
-                                                                        Return x.Key
-                                                                    End Function)
-            If runningPayload.Key <= signalCandle.PayloadDate Then
-                Dim rainbow As Indicator.RainbowMA = _rainbowPayload(runningPayload.Key)
-                If runningPayload.Value.Close < Math.Min(rainbow.SMA1, Math.Min(rainbow.SMA2, Math.Min(rainbow.SMA3, Math.Min(rainbow.SMA4, Math.Min(rainbow.SMA5, Math.Min(rainbow.SMA6, Math.Min(rainbow.SMA7, Math.Min(rainbow.SMA8, Math.Min(rainbow.SMA9, rainbow.SMA10))))))))) Then
-                    If runningPayload.Value.CandleColor = Color.Red Then
-                        If runningPayload.Key <> signalCandle.PayloadDate Then
-                            ret = False
+        Dim rainbow As Indicator.RainbowMA = _rainbowPayload(signalCandle.PayloadDate)
+        If signalCandle.Close < Math.Min(rainbow.SMA1, Math.Min(rainbow.SMA2, Math.Min(rainbow.SMA3, Math.Min(rainbow.SMA4, Math.Min(rainbow.SMA5, Math.Min(rainbow.SMA6, Math.Min(rainbow.SMA7, Math.Min(rainbow.SMA8, Math.Min(rainbow.SMA9, rainbow.SMA10))))))))) Then
+            For Each runningPayload In _SignalPayload.OrderByDescending(Function(x)
+                                                                            Return x.Key
+                                                                        End Function)
+                If runningPayload.Key < signalCandle.PayloadDate Then
+                    rainbow = _rainbowPayload(runningPayload.Key)
+                    If runningPayload.Value.Close < Math.Min(rainbow.SMA1, Math.Min(rainbow.SMA2, Math.Min(rainbow.SMA3, Math.Min(rainbow.SMA4, Math.Min(rainbow.SMA5, Math.Min(rainbow.SMA6, Math.Min(rainbow.SMA7, Math.Min(rainbow.SMA8, Math.Min(rainbow.SMA9, rainbow.SMA10))))))))) Then
+                        If runningPayload.Value.CandleColor = Color.Red Then
+                            If runningPayload.Key <> signalCandle.PayloadDate Then
+                                ret = False
+                                Exit For
+                            End If
+                        End If
+                    ElseIf runningPayload.Value.Close > Math.Max(rainbow.SMA1, Math.Max(rainbow.SMA2, Math.Max(rainbow.SMA3, Math.Max(rainbow.SMA4, Math.Max(rainbow.SMA5, Math.Max(rainbow.SMA6, Math.Max(rainbow.SMA7, Math.Max(rainbow.SMA8, Math.Max(rainbow.SMA9, rainbow.SMA10))))))))) Then
+                        If runningPayload.Value.CandleColor = Color.Green Then
+                            ret = True
                             Exit For
                         End If
                     End If
-                ElseIf runningPayload.Value.Close > Math.Max(rainbow.SMA1, Math.Max(rainbow.SMA2, Math.Max(rainbow.SMA3, Math.Max(rainbow.SMA4, Math.Max(rainbow.SMA5, Math.Max(rainbow.SMA6, Math.Max(rainbow.SMA7, Math.Max(rainbow.SMA8, Math.Max(rainbow.SMA9, rainbow.SMA10))))))))) Then
-                    If runningPayload.Value.CandleColor = Color.Green Then
-                        ret = True
-                        Exit For
-                    End If
                 End If
-            End If
-        Next
+            Next
+        End If
         Return ret
     End Function
 #End Region

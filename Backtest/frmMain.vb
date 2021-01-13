@@ -298,19 +298,19 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            Dim optnStrkList As List(Of Integer) = New List(Of Integer) From {-3, -2, -1, 1, 2, 3}
-            For hlfPrm As Integer = 0 To 1
-                For atrPL As Integer = 0 To 1
+            Dim optnStrkList As List(Of Integer) = New List(Of Integer) From {1}
+            For hlfPrm As Integer = 0 To 0
+                For atrPL As Integer = 0 To 0
                     For Each optnStrk In optnStrkList
                         Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
                                                             exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                             exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                            tradeStartTime:=TimeSpan.Parse("15:29:00"),
+                                                            tradeStartTime:=TimeSpan.Parse("9:16:00"),
                                                             lastTradeEntryTime:=TimeSpan.Parse("15:30:00"),
                                                             eodExitTime:=TimeSpan.Parse("15:30:00"),
                                                             tickSize:=tick,
                                                             marginMultiplier:=margin,
-                                                            timeframe:=1,
+                                                            timeframe:=60,
                                                             heikenAshiCandle:=False,
                                                             stockType:=stockType,
                                                             databaseTable:=database,
@@ -337,13 +337,14 @@ Public Class frmMain
                                              .SpotToOptionDelta = 1,
                                              .HalfPremiumExit = hlfPrm,
                                              .ExitAtATRPL = atrPL,
-                                             .OptionStrikeDistance = optnStrk
+                                             .OptionStrikeDistance = optnStrk,
+                                             .RainbowPeriod = 7
                                             }
                                     Case Else
                                         Throw New NotImplementedException
                                 End Select
 
-                                .NumberOfTradeableStockPerDay = 15
+                                .NumberOfTradeableStockPerDay = 1
 
                                 .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
@@ -368,7 +369,7 @@ Public Class frmMain
                             Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
                                 Case 0
                                     Dim ruleData As HourlyRainbowStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                                    filename = String.Format("Pivot Trend Option Buy,HlfPrmExt {0},ExtATRPL {1},OptnDstnc {2}",
+                                    filename = String.Format("Hourly Rainbow,HlfPrmExt {0},ExtATRPL {1},OptnDstnc {2}",
                                                              ruleData.HalfPremiumExit, ruleData.ExitAtATRPL, ruleData.OptionStrikeDistance)
                                 Case Else
                                     Throw New NotImplementedException
