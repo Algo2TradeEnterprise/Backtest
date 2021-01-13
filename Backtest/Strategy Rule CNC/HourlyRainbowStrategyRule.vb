@@ -228,17 +228,28 @@ Public Class HourlyRainbowStrategyRule
             If currentTickTime.Hour >= 15 AndAlso currentTickTime.Minute >= 29 Then
                 For Each runningTrade In availableTrades
                     If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-                        Dim currentSpotTick As Payload = GetCurrentTick(_TradingSymbol, currentTickTime)
-                        Dim currentOptionExpiryString As String = GetOptionInstrumentExpiryString(_TradingSymbol, _NextTradingDay)
-                        If Not runningTrade.SupportingTradingSymbol.Contains(currentOptionExpiryString) Then
-                            Dim currentOptTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
-                            _ParentStrategy.ExitTradeByForce(runningTrade, currentOptTick, "Contract Rollover")
+                        If runningTrade.StockType = Trade.TypeOfStock.Options Then
+                            Dim currentSpotTick As Payload = GetCurrentTick(_TradingSymbol, currentTickTime)
+                            Dim currentOptionExpiryString As String = GetOptionInstrumentExpiryString(_TradingSymbol, _NextTradingDay)
+                            If Not runningTrade.SupportingTradingSymbol.Contains(currentOptionExpiryString) Then
+                                Dim currentOptTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
+                                _ParentStrategy.ExitTradeByForce(runningTrade, currentOptTick, "Contract Rollover")
 
-                            Dim optionType As String = runningTrade.SupportingTradingSymbol.Substring(runningTrade.SupportingTradingSymbol.Count - 2)
-                            Dim optionTradingSymbol As String = GetCurrentATMOption(currentTickTime, currentOptionExpiryString, currentSpotTick.Open, optionType, runningTrade.SpotATR)
+                                Dim optionType As String = runningTrade.SupportingTradingSymbol.Substring(runningTrade.SupportingTradingSymbol.Count - 2)
+                                Dim optionTradingSymbol As String = GetCurrentATMOption(currentTickTime, currentOptionExpiryString, currentSpotTick.Open, optionType, runningTrade.SpotATR)
 
-                            currentOptTick = GetCurrentTick(optionTradingSymbol, currentTickTime)
-                            EnterDuplicateTrade(runningTrade, currentOptTick, False)
+                                currentOptTick = GetCurrentTick(optionTradingSymbol, currentTickTime)
+                                EnterDuplicateTrade(runningTrade, currentOptTick, False)
+                            End If
+                        Else
+                            Dim currentFutureInstrument As String = GetFutureInstrumentNameFromCore(_TradingSymbol, _NextTradingDay)
+                            If Not runningTrade.SupportingTradingSymbol.ToUpper = currentFutureInstrument Then
+                                Dim currentFutTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
+                                _ParentStrategy.ExitTradeByForce(runningTrade, currentFutTick, "Contract Rollover")
+
+                                currentFutTick = GetCurrentTick(currentFutureInstrument, currentTickTime)
+                                EnterDuplicateTrade(runningTrade, currentFutTick, False)
+                            End If
                         End If
                     End If
                 Next
@@ -247,7 +258,8 @@ Public Class HourlyRainbowStrategyRule
             'Zero Premium
             If currentTickTime.Hour >= 15 AndAlso currentTickTime.Minute >= 29 Then
                 For Each runningTrade In availableTrades
-                    If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                    If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress AndAlso
+                        runningTrade.StockType = Trade.TypeOfStock.Options Then
                         If IsExitSignalReceived(currentTickTime, ExitType.ZeroPremium, runningTrade) Then
                             Dim currentOptTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
                             Dim currentSpotTick As Payload = GetCurrentTick(_TradingSymbol, currentTickTime)
