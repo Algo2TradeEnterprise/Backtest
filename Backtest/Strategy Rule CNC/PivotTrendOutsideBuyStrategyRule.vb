@@ -101,11 +101,27 @@ Public Class PivotTrendOutsideBuyStrategyRule
                         End If
                     End If
                 Else
-                    If currentTickTime >= _TradeStartTime Then
-                        If trend = Color.Green AndAlso previousTrend = Color.Red Then
-                            ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(_TradingDate), Trade.TradeExecutionDirection.Buy)
-                        ElseIf trend = Color.Red AndAlso previousTrend = Color.Green Then
-                            ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(_TradingDate), Trade.TradeExecutionDirection.Sell)
+                    If trend = Color.Green Then
+                        If previousTrend = Color.Red Then
+                            If currentTickTime >= _TradeStartTime Then
+                                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(_TradingDate), Trade.TradeExecutionDirection.Buy)
+                            End If
+                        Else
+                            Dim rolloverDay As Date = GetRolloverDay(trend)
+                            If rolloverDay <> Date.MinValue AndAlso rolloverDay.Date >= New Date(2020, 1, 1).Date Then
+                                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Buy)
+                            End If
+                        End If
+                    ElseIf trend = Color.Red Then
+                        If previousTrend = Color.Green Then
+                            If currentTickTime >= _TradeStartTime Then
+                                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(_TradingDate), Trade.TradeExecutionDirection.Sell)
+                            End If
+                        Else
+                            Dim rolloverDay As Date = GetRolloverDay(trend)
+                            If rolloverDay <> Date.MinValue AndAlso rolloverDay.Date >= New Date(2020, 1, 1).Date Then
+                                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Sell)
+                            End If
                         End If
                     End If
                 End If
