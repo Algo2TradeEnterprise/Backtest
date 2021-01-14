@@ -85,7 +85,9 @@ Public Class PivotTrendOutsideBuyStrategyRule
                         Else
                             Dim rolloverDay As Date = GetRolloverDay(trend)
                             If rolloverDay <> Date.MinValue AndAlso rolloverDay.Date <> lastTrade.SignalCandle.PayloadDate.Date Then
-                                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Buy)
+                                If CType(_ParentStrategy, CNCGenericStrategy).IsStockAvailable(rolloverDay, _TradingSymbol) Then
+                                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Buy)
+                                End If
                             End If
                         End If
                     ElseIf trend = Color.Red Then
@@ -96,7 +98,9 @@ Public Class PivotTrendOutsideBuyStrategyRule
                         Else
                             Dim rolloverDay As Date = GetRolloverDay(trend)
                             If rolloverDay <> Date.MinValue AndAlso rolloverDay.Date <> lastTrade.SignalCandle.PayloadDate.Date Then
-                                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Sell)
+                                If CType(_ParentStrategy, CNCGenericStrategy).IsStockAvailable(rolloverDay, _TradingSymbol) Then
+                                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Sell)
+                                End If
                             End If
                         End If
                     End If
@@ -108,8 +112,10 @@ Public Class PivotTrendOutsideBuyStrategyRule
                             End If
                         Else
                             Dim rolloverDay As Date = GetRolloverDay(trend)
-                            If rolloverDay <> Date.MinValue AndAlso rolloverDay.Date >= New Date(2020, 1, 1).Date Then
-                                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Buy)
+                            If rolloverDay <> Date.MinValue Then
+                                If CType(_ParentStrategy, CNCGenericStrategy).IsStockAvailable(rolloverDay, _TradingSymbol) Then
+                                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Buy)
+                                End If
                             End If
                         End If
                     ElseIf trend = Color.Red Then
@@ -119,8 +125,10 @@ Public Class PivotTrendOutsideBuyStrategyRule
                             End If
                         Else
                             Dim rolloverDay As Date = GetRolloverDay(trend)
-                            If rolloverDay <> Date.MinValue AndAlso rolloverDay.Date >= New Date(2020, 1, 1).Date Then
-                                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Sell)
+                            If rolloverDay <> Date.MinValue Then
+                                If CType(_ParentStrategy, CNCGenericStrategy).IsStockAvailable(rolloverDay, _TradingSymbol) Then
+                                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Sell)
+                                End If
                             End If
                         End If
                     End If
