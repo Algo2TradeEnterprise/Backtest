@@ -414,7 +414,7 @@ Public Class Payload
                     runningTickCtr += 1
                     'runningPayLoadDate = New Date(Me.PayloadDate.Year, Me.PayloadDate.Month, Me.PayloadDate.Day, Me.PayloadDate.Hour, Me.PayloadDate.Minute, Math.Round(runningTickCtr / ticksPerSecond, 0))
                     runningPayLoadDate = New Date(Me.PayloadDate.Year, Me.PayloadDate.Month, Me.PayloadDate.Day, Me.PayloadDate.Hour, Me.PayloadDate.Minute, If(Math.Round(runningTickCtr / ticksPerSecond, 0) >= 60, 59, Math.Round(runningTickCtr / ticksPerSecond, 0)))
-                    _Ticks.Add(New Payload(CandleDataSource.Calculated) With {.TradingSymbol = Me.TradingSymbol, .Open = runningTick, .Low = runningTick, .High = runningTick, .Close = runningTick, .PayloadDate = runningPayLoadDate, .PreviousCandlePayload = previousTickPayload})
+                    _Ticks.Add(New Payload(CandleDataSource.Calculated) With {.TradingSymbol = Me.TradingSymbol, .Open = runningTick, .Low = runningTick, .High = runningTick, .Close = runningTick, .PayloadDate = runningPayLoadDate, .Volume = Me.Volume, .PreviousCandlePayload = previousTickPayload})
                     previousTickPayload = _Ticks.LastOrDefault
                 Next
                 multiplier = If(Me.CandleColor = Color.Red, -1, 1)
@@ -425,7 +425,7 @@ Public Class Payload
                     Catch ex As Exception
                         Throw ex
                     End Try
-                    _Ticks.Add(New Payload(CandleDataSource.Calculated) With {.TradingSymbol = Me.TradingSymbol, .Open = runningTick, .Low = runningTick, .High = runningTick, .Close = runningTick, .PayloadDate = runningPayLoadDate, .PreviousCandlePayload = previousTickPayload})
+                    _Ticks.Add(New Payload(CandleDataSource.Calculated) With {.TradingSymbol = Me.TradingSymbol, .Open = runningTick, .Low = runningTick, .High = runningTick, .Close = runningTick, .PayloadDate = runningPayLoadDate, .Volume = Me.Volume, .PreviousCandlePayload = previousTickPayload})
                     previousTickPayload = _Ticks.LastOrDefault
                 Next
                 multiplier = If(Me.CandleColor = Color.Red, 1, -1)
@@ -436,7 +436,7 @@ Public Class Payload
                     Catch ex As Exception
                         Throw ex
                     End Try
-                    _Ticks.Add(New Payload(CandleDataSource.Calculated) With {.TradingSymbol = Me.TradingSymbol, .Open = runningTick, .Low = runningTick, .High = runningTick, .Close = runningTick, .PayloadDate = runningPayLoadDate, .PreviousCandlePayload = previousTickPayload})
+                    _Ticks.Add(New Payload(CandleDataSource.Calculated) With {.TradingSymbol = Me.TradingSymbol, .Open = runningTick, .Low = runningTick, .High = runningTick, .Close = runningTick, .PayloadDate = runningPayLoadDate, .Volume = Me.Volume, .PreviousCandlePayload = previousTickPayload})
                     previousTickPayload = _Ticks.LastOrDefault
                 Next
             End If
