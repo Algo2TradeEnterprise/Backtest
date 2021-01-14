@@ -53,9 +53,9 @@ Public Class HourlyRainbowStrategyRule
                 If Not _dependentInstruments.ContainsKey(runningTrade.SupportingTradingSymbol) Then
                     Dim inputPayload As Dictionary(Of Date, Payload) = Nothing
                     If runningTrade.SupportingTradingSymbol.EndsWith("FUT") Then
-                        inputPayload = _ParentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.Intraday_Futures, runningTrade.SupportingTradingSymbol, _TradingDate.AddDays(-30), _TradingDate)
+                        inputPayload = _ParentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.Intraday_Futures, runningTrade.SupportingTradingSymbol, _TradingDate.AddDays(-50), _TradingDate)
                     Else
-                        inputPayload = _ParentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.Intraday_Futures_Options, runningTrade.SupportingTradingSymbol, _TradingDate.AddDays(-30), _TradingDate)
+                        inputPayload = _ParentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.Intraday_Futures_Options, runningTrade.SupportingTradingSymbol, _TradingDate.AddDays(-50), _TradingDate)
                     End If
                     If inputPayload IsNot Nothing AndAlso inputPayload.Count > 0 Then
                         _dependentInstruments.Add(runningTrade.SupportingTradingSymbol, inputPayload)
@@ -78,16 +78,19 @@ Public Class HourlyRainbowStrategyRule
             If currentCandle IsNot Nothing AndAlso currentCandle.PreviousCandlePayload IsNot Nothing Then
                 Dim signalCandle As Payload = currentCandle.PreviousCandlePayload
                 Dim rainbow As Indicator.RainbowMA = _rainbowPayload(signalCandle.PayloadDate)
+                Dim lastTrade As Trade = _ParentStrategy.GetLastEntryTradeOfTheStock(_TradingSymbol, _TradingDate, Trade.TypeOfTrade.CNC)
                 If signalCandle.CandleColor = Color.Green AndAlso
                     signalCandle.Close > Math.Max(rainbow.SMA1, Math.Max(rainbow.SMA2, Math.Max(rainbow.SMA3, Math.Max(rainbow.SMA4, Math.Max(rainbow.SMA5, Math.Max(rainbow.SMA6, Math.Max(rainbow.SMA7, Math.Max(rainbow.SMA8, Math.Max(rainbow.SMA9, rainbow.SMA10))))))))) Then
-
-                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, signalCandle, Trade.TradeExecutionDirection.Buy)
-
+                    Dim rolloverDate As Date = GetRolloverDate(signalCandle, Trade.TradeExecutionDirection.Buy)
+                    If rolloverDate <> Date.MinValue AndAlso (lastTrade Is Nothing OrElse lastTrade.SignalCandle.PayloadDate <> rolloverDate) Then
+                        ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _SignalPayload(rolloverDate), Trade.TradeExecutionDirection.Buy)
+                    End If
                 ElseIf signalCandle.CandleColor = Color.Red AndAlso
                     signalCandle.Close < Math.Min(rainbow.SMA1, Math.Min(rainbow.SMA2, Math.Min(rainbow.SMA3, Math.Min(rainbow.SMA4, Math.Min(rainbow.SMA5, Math.Min(rainbow.SMA6, Math.Min(rainbow.SMA7, Math.Min(rainbow.SMA8, Math.Min(rainbow.SMA9, rainbow.SMA10))))))))) Then
-
-                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, signalCandle, Trade.TradeExecutionDirection.Sell)
-
+                    Dim rolloverDate As Date = GetRolloverDate(signalCandle, Trade.TradeExecutionDirection.Sell)
+                    If rolloverDate <> Date.MinValue AndAlso (lastTrade Is Nothing OrElse lastTrade.SignalCandle.PayloadDate <> rolloverDate) Then
+                        ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _SignalPayload(rolloverDate), Trade.TradeExecutionDirection.Sell)
+                    End If
                 End If
             End If
         End If
@@ -97,7 +100,6 @@ Public Class HourlyRainbowStrategyRule
     Private Function IsExitSignalReceived(ByVal currentTickTime As Date, ByVal typeOfExit As ExitType, ByVal currentTrade As Trade) As Boolean
         Dim ret As Boolean = False
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-            Dim optionType As String = currentTrade.SupportingTradingSymbol.Substring(currentTrade.SupportingTradingSymbol.Count - 2)
             If typeOfExit = ExitType.Target Then
                 If currentTrade.EntryType = Trade.TypeOfEntry.Fresh Then      'Fresh Trade
                     ret = GetAllTradePL(currentTrade, currentTickTime, Trade.TypeOfEntry.Fresh) > Math.Abs(currentTrade.PreviousLoss)
@@ -119,9 +121,23 @@ Public Class HourlyRainbowStrategyRule
                         Dim signalCandle As Payload = currentCandle.PreviousCandlePayload
                         If signalCandle.PayloadDate > currentTrade.SignalCandle.PayloadDate Then
                             If signalCandle.CandleColor = Color.Green AndAlso IsValidRainbowForBuy(signalCandle) Then
-                                ret = True
+                                If currentTrade.StockType = Trade.TypeOfStock.Futures And currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                                    ret = True
+                                ElseIf currentTrade.StockType = Trade.TypeOfStock.Options Then
+                                    Dim optionType As String = currentTrade.SupportingTradingSymbol.Substring(currentTrade.SupportingTradingSymbol.Count - 2)
+                                    If optionType = "CE" Then
+                                        ret = True
+                                    End If
+                                End If
                             ElseIf signalCandle.CandleColor = Color.Red AndAlso IsValidRainbowForSell(signalCandle) Then
-                                ret = True
+                                If currentTrade.StockType = Trade.TypeOfStock.Futures And currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                                    ret = True
+                                ElseIf currentTrade.StockType = Trade.TypeOfStock.Options Then
+                                    Dim optionType As String = currentTrade.SupportingTradingSymbol.Substring(currentTrade.SupportingTradingSymbol.Count - 2)
+                                    If optionType = "PE" Then
+                                        ret = True
+                                    End If
+                                End If
                             End If
                         End If
                     End If
@@ -309,9 +325,9 @@ Public Class HourlyRainbowStrategyRule
         If _dependentInstruments Is Nothing OrElse Not _dependentInstruments.ContainsKey(tradingSymbol) Then
             Dim inputPayload As Dictionary(Of Date, Payload) = Nothing
             If tradingSymbol.EndsWith("FUT") Then
-                inputPayload = _ParentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.Intraday_Futures, tradingSymbol, _TradingDate.AddDays(-30), _TradingDate)
+                inputPayload = _ParentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.Intraday_Futures, tradingSymbol, _TradingDate.AddDays(-50), _TradingDate)
             Else
-                inputPayload = _ParentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.Intraday_Futures_Options, tradingSymbol, _TradingDate.AddDays(-30), _TradingDate)
+                inputPayload = _ParentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.Intraday_Futures_Options, tradingSymbol, _TradingDate.AddDays(-50), _TradingDate)
             End If
             If inputPayload IsNot Nothing AndAlso inputPayload.Count > 0 Then
                 If _dependentInstruments Is Nothing Then _dependentInstruments = New Dictionary(Of String, Dictionary(Of Date, Payload))
@@ -698,6 +714,31 @@ Public Class HourlyRainbowStrategyRule
 #End Region
 
 #Region "Required Functions"
+    Private Function GetRolloverDate(ByVal signalCandle As Payload, ByVal direction As Trade.TradeExecutionDirection) As Date
+        Dim ret As Date = Date.MinValue
+        For Each runningPayload In _SignalPayload.OrderByDescending(Function(x)
+                                                                        Return x.Key
+                                                                    End Function)
+            If runningPayload.Key < signalCandle.PayloadDate Then
+                Dim rainbow As Indicator.RainbowMA = _rainbowPayload(runningPayload.Key)
+                If direction = Trade.TradeExecutionDirection.Sell AndAlso
+                    runningPayload.Value.Close > Math.Max(rainbow.SMA1, Math.Max(rainbow.SMA2, Math.Max(rainbow.SMA3, Math.Max(rainbow.SMA4, Math.Max(rainbow.SMA5, Math.Max(rainbow.SMA6, Math.Max(rainbow.SMA7, Math.Max(rainbow.SMA8, Math.Max(rainbow.SMA9, rainbow.SMA10))))))))) Then
+                    If runningPayload.Value.CandleColor = Color.Green Then
+                        ret = runningPayload.Key
+                        Exit For
+                    End If
+                ElseIf direction = Trade.TradeExecutionDirection.Buy AndAlso
+                    runningPayload.Value.Close < Math.Min(rainbow.SMA1, Math.Min(rainbow.SMA2, Math.Min(rainbow.SMA3, Math.Min(rainbow.SMA4, Math.Min(rainbow.SMA5, Math.Min(rainbow.SMA6, Math.Min(rainbow.SMA7, Math.Min(rainbow.SMA8, Math.Min(rainbow.SMA9, rainbow.SMA10))))))))) Then
+                    If runningPayload.Value.CandleColor = Color.Red Then
+                        ret = runningPayload.Key
+                        Exit For
+                    End If
+                End If
+            End If
+        Next
+        Return ret
+    End Function
+
     Private Function IsValidRainbowForBuy(ByVal signalCandle As Payload) As Boolean
         Dim ret As Boolean = False
         Dim rainbow As Indicator.RainbowMA = _rainbowPayload(signalCandle.PayloadDate)
@@ -725,6 +766,7 @@ Public Class HourlyRainbowStrategyRule
         End If
         Return ret
     End Function
+
     Private Function IsValidRainbowForSell(ByVal signalCandle As Payload) As Boolean
         Dim ret As Boolean = False
         Dim rainbow As Indicator.RainbowMA = _rainbowPayload(signalCandle.PayloadDate)
