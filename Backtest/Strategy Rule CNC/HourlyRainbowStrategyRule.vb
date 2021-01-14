@@ -77,10 +77,17 @@ Public Class HourlyRainbowStrategyRule
             Dim currentCandle As Payload = _SignalPayload(currentMinute)
             If currentCandle IsNot Nothing AndAlso currentCandle.PreviousCandlePayload IsNot Nothing Then
                 Dim signalCandle As Payload = currentCandle.PreviousCandlePayload
-                If signalCandle.CandleColor = Color.Green AndAlso IsValidRainbowForBuy(signalCandle) Then
+                Dim rainbow As Indicator.RainbowMA = _rainbowPayload(signalCandle.PayloadDate)
+                If signalCandle.CandleColor = Color.Green AndAlso
+                    signalCandle.Close > Math.Max(rainbow.SMA1, Math.Max(rainbow.SMA2, Math.Max(rainbow.SMA3, Math.Max(rainbow.SMA4, Math.Max(rainbow.SMA5, Math.Max(rainbow.SMA6, Math.Max(rainbow.SMA7, Math.Max(rainbow.SMA8, Math.Max(rainbow.SMA9, rainbow.SMA10))))))))) Then
+
                     ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, signalCandle, Trade.TradeExecutionDirection.Buy)
-                ElseIf signalCandle.CandleColor = Color.Red AndAlso IsValidRainbowForSell(signalCandle) Then
+
+                ElseIf signalCandle.CandleColor = Color.Red AndAlso
+                    signalCandle.Close < Math.Min(rainbow.SMA1, Math.Min(rainbow.SMA2, Math.Min(rainbow.SMA3, Math.Min(rainbow.SMA4, Math.Min(rainbow.SMA5, Math.Min(rainbow.SMA6, Math.Min(rainbow.SMA7, Math.Min(rainbow.SMA8, Math.Min(rainbow.SMA9, rainbow.SMA10))))))))) Then
+
                     ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, signalCandle, Trade.TradeExecutionDirection.Sell)
+
                 End If
             End If
         End If
