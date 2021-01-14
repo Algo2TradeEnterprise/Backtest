@@ -298,9 +298,9 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            Dim optnStrkList As List(Of Integer) = New List(Of Integer) From {1}
-            For hlfPrm As Integer = 0 To 0
-                For atrPL As Integer = 0 To 0
+            Dim optnStrkList As List(Of Integer) = New List(Of Integer) From {-3, -2, -1, 1, 2, 3}
+            For hlfPrm As Integer = 0 To 1
+                For atrPL As Integer = 0 To 1
                     For Each optnStrk In optnStrkList
                         Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
                                                             exchangeStartTime:=TimeSpan.Parse("09:15:00"),
