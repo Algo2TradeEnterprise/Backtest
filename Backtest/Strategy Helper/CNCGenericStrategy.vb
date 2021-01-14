@@ -7,6 +7,7 @@ Namespace StrategyHelper
     Public Class CNCGenericStrategy
         Inherits Strategy
         Implements IDisposable
+
         Public Property StockFileName As String
         Public Property RuleNumber As Integer
         Public Property RuleEntityData As RuleEntities
@@ -239,38 +240,10 @@ Namespace StrategyHelper
 
                             If ret Is Nothing Then ret = New List(Of StockDetails)
                             ret.Add(detailsOfStock)
+
                             If ret.Count >= Me.NumberOfTradeableStockPerDay Then Exit For
                         End If
                     Next
-                End If
-            End If
-            Return ret
-        End Function
-
-        Public Function IsStockAvailable(ByVal tradingDate As Date, ByVal stockname As String) As Boolean
-            Dim ret As Boolean = False
-            If Me.StockFileName IsNot Nothing Then
-                Dim dt As DataTable = Nothing
-                Using csvHelper As New Utilities.DAL.CSVHelper(Me.StockFileName, ",", _canceller)
-                    dt = csvHelper.GetDataTableFromCSV(1)
-                End Using
-                If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
-                    Dim stockList As List(Of String) = Nothing
-                    For Each runningRow As DataRow In dt.Rows
-                        Dim rowDate As Date = runningRow.Item("Date")
-                        If rowDate.Date = tradingDate.Date Then
-                            Dim tradingSymbol As String = runningRow.Item("Trading Symbol")
-
-                            tradingSymbol = "ICICIBANK"
-
-                            If stockList Is Nothing Then stockList = New List(Of String)
-                            stockList.Add(tradingSymbol)
-                            If stockList.Count >= Me.NumberOfTradeableStockPerDay Then Exit For
-                        End If
-                    Next
-                    If stockList IsNot Nothing AndAlso stockList.Contains(stockname) Then
-                        ret = True
-                    End If
                 End If
             End If
             Return ret

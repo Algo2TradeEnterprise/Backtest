@@ -250,50 +250,6 @@ Namespace StrategyHelper
                 Return ret
             End Get
         End Property
-        Public ReadOnly Property StockNumberOfStoplossTrades(ByVal currentDate As Date, ByVal stockTradingSymbol As String) As Integer
-            Get
-                Dim ret As Integer = 0
-                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentDate.Date) AndAlso TradesTaken(currentDate.Date).ContainsKey(stockTradingSymbol) Then
-                    Dim tradeList As List(Of Trade) = TradesTaken(currentDate.Date)(stockTradingSymbol).FindAll(Function(x)
-                                                                                                                    Return x.ExitCondition <> Trade.TradeExitCondition.Cancelled AndAlso
-                                                                                                              x.TradeCurrentStatus <> Trade.TradeExecutionStatus.Open AndAlso
-                                                                                                              x.ExitCondition = Trade.TradeExitCondition.StopLoss
-                                                                                                                End Function)
-                    If tradeList IsNot Nothing AndAlso tradeList.Count > 0 Then
-                        Dim artnrGroups = From a In tradeList
-                                          Group a By Key = a.ChildTag Into Group
-                                          Select artnr = Key, numbersCount = Group.Count()
-
-                        If artnrGroups IsNot Nothing AndAlso artnrGroups.Count > 0 Then
-                            ret = artnrGroups.Count
-                        End If
-                    End If
-                End If
-                Return ret
-            End Get
-        End Property
-        Public ReadOnly Property StockNumberOfTargetTrades(ByVal currentDate As Date, ByVal stockTradingSymbol As String) As Integer
-            Get
-                Dim ret As Integer = 0
-                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentDate.Date) AndAlso TradesTaken(currentDate.Date).ContainsKey(stockTradingSymbol) Then
-                    Dim tradeList As List(Of Trade) = TradesTaken(currentDate.Date)(stockTradingSymbol).FindAll(Function(x)
-                                                                                                                    Return x.ExitCondition <> Trade.TradeExitCondition.Cancelled AndAlso
-                                                                                                              x.TradeCurrentStatus <> Trade.TradeExecutionStatus.Open AndAlso
-                                                                                                              x.ExitCondition = Trade.TradeExitCondition.Target
-                                                                                                                End Function)
-                    If tradeList IsNot Nothing AndAlso tradeList.Count > 0 Then
-                        Dim artnrGroups = From a In tradeList
-                                          Group a By Key = a.ChildTag Into Group
-                                          Select artnr = Key, numbersCount = Group.Count()
-
-                        If artnrGroups IsNot Nothing AndAlso artnrGroups.Count > 0 Then
-                            ret = artnrGroups.Count
-                        End If
-                    End If
-                End If
-                Return ret
-            End Get
-        End Property
         Public ReadOnly Property TotalNumberOfTrades(ByVal currentDate As Date) As Integer
             Get
                 Dim ret As Integer = 0
@@ -306,85 +262,6 @@ Namespace StrategyHelper
                     End If
                 End If
                 Return ret
-            End Get
-        End Property
-        Public ReadOnly Property StockNumberOfTradesWithoutBreakevenExit(ByVal currentDate As Date, ByVal stockTradingSymbol As String) As Integer
-            Get
-                Dim ret As Integer = 0
-                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentDate.Date) AndAlso TradesTaken(currentDate.Date).ContainsKey(stockTradingSymbol) Then
-                    ret = Me.StockNumberOfTrades(currentDate, stockTradingSymbol)
-                    Dim beakevenTradeList As List(Of Trade) = TradesTaken(currentDate.Date)(stockTradingSymbol).FindAll(Function(x)
-                                                                                                                            Return x.ExitCondition = Trade.TradeExitCondition.StopLoss AndAlso x.PLPoint > 0
-                                                                                                                        End Function)
-                    If beakevenTradeList IsNot Nothing AndAlso beakevenTradeList.Count > 0 Then
-                        Dim artnrGroups = From a In beakevenTradeList
-                                          Group a By Key = a.ChildTag Into Group
-                                          Select artnr = Key, numbersCount = Group.Count()
-
-                        If artnrGroups IsNot Nothing AndAlso artnrGroups.Count > 0 Then
-                            ret = ret - artnrGroups.Count
-                        End If
-                    End If
-                End If
-                Return ret
-            End Get
-        End Property
-        Public ReadOnly Property TotalNumberOfTradesWithoutBreakevenExit(ByVal currentDate As Date) As Integer
-            Get
-                Dim ret As Integer = 0
-                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentDate.Date) Then
-                    Dim stockTrades As Dictionary(Of String, List(Of Trade)) = TradesTaken(currentDate.Date)
-                    If stockTrades IsNot Nothing AndAlso stockTrades.Count > 0 Then
-                        For Each stock In stockTrades.Keys
-                            ret += StockNumberOfTradesWithoutBreakevenExit(currentDate, stock)
-                        Next
-                    End If
-                End If
-                Return ret
-            End Get
-        End Property
-
-        Private _TotalMaxDrawDownTime As Date = Date.MinValue
-        Private _TotalMaxDrawDownPLAfterBrokerage As Decimal = Decimal.MaxValue
-        Public ReadOnly Property TotalMaxDrawDownPLAfterBrokerage(ByVal currentDate As Date, ByVal currentTime As Date) As Decimal
-            Get
-                Dim pl As Decimal = 0
-                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentDate.Date) Then
-                    Dim stockTrades As Dictionary(Of String, List(Of Trade)) = TradesTaken(currentDate.Date)
-                    If stockTrades IsNot Nothing AndAlso stockTrades.Count > 0 Then
-                        For Each stock In stockTrades.Keys
-                            pl += StockPLAfterBrokerage(currentDate, stock)
-                        Next
-                    End If
-                    '_TotalMaxDrawDownPLAfterBrokerage = Math.Min(_TotalMaxDrawDownPLAfterBrokerage, pl)
-                    If pl < _TotalMaxDrawDownPLAfterBrokerage Then
-                        Me._TotalMaxDrawDownPLAfterBrokerage = pl
-                        Me._TotalMaxDrawDownTime = currentTime
-                    End If
-                End If
-                Return _TotalMaxDrawDownPLAfterBrokerage
-            End Get
-        End Property
-
-        Private _TotalMaxDrawUpTime As Date = Date.MinValue
-        Private _TotalMaxDrawUpPLAfterBrokerage As Decimal = Decimal.MinValue
-        Public ReadOnly Property TotalMaxDrawUpPLAfterBrokerage(ByVal currentDate As Date, ByVal currentTime As Date) As Decimal
-            Get
-                Dim pl As Decimal = 0
-                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentDate.Date) Then
-                    Dim stockTrades As Dictionary(Of String, List(Of Trade)) = TradesTaken(currentDate.Date)
-                    If stockTrades IsNot Nothing AndAlso stockTrades.Count > 0 Then
-                        For Each stock In stockTrades.Keys
-                            pl += StockPLAfterBrokerage(currentDate, stock)
-                        Next
-                    End If
-                    '_TotalMaxDrawUpPLAfterBrokerage = Math.Max(_TotalMaxDrawUpPLAfterBrokerage, pl)
-                    If pl > _TotalMaxDrawUpPLAfterBrokerage Then
-                        Me._TotalMaxDrawUpPLAfterBrokerage = pl
-                        Me._TotalMaxDrawUpTime = currentTime
-                    End If
-                End If
-                Return _TotalMaxDrawUpPLAfterBrokerage
             End Get
         End Property
 #End Region
@@ -481,6 +358,41 @@ Namespace StrategyHelper
                 End If
             End If
 
+            Return ret
+        End Function
+
+        Public Function GetNumberOfActiveStocks(ByVal tradingDate As Date, ByVal tradeType As Trade.TypeOfTrade, Optional ByVal tradeDirection As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None) As Integer
+            Dim ret As Integer = 0
+            If tradeType = Trade.TypeOfTrade.MIS Then
+                Throw New NotImplementedException
+            ElseIf tradeType = Trade.TypeOfTrade.CNC Then
+                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
+                    Dim stockList As List(Of String) = New List(Of String)
+                    For Each runningDate In TradesTaken.Keys
+                        For Each runningStock In TradesTaken(runningDate).Keys
+                            If Not stockList.Contains(runningStock) Then
+                                For Each runningTrade In TradesTaken(runningDate)(runningStock)
+                                    If tradeDirection = Trade.TradeExecutionDirection.None Then
+                                        If runningTrade.SquareOffType = Trade.TypeOfTrade.CNC AndAlso
+                                        runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                                            stockList.Add(runningStock)
+                                            Exit For
+                                        End If
+                                    Else
+                                        If runningTrade.SquareOffType = Trade.TypeOfTrade.CNC AndAlso
+                                        runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress AndAlso
+                                        runningTrade.EntryDirection = tradeDirection Then
+                                            stockList.Add(runningStock)
+                                            Exit For
+                                        End If
+                                    End If
+                                Next
+                            End If
+                        Next
+                    Next
+                    ret = stockList.Count
+                End If
+            End If
             Return ret
         End Function
 

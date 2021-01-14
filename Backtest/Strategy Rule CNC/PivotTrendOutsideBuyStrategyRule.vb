@@ -15,6 +15,7 @@ Public Class PivotTrendOutsideBuyStrategyRule
         Public ExitAtATRPL As Boolean
         Public HalfPremiumExit As Boolean
         Public OptionStrikeDistance As Integer
+        Public NumberOfActiveStock As Integer
     End Class
 
     Private Enum ExitType
@@ -85,9 +86,7 @@ Public Class PivotTrendOutsideBuyStrategyRule
                         Else
                             Dim rolloverDay As Date = GetRolloverDay(trend)
                             If rolloverDay <> Date.MinValue AndAlso rolloverDay.Date <> lastTrade.SignalCandle.PayloadDate.Date Then
-                                If CType(_ParentStrategy, CNCGenericStrategy).IsStockAvailable(rolloverDay, _TradingSymbol) Then
-                                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Buy)
-                                End If
+                                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Buy)
                             End If
                         End If
                     ElseIf trend = Color.Red Then
@@ -98,9 +97,7 @@ Public Class PivotTrendOutsideBuyStrategyRule
                         Else
                             Dim rolloverDay As Date = GetRolloverDay(trend)
                             If rolloverDay <> Date.MinValue AndAlso rolloverDay.Date <> lastTrade.SignalCandle.PayloadDate.Date Then
-                                If CType(_ParentStrategy, CNCGenericStrategy).IsStockAvailable(rolloverDay, _TradingSymbol) Then
-                                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Sell)
-                                End If
+                                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Sell)
                             End If
                         End If
                     End If
@@ -112,10 +109,8 @@ Public Class PivotTrendOutsideBuyStrategyRule
                             End If
                         Else
                             Dim rolloverDay As Date = GetRolloverDay(trend)
-                            If rolloverDay <> Date.MinValue Then
-                                If CType(_ParentStrategy, CNCGenericStrategy).IsStockAvailable(rolloverDay, _TradingSymbol) Then
-                                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Buy)
-                                End If
+                            If rolloverDay <> Date.MinValue AndAlso rolloverDay.Date >= New Date(2020, 1, 1).Date Then
+                                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Buy)
                             End If
                         End If
                     ElseIf trend = Color.Red Then
@@ -125,10 +120,8 @@ Public Class PivotTrendOutsideBuyStrategyRule
                             End If
                         Else
                             Dim rolloverDay As Date = GetRolloverDay(trend)
-                            If rolloverDay <> Date.MinValue Then
-                                If CType(_ParentStrategy, CNCGenericStrategy).IsStockAvailable(rolloverDay, _TradingSymbol) Then
-                                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Sell)
-                                End If
+                            If rolloverDay <> Date.MinValue AndAlso rolloverDay.Date >= New Date(2020, 1, 1).Date Then
+                                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Sell)
                             End If
                         End If
                     End If
@@ -252,7 +245,35 @@ Public Class PivotTrendOutsideBuyStrategyRule
         Dim currentMinute As Date = _ParentStrategy.GetCurrentXMinuteCandleTime(currentTickTime)
         Dim ret As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection) = IsEntrySignalReceived(currentTickTime)
         If ret IsNot Nothing AndAlso ret.Item1 Then
-            EnterTrade(ret.Item2, currentTickTime, ret.Item3)
+            If _ParentStrategy.GetNumberOfActiveStocks(_TradingDate, Trade.TypeOfTrade.CNC) < _userInputs.NumberOfActiveStock Then
+                Dim targetReached As Boolean = True
+                If ret.Item3 = Trade.TradeExecutionDirection.Buy Then
+                    Dim highestHigh As Decimal = _eodPayload.Max(Function(x)
+                                                                     If x.Key > ret.Item2.PayloadDate AndAlso x.Key <= _TradingDate Then
+                                                                         Return x.Value.High
+                                                                     Else
+                                                                         Return Decimal.MinValue
+                                                                     End If
+                                                                 End Function)
+                    Dim atr As Decimal = _atrPayload(ret.Item2.PayloadDate)
+                    If highestHigh < ret.Item2.Close + atr Then
+                        targetReached = False
+                    End If
+                ElseIf ret.Item3 = Trade.TradeExecutionDirection.Sell Then
+                    Dim lowestLow As Decimal = _eodPayload.Min(Function(x)
+                                                                   If x.Key > ret.Item2.PayloadDate AndAlso x.Key <= _TradingDate Then
+                                                                       Return x.Value.Low
+                                                                   Else
+                                                                       Return Decimal.MaxValue
+                                                                   End If
+                                                               End Function)
+                    Dim atr As Decimal = _atrPayload(ret.Item2.PayloadDate)
+                    If lowestLow > ret.Item2.Close - atr Then
+                        targetReached = False
+                    End If
+                End If
+                If Not targetReached Then EnterTrade(ret.Item2, currentTickTime, ret.Item3)
+            End If
         End If
     End Function
 

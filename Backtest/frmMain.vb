@@ -337,13 +337,14 @@ Public Class frmMain
                                              .SpotToOptionDelta = 1,
                                              .HalfPremiumExit = hlfPrm,
                                              .ExitAtATRPL = atrPL,
-                                             .OptionStrikeDistance = optnStrk
+                                             .OptionStrikeDistance = optnStrk,
+                                             .NumberOfActiveStock = 15
                                             }
                                     Case Else
                                         Throw New NotImplementedException
                                 End Select
 
-                                .NumberOfTradeableStockPerDay = 15
+                                .NumberOfTradeableStockPerDay = 30
 
                                 .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
