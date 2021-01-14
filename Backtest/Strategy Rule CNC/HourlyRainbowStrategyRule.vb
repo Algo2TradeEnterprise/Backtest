@@ -225,21 +225,34 @@ Public Class HourlyRainbowStrategyRule
             End If
 
             'Contract Rollover
-            If currentTickTime.Hour >= 15 AndAlso currentTickTime.Minute >= 29 Then
+            If currentTickTime.Hour >= 15 AndAlso currentTickTime.Minute >= 29 OrElse
+                _TradingDate.Date > GetLastThusrdayOfMonth(_TradingDate).Date.AddDays(-2) Then
                 For Each runningTrade In availableTrades
                     If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
                         If runningTrade.StockType = Trade.TypeOfStock.Options Then
                             Dim currentSpotTick As Payload = GetCurrentTick(_TradingSymbol, currentTickTime)
                             Dim currentOptionExpiryString As String = GetOptionInstrumentExpiryString(_TradingSymbol, _NextTradingDay)
                             If Not runningTrade.SupportingTradingSymbol.Contains(currentOptionExpiryString) Then
-                                Dim currentOptTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
-                                _ParentStrategy.ExitTradeByForce(runningTrade, currentOptTick, "Contract Rollover")
-
                                 Dim optionType As String = runningTrade.SupportingTradingSymbol.Substring(runningTrade.SupportingTradingSymbol.Count - 2)
                                 Dim optionTradingSymbol As String = GetCurrentATMOption(currentTickTime, currentOptionExpiryString, currentSpotTick.Open, optionType, runningTrade.SpotATR)
+                                If optionTradingSymbol IsNot Nothing Then
+                                    Dim currentMinute As Date = _ParentStrategy.GetCurrentXMinuteCandleTime(currentTickTime)
+                                    Dim currentOptTick As Payload = GetCurrentTick(optionTradingSymbol, currentTickTime)
+                                    If currentOptTick IsNot Nothing AndAlso currentOptTick.PayloadDate >= currentMinute AndAlso
+                                        currentOptTick.Volume > 0 Then
+                                        currentOptTick = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
+                                        _ParentStrategy.ExitTradeByForce(runningTrade, currentOptTick, "Contract Rollover")
 
-                                currentOptTick = GetCurrentTick(optionTradingSymbol, currentTickTime)
-                                EnterDuplicateTrade(runningTrade, currentOptTick, False)
+                                        currentOptTick = GetCurrentTick(optionTradingSymbol, currentTickTime)
+                                        EnterDuplicateTrade(runningTrade, currentOptTick, False)
+                                    End If
+                                End If
+
+                                'Dim currentOptTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
+                                '_ParentStrategy.ExitTradeByForce(runningTrade, currentOptTick, "Contract Rollover")
+
+                                'currentOptTick = GetCurrentTick(optionTradingSymbol, currentTickTime)
+                                'EnterDuplicateTrade(runningTrade, currentOptTick, False)
                             End If
                         Else
                             Dim currentFutureInstrument As String = GetFutureInstrumentNameFromCore(_TradingSymbol, _NextTradingDay)
@@ -261,16 +274,21 @@ Public Class HourlyRainbowStrategyRule
                     If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress AndAlso
                         runningTrade.StockType = Trade.TypeOfStock.Options Then
                         If IsExitSignalReceived(currentTickTime, ExitType.ZeroPremium, runningTrade) Then
-                            Dim currentOptTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
                             Dim currentSpotTick As Payload = GetCurrentTick(_TradingSymbol, currentTickTime)
                             Dim currentOptionExpiryString As String = GetOptionInstrumentExpiryString(_TradingSymbol, _TradingDate)
                             Dim optionType As String = runningTrade.SupportingTradingSymbol.Substring(runningTrade.SupportingTradingSymbol.Count - 2)
                             Dim optionTradingSymbol As String = GetCurrentATMOption(currentTickTime, currentOptionExpiryString, currentSpotTick.Open, optionType, runningTrade.SpotATR)
                             If optionTradingSymbol <> runningTrade.SupportingTradingSymbol Then
-                                _ParentStrategy.ExitTradeByForce(runningTrade, currentOptTick, "Half Premium")
+                                Dim currentMinute As Date = _ParentStrategy.GetCurrentXMinuteCandleTime(currentTickTime)
+                                Dim currentOptTick As Payload = GetCurrentTick(optionTradingSymbol, currentTickTime)
+                                If currentOptTick IsNot Nothing AndAlso currentOptTick.PayloadDate >= currentMinute AndAlso
+                                    currentOptTick.Volume > 0 Then
+                                    currentOptTick = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
+                                    _ParentStrategy.ExitTradeByForce(runningTrade, currentOptTick, "Zero Premium")
 
-                                currentOptTick = GetCurrentTick(optionTradingSymbol, currentTickTime)
-                                EnterDuplicateTrade(runningTrade, currentOptTick, True)
+                                    currentOptTick = GetCurrentTick(optionTradingSymbol, currentTickTime)
+                                    EnterDuplicateTrade(runningTrade, currentOptTick, True)
+                                End If
                             End If
                         End If
                     End If
@@ -361,11 +379,11 @@ Public Class HourlyRainbowStrategyRule
 
         If entryType = Trade.TypeOfEntry.Fresh Then
             lossToRecover = _ParentStrategy.CalculatePL(_TradingSymbol, spotTick.Open, ConvertFloorCeling(spotTick.Open + spotATR, _ParentStrategy.TickSize, RoundOfType.Celing), _LotSize, _LotSize, Trade.TypeOfStock.Cash)
-            ret = EnterBuySellTrade(signalCandle, spotTick, spotATR, childTag, parentTag, tradeNumber, entryType, direction, lossToRecover, _LotSize)
+            ret = EnterBuySellTrade(signalCandle, spotTick, spotATR, currentTickTime, childTag, parentTag, tradeNumber, entryType, direction, lossToRecover, _LotSize)
         Else
-            If EnterBuySellTrade(signalCandle, spotTick, spotATR, childTag, parentTag, tradeNumber, entryType, direction, lossToRecover, qunaity - _LotSize) Then
+            If EnterBuySellTrade(signalCandle, spotTick, spotATR, currentTickTime, childTag, parentTag, tradeNumber, entryType, direction, lossToRecover, qunaity - _LotSize) Then
                 lossToRecover = _ParentStrategy.CalculatePL(_TradingSymbol, spotTick.Open, ConvertFloorCeling(spotTick.Open + spotATR, _ParentStrategy.TickSize, RoundOfType.Celing), _LotSize, _LotSize, Trade.TypeOfStock.Cash)
-                ret = EnterBuySellTrade(signalCandle, spotTick, spotATR, childTag, parentTag, tradeNumber, Trade.TypeOfEntry.LossMakeupFresh, direction, lossToRecover, _LotSize)
+                ret = EnterBuySellTrade(signalCandle, spotTick, spotATR, currentTickTime, childTag, parentTag, tradeNumber, Trade.TypeOfEntry.LossMakeupFresh, direction, lossToRecover, _LotSize)
             End If
         End If
 
@@ -373,12 +391,12 @@ Public Class HourlyRainbowStrategyRule
     End Function
 
     Private Function EnterBuySellTrade(ByVal signalCandle As Payload, ByVal currentSpotTick As Payload, ByVal currentSpotATR As Decimal,
-                                       ByVal childTag As String, ByVal parentTag As String,
+                                       ByVal currentTickTime As Date, ByVal childTag As String, ByVal parentTag As String,
                                        ByVal tradeNumber As Integer, ByVal entryType As Trade.TypeOfEntry,
                                        ByVal direction As Trade.TradeExecutionDirection,
                                        ByVal previousLoss As Decimal, ByVal quantity As Integer) As Boolean
         Dim ret As Boolean = False
-        Dim currentMinute As Date = _ParentStrategy.GetCurrentXMinuteCandleTime(currentSpotTick.PayloadDate)
+        Dim currentMinute As Date = _ParentStrategy.GetCurrentXMinuteCandleTime(currentTickTime)
         Dim optionExpiryString As String = GetOptionInstrumentExpiryString(_TradingSymbol, _NextTradingDay)
         Dim currentOptionTradingSymbol As String = Nothing
         If direction = Trade.TradeExecutionDirection.Buy Then
@@ -391,7 +409,8 @@ Public Class HourlyRainbowStrategyRule
         If currentOptionTradingSymbol IsNot Nothing AndAlso currentFutureTradingSymbol IsNot Nothing Then
             Dim currentFutTick As Payload = GetCurrentTick(currentFutureTradingSymbol, currentSpotTick.PayloadDate)
             Dim currentOptTick As Payload = GetCurrentTick(currentOptionTradingSymbol, currentSpotTick.PayloadDate)
-            If currentOptTick IsNot Nothing AndAlso currentFutTick IsNot Nothing Then
+            If currentOptTick IsNot Nothing AndAlso currentOptTick.PayloadDate >= currentMinute AndAlso currentOptTick.Volume > 0 AndAlso
+                currentFutTick IsNot Nothing AndAlso currentFutTick.PayloadDate >= currentMinute AndAlso currentFutTick.Volume > 0 Then
                 Dim tgt As Decimal = currentFutTick.Open + 100000
                 Dim sl As Decimal = currentFutTick.Open - 100000
                 If direction = Trade.TradeExecutionDirection.Sell Then
