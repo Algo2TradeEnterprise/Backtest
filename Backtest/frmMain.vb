@@ -290,7 +290,7 @@ Public Class frmMain
 
             Select Case ruleNumber
                 Case 0
-#Region "Pre Market Options Direction Based Strategy"
+#Region "Nearest Option Fib Strategy"
                     Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Futures
                     Dim database As Common.DataBaseTable = Common.DataBaseTable.None
                     Dim margin As Decimal = 0
