@@ -261,7 +261,7 @@ Public Class frmMain
         If My.Settings.LocalConnection Then
             My.Settings.ServerName = "localhost"
         Else
-            My.Settings.ServerName = "103.57.246.210"
+            My.Settings.ServerName = "103.220.208.5"
         End If
         My.Settings.Save()
 
@@ -336,19 +336,18 @@ Public Class frmMain
                             AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                             With backtestStrategy
-                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pre Market Top 3 Options List.csv")
+                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Nearest Options.csv")
 
                                 .AllowBothDirectionEntryAtSameTime = False
                                 .TrailingStoploss = False
                                 .TickBasedStrategy = True
                                 .RuleNumber = ruleNumber
 
-                                .RuleEntityData = New PreMarketOptionDirectionBasedStrategy.StrategyRuleEntities With
-                                {.Direction = drctn}
+                                .RuleEntityData = Nothing
 
-                                .NumberOfTradeableStockPerDay = 6
+                                .NumberOfTradeableStockPerDay = Integer.MaxValue
 
-                                .NumberOfTradesPerStockPerDay = 1
+                                .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
                                 .StockMaxProfitPercentagePerDay = Decimal.MaxValue
                                 .StockMaxLossPercentagePerDay = Decimal.MinValue
@@ -367,8 +366,8 @@ Public Class frmMain
                                 .RealtimeTrailingPercentage = 50
                             End With
 
-                            Dim ruleData As PreMarketOptionDirectionBasedStrategy.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                            Dim filename As String = String.Format("Pre Market Options Direction Based Strategy,Directon {0}", ruleData.Direction.ToString)
+                            'Dim ruleData As PreMarketOptionDirectionBasedStrategy.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                            Dim filename As String = String.Format("Nearest Options Fib Strategy")
 
                             Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
                         End Using
