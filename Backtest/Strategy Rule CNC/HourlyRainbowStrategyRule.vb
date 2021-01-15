@@ -13,6 +13,7 @@ Public Class HourlyRainbowStrategyRule
         Public RainbowPeriod As Integer
         Public OptimisticExit As Boolean
         Public OptionStrikeDistance As Integer
+        Public NumberOfActiveStock As Integer
     End Class
 
     Private Enum ExitType
@@ -203,7 +204,35 @@ Public Class HourlyRainbowStrategyRule
         If currentTickTime >= _TradeStartTime Then
             Dim ret As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection) = IsEntrySignalReceived(currentTickTime)
             If ret IsNot Nothing AndAlso ret.Item1 Then
-                EnterTrade(ret.Item2, currentTickTime, ret.Item3)
+                If _ParentStrategy.GetNumberOfActiveStocks(_TradingDate, Trade.TypeOfTrade.CNC) < _userInputs.NumberOfActiveStock Then
+                    Dim targetReached As Boolean = True
+                    If ret.Item3 = Trade.TradeExecutionDirection.Buy Then
+                        Dim highestHigh As Decimal = _SignalPayload.Max(Function(x)
+                                                                            If x.Key > ret.Item2.PayloadDate AndAlso x.Key <= _TradingDate Then
+                                                                                Return x.Value.High
+                                                                            Else
+                                                                                Return Decimal.MinValue
+                                                                            End If
+                                                                        End Function)
+                        Dim atr As Decimal = _atrPayload(ret.Item2.PayloadDate)
+                        If highestHigh < ret.Item2.Close + atr Then
+                            targetReached = False
+                        End If
+                    ElseIf ret.Item3 = Trade.TradeExecutionDirection.Sell Then
+                        Dim lowestLow As Decimal = _SignalPayload.Min(Function(x)
+                                                                          If x.Key > ret.Item2.PayloadDate AndAlso x.Key <= _TradingDate Then
+                                                                              Return x.Value.Low
+                                                                          Else
+                                                                              Return Decimal.MaxValue
+                                                                          End If
+                                                                      End Function)
+                        Dim atr As Decimal = _atrPayload(ret.Item2.PayloadDate)
+                        If lowestLow > ret.Item2.Close - atr Then
+                            targetReached = False
+                        End If
+                    End If
+                    If Not targetReached Then EnterTrade(ret.Item2, currentTickTime, ret.Item3)
+                End If
             End If
         End If
     End Function
@@ -270,12 +299,6 @@ Public Class HourlyRainbowStrategyRule
                                         EnterDuplicateTrade(runningTrade, currentOptTick, False)
                                     End If
                                 End If
-
-                                'Dim currentOptTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
-                                '_ParentStrategy.ExitTradeByForce(runningTrade, currentOptTick, "Contract Rollover")
-
-                                'currentOptTick = GetCurrentTick(optionTradingSymbol, currentTickTime)
-                                'EnterDuplicateTrade(runningTrade, currentOptTick, False)
                             End If
                         Else
                             Dim currentFutureInstrument As String = GetFutureInstrumentNameFromCore(_TradingSymbol, _NextTradingDay)
@@ -716,6 +739,7 @@ Public Class HourlyRainbowStrategyRule
 #Region "Required Functions"
     Private Function GetRolloverDate(ByVal signalCandle As Payload, ByVal direction As Trade.TradeExecutionDirection) As Date
         Dim ret As Date = Date.MinValue
+        Dim oppositeSide As Date = Date.MinValue
         For Each runningPayload In _SignalPayload.OrderByDescending(Function(x)
                                                                         Return x.Key
                                                                     End Function)
@@ -724,18 +748,38 @@ Public Class HourlyRainbowStrategyRule
                 If direction = Trade.TradeExecutionDirection.Sell AndAlso
                     runningPayload.Value.Close > Math.Max(rainbow.SMA1, Math.Max(rainbow.SMA2, Math.Max(rainbow.SMA3, Math.Max(rainbow.SMA4, Math.Max(rainbow.SMA5, Math.Max(rainbow.SMA6, Math.Max(rainbow.SMA7, Math.Max(rainbow.SMA8, Math.Max(rainbow.SMA9, rainbow.SMA10))))))))) Then
                     If runningPayload.Value.CandleColor = Color.Green Then
-                        ret = runningPayload.Key
+                        oppositeSide = runningPayload.Key
                         Exit For
                     End If
                 ElseIf direction = Trade.TradeExecutionDirection.Buy AndAlso
                     runningPayload.Value.Close < Math.Min(rainbow.SMA1, Math.Min(rainbow.SMA2, Math.Min(rainbow.SMA3, Math.Min(rainbow.SMA4, Math.Min(rainbow.SMA5, Math.Min(rainbow.SMA6, Math.Min(rainbow.SMA7, Math.Min(rainbow.SMA8, Math.Min(rainbow.SMA9, rainbow.SMA10))))))))) Then
                     If runningPayload.Value.CandleColor = Color.Red Then
-                        ret = runningPayload.Key
+                        oppositeSide = runningPayload.Key
                         Exit For
                     End If
                 End If
             End If
         Next
+        If oppositeSide <> Date.MinValue Then
+            For Each runningPayload In _SignalPayload
+                If runningPayload.Key > oppositeSide Then
+                    Dim rainbow As Indicator.RainbowMA = _rainbowPayload(runningPayload.Key)
+                    If direction = Trade.TradeExecutionDirection.Buy AndAlso
+                        runningPayload.Value.Close > Math.Max(rainbow.SMA1, Math.Max(rainbow.SMA2, Math.Max(rainbow.SMA3, Math.Max(rainbow.SMA4, Math.Max(rainbow.SMA5, Math.Max(rainbow.SMA6, Math.Max(rainbow.SMA7, Math.Max(rainbow.SMA8, Math.Max(rainbow.SMA9, rainbow.SMA10))))))))) Then
+                        If runningPayload.Value.CandleColor = Color.Green Then
+                            ret = runningPayload.Key
+                            Exit For
+                        End If
+                    ElseIf direction = Trade.TradeExecutionDirection.Sell AndAlso
+                        runningPayload.Value.Close < Math.Min(rainbow.SMA1, Math.Min(rainbow.SMA2, Math.Min(rainbow.SMA3, Math.Min(rainbow.SMA4, Math.Min(rainbow.SMA5, Math.Min(rainbow.SMA6, Math.Min(rainbow.SMA7, Math.Min(rainbow.SMA8, Math.Min(rainbow.SMA9, rainbow.SMA10))))))))) Then
+                        If runningPayload.Value.CandleColor = Color.Red Then
+                            ret = runningPayload.Key
+                            Exit For
+                        End If
+                    End If
+                End If
+            Next
+        End If
         Return ret
     End Function
 

@@ -336,13 +336,14 @@ Public Class frmMain
                                             {
                                              .OptimisticExit = optmstcExt,
                                              .OptionStrikeDistance = optnStrk,
-                                             .RainbowPeriod = 5
+                                             .RainbowPeriod = 5,
+                                             .NumberOfActiveStock = 5
                                             }
                                     Case Else
                                         Throw New NotImplementedException
                                 End Select
 
-                                .NumberOfTradeableStockPerDay = 15
+                                .NumberOfTradeableStockPerDay = 10
 
                                 .NumberOfTradesPerStockPerDay = Integer.MaxValue
 

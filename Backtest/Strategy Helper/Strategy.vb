@@ -484,6 +484,41 @@ Namespace StrategyHelper
             Return ret
         End Function
 
+        Public Function GetNumberOfActiveStocks(ByVal tradingDate As Date, ByVal tradeType As Trade.TypeOfTrade, Optional ByVal tradeDirection As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None) As Integer
+            Dim ret As Integer = 0
+            If tradeType = Trade.TypeOfTrade.MIS Then
+                Throw New NotImplementedException
+            ElseIf tradeType = Trade.TypeOfTrade.CNC Then
+                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
+                    Dim stockList As List(Of String) = New List(Of String)
+                    For Each runningDate In TradesTaken.Keys
+                        For Each runningStock In TradesTaken(runningDate).Keys
+                            If Not stockList.Contains(runningStock) Then
+                                For Each runningTrade In TradesTaken(runningDate)(runningStock)
+                                    If tradeDirection = Trade.TradeExecutionDirection.None Then
+                                        If runningTrade.SquareOffType = Trade.TypeOfTrade.CNC AndAlso
+                                        runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                                            stockList.Add(runningStock)
+                                            Exit For
+                                        End If
+                                    Else
+                                        If runningTrade.SquareOffType = Trade.TypeOfTrade.CNC AndAlso
+                                        runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress AndAlso
+                                        runningTrade.EntryDirection = tradeDirection Then
+                                            stockList.Add(runningStock)
+                                            Exit For
+                                        End If
+                                    End If
+                                Next
+                            End If
+                        Next
+                    Next
+                    ret = stockList.Count
+                End If
+            End If
+            Return ret
+        End Function
+
         Public Function CalculateBuffer(ByVal price As Decimal, ByVal floorOrCeiling As RoundOfType) As Decimal
             Dim bufferPrice As Decimal = Nothing
             'Assuming 1% target, we can afford to have buffer as 2.5% of that 1% target
