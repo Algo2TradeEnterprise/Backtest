@@ -35,15 +35,17 @@ Public Class NearestOptionFibStrategy
         End If
 
         Dim range As Decimal = _previousDayHigh - _previousDayLow
-        Dim multiplier As Decimal = Math.Ceiling(price / _previousDayLow)
-        _entryLevelWithQuantity = New Dictionary(Of Decimal, Integer) From {
-            {ConvertFloorCeling(_previousDayLow + range * 0 / 100, _parentStrategy.TickSize, RoundOfType.Celing), 2 * multiplier * Me.LotSize},
-            {ConvertFloorCeling(_previousDayLow + range * 23 / 100, _parentStrategy.TickSize, RoundOfType.Celing), 3 * multiplier * Me.LotSize},
-            {ConvertFloorCeling(_previousDayLow + range * 38 / 100, _parentStrategy.TickSize, RoundOfType.Celing), 2 * multiplier * Me.LotSize},
-            {ConvertFloorCeling(_previousDayLow + range * 62 / 100, _parentStrategy.TickSize, RoundOfType.Celing), 3 * multiplier * Me.LotSize},
-            {ConvertFloorCeling(_previousDayLow + range * 77 / 100, _parentStrategy.TickSize, RoundOfType.Celing), 2 * multiplier * Me.LotSize},
-            {ConvertFloorCeling(_previousDayLow + range * 100 / 100, _parentStrategy.TickSize, RoundOfType.Celing), 3 * multiplier * Me.LotSize}
-        }
+        If range > 0 Then
+            Dim multiplier As Decimal = Math.Ceiling(price / _previousDayLow)
+            _entryLevelWithQuantity = New Dictionary(Of Decimal, Integer) From {
+                {ConvertFloorCeling(_previousDayLow + range * 0 / 100, _parentStrategy.TickSize, RoundOfType.Celing), 2 * multiplier * Me.LotSize},
+                {ConvertFloorCeling(_previousDayLow + range * 23 / 100, _parentStrategy.TickSize, RoundOfType.Celing), 3 * multiplier * Me.LotSize},
+                {ConvertFloorCeling(_previousDayLow + range * 38 / 100, _parentStrategy.TickSize, RoundOfType.Celing), 2 * multiplier * Me.LotSize},
+                {ConvertFloorCeling(_previousDayLow + range * 62 / 100, _parentStrategy.TickSize, RoundOfType.Celing), 3 * multiplier * Me.LotSize},
+                {ConvertFloorCeling(_previousDayLow + range * 77 / 100, _parentStrategy.TickSize, RoundOfType.Celing), 2 * multiplier * Me.LotSize},
+                {ConvertFloorCeling(_previousDayLow + range * 100 / 100, _parentStrategy.TickSize, RoundOfType.Celing), 3 * multiplier * Me.LotSize}
+            }
+        End If
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -53,12 +55,12 @@ Public Class NearestOptionFibStrategy
         Dim parameter As PlaceOrderParameters = Nothing
         If currentMinuteCandle IsNot Nothing AndAlso currentMinuteCandle.PreviousCandlePayload IsNot Nothing AndAlso
             Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS) AndAlso Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS) AndAlso
-            currentMinuteCandle.PayloadDate >= _tradeStartTime AndAlso Me.EligibleToTakeTrade Then
+            currentMinuteCandle.PayloadDate >= _tradeStartTime AndAlso Me.EligibleToTakeTrade AndAlso _entryLevelWithQuantity IsNot Nothing AndAlso _entryLevelWithQuantity.Count > 0 Then
             Dim signal As Tuple(Of Boolean, Decimal, Payload) = GetEntrySignal(currentMinuteCandle, currentTick)
             If signal IsNot Nothing AndAlso signal.Item1 Then
                 Dim entryPrice As Decimal = signal.Item2
                 Dim quantity As Integer = _entryLevelWithQuantity(entryPrice)
-                Dim target As Integer = _entryLevelWithQuantity.Where(Function(x)
+                Dim target As Decimal = _entryLevelWithQuantity.Where(Function(x)
                                                                           Return x.Key > entryPrice
                                                                       End Function).OrderBy(Function(y)
                                                                                                 Return y.Key
