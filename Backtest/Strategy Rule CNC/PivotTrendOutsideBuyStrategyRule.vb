@@ -352,7 +352,8 @@ Public Class PivotTrendOutsideBuyStrategyRule
                             Dim currentOptionExpiryString As String = GetOptionInstrumentExpiryString(_TradingSymbol, _TradingDate)
                             Dim optionType As String = runningTrade.SupportingTradingSymbol.Substring(runningTrade.SupportingTradingSymbol.Count - 2)
                             Dim optionTradingSymbol As String = GetCurrentATMOption(currentTickTime, currentOptionExpiryString, currentSpotTick.Open, optionType, runningTrade.SpotATR)
-                            If optionTradingSymbol <> runningTrade.SupportingTradingSymbol Then
+                            If optionTradingSymbol IsNot Nothing AndAlso optionTradingSymbol.Trim <> "" AndAlso
+                                optionTradingSymbol <> runningTrade.SupportingTradingSymbol Then
                                 Dim currentMinute As Date = _ParentStrategy.GetCurrentXMinuteCandleTime(currentTickTime)
                                 Dim currentOptTick As Payload = GetCurrentTick(optionTradingSymbol, currentTickTime)
                                 If currentOptTick IsNot Nothing AndAlso currentOptTick.PayloadDate >= currentMinute AndAlso
