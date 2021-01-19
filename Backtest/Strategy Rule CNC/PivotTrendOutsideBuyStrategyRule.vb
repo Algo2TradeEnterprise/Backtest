@@ -580,24 +580,22 @@ Public Class PivotTrendOutsideBuyStrategyRule
     Private Function GetCurrentATMPEOption(ByVal currentTickTime As Date, ByVal expiryString As String, ByVal price As Decimal, ByVal atr As Decimal) As String
         Dim ret As String = Nothing
         Dim query As String = Nothing
-        query = "SELECT `TradingSymbol`,SUM(`Volume`) Vol
-                FROM `intraday_prices_opt_futures`
-                WHERE `SnapshotDate`='{0}'
-                AND `SnapshotTime`<='{1}'
-                AND `TradingSymbol` LIKE '{2}%{3}'
-                GROUP BY `TradingSymbol`
-                ORDER BY Vol DESC"
-        query = String.Format(query, currentTickTime.ToString("yyyy-MM-dd"), currentTickTime.AddMinutes(-1).ToString("HH:mm:ss"), expiryString, "PE")
+        query = "SELECT `TRADING_SYMBOL`
+                FROM `active_instruments_futures`
+                WHERE `TRADING_SYMBOL` LIKE '{0}%{1}'
+                AND `AS_ON_DATE`=(SELECT MAX(`AS_ON_DATE`)
+                FROM `active_instruments_futures`
+                WHERE `AS_ON_DATE`<='{2}')"
+        query = String.Format(query, expiryString, "PE", currentTickTime.ToString("yyyy-MM-dd"))
 
         Dim dt As DataTable = _ParentStrategy.Cmn.RunSelect(query)
         If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
             Dim contracts As Dictionary(Of Decimal, Long) = New Dictionary(Of Decimal, Long)
             For Each runningRow As DataRow In dt.Rows
-                Dim tradingSymbol As String = runningRow.Item("TradingSymbol")
-                Dim volume As Long = runningRow.Item("Vol")
+                Dim tradingSymbol As String = runningRow.Item("TRADING_SYMBOL")
                 Dim strike As String = Utilities.Strings.GetTextBetween(expiryString, "PE", tradingSymbol)
                 If strike IsNot Nothing AndAlso strike.Trim <> "" AndAlso IsNumeric(strike.Trim) Then
-                    contracts.Add(Val(strike.Trim), volume)
+                    contracts.Add(Val(strike.Trim), 1)
                 End If
             Next
             If contracts IsNot Nothing AndAlso contracts.Count > 0 Then
@@ -632,24 +630,22 @@ Public Class PivotTrendOutsideBuyStrategyRule
     Private Function GetCurrentATMCEOption(ByVal currentTickTime As Date, ByVal expiryString As String, ByVal price As Decimal, ByVal atr As Decimal) As String
         Dim ret As String = Nothing
         Dim query As String = Nothing
-        query = "SELECT `TradingSymbol`,SUM(`Volume`) Vol
-                FROM `intraday_prices_opt_futures`
-                WHERE `SnapshotDate`='{0}'
-                AND `SnapshotTime`<='{1}'
-                AND `TradingSymbol` LIKE '{2}%{3}'
-                GROUP BY `TradingSymbol`
-                ORDER BY Vol DESC"
-        query = String.Format(query, currentTickTime.ToString("yyyy-MM-dd"), currentTickTime.AddMinutes(-1).ToString("HH:mm:ss"), expiryString, "CE")
+        query = "SELECT `TRADING_SYMBOL`
+                FROM `active_instruments_futures`
+                WHERE `TRADING_SYMBOL` LIKE '{0}%{1}'
+                AND `AS_ON_DATE`=(SELECT MAX(`AS_ON_DATE`)
+                FROM `active_instruments_futures`
+                WHERE `AS_ON_DATE`<='{2}')"
+        query = String.Format(query, expiryString, "CE", currentTickTime.ToString("yyyy-MM-dd"))
 
         Dim dt As DataTable = _ParentStrategy.Cmn.RunSelect(query)
         If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
             Dim contracts As Dictionary(Of Decimal, Long) = New Dictionary(Of Decimal, Long)
             For Each runningRow As DataRow In dt.Rows
-                Dim tradingSymbol As String = runningRow.Item("TradingSymbol")
-                Dim volume As Long = runningRow.Item("Vol")
+                Dim tradingSymbol As String = runningRow.Item("TRADING_SYMBOL")
                 Dim strike As String = Utilities.Strings.GetTextBetween(expiryString, "CE", tradingSymbol)
                 If strike IsNot Nothing AndAlso strike.Trim <> "" AndAlso IsNumeric(strike.Trim) Then
-                    contracts.Add(Val(strike.Trim), volume)
+                    contracts.Add(Val(strike.Trim), 1)
                 End If
             Next
             If contracts IsNot Nothing AndAlso contracts.Count > 0 Then
