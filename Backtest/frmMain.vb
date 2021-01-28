@@ -296,7 +296,7 @@ Public Class frmMain
 
                     Select Case rule
                         Case 0
-                            .RuleEntityData = New PreviousSwingLowStrategyRule.StrategyRuleEntities With
+                            .RuleEntityData = New BelowPortfolioValueStrategyRule.StrategyRuleEntities With
                                         {
                                          .InitialCapital = 10000,
                                          .MaxIteration = 5
@@ -321,7 +321,7 @@ Public Class frmMain
                 Dim filename As String = Nothing
                 Select Case rule
                     Case 0
-                        Dim ruleEntity As PreviousSwingLowStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                        Dim ruleEntity As BelowPortfolioValueStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
                         filename = String.Format("At Previous Swing Low CNC EOD Output, Max Iteration {0}",
                                                  If(ruleEntity.MaxIteration = Integer.MaxValue, "∞", ruleEntity.MaxIteration))
                     Case 1

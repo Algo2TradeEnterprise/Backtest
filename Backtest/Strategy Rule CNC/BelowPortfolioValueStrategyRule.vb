@@ -2,7 +2,7 @@
 Imports System.Threading
 Imports Algo2TradeBLL
 
-Public Class PreviousSwingLowStrategyRule
+Public Class BelowPortfolioValueStrategyRule
     Inherits StrategyRule
 
 #Region "Entity"
@@ -15,7 +15,6 @@ Public Class PreviousSwingLowStrategyRule
 #End Region
 
     Private _atrPayload As Dictionary(Of Date, Decimal) = Nothing
-    Private _swingPayload As Dictionary(Of Date, Indicator.Swing) = Nothing
 
     Private ReadOnly _userInputs As StrategyRuleEntities
 
@@ -34,7 +33,6 @@ Public Class PreviousSwingLowStrategyRule
         MyBase.CompletePreProcessing()
 
         Indicator.ATR.CalculateATR(14, _signalPayload, _atrPayload, True)
-        Indicator.SwingHighLow.CalculateSwingHighLow(_signalPayload, False, _swingPayload)
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
@@ -43,7 +41,7 @@ Public Class PreviousSwingLowStrategyRule
         Dim currentDayCandlePayload As Payload = _signalPayload(currentTick.PayloadDate.Date)
         Dim parameters As List(Of PlaceOrderParameters) = Nothing
         If currentDayCandlePayload IsNot Nothing AndAlso currentDayCandlePayload.PreviousCandlePayload IsNot Nothing Then
-            Dim signals As List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)) = GetSignalForEntry(currentDayCandlePayload)
+            Dim signals As List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Decimal)) = GetSignalForEntry(currentDayCandlePayload)
             If signals IsNot Nothing AndAlso signals.Count > 0 Then
                 For Each runningSignal In signals
                     Dim entryPrice As Decimal = runningSignal.Item2
@@ -62,7 +60,7 @@ Public Class PreviousSwingLowStrategyRule
                                                                 .OrderType = Trade.TypeOfOrder.Market,
                                                                 .Supporting1 = iteration,
                                                                 .Supporting2 = remarks,
-                                                                .Supporting3 = runningSignal.Item6.ToString("dd-MMM-yyyy HH:mm:ss")
+                                                                .Supporting3 = runningSignal.Item6
                                                             }
 
                     If parameters Is Nothing Then parameters = New List(Of PlaceOrderParameters)
@@ -98,39 +96,56 @@ Public Class PreviousSwingLowStrategyRule
         Return ret
     End Function
 
-    Private Function GetSignalForEntry(ByVal candle As Payload) As List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
-        Dim ret As List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)) = Nothing
+    Private Function GetSignalForEntry(ByVal candle As Payload) As List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Decimal))
+        Dim ret As List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Decimal)) = Nothing
         Dim lastTrade As Trade = GetLastOrder(candle)
         Dim atr As Decimal = _atrPayload(candle.PreviousCandlePayload.PayloadDate)
         Dim iteration As Integer = 1
         Dim quantity As Integer = GetQuantity(iteration, candle.Open)
-        Dim swing As Indicator.Swing = _swingPayload(candle.PreviousCandlePayload.PayloadDate)
-        If candle.Close < swing.SwingLow Then
-            Dim entryPrice As Decimal = candle.Close
-            If lastTrade Is Nothing Then
-                If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
-                ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)(True, entryPrice, quantity, iteration, "First Trade", swing.SwingLowTime))
-            Else
-                Dim lastSignalTime As Date = Date.ParseExact(lastTrade.Supporting3, "dd-MMM-yyyy HH:mm:ss", Nothing)
-                If swing.SwingLowTime <> lastSignalTime Then
-                    If entryPrice < lastTrade.EntryPrice Then
-                        If lastTrade.EntryPrice - entryPrice >= atr Then
-                            If Val(lastTrade.Supporting1) < _userInputs.MaxIteration Then
-                                iteration = Val(lastTrade.Supporting1) + 1
-                                quantity = GetQuantity(iteration, entryPrice)
-                                If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
-                                ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)(True, entryPrice, quantity, iteration, "Below last entry", swing.SwingLowTime))
-                            Else
-                                If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
-                                ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)(True, entryPrice, quantity, iteration, "(Reset) Max Iteration", swing.SwingLowTime))
-                            End If
-                            'Else
-                            '    Console.WriteLine(String.Format("Trade Neglected for ATR on {0}", candle.PayloadDate.ToString("dd-MMM-yyyy")))
+        Dim entryPrice As Decimal = candle.Close
+        If lastTrade Is Nothing Then
+            If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Decimal))
+            ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Decimal)(True, entryPrice, quantity, iteration, "First Trade", quantity * entryPrice))
+        Else
+            Dim allTrades As List(Of Trade) = Me._parentStrategy.GetSpecificTrades(candle, Me._parentStrategy.TradeType, Trade.TradeExecutionStatus.Inprogress)
+            Dim totalQuantity As Double = allTrades.Sum(Function(x)
+                                                            Return x.Quantity
+                                                        End Function)
+
+            Dim highestValue As Decimal = candle.High * totalQuantity
+            Dim currentValue As Decimal = candle.Close * totalQuantity
+            If highestValue > Val(lastTrade.Supporting3) Then
+                lastTrade.UpdateTrade(Supporting3:=highestValue)
+            End If
+
+            If currentValue <= highestValue - highestValue * 5 / 100 Then
+                If entryPrice < lastTrade.EntryPrice Then
+                    If lastTrade.EntryPrice - entryPrice >= atr Then
+                        If Val(lastTrade.Supporting1) < _userInputs.MaxIteration Then
+                            iteration = Val(lastTrade.Supporting1) + 1
+                            quantity = GetQuantity(iteration, entryPrice)
+
+                            totalQuantity += quantity
+                            currentValue = candle.Close * totalQuantity
+
+                            If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Decimal))
+                            ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Decimal)(True, entryPrice, quantity, iteration, "Below last entry", currentValue))
+                        Else
+                            totalQuantity += quantity
+                            currentValue = candle.Close * totalQuantity
+
+                            If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Decimal))
+                            ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Decimal)(True, entryPrice, quantity, iteration, "(Reset) Max Iteration", currentValue))
                         End If
-                    Else
-                        If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Date))
-                        ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Date)(True, entryPrice, quantity, iteration, "(Reset) Above last entry", swing.SwingLowTime))
+                        'Else
+                        '    Console.WriteLine(String.Format("Trade Neglected for ATR on {0}", candle.PayloadDate.ToString("dd-MMM-yyyy")))
                     End If
+                Else
+                    totalQuantity += quantity
+                    currentValue = candle.Close * totalQuantity
+
+                    If ret Is Nothing Then ret = New List(Of Tuple(Of Boolean, Decimal, Integer, Integer, String, Decimal))
+                    ret.Add(New Tuple(Of Boolean, Decimal, Integer, Integer, String, Decimal)(True, entryPrice, quantity, iteration, "(Reset) Above last entry", currentValue))
                 End If
             End If
         End If
@@ -146,6 +161,42 @@ Public Class PreviousSwingLowStrategyRule
         Dim ret As Trade = Nothing
         If currentPayload IsNot Nothing Then
             ret = Me._parentStrategy.GetLastExecutedTradeOfTheStock(currentPayload, Me._parentStrategy.TradeType)
+        End If
+        Return ret
+    End Function
+
+    Private Function GetAveragePrice(ByVal currentPayload As Payload) As Decimal
+        Dim ret As Decimal = Decimal.MinValue
+        If currentPayload IsNot Nothing Then
+            Dim allTrades As List(Of Trade) = Me._parentStrategy.GetSpecificTrades(currentPayload, Me._parentStrategy.TradeType, Trade.TradeExecutionStatus.Inprogress)
+            If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
+                Dim totalTurnover As Double = allTrades.Sum(Function(x)
+                                                                Return x.EntryPrice * x.Quantity
+                                                            End Function)
+                Dim totalQuantity As Double = allTrades.Sum(Function(x)
+                                                                Return x.Quantity
+                                                            End Function)
+
+                ret = totalTurnover / totalQuantity
+            End If
+        End If
+        Return ret
+    End Function
+
+    Private Function GetTotalQu(ByVal currentPayload As Payload) As Decimal
+        Dim ret As Decimal = Decimal.MinValue
+        If currentPayload IsNot Nothing Then
+            Dim allTrades As List(Of Trade) = Me._parentStrategy.GetSpecificTrades(currentPayload, Me._parentStrategy.TradeType, Trade.TradeExecutionStatus.Inprogress)
+            If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
+                Dim totalTurnover As Double = allTrades.Sum(Function(x)
+                                                                Return x.EntryPrice * x.Quantity
+                                                            End Function)
+                Dim totalQuantity As Double = allTrades.Sum(Function(x)
+                                                                Return x.Quantity
+                                                            End Function)
+
+                ret = totalTurnover / totalQuantity
+            End If
         End If
         Return ret
     End Function

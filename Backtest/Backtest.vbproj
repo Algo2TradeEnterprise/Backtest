@@ -112,7 +112,7 @@
     <Compile Include="Strategy Helper\StrategyRule.vb" />
     <Compile Include="Strategy Helper\Trade.vb" />
     <Compile Include="Strategy Rule CNC\PreviousNifty50SwingLowStrategyRule.vb" />
-    <Compile Include="Strategy Rule CNC\PreviousSwingLowStrategyRule.vb" />
+    <Compile Include="Strategy Rule CNC\BelowPortfolioValueStrategyRule.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="frmMain.resx">
