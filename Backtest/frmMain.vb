@@ -298,86 +298,83 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            Dim optnStrkList As List(Of Integer) = New List(Of Integer) From {-1, 1}
-            For hlfPrm As Integer = 0 To 0
-                For atrPL As Integer = 1 To 1
-                    For Each optnStrk In optnStrkList
-                        Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
-                                                            exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                            exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                            tradeStartTime:=TimeSpan.Parse("15:29:00"),
-                                                            lastTradeEntryTime:=TimeSpan.Parse("15:30:00"),
-                                                            eodExitTime:=TimeSpan.Parse("15:30:00"),
-                                                            tickSize:=tick,
-                                                            marginMultiplier:=margin,
-                                                            timeframe:=1,
-                                                            heikenAshiCandle:=False,
-                                                            stockType:=stockType,
-                                                            databaseTable:=database,
-                                                            dataSource:=sourceData,
-                                                            initialCapital:=Decimal.MaxValue / 2,
-                                                            usableCapital:=Decimal.MaxValue / 2,
-                                                            minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
-                                                            amountToBeWithdrawn:=0)
-                            AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+            Dim optnStrkList As List(Of Integer) = New List(Of Integer) From {1}
+            For atrPL As Integer = 0 To 0
+                For Each optnStrk In optnStrkList
+                    Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
+                                                                    exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                    exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                    tradeStartTime:=TimeSpan.Parse("09:16:00"),
+                                                                    lastTradeEntryTime:=TimeSpan.Parse("14:30:00"),
+                                                                    eodExitTime:=TimeSpan.Parse("15:15:00"),
+                                                                    tickSize:=tick,
+                                                                    marginMultiplier:=margin,
+                                                                    timeframe:=1,
+                                                                    heikenAshiCandle:=False,
+                                                                    stockType:=stockType,
+                                                                    databaseTable:=database,
+                                                                    dataSource:=sourceData,
+                                                                    initialCapital:=Decimal.MaxValue / 2,
+                                                                    usableCapital:=Decimal.MaxValue / 2,
+                                                                    minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                                    amountToBeWithdrawn:=0)
+                        AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                            With backtestStrategy
-                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "High ATR High Volume Stocks.csv")
+                        With backtestStrategy
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "High ATR High Volume Stocks.csv")
 
-                                .AllowBothDirectionEntryAtSameTime = False
-                                .TrailingStoploss = False
-                                .TickBasedStrategy = True
-                                .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+                            .AllowBothDirectionEntryAtSameTime = False
+                            .TrailingStoploss = False
+                            .TickBasedStrategy = True
+                            .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                                Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
-                                    Case 0
-                                        .RuleEntityData = New PivotTrendOutsideBuyStrategyRule.StrategyRuleEntities With
-                                            {
-                                             .ATRMultiplier = 1,
-                                             .SpotToOptionDelta = 1,
-                                             .HalfPremiumExit = hlfPrm,
-                                             .ExitAtATRPL = atrPL,
-                                             .OptionStrikeDistance = optnStrk,
-                                             .NumberOfActiveStock = 15
-                                            }
-                                    Case Else
-                                        Throw New NotImplementedException
-                                End Select
-
-                                .NumberOfTradeableStockPerDay = 30
-
-                                .NumberOfTradesPerStockPerDay = Integer.MaxValue
-
-                                .StockMaxProfitPercentagePerDay = Decimal.MaxValue
-                                .StockMaxLossPercentagePerDay = Decimal.MinValue
-
-                                .ExitOnStockFixedTargetStoploss = False
-                                .StockMaxProfitPerDay = Decimal.MaxValue
-                                .StockMaxLossPerDay = Decimal.MinValue
-
-                                .ExitOnOverAllFixedTargetStoploss = False
-                                .OverAllProfitPerDay = Decimal.MaxValue
-                                .OverAllLossPerDay = Decimal.MinValue
-
-                                .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
-                                .MTMSlab = Math.Abs(.OverAllLossPerDay)
-                                .MovementSlab = .MTMSlab / 2
-                                .RealtimeTrailingPercentage = 50
-                            End With
-
-                            Dim filename As String = String.Format("Option Buy")
                             Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
                                 Case 0
-                                    Dim ruleData As PivotTrendOutsideBuyStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                                    filename = String.Format("Pivot Trend Option Buy,HlfPrmExt {0},ExtATRPL {1},OptnDstnc {2}",
-                                                             ruleData.HalfPremiumExit, ruleData.ExitAtATRPL, ruleData.OptionStrikeDistance)
+                                    .RuleEntityData = New OptionBuyStrategyRule.StrategyRuleEntities With
+                                        {
+                                         .ATRMultiplier = 1,
+                                         .SpotToOptionDelta = 1,
+                                         .ExitAtATRPL = atrPL,
+                                         .OptionStrikeDistance = optnStrk,
+                                         .NumberOfActiveStock = 5
+                                        }
                                 Case Else
                                     Throw New NotImplementedException
                             End Select
 
-                            Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-                        End Using
-                    Next
+                            .NumberOfTradeableStockPerDay = 10
+
+                            .NumberOfTradesPerStockPerDay = Integer.MaxValue
+
+                            .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                            .StockMaxLossPercentagePerDay = Decimal.MinValue
+
+                            .ExitOnStockFixedTargetStoploss = False
+                            .StockMaxProfitPerDay = Decimal.MaxValue
+                            .StockMaxLossPerDay = Decimal.MinValue
+
+                            .ExitOnOverAllFixedTargetStoploss = False
+                            .OverAllProfitPerDay = Decimal.MaxValue
+                            .OverAllLossPerDay = Decimal.MinValue
+
+                            .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+                            .MTMSlab = Math.Abs(.OverAllLossPerDay)
+                            .MovementSlab = .MTMSlab / 2
+                            .RealtimeTrailingPercentage = 50
+                        End With
+
+                        Dim filename As String = String.Format("Option Buy")
+                        Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
+                            Case 0
+                                Dim ruleData As OptionBuyStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                                filename = String.Format("Dly Mrtngl Optn Buy,ExtATRPL {0},OptnDstnc {1}",
+                                                         ruleData.ExitAtATRPL, ruleData.OptionStrikeDistance)
+                            Case Else
+                                Throw New NotImplementedException
+                        End Select
+
+                        Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                    End Using
                 Next
             Next
         Catch ex As Exception

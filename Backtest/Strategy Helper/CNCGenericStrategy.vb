@@ -64,30 +64,31 @@ Namespace StrategyHelper
                     _canceller.Token.ThrowIfCancellationRequested()
                     Dim stockList As List(Of StockDetails) = GetStockData(tradeCheckingDate)
                     _canceller.Token.ThrowIfCancellationRequested()
-                    If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
-                        OnHeartbeat("Adding Running stocks")
-                        If Me.TradesTaken IsNot Nothing AndAlso Me.TradesTaken.Count > 0 Then
-                            For Each runningDate In Me.TradesTaken.Keys
-                                For Each runningStock In Me.TradesTaken(runningDate).Keys
-                                    Dim availableStock As StockDetails = stockList.Find(Function(x)
-                                                                                            Return x.TradingSymbol.ToUpper = runningStock.ToUpper
-                                                                                        End Function)
-                                    If availableStock Is Nothing Then
-                                        Dim lastEntryTrade As Trade = GetLastEntryTradeOfTheStock(runningStock, tradeCheckingDate, Trade.TypeOfTrade.CNC)
-                                        If lastEntryTrade IsNot Nothing AndAlso (lastEntryTrade.ExitRemark Is Nothing OrElse
+                    OnHeartbeat("Adding Running stocks")
+                    If Me.TradesTaken IsNot Nothing AndAlso Me.TradesTaken.Count > 0 Then
+                        If stockList Is Nothing Then stockList = New List(Of StockDetails)
+                        For Each runningDate In Me.TradesTaken.Keys
+                            For Each runningStock In Me.TradesTaken(runningDate).Keys
+                                Dim availableStock As StockDetails = stockList.Find(Function(x)
+                                                                                        Return x.TradingSymbol.ToUpper = runningStock.ToUpper
+                                                                                    End Function)
+                                If availableStock Is Nothing Then
+                                    Dim lastEntryTrade As Trade = GetLastEntryTradeOfTheStock(runningStock, tradeCheckingDate, Trade.TypeOfTrade.CNC)
+                                    If lastEntryTrade IsNot Nothing AndAlso (lastEntryTrade.ExitRemark Is Nothing OrElse
                                             Not lastEntryTrade.ExitRemark.Contains("Target")) Then
-                                            availableStock = New StockDetails With {
+                                        availableStock = New StockDetails With {
                                                 .TradingSymbol = runningStock,
                                                 .LotSize = lastEntryTrade.LotSize
                                             }
 
-                                            stockList.Add(availableStock)
-                                        End If
+                                        stockList.Add(availableStock)
                                     End If
-                                Next
+                                End If
                             Next
-                        End If
+                        Next
+                    End If
 
+                    If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
                         Dim checkForEntryExit As Boolean = False
                         Dim stocksRuleData As Dictionary(Of String, StrategyRule) = Nothing
 
@@ -105,7 +106,7 @@ Namespace StrategyHelper
                             Dim XDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             Dim currentDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             If Me.DataSource = SourceOfData.Database Then
-                                XDayOneMinutePayload = Cmn.GetRawPayloadForSpecificTradingSymbol(Me.DatabaseTable, runningPair.TradingSymbol, tradeCheckingDate.AddDays(-30), tradeCheckingDate)
+                                XDayOneMinutePayload = Cmn.GetRawPayloadForSpecificTradingSymbol(Me.DatabaseTable, runningPair.TradingSymbol, tradeCheckingDate.AddDays(-10), tradeCheckingDate)
                             ElseIf Me.DataSource = SourceOfData.Live Then
                                 Throw New NotImplementedException
                             End If
@@ -128,7 +129,7 @@ Namespace StrategyHelper
 
                                     Select Case Me.RuleNumber
                                         Case 0
-                                            stockRule = New PivotTrendOutsideBuyStrategyRule(tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me.RuleEntityData, Me, _canceller, XDayOneMinutePayload)
+                                            stockRule = New OptionBuyStrategyRule(tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me.RuleEntityData, Me, _canceller, XDayOneMinutePayload)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
@@ -181,11 +182,8 @@ Namespace StrategyHelper
                                                 Await stockStrategyRule.IsTriggerReceivedForExitOrderAsync(potentialTickSignalTime, potentialRuleExitTrades).ConfigureAwait(False)
                                             End If
 
-                                            If potentialTickSignalTime = GetCurrentXMinuteCandleTime(potentialTickSignalTime) OrElse
-                                                potentialTickSignalTime = tradeStartTime Then
-                                                _canceller.Token.ThrowIfCancellationRequested()
-                                                Await stockStrategyRule.IsTriggerReceivedForPlaceOrderAsync(potentialTickSignalTime).ConfigureAwait(False)
-                                            End If
+                                            _canceller.Token.ThrowIfCancellationRequested()
+                                            Await stockStrategyRule.IsTriggerReceivedForPlaceOrderAsync(potentialTickSignalTime).ConfigureAwait(False)
                                         Next
                                     End If
                                     startSecond = startSecond.Add(TimeSpan.FromSeconds(1))
