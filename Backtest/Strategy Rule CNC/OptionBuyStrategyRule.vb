@@ -97,9 +97,11 @@ Public Class OptionBuyStrategyRule
 
                         If lossToRecover < 0 AndAlso
                             ((currentDayHKCandle.PreviousCandlePayload.CandleColor = Color.Red AndAlso
-                            lastTrade.SupportingTradingSymbol.EndsWith("PE")) OrElse
+                            lastTrade.SupportingTradingSymbol.EndsWith("PE") AndAlso
+                            lastTrade.EntryTime.Date = currentDayHKCandle.PreviousCandlePayload.PayloadDate) OrElse
                             (currentDayHKCandle.PreviousCandlePayload.CandleColor = Color.Green AndAlso
-                            lastTrade.SupportingTradingSymbol.EndsWith("CE"))) Then
+                            lastTrade.SupportingTradingSymbol.EndsWith("CE") AndAlso
+                            lastTrade.EntryTime.Date = currentDayHKCandle.PreviousCandlePayload.PayloadDate)) Then
                             If currentDayHKCandle.PreviousCandlePayload.CandleColor = Color.Green Then
                                 If _smiPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate) <= -40 Then
                                     ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, currentMinuteCandle.PreviousCandlePayload, Trade.TradeExecutionDirection.Buy)
