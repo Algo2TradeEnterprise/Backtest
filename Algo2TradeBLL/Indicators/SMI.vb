@@ -46,8 +46,7 @@
 
                 outputSMIsignalPayload = New Dictionary(Of Date, Decimal)
                 For Each item In avgdiff.Keys
-
-                    Dim cal As Decimal = If(avgdiff(item) <> 0, (avgrdiff(item) / (avgdiff(item) / 2) * 100), 0)
+                    Dim cal As Decimal = If(avgdiff(item) / 2 <> 0, (avgrdiff(item) / (avgdiff(item) / 2) * 100), 0)
                     outputSMIsignalPayload.Add(item, Math.Round(cal, 4))
                 Next
 
