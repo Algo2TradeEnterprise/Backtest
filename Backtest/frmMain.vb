@@ -298,7 +298,7 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            Dim optnStrkList As List(Of Integer) = New List(Of Integer) From {-1, 1}
+            Dim optnStrkList As List(Of Integer) = New List(Of Integer) From {1, -1}
             For atrPL As Integer = 0 To 1
                 For Each optnStrk In optnStrkList
                     Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
@@ -351,7 +351,7 @@ Public Class frmMain
                                     Throw New NotImplementedException
                             End Select
 
-                            .NumberOfTradeableStockPerDay = Integer.MaxValue
+                            .NumberOfTradeableStockPerDay = 1
 
                             .NumberOfTradesPerStockPerDay = Integer.MaxValue
 

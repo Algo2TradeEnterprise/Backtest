@@ -76,7 +76,7 @@ Public Class HKTrendOptionBuyStrategyRule
                 Dim currentHKCandle As Payload = _hkPayload(_TradingDate)
                 Dim lastStrongHKCandle As Payload = GetLastStrongHKCandle()
                 Dim lastTrade As Trade = _ParentStrategy.GetLastEntryTradeOfTheStock(_TradingSymbol, _TradingDate, Trade.TypeOfTrade.CNC)
-                If lastTrade IsNot Nothing Then
+                If lastTrade Is Nothing Then
                     If currentHKCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
                         If lastStrongHKCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
                             If currentTickTime >= _TradeStartTime Then
@@ -112,10 +112,12 @@ Public Class HKTrendOptionBuyStrategyRule
                             End If
                         End If
                     Else
-                        If lastStrongHKCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
-                            ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(lastStrongHKCandle.PayloadDate), Trade.TradeExecutionDirection.Buy)
-                        ElseIf lastStrongHKCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
-                            ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(lastStrongHKCandle.PayloadDate), Trade.TradeExecutionDirection.Sell)
+                        If lastTrade.ExitRemark IsNot Nothing AndAlso lastTrade.ExitRemark.ToUpper <> "TARGET HIT" Then
+                            If lastStrongHKCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
+                                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(lastStrongHKCandle.PayloadDate), Trade.TradeExecutionDirection.Buy)
+                            ElseIf lastStrongHKCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
+                                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(lastStrongHKCandle.PayloadDate), Trade.TradeExecutionDirection.Sell)
+                            End If
                         End If
                     End If
                 End If
@@ -241,32 +243,69 @@ Public Class HKTrendOptionBuyStrategyRule
         If ret IsNot Nothing AndAlso ret.Item1 Then
             If _ParentStrategy.GetNumberOfActiveStocks(_TradingDate, Trade.TypeOfTrade.CNC) < _userInputs.NumberOfActiveStock Then
                 Dim targetReached As Boolean = True
+                Dim targetLeftPercentage As Decimal = 0
                 If ret.Item3 = Trade.TradeExecutionDirection.Buy Then
                     Dim highestHigh As Decimal = _eodPayload.Max(Function(x)
-                                                                     If x.Key > ret.Item2.PayloadDate AndAlso x.Key <= _TradingDate Then
+                                                                     If x.Key > ret.Item2.PayloadDate AndAlso x.Key < _TradingDate Then
                                                                          Return x.Value.High
                                                                      Else
                                                                          Return Decimal.MinValue
                                                                      End If
                                                                  End Function)
+                    Dim minHigh As Decimal = _SignalPayload.Max(Function(x)
+                                                                    If x.Key.Date = _TradingDate.Date AndAlso x.Key < currentMinute Then
+                                                                        Return x.Value.High
+                                                                    Else
+                                                                        Return Decimal.MinValue
+                                                                    End If
+                                                                End Function)
+                    If minHigh <> Decimal.MinValue AndAlso ret.Item2.PayloadDate.Date <> _TradingDate.Date Then
+                        highestHigh = Math.Max(highestHigh, minHigh)
+                    End If
+
                     Dim atr As Decimal = _atrPayload(ret.Item2.PayloadDate)
                     If highestHigh < ret.Item2.Close + atr Then
                         targetReached = False
+                        If highestHigh <> Decimal.MinValue Then
+                            targetLeftPercentage = ((highestHigh - ret.Item2.Close) / atr) * 100
+                        Else
+                            targetLeftPercentage = 100
+                        End If
                     End If
                 ElseIf ret.Item3 = Trade.TradeExecutionDirection.Sell Then
                     Dim lowestLow As Decimal = _eodPayload.Min(Function(x)
-                                                                   If x.Key > ret.Item2.PayloadDate AndAlso x.Key <= _TradingDate Then
+                                                                   If x.Key > ret.Item2.PayloadDate AndAlso x.Key < _TradingDate Then
                                                                        Return x.Value.Low
                                                                    Else
                                                                        Return Decimal.MaxValue
                                                                    End If
                                                                End Function)
+                    Dim minLow As Decimal = _SignalPayload.Min(Function(x)
+                                                                   If x.Key.Date = _TradingDate.Date AndAlso x.Key < currentMinute Then
+                                                                       Return x.Value.Low
+                                                                   Else
+                                                                       Return Decimal.MaxValue
+                                                                   End If
+                                                               End Function)
+                    If minLow <> Decimal.MaxValue AndAlso ret.Item2.PayloadDate.Date <> _TradingDate.Date Then
+                        lowestLow = Math.Min(lowestLow, minLow)
+                    End If
+
                     Dim atr As Decimal = _atrPayload(ret.Item2.PayloadDate)
                     If lowestLow > ret.Item2.Close - atr Then
                         targetReached = False
+                        If lowestLow <> Decimal.MaxValue Then
+                            targetLeftPercentage = ((ret.Item2.Close - lowestLow) / atr) * 100
+                        Else
+                            targetLeftPercentage = 100
+                        End If
                     End If
                 End If
-                If Not targetReached Then EnterTrade(ret.Item2, currentTickTime, ret.Item3)
+                If Not targetReached Then
+                    If targetLeftPercentage >= 75 Then
+                        EnterTrade(ret.Item2, currentTickTime, ret.Item3)
+                    End If
+                End If
             End If
         End If
     End Function

@@ -871,7 +871,7 @@ Namespace StrategyHelper
                                                                                                      Return x.ExitTime
                                                                                                  End Function)
                                                 If maxExitOfChildTrades = exitDate Then
-                                                    runningDay = exitDate.Subtract(entryDate).Days
+                                                    runningDay = exitDate.Subtract(entryDate).Days + 1
                                                 End If
                                             End If
 
@@ -1426,6 +1426,7 @@ Namespace StrategyHelper
                                 excelWriter.SetData(1, 9, "Result")
                                 excelWriter.SetData(1, 10, "Reference")
                                 excelWriter.SetData(1, 11, "Month")
+                                excelWriter.SetData(1, 12, "Running Day")
 
                                 Dim rowNumber As Integer = 1
                                 For Each runningSummary In summaryList
@@ -1441,6 +1442,7 @@ Namespace StrategyHelper
                                     excelWriter.SetData(rowNumber, 9, runningSummary.Result)
                                     excelWriter.SetData(rowNumber, 10, runningSummary.Reference)
                                     excelWriter.SetData(rowNumber, 11, runningSummary.Month)
+                                    excelWriter.SetData(rowNumber, 12, runningSummary.RunningDay)
                                 Next
                             End If
 
