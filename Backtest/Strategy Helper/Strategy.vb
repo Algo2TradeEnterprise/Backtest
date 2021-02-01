@@ -847,13 +847,33 @@ Namespace StrategyHelper
                                             Dim contractRolloverCount As Integer = 0
                                             For Each runningTagTrade In tagTrades
                                                 If runningTagTrade.ExitRemark IsNot Nothing Then
-                                                    If runningTagTrade.ExitRemark.ToUpper = "HALF PREMIUM" Then
+                                                    If runningTagTrade.ExitRemark.ToUpper = "HALF PREMIUM" OrElse
+                                                        runningTagTrade.ExitRemark.ToUpper = "ZERO PREMIUM" Then
                                                         halfPremiumCount += 1
                                                     ElseIf runningTagTrade.ExitRemark.ToUpper = "CONTRACT ROLLOVER" Then
                                                         contractRolloverCount += 1
                                                     End If
                                                 End If
                                             Next
+
+                                            Dim runningDay As Integer = 0
+                                            Dim parentTagTrades As List(Of Trade) = runningStock.Value.FindAll(Function(x)
+                                                                                                                   Return x.ParentTag = tagTrades.Last.ParentTag
+                                                                                                               End Function)
+                                            If parentTagTrades IsNot Nothing AndAlso parentTagTrades.Count > 0 Then
+                                                Dim entryDate As Date = parentTagTrades.Min(Function(x)
+                                                                                                Return x.EntryTime
+                                                                                            End Function)
+                                                Dim exitDate As Date = parentTagTrades.Max(Function(x)
+                                                                                               Return x.ExitTime
+                                                                                           End Function)
+                                                Dim maxExitOfChildTrades As Date = tagTrades.Max(Function(x)
+                                                                                                     Return x.ExitTime
+                                                                                                 End Function)
+                                                If maxExitOfChildTrades = exitDate Then
+                                                    runningDay = exitDate.Subtract(entryDate).Days
+                                                End If
+                                            End If
 
                                             Dim summaryData As Summary = New Summary
                                             summaryData.TradingSymbol = runningStock.Key
@@ -871,6 +891,7 @@ Namespace StrategyHelper
                                             summaryData.Result = If(summaryData.ROI > 0, "Profit", "Loss")
                                             summaryData.Reference = tagTrades.LastOrDefault.ChildTag
                                             summaryData.Month = String.Format("{0}-{1}", tagTrades.FirstOrDefault.TradingDate.ToString("yyyy"), tagTrades.FirstOrDefault.TradingDate.ToString("MM"))
+                                            summaryData.RunningDay = runningDay
 
                                             If summaryList Is Nothing Then summaryList = New List(Of Summary)
                                             summaryList.Add(summaryData)

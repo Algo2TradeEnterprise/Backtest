@@ -25,7 +25,7 @@ Public Class HKTrendOptionBuyStrategyRule
 #End Region
 
     Private _eodPayload As Dictionary(Of Date, Payload)
-    Private _pivotTrendPayload As Dictionary(Of Date, Color)
+    Private _hkPayload As Dictionary(Of Date, Payload)
     Private _atrPayload As Dictionary(Of Date, Decimal)
 
     Private _dependentInstruments As Dictionary(Of String, Dictionary(Of Date, Payload)) = Nothing
@@ -47,8 +47,8 @@ Public Class HKTrendOptionBuyStrategyRule
         MyBase.CompletePreProcessing()
 
         _eodPayload = _ParentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.EOD_POSITIONAL, _TradingSymbol, _TradingDate.AddDays(-300), _TradingDate)
-        Indicator.PivotHighLow.CalculatePivotHighLowTrend(4, 3, _eodPayload, Nothing, Nothing, _pivotTrendPayload)
         Indicator.ATR.CalculateATR(14, _eodPayload, _atrPayload)
+        Indicator.HeikenAshi.ConvertToHeikenAshi(_eodPayload, _hkPayload)
 
         Dim allRunningTrades As List(Of Trade) = _ParentStrategy.GetSpecificTrades(_TradingSymbol, _TradingDate, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
         If allRunningTrades IsNot Nothing AndAlso allRunningTrades.Count > 0 Then
@@ -72,56 +72,50 @@ Public Class HKTrendOptionBuyStrategyRule
     Private Function IsEntrySignalReceived(ByVal currentTickTime As Date) As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)
         Dim ret As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection) = Nothing
         If Not _ParentStrategy.IsTradeActive(GetCurrentTick(_TradingSymbol, currentTickTime), Trade.TypeOfTrade.CNC) Then
-            If _pivotTrendPayload IsNot Nothing AndAlso _pivotTrendPayload.ContainsKey(_TradingDate) Then
-                Dim trend As Color = _pivotTrendPayload(_TradingDate)
-                Dim previousTrend As Color = _pivotTrendPayload(_eodPayload(_TradingDate).PreviousCandlePayload.PayloadDate)
+            If _hkPayload IsNot Nothing AndAlso _hkPayload.ContainsKey(_TradingDate) Then
+                Dim currentHKCandle As Payload = _hkPayload(_TradingDate)
+                Dim lastStrongHKCandle As Payload = GetLastStrongHKCandle()
                 Dim lastTrade As Trade = _ParentStrategy.GetLastEntryTradeOfTheStock(_TradingSymbol, _TradingDate, Trade.TypeOfTrade.CNC)
                 If lastTrade IsNot Nothing Then
-                    If trend = Color.Green Then
-                        If previousTrend = Color.Red Then
+                    If currentHKCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
+                        If lastStrongHKCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
                             If currentTickTime >= _TradeStartTime Then
                                 ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(_TradingDate), Trade.TradeExecutionDirection.Buy)
                             End If
-                        Else
-                            Dim rolloverDay As Date = GetRolloverDay(trend)
-                            If rolloverDay <> Date.MinValue AndAlso rolloverDay.Date <> lastTrade.SignalCandle.PayloadDate.Date Then
-                                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Buy)
-                            End If
                         End If
-                    ElseIf trend = Color.Red Then
-                        If previousTrend = Color.Green Then
+                    ElseIf currentHKCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
+                        If lastStrongHKCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
                             If currentTickTime >= _TradeStartTime Then
                                 ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(_TradingDate), Trade.TradeExecutionDirection.Sell)
-                            End If
-                        Else
-                            Dim rolloverDay As Date = GetRolloverDay(trend)
-                            If rolloverDay <> Date.MinValue AndAlso rolloverDay.Date <> lastTrade.SignalCandle.PayloadDate.Date Then
-                                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Sell)
                             End If
                         End If
                     End If
                 Else
-                    If trend = Color.Green Then
-                        If previousTrend = Color.Red Then
-                            If currentTickTime >= _TradeStartTime Then
-                                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(_TradingDate), Trade.TradeExecutionDirection.Buy)
+                    If currentTickTime >= _TradeStartTime Then
+                        If currentHKCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
+                            If lastStrongHKCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
+                                If currentTickTime >= _TradeStartTime Then
+                                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(_TradingDate), Trade.TradeExecutionDirection.Buy)
+                                End If
+                            End If
+                        ElseIf currentHKCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
+                            If lastStrongHKCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
+                                If currentTickTime >= _TradeStartTime Then
+                                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(_TradingDate), Trade.TradeExecutionDirection.Sell)
+                                End If
                             End If
                         Else
-                            Dim rolloverDay As Date = GetRolloverDay(trend)
-                            If rolloverDay <> Date.MinValue AndAlso rolloverDay.Date >= New Date(2020, 1, 1).Date Then
-                                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Buy)
+                            If lastStrongHKCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
+                                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(lastStrongHKCandle.PayloadDate), Trade.TradeExecutionDirection.Buy)
+                            ElseIf lastStrongHKCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
+                                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(lastStrongHKCandle.PayloadDate), Trade.TradeExecutionDirection.Sell)
                             End If
                         End If
-                    ElseIf trend = Color.Red Then
-                        If previousTrend = Color.Green Then
-                            If currentTickTime >= _TradeStartTime Then
-                                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(_TradingDate), Trade.TradeExecutionDirection.Sell)
-                            End If
-                        Else
-                            Dim rolloverDay As Date = GetRolloverDay(trend)
-                            If rolloverDay <> Date.MinValue AndAlso rolloverDay.Date >= New Date(2020, 1, 1).Date Then
-                                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Sell)
-                            End If
+                    Else
+                        If lastStrongHKCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
+                            ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(lastStrongHKCandle.PayloadDate), Trade.TradeExecutionDirection.Buy)
+                        ElseIf lastStrongHKCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
+                            ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(lastStrongHKCandle.PayloadDate), Trade.TradeExecutionDirection.Sell)
                         End If
                     End If
                 End If
@@ -160,12 +154,14 @@ Public Class HKTrendOptionBuyStrategyRule
                     ret = GetLossMakeupTradePL(currentTrade, currentTickTime) > Math.Abs(currentTrade.PreviousLoss)
                 End If
             ElseIf typeOfExit = ExitType.Reverse Then
-                If _pivotTrendPayload IsNot Nothing AndAlso _pivotTrendPayload.ContainsKey(_TradingDate) Then
-                    Dim trend As Color = _pivotTrendPayload(_TradingDate)
-                    Dim previousTrend As Color = _pivotTrendPayload(_eodPayload(_TradingDate).PreviousCandlePayload.PayloadDate)
-                    If trend = Color.Green AndAlso previousTrend = Color.Red AndAlso optionType <> "CE" Then
+                If _hkPayload IsNot Nothing AndAlso _hkPayload.ContainsKey(_TradingDate) Then
+                    Dim currentHKCandle As Payload = _hkPayload(_TradingDate)
+                    Dim lastStrongHKCandle As Payload = GetLastStrongHKCandle()
+                    If currentHKCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish AndAlso
+                        lastStrongHKCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish AndAlso optionType <> "CE" Then
                         ret = True
-                    ElseIf trend = Color.Red AndAlso previousTrend = Color.Green AndAlso optionType <> "PE" Then
+                    ElseIf currentHKCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish AndAlso
+                        lastStrongHKCandle.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish AndAlso optionType <> "PE" Then
                         ret = True
                     End If
                 End If
@@ -221,16 +217,15 @@ Public Class HKTrendOptionBuyStrategyRule
         Return ret
     End Function
 
-    Private Function GetRolloverDay(ByVal currentTrend As Color) As Date
-        Dim ret As Date = Date.MinValue
-        For Each runningPayload In _eodPayload.OrderByDescending(Function(x)
-                                                                     Return x.Key
-                                                                 End Function)
-            If runningPayload.Value.PreviousCandlePayload IsNot Nothing AndAlso
-                runningPayload.Value.PreviousCandlePayload.PayloadDate < _TradingDate Then
-                Dim trend As Color = _pivotTrendPayload(runningPayload.Value.PreviousCandlePayload.PayloadDate)
-                If trend <> currentTrend Then
-                    ret = runningPayload.Key
+    Private Function GetLastStrongHKCandle() As Payload
+        Dim ret As Payload = Nothing
+        For Each runningPayload In _hkPayload.OrderByDescending(Function(x)
+                                                                    Return x.Key
+                                                                End Function)
+            If runningPayload.Key < _TradingDate Then
+                If runningPayload.Value.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish OrElse
+                    runningPayload.Value.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
+                    ret = runningPayload.Value
                     Exit For
                 End If
             End If

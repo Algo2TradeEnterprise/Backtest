@@ -183,11 +183,11 @@ Namespace StrategyHelper
                                                 Await stockStrategyRule.IsTriggerReceivedForExitOrderAsync(potentialTickSignalTime, potentialRuleExitTrades).ConfigureAwait(False)
                                             End If
 
-                                            If potentialTickSignalTime = GetCurrentXMinuteCandleTime(potentialTickSignalTime) OrElse
-                                                potentialTickSignalTime = tradeStartTime Then
-                                                _canceller.Token.ThrowIfCancellationRequested()
-                                                Await stockStrategyRule.IsTriggerReceivedForPlaceOrderAsync(potentialTickSignalTime).ConfigureAwait(False)
-                                            End If
+                                            'If potentialTickSignalTime = GetCurrentXMinuteCandleTime(potentialTickSignalTime) OrElse
+                                            '    potentialTickSignalTime = tradeStartTime Then
+                                            _canceller.Token.ThrowIfCancellationRequested()
+                                            Await stockStrategyRule.IsTriggerReceivedForPlaceOrderAsync(potentialTickSignalTime).ConfigureAwait(False)
+                                            'End If
                                         Next
                                     End If
                                     startSecond = startSecond.Add(TimeSpan.FromSeconds(1))

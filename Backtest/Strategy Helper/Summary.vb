@@ -10,4 +10,5 @@
     Public Result As String
     Public Reference As String
     Public Month As String
+    Public RunningDay As Integer
 End Class
