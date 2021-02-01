@@ -3,14 +3,13 @@ Imports System.Threading
 Imports Utilities.Numbers
 Imports Backtest.StrategyHelper
 
-Public Class PivotTrendOutsideBuyStrategyRule
+Public Class HKTrendOptionBuyStrategyRule
     Inherits StrategyRule
 
 #Region "Entity"
     Public Class StrategyRuleEntities
         Inherits RuleEntities
 
-        Public ATRMultiplier As Decimal
         Public SpotToOptionDelta As Decimal
         Public ExitAtATRPL As Boolean
         Public HalfPremiumExit As Boolean
@@ -138,7 +137,7 @@ Public Class PivotTrendOutsideBuyStrategyRule
             If typeOfExit = ExitType.Target Then
                 If currentTrade.EntryType = Trade.TypeOfEntry.Fresh Then      'Fresh Trade
                     Dim currentSpotTick As Payload = GetCurrentTick(_TradingSymbol, currentTickTime)
-                    If optionType = "CE" AndAlso currentSpotTick.Open >= currentTrade.SpotPrice + currentTrade.SpotATR * _userInputs.ATRMultiplier Then
+                    If optionType = "CE" AndAlso currentSpotTick.Open >= currentTrade.SpotPrice + currentTrade.SpotATR Then
                         Dim pl As Decimal = GetFreshTradePL(currentTrade, currentTickTime)
                         If pl > 0 Then
                             ret = True
@@ -147,7 +146,7 @@ Public Class PivotTrendOutsideBuyStrategyRule
                                 currentTrade.UpdateTrade(Remark1:=String.Format("ATR Reached but PL {0}", pl))
                             End If
                         End If
-                    ElseIf optionType = "PE" AndAlso currentSpotTick.Open <= currentTrade.SpotPrice - currentTrade.SpotATR * _userInputs.ATRMultiplier Then
+                    ElseIf optionType = "PE" AndAlso currentSpotTick.Open <= currentTrade.SpotPrice - currentTrade.SpotATR Then
                         Dim pl As Decimal = GetFreshTradePL(currentTrade, currentTickTime)
                         If pl > 0 Then
                             ret = True

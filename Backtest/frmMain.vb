@@ -330,14 +330,22 @@ Public Class frmMain
 
                             Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
                                 Case 0
-                                    .RuleEntityData = New PivotTrendOutsideBuyStrategyRule.StrategyRuleEntities With
+                                    .RuleEntityData = New PivotTrendOptionBuyStrategyRule.StrategyRuleEntities With
                                         {
-                                         .ATRMultiplier = 1,
                                          .SpotToOptionDelta = 1,
                                          .HalfPremiumExit = False,
                                          .ExitAtATRPL = atrPL,
                                          .OptionStrikeDistance = optnStrk,
-                                         .NumberOfActiveStock = 15
+                                         .NumberOfActiveStock = 5
+                                        }
+                                Case 1
+                                    .RuleEntityData = New HKTrendOptionBuyStrategyRule.StrategyRuleEntities With
+                                        {
+                                         .SpotToOptionDelta = 1,
+                                         .HalfPremiumExit = False,
+                                         .ExitAtATRPL = atrPL,
+                                         .OptionStrikeDistance = optnStrk,
+                                         .NumberOfActiveStock = 5
                                         }
                                 Case Else
                                     Throw New NotImplementedException
@@ -367,8 +375,12 @@ Public Class frmMain
                         Dim filename As String = String.Format("Option Buy")
                         Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
                             Case 0
-                                Dim ruleData As PivotTrendOutsideBuyStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                                Dim ruleData As PivotTrendOptionBuyStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
                                 filename = String.Format("Pivot Trend Option Buy,HlfPrmExt {0},ExtATRPL {1},OptnDstnc {2}",
+                                                         ruleData.HalfPremiumExit, ruleData.ExitAtATRPL, ruleData.OptionStrikeDistance)
+                            Case 1
+                                Dim ruleData As HKTrendOptionBuyStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                                filename = String.Format("HK Trend Option Buy,HlfPrmExt {0},ExtATRPL {1},OptnDstnc {2}",
                                                          ruleData.HalfPremiumExit, ruleData.ExitAtATRPL, ruleData.OptionStrikeDistance)
                             Case Else
                                 Throw New NotImplementedException
