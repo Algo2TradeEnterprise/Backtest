@@ -343,7 +343,7 @@ Public Class PivotTrendOutsideBuyStrategyRule
                 Next
             End If
 
-            'Half Premium
+            'Half Premium/ Zero Premium
             If currentTickTime.Hour >= 15 AndAlso currentTickTime.Minute >= 29 Then
                 For Each runningTrade In availableTrades
                     If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
@@ -359,7 +359,7 @@ Public Class PivotTrendOutsideBuyStrategyRule
                                 If currentOptTick IsNot Nothing AndAlso currentOptTick.PayloadDate >= currentMinute AndAlso
                                     currentOptTick.Volume > 0 Then
                                     currentOptTick = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
-                                    _ParentStrategy.ExitTradeByForce(runningTrade, currentOptTick, "Half Premium")
+                                    _ParentStrategy.ExitTradeByForce(runningTrade, currentOptTick, If(_userInputs.HalfPremiumExit, "Half Premium", "Zero Premium"))
 
                                     currentOptTick = GetCurrentTick(optionTradingSymbol, currentTickTime)
                                     EnterDuplicateTrade(runningTrade, currentOptTick, True)
