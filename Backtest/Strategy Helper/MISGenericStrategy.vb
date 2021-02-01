@@ -56,7 +56,7 @@ Namespace StrategyHelper
                 PrintArrayToExcel(filename, tradesFileName, capitalFileName)
             Else
                 Dim strategyName As String = String.Format("Strategy{0}", Me.RuleNumber)
-                OnHeartbeat("Getting unique instrument list")
+                'OnHeartbeat("Getting unique instrument list")
                 'Dim allInstrumentList As List(Of String) = GetUniqueInstrumentList(startDate, endDate)
                 'Dim dataFtchr As DataFetcher = New DataFetcher(_canceller, My.Settings.ServerName, allInstrumentList, startDate.AddDays(-25), endDate, Me.StockType, Me.OptionStockType, strategyName)
                 'AddHandler dataFtchr.Heartbeat, AddressOf OnHeartbeat
