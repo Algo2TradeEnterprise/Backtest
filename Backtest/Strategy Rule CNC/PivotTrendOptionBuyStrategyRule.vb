@@ -270,7 +270,7 @@ Public Class PivotTrendOptionBuyStrategyRule
                     If highestHigh < ret.Item2.Close + atr Then
                         targetReached = False
                         If highestHigh <> Decimal.MinValue Then
-                            targetLeftPercentage = ((highestHigh - ret.Item2.Close) / atr) * 100
+                            targetLeftPercentage = ((atr - (highestHigh - ret.Item2.Close)) / atr) * 100
                         Else
                             targetLeftPercentage = 100
                         End If
@@ -298,7 +298,7 @@ Public Class PivotTrendOptionBuyStrategyRule
                     If lowestLow > ret.Item2.Close - atr Then
                         targetReached = False
                         If lowestLow <> Decimal.MaxValue Then
-                            targetLeftPercentage = ((ret.Item2.Close - lowestLow) / atr) * 100
+                            targetLeftPercentage = ((atr - (ret.Item2.Close - lowestLow)) / atr) * 100
                         Else
                             targetLeftPercentage = 100
                         End If
