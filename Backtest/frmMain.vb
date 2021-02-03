@@ -298,7 +298,7 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            For mode As Integer = 3 To 1 Step -1
+            For mode As Integer = 3 To 3 Step -1
                 For atrPL As Integer = 0 To 1
                     Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
                                                                         exchangeStartTime:=TimeSpan.Parse("09:15:00"),

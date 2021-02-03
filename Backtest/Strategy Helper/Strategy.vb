@@ -637,9 +637,23 @@ Namespace StrategyHelper
                 Throw New ApplicationException("Supplied trade is not open, cannot cancel")
             End If
             currentTrade.UpdateTrade(ExitTime:=currentPayload.PayloadDate,
-                                 ExitCondition:=Trade.TradeExitCondition.Cancelled,
-                                 ExitRemark:=exitRemark,
-                                 TradeCurrentStatus:=Trade.TradeExecutionStatus.Cancel)
+                                     ExitCondition:=Trade.TradeExitCondition.Cancelled,
+                                     ExitRemark:=exitRemark,
+                                     TradeCurrentStatus:=Trade.TradeExecutionStatus.Cancel)
+
+            InsertCapitalRequired(currentTrade.ExitTime, 0, currentTrade.CapitalRequiredWithMargin, "Cancel Trade")
+
+            'TradesTaken(currentTrade.TradingDate.Date)(currentTrade.TradingSymbol).Remove(currentTrade)
+        End Sub
+
+        Public Sub CancelTrade(ByVal currentTrade As Trade, ByVal currentTime As Date, ByVal exitRemark As String)
+            If currentTrade Is Nothing OrElse currentTrade.TradeCurrentStatus <> Trade.TradeExecutionStatus.Open Then
+                Throw New ApplicationException("Supplied trade is not open, cannot cancel")
+            End If
+            currentTrade.UpdateTrade(ExitTime:=currentTime,
+                                     ExitCondition:=Trade.TradeExitCondition.Cancelled,
+                                     ExitRemark:=exitRemark,
+                                     TradeCurrentStatus:=Trade.TradeExecutionStatus.Cancel)
 
             InsertCapitalRequired(currentTrade.ExitTime, 0, currentTrade.CapitalRequiredWithMargin, "Cancel Trade")
 
@@ -1035,7 +1049,7 @@ Namespace StrategyHelper
                         End With
 
                         Dim distinctTagList As List(Of String) = New List(Of String)
-                        Dim runningTradeTag As String = Nothing
+                        'Dim runningTradeTag As String = Nothing
                         For Each runningDate In allTradesData
                             For Each runningStock In runningDate.Value
                                 If runningStock.Value IsNot Nothing AndAlso runningStock.Value.Count > 0 Then
@@ -1043,9 +1057,9 @@ Namespace StrategyHelper
                                         If Not distinctTagList.Contains(runningTrade.ChildTag) Then
                                             distinctTagList.Add(runningTrade.ChildTag)
                                         End If
-                                        If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-                                            runningTradeTag = runningTrade.ChildTag
-                                        End If
+                                        'If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                                        '    runningTradeTag = runningTrade.ChildTag
+                                        'End If
                                     Next
                                 End If
                             Next
@@ -1059,23 +1073,23 @@ Namespace StrategyHelper
                                                                                                End Function)
                                                                               End Function)
 
-                        If runningTradeTag IsNot Nothing AndAlso runningTradeTag.Trim <> "" Then
-                            Dim plToDeduct As Decimal = 0
-                            For Each runningDate In allTradesData
-                                For Each runningStock In runningDate.Value
-                                    If runningStock.Value IsNot Nothing AndAlso runningStock.Value.Count > 0 Then
-                                        For Each runningTrade In runningStock.Value
-                                            If runningTrade.ChildTag = runningTradeTag Then
-                                                plToDeduct += runningTrade.PLAfterBrokerage
-                                            End If
-                                        Next
-                                    End If
-                                Next
-                            Next
+                        'If runningTradeTag IsNot Nothing AndAlso runningTradeTag.Trim <> "" Then
+                        '    Dim plToDeduct As Decimal = 0
+                        '    For Each runningDate In allTradesData
+                        '        For Each runningStock In runningDate.Value
+                        '            If runningStock.Value IsNot Nothing AndAlso runningStock.Value.Count > 0 Then
+                        '                For Each runningTrade In runningStock.Value
+                        '                    If runningTrade.ChildTag = runningTradeTag Then
+                        '                        plToDeduct += runningTrade.PLAfterBrokerage
+                        '                    End If
+                        '                Next
+                        '            End If
+                        '        Next
+                        '    Next
 
-                            tradeCount = tradeCount - 1
-                            pl = pl - plToDeduct
-                        End If
+                        '    tradeCount = tradeCount - 1
+                        '    pl = pl - plToDeduct
+                        'End If
 
                         If tradeCount = 0 Then
                             fileName = String.Format("PL {0},Cap {1},ROI {2},TrdNmbr {3},MaxDays {4},{5}.xlsx",
