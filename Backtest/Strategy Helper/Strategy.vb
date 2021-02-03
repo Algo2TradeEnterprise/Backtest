@@ -1009,8 +1009,8 @@ Namespace StrategyHelper
                                                                                      End Function)
 
                         Dim winRatio As Decimal = Math.Round((totalPositiveTrades / totalTrades) * 100, 2)
-                        Dim riskReward As Decimal = 0
-                        If totalPositiveTrades <> 0 AndAlso (totalTrades - totalPositiveTrades) <> 0 Then
+                        Dim riskReward As Decimal = Decimal.MinValue
+                        If totalPositiveTrades <> 0 AndAlso (totalTrades - totalPositiveTrades) <> 0 AndAlso sumOfNegativeTrades <> 0 Then
                             riskReward = Math.Round(Math.Abs((sumOfPositiveTrades / totalPositiveTrades) / (sumOfNegativeTrades / (totalTrades - totalPositiveTrades))), 2)
                         End If
 

@@ -298,26 +298,25 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            Dim optnStrkList As List(Of Integer) = New List(Of Integer) From {1, -1}
-            For atrPL As Integer = 0 To 1
-                For Each optnStrk In optnStrkList
+            For mode As Integer = 1 To 3
+                For atrPL As Integer = 0 To 1
                     Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
-                                                        exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                        exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                        tradeStartTime:=TimeSpan.Parse("15:29:00"),
-                                                        lastTradeEntryTime:=TimeSpan.Parse("15:30:00"),
-                                                        eodExitTime:=TimeSpan.Parse("15:30:00"),
-                                                        tickSize:=tick,
-                                                        marginMultiplier:=margin,
-                                                        timeframe:=1,
-                                                        heikenAshiCandle:=False,
-                                                        stockType:=stockType,
-                                                        databaseTable:=database,
-                                                        dataSource:=sourceData,
-                                                        initialCapital:=Decimal.MaxValue / 2,
-                                                        usableCapital:=Decimal.MaxValue / 2,
-                                                        minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
-                                                        amountToBeWithdrawn:=0)
+                                                                        exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                        exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                        tradeStartTime:=TimeSpan.Parse("15:28:00"),
+                                                                        lastTradeEntryTime:=TimeSpan.Parse("15:30:00"),
+                                                                        eodExitTime:=TimeSpan.Parse("15:30:00"),
+                                                                        tickSize:=tick,
+                                                                        marginMultiplier:=margin,
+                                                                        timeframe:=1,
+                                                                        heikenAshiCandle:=False,
+                                                                        stockType:=stockType,
+                                                                        databaseTable:=database,
+                                                                        dataSource:=sourceData,
+                                                                        initialCapital:=Decimal.MaxValue / 2,
+                                                                        usableCapital:=Decimal.MaxValue / 2,
+                                                                        minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                                        amountToBeWithdrawn:=0)
                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                         With backtestStrategy
@@ -333,10 +332,10 @@ Public Class frmMain
                                     .RuleEntityData = New PivotTrendOptionBuyStrategyRule.StrategyRuleEntities With
                                         {
                                          .SpotToOptionDelta = 1,
-                                         .HalfPremiumExit = False,
                                          .ExitAtATRPL = atrPL,
-                                         .OptionStrikeDistance = optnStrk,
-                                         .NumberOfActiveStock = 5
+                                         .OptionStrikeDistance = 1,
+                                         .NumberOfActiveStock = 5,
+                                         .EntryMode = PivotTrendOptionBuyStrategyRule.EntryType.Mode3
                                         }
                                 Case 1
                                     .RuleEntityData = New HKTrendOptionBuyStrategyRule.StrategyRuleEntities With
@@ -344,7 +343,7 @@ Public Class frmMain
                                          .SpotToOptionDelta = 1,
                                          .HalfPremiumExit = False,
                                          .ExitAtATRPL = atrPL,
-                                         .OptionStrikeDistance = optnStrk,
+                                         .OptionStrikeDistance = 1,
                                          .NumberOfActiveStock = 5
                                         }
                                 Case Else
@@ -376,12 +375,12 @@ Public Class frmMain
                         Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
                             Case 0
                                 Dim ruleData As PivotTrendOptionBuyStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                                filename = String.Format("Pivot Trend Option Buy,HlfPrmExt {0},ExtATRPL {1},OptnDstnc {2}",
-                                                         ruleData.HalfPremiumExit, ruleData.ExitAtATRPL, ruleData.OptionStrikeDistance)
+                                filename = String.Format("Pivot Trend Option Buy,Entry {0},ExtATRPL {1}",
+                                                         ruleData.EntryMode.ToString, ruleData.ExitAtATRPL)
                             Case 1
                                 Dim ruleData As HKTrendOptionBuyStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
                                 filename = String.Format("HK Trend Option Buy,HlfPrmExt {0},ExtATRPL {1},OptnDstnc {2}",
-                                                         ruleData.HalfPremiumExit, ruleData.ExitAtATRPL, ruleData.OptionStrikeDistance)
+                                                         ruleData.HalfPremiumExit, ruleData.ExitAtATRPL)
                             Case Else
                                 Throw New NotImplementedException
                         End Select
