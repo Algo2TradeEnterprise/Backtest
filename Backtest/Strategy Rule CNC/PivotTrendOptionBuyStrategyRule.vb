@@ -103,7 +103,7 @@ Public Class PivotTrendOptionBuyStrategyRule
                     Else
                         Dim rolloverDay As Date = GetRolloverDay(trend)
                         If rolloverDay <> Date.MinValue Then
-                            If lastTrade Is Nothing Then
+                            If lastTrade Is Nothing OrElse lastTrade.ExitRemark.ToUpper = "TARGET HIT" Then
                                 If Now >= _TradeStartTime.AddMinutes(1) Then
                                     ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Buy)
                                 End If
@@ -124,7 +124,7 @@ Public Class PivotTrendOptionBuyStrategyRule
                     Else
                         Dim rolloverDay As Date = GetRolloverDay(trend)
                         If rolloverDay <> Date.MinValue Then
-                            If lastTrade Is Nothing Then
+                            If lastTrade Is Nothing OrElse lastTrade.ExitRemark.ToUpper = "TARGET HIT" Then
                                 If Now >= _TradeStartTime.AddMinutes(1) Then
                                     ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Sell)
                                 End If
@@ -329,6 +329,12 @@ Public Class PivotTrendOptionBuyStrategyRule
     End Function
 
     Public Overrides Async Function IsTriggerReceivedForExitOrderAsync(ByVal currentTickTime As Date, ByVal availableTrades As List(Of Trade)) As Task
+        If currentTickTime >= _TradeStartTime AndAlso Not _eodPayload.ContainsKey(_TradingDate) Then
+            _eodPayload.Add(_currentDayCandle.PayloadDate, _currentDayCandle)
+            _pivotTrendPayload.Add(_currentDayCandle.PayloadDate, _currentDayPivotTrend)
+            _atrPayload.Add(_currentDayCandle.PayloadDate, _currentDayATR)
+        End If
+
         Await Task.Delay(0).ConfigureAwait(False)
         If availableTrades IsNot Nothing AndAlso availableTrades.Count > 0 Then
             'Set Drawup Drawdown
