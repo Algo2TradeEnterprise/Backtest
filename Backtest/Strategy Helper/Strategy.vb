@@ -1423,6 +1423,24 @@ Namespace StrategyHelper
                                 colNumber += 1
                                 excelWriter.SetData(1, colNumber, "Start Date")
                                 colNumber += 1
+                                excelWriter.SetData(1, colNumber, "End Date")
+                                colNumber += 1
+                                excelWriter.SetData(1, colNumber, "Number Of Days")
+                                colNumber += 1
+                                excelWriter.SetData(1, colNumber, "Contract Rollover Trade Count")
+                                colNumber += 1
+                                excelWriter.SetData(1, colNumber, "Reverse Signal Trade Count")
+                                colNumber += 1
+                                excelWriter.SetData(1, colNumber, "Overall PL")
+                                colNumber += 1
+                                excelWriter.SetData(1, colNumber, "Max Capital Required")
+                                colNumber += 1
+                                excelWriter.SetData(1, colNumber, "Absolute ROI %")
+                                colNumber += 1
+                                excelWriter.SetData(1, colNumber, "Annual ROI %")
+                                colNumber += 1
+                                excelWriter.SetData(1, colNumber, "Reference")
+                                colNumber += 1
                                 For ctr As Integer = 1 To maxTradeCount
                                     excelWriter.SetData(1, colNumber, "Contract")
                                     colNumber += 1
@@ -1441,12 +1459,6 @@ Namespace StrategyHelper
                                     excelWriter.SetData(1, colNumber, "PL")
                                     colNumber += 1
                                 Next
-                                Dim afterTradeColumnNumber As Integer = colNumber
-                                excelWriter.SetData(1, colNumber, "End Date")
-                                colNumber += 1
-                                excelWriter.SetData(1, colNumber, "Overall PL")
-                                colNumber += 1
-                                excelWriter.SetData(1, colNumber, "Reference")
 
                                 Dim rowNumber As Integer = 1
                                 For Each runningSummary In logicalTradeSummary
@@ -1456,6 +1468,24 @@ Namespace StrategyHelper
                                     excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.Instrument)
                                     colNumber += 1
                                     excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.StartDate.ToString("dd-MMM-yyyy"))
+                                    colNumber += 1
+                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.EndDate.ToString("dd-MMM-yyyy"))
+                                    colNumber += 1
+                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.NumberOfDays)
+                                    colNumber += 1
+                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.ContractRolloverTradeCount)
+                                    colNumber += 1
+                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.ReverseTradeCount)
+                                    colNumber += 1
+                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.OverallPL)
+                                    colNumber += 1
+                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.MaxCapital)
+                                    colNumber += 1
+                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.AbsoluteReturnOfInvestment)
+                                    colNumber += 1
+                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.AnnuanlReturnOfInvestment)
+                                    colNumber += 1
+                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Key)
                                     colNumber += 1
                                     For Each runningTrade In runningSummary.Value.AllTrades.OrderBy(Function(x)
                                                                                                         Return x.EntryTime
@@ -1479,12 +1509,6 @@ Namespace StrategyHelper
                                             colNumber += 1
                                         End If
                                     Next
-                                    colNumber = afterTradeColumnNumber
-                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.EndDate.ToString("dd-MMM-yyyy"))
-                                    colNumber += 1
-                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.OverallPL, "##,##,##0.00", ExcelHelper.XLAlign.Right)
-                                    colNumber += 1
-                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Key)
                                 Next
                             End If
 

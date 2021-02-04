@@ -48,6 +48,50 @@
             End Get
         End Property
 
+        Public ReadOnly Property NumberOfDays As Integer
+            Get
+                Return Me.EndDate.Subtract(Me.StartDate).Days + 1
+            End Get
+        End Property
+
+        Public ReadOnly Property TradeCount As Integer
+            Get
+                If Me.AllTrades IsNot Nothing AndAlso Me.AllTrades.Count > 0 Then
+                    Return Me.AllTrades.FindAll(Function(x)
+                                                    Return x.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel
+                                                End Function).Count
+                Else
+                    Return Integer.MinValue
+                End If
+            End Get
+        End Property
+
+        Public ReadOnly Property ContractRolloverTradeCount As Integer
+            Get
+                If Me.AllTrades IsNot Nothing AndAlso Me.AllTrades.Count > 0 Then
+                    Return Me.AllTrades.FindAll(Function(x)
+                                                    Return x.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel AndAlso
+                                                    x.ExitRemark IsNot Nothing AndAlso x.ExitRemark.ToUpper.Contains("CONTRACT ROLLOVER")
+                                                End Function).Count
+                Else
+                    Return Integer.MinValue
+                End If
+            End Get
+        End Property
+
+        Public ReadOnly Property ReverseTradeCount As Integer
+            Get
+                If Me.AllTrades IsNot Nothing AndAlso Me.AllTrades.Count > 0 Then
+                    Return Me.AllTrades.FindAll(Function(x)
+                                                    Return x.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel AndAlso
+                                                    x.ExitRemark IsNot Nothing AndAlso x.ExitRemark.ToUpper.Contains("Reverse Exit")
+                                                End Function).Count
+                Else
+                    Return Integer.MinValue
+                End If
+            End Get
+        End Property
+
         Public ReadOnly Property OverallPL As Decimal
             Get
                 If Me.AllTrades IsNot Nothing AndAlso Me.AllTrades.Count > 0 Then
@@ -64,15 +108,36 @@
             End Get
         End Property
 
-        Public ReadOnly Property TradeCount As Integer
+        Public ReadOnly Property MaxCapital As Decimal
             Get
                 If Me.AllTrades IsNot Nothing AndAlso Me.AllTrades.Count > 0 Then
-                    Return Me.AllTrades.FindAll(Function(x)
-                                                    Return x.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel
-                                                End Function).Count
+                    Dim maxCapitalUsed As Decimal = 0
+                    For Each runningTrade In Me.AllTrades.OrderBy(Function(x)
+                                                                      Return x.EntryTime
+                                                                  End Function)
+                        maxCapitalUsed += runningTrade.CapitalRequiredWithMargin
+                        If runningTrade.TradeCurrentStatus <> Trade.TradeExecutionStatus.Inprogress Then
+                            If Not runningTrade.ExitRemark.ToUpper.Contains("TARGET") Then
+                                maxCapitalUsed -= runningTrade.CapitalRequiredWithMargin + runningTrade.PLAfterBrokerage
+                            End If
+                        End If
+                    Next
+                    Return maxCapitalUsed
                 Else
-                    Return Integer.MinValue
+                    Return Decimal.MinValue
                 End If
+            End Get
+        End Property
+
+        Public ReadOnly Property AbsoluteReturnOfInvestment As Decimal
+            Get
+                Return (Me.OverallPL / Me.MaxCapital) * 100
+            End Get
+        End Property
+
+        Public ReadOnly Property AnnuanlReturnOfInvestment As Decimal
+            Get
+                Return (Me.AbsoluteReturnOfInvestment / Me.NumberOfDays) * 365
             End Get
         End Property
     End Class
