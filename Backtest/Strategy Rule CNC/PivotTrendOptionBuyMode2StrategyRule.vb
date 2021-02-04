@@ -87,18 +87,18 @@ Public Class PivotTrendOptionBuyMode2StrategyRule
                 Dim lastTrade As Trade = _ParentStrategy.GetLastEntryTradeOfTheStock(_TradingSymbol, _TradingDate, Trade.TypeOfTrade.CNC)
                 If trend = Color.Green Then
                     If previousTrend = Color.Red AndAlso _eodPayload.LastOrDefault.Key.Date = _TradingDate.Date Then
-                        If Now >= _TradeStartTime Then
+                        If currentTickTime >= _TradeStartTime Then
                             ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload.LastOrDefault.Value, Trade.TradeExecutionDirection.Buy)
                         End If
                     Else
                         Dim rolloverDay As Date = GetRolloverDay(trend)
                         If rolloverDay <> Date.MinValue Then
                             If lastTrade Is Nothing OrElse lastTrade.ExitRemark.ToUpper = "TARGET HIT" Then
-                                If Now >= _TradeStartTime.AddMinutes(1) Then
+                                If currentTickTime >= _TradeStartTime.AddMinutes(1) Then
                                     ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Buy)
                                 End If
                             Else
-                                If Now >= _TradeStartTime.AddMinutes(1) Then
+                                If currentTickTime >= _TradeStartTime.AddMinutes(1) Then
                                     If lastTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Cancel Then
                                         ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Buy)
                                     ElseIf lastTrade.ExitRemark.ToUpper <> "TARGET HIT" Then
@@ -110,18 +110,18 @@ Public Class PivotTrendOptionBuyMode2StrategyRule
                     End If
                 ElseIf trend = Color.Red Then
                     If previousTrend = Color.Green AndAlso _eodPayload.LastOrDefault.Key.Date = _TradingDate.Date Then
-                        If Now >= _TradeStartTime Then
+                        If currentTickTime >= _TradeStartTime Then
                             ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload.LastOrDefault.Value, Trade.TradeExecutionDirection.Sell)
                         End If
                     Else
                         Dim rolloverDay As Date = GetRolloverDay(trend)
                         If rolloverDay <> Date.MinValue Then
                             If lastTrade Is Nothing OrElse lastTrade.ExitRemark.ToUpper = "TARGET HIT" Then
-                                If Now >= _TradeStartTime.AddMinutes(1) Then
+                                If currentTickTime >= _TradeStartTime.AddMinutes(1) Then
                                     ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Sell)
                                 End If
                             Else
-                                If Now >= _TradeStartTime.AddMinutes(1) Then
+                                If currentTickTime >= _TradeStartTime.AddMinutes(1) Then
                                     If lastTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Cancel Then
                                         ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Sell)
                                     ElseIf lastTrade.ExitRemark.ToUpper <> "TARGET HIT" Then

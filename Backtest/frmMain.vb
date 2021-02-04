@@ -344,7 +344,7 @@ Public Class frmMain
                                     Throw New NotImplementedException
                             End Select
 
-                            .NumberOfTradeableStockPerDay = 1
+                            .NumberOfTradeableStockPerDay = Integer.MaxValue
 
                             .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
