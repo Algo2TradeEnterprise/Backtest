@@ -329,21 +329,9 @@ Public Class frmMain
 
                             Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
                                 Case 0
-                                    .RuleEntityData = New PivotTrendOptionBuyStrategyRule.StrategyRuleEntities With
+                                    .RuleEntityData = New PivotTrendOptionBuyMode3StrategyRule.StrategyRuleEntities With
                                         {
-                                         .SpotToOptionDelta = 1,
                                          .ExitAtATRPL = atrPL,
-                                         .OptionStrikeDistance = 1,
-                                         .NumberOfActiveStock = 5,
-                                         .EntryMode = mode
-                                        }
-                                Case 1
-                                    .RuleEntityData = New HKTrendOptionBuyStrategyRule.StrategyRuleEntities With
-                                        {
-                                         .SpotToOptionDelta = 1,
-                                         .HalfPremiumExit = False,
-                                         .ExitAtATRPL = atrPL,
-                                         .OptionStrikeDistance = 1,
                                          .NumberOfActiveStock = 5
                                         }
                                 Case Else
@@ -374,13 +362,9 @@ Public Class frmMain
                         Dim filename As String = String.Format("Option Buy")
                         Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
                             Case 0
-                                Dim ruleData As PivotTrendOptionBuyStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                                filename = String.Format("Pivot Trend Option Buy,Entry {0},ExtATRPL {1}",
-                                                         ruleData.EntryMode.ToString, ruleData.ExitAtATRPL)
-                            Case 1
-                                Dim ruleData As HKTrendOptionBuyStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                                filename = String.Format("HK Trend Option Buy,HlfPrmExt {0},ExtATRPL {1},OptnDstnc {2}",
-                                                         ruleData.HalfPremiumExit, ruleData.ExitAtATRPL)
+                                Dim ruleData As PivotTrendOptionBuyMode3StrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                                filename = String.Format("Pivot Trend Option Buy Mode 3, ExtATRPL {0}",
+                                                         ruleData.ExitAtATRPL)
                             Case Else
                                 Throw New NotImplementedException
                         End Select

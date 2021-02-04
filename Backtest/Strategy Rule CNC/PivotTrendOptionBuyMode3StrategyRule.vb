@@ -3,31 +3,21 @@ Imports System.Threading
 Imports Utilities.Numbers
 Imports Backtest.StrategyHelper
 
-Public Class PivotTrendOptionBuyStrategyRule
+Public Class PivotTrendOptionBuyMode3StrategyRule
     Inherits StrategyRule
 
 #Region "Entity"
     Public Class StrategyRuleEntities
         Inherits RuleEntities
 
-        Public SpotToOptionDelta As Decimal
         Public ExitAtATRPL As Boolean
-        'Public HalfPremiumExit As Boolean
-        Public OptionStrikeDistance As Integer
         Public NumberOfActiveStock As Integer
-        Public EntryMode As EntryType
     End Class
 
     Private Enum ExitType
         Target = 1
         Reverse
         'HalfPremium
-    End Enum
-
-    Enum EntryType
-        Mode1 = 1
-        Mode2
-        Mode3
     End Enum
 #End Region
 
@@ -269,7 +259,7 @@ Public Class PivotTrendOptionBuyStrategyRule
                 Dim currentSpotTick As Payload = GetCurrentTick(_TradingSymbol, currentTickTime)
                 Dim currentOptionExpiryString As String = GetOptionInstrumentExpiryString(_TradingSymbol, _NextTradingDay)
                 Dim optionType As String = lastCompleteTrade.SupportingTradingSymbol.Substring(lastCompleteTrade.SupportingTradingSymbol.Count - 2)
-                Dim optionTradingSymbol As String = GetCurrentATMOption(currentTickTime, currentOptionExpiryString, currentSpotTick.Open, optionType, lastCompleteTrade.SpotATR)
+                Dim optionTradingSymbol As String = GetCurrentATMOption(currentTickTime, currentOptionExpiryString, currentSpotTick.Open, optionType)
                 If optionTradingSymbol IsNot Nothing Then
                     Dim currentOptTick As Payload = GetCurrentTick(optionTradingSymbol, currentTickTime)
                     If currentOptTick IsNot Nothing AndAlso currentOptTick.PayloadDate >= currentMinute AndAlso
@@ -529,9 +519,9 @@ Public Class PivotTrendOptionBuyStrategyRule
         Dim optionExpiryString As String = GetOptionInstrumentExpiryString(_TradingSymbol, _NextTradingDay)
         Dim currentOptionTradingSymbol As String = Nothing
         If diretion = Trade.TradeExecutionDirection.Buy Then
-            currentOptionTradingSymbol = GetCurrentATMOption(currentSpotTick.PayloadDate, optionExpiryString, currentSpotTick.Open, "CE", currentSpotATR)
+            currentOptionTradingSymbol = GetCurrentATMOption(currentSpotTick.PayloadDate, optionExpiryString, currentSpotTick.Open, "CE")
         ElseIf diretion = Trade.TradeExecutionDirection.Sell Then
-            currentOptionTradingSymbol = GetCurrentATMOption(currentSpotTick.PayloadDate, optionExpiryString, currentSpotTick.Open, "PE", currentSpotATR)
+            currentOptionTradingSymbol = GetCurrentATMOption(currentSpotTick.PayloadDate, optionExpiryString, currentSpotTick.Open, "PE")
         End If
 
         If currentOptionTradingSymbol IsNot Nothing Then
@@ -540,7 +530,7 @@ Public Class PivotTrendOptionBuyStrategyRule
                 Dim quantity As Integer = _LotSize
                 If entryType = Trade.TypeOfEntry.LossMakeup Then
                     Dim entryPrice As Decimal = currentOptTick.Open
-                    Dim targetPrice As Decimal = ConvertFloorCeling(entryPrice + currentSpotATR / _userInputs.SpotToOptionDelta, _ParentStrategy.TickSize, RoundOfType.Celing)
+                    Dim targetPrice As Decimal = ConvertFloorCeling(entryPrice + currentSpotATR, _ParentStrategy.TickSize, RoundOfType.Celing)
                     For ctr As Integer = 1 To Integer.MaxValue
                         Dim pl As Decimal = _ParentStrategy.CalculatePL(_TradingSymbol, entryPrice, targetPrice, ctr * _LotSize, _LotSize, Trade.TypeOfStock.Options)
                         If pl >= Math.Abs(previousLoss) Then
@@ -657,15 +647,15 @@ Public Class PivotTrendOptionBuyStrategyRule
 #End Region
 
 #Region "Contract Helper"
-    Private Function GetCurrentATMOption(ByVal currentTickTime As Date, ByVal expiryString As String, ByVal price As Decimal, ByVal optionType As String, ByVal atr As Decimal) As String
+    Private Function GetCurrentATMOption(ByVal currentTickTime As Date, ByVal expiryString As String, ByVal price As Decimal, ByVal optionType As String) As String
         If optionType = "PE" Then
-            Return GetCurrentATMPEOption(currentTickTime, expiryString, price, atr)
+            Return GetCurrentATMPEOption(currentTickTime, expiryString, price)
         Else
-            Return GetCurrentATMCEOption(currentTickTime, expiryString, price, atr)
+            Return GetCurrentATMCEOption(currentTickTime, expiryString, price)
         End If
     End Function
 
-    Private Function GetCurrentATMPEOption(ByVal currentTickTime As Date, ByVal expiryString As String, ByVal price As Decimal, ByVal atr As Decimal) As String
+    Private Function GetCurrentATMPEOption(ByVal currentTickTime As Date, ByVal expiryString As String, ByVal price As Decimal) As String
         Dim ret As String = Nothing
         Dim query As String = Nothing
         query = "SELECT `TRADING_SYMBOL`
@@ -687,35 +677,20 @@ Public Class PivotTrendOptionBuyStrategyRule
                 End If
             Next
             If contracts IsNot Nothing AndAlso contracts.Count > 0 Then
-                If _userInputs.OptionStrikeDistance > 0 Then
-                    Dim ctr As Integer = 0
-                    For Each runningContract In contracts.OrderByDescending(Function(x)
-                                                                                Return x.Key
-                                                                            End Function)
-                        If runningContract.Key <= price Then
-                            ret = String.Format("{0}{1}PE", expiryString, runningContract.Key)
-                            ctr += 1
-                            If ctr = Math.Abs(_userInputs.OptionStrikeDistance) Then Exit For
-                        End If
-                    Next
-                Else
-                    Dim ctr As Integer = 0
-                    For Each runningContract In contracts.OrderBy(Function(x)
-                                                                      Return x.Key
-                                                                  End Function)
-                        If runningContract.Key >= price Then
-                            ret = String.Format("{0}{1}PE", expiryString, runningContract.Key)
-                            ctr += 1
-                            If ctr = Math.Abs(_userInputs.OptionStrikeDistance) Then Exit For
-                        End If
-                    Next
-                End If
+                For Each runningContract In contracts.OrderByDescending(Function(x)
+                                                                            Return x.Key
+                                                                        End Function)
+                    If runningContract.Key <= price Then
+                        ret = String.Format("{0}{1}PE", expiryString, runningContract.Key)
+                        Exit For
+                    End If
+                Next
             End If
         End If
         Return ret
     End Function
 
-    Private Function GetCurrentATMCEOption(ByVal currentTickTime As Date, ByVal expiryString As String, ByVal price As Decimal, ByVal atr As Decimal) As String
+    Private Function GetCurrentATMCEOption(ByVal currentTickTime As Date, ByVal expiryString As String, ByVal price As Decimal) As String
         Dim ret As String = Nothing
         Dim query As String = Nothing
         query = "SELECT `TRADING_SYMBOL`
@@ -737,29 +712,14 @@ Public Class PivotTrendOptionBuyStrategyRule
                 End If
             Next
             If contracts IsNot Nothing AndAlso contracts.Count > 0 Then
-                If _userInputs.OptionStrikeDistance > 0 Then
-                    Dim ctr As Integer = 0
-                    For Each runningContract In contracts.OrderBy(Function(x)
-                                                                      Return x.Key
-                                                                  End Function)
-                        If runningContract.Key >= price Then
-                            ret = String.Format("{0}{1}CE", expiryString, runningContract.Key)
-                            ctr += 1
-                            If ctr = Math.Abs(_userInputs.OptionStrikeDistance) Then Exit For
-                        End If
-                    Next
-                Else
-                    Dim ctr As Integer = 0
-                    For Each runningContract In contracts.OrderByDescending(Function(x)
-                                                                                Return x.Key
-                                                                            End Function)
-                        If runningContract.Key <= price Then
-                            ret = String.Format("{0}{1}CE", expiryString, runningContract.Key)
-                            ctr += 1
-                            If ctr = Math.Abs(_userInputs.OptionStrikeDistance) Then Exit For
-                        End If
-                    Next
-                End If
+                For Each runningContract In contracts.OrderBy(Function(x)
+                                                                  Return x.Key
+                                                              End Function)
+                    If runningContract.Key >= price Then
+                        ret = String.Format("{0}{1}CE", expiryString, runningContract.Key)
+                        Exit For
+                    End If
+                Next
             End If
         End If
         Return ret
