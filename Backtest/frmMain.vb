@@ -340,6 +340,12 @@ Public Class frmMain
                                          .ExitAtATRPL = atrPL,
                                          .NumberOfActiveStock = 5
                                         }
+                                Case 2
+                                    .RuleEntityData = New PivotTrendOptionBuyModeAllStrategyRule.StrategyRuleEntities With
+                                        {
+                                         .ExitAtATRPL = atrPL,
+                                         .NumberOfActiveStock = 5
+                                        }
                                 Case Else
                                     Throw New NotImplementedException
                             End Select
@@ -374,6 +380,10 @@ Public Class frmMain
                             Case 1
                                 Dim ruleData As PivotTrendOptionBuyMode2StrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
                                 filename = String.Format("Pivot Trend Option Buy Mode 2, ExtATRPL {0}",
+                                                         ruleData.ExitAtATRPL)
+                            Case 2
+                                Dim ruleData As PivotTrendOptionBuyModeAllStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                                filename = String.Format("Pivot Trend Option Buy Mode All, ExtATRPL {0}",
                                                          ruleData.ExitAtATRPL)
                             Case Else
                                 Throw New NotImplementedException
