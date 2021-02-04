@@ -84,7 +84,7 @@
                 If Me.AllTrades IsNot Nothing AndAlso Me.AllTrades.Count > 0 Then
                     Return Me.AllTrades.FindAll(Function(x)
                                                     Return x.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel AndAlso
-                                                    x.ExitRemark IsNot Nothing AndAlso x.ExitRemark.ToUpper.Contains("Reverse Exit")
+                                                    x.ExitRemark IsNot Nothing AndAlso x.ExitRemark.ToUpper.Contains("REVERSE EXIT")
                                                 End Function).Count
                 Else
                     Return Integer.MinValue
