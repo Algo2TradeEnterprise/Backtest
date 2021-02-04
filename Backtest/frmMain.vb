@@ -334,11 +334,17 @@ Public Class frmMain
                                          .ExitAtATRPL = atrPL,
                                          .NumberOfActiveStock = 5
                                         }
+                                Case 1
+                                    .RuleEntityData = New PivotTrendOptionBuyMode2StrategyRule.StrategyRuleEntities With
+                                        {
+                                         .ExitAtATRPL = atrPL,
+                                         .NumberOfActiveStock = 5
+                                        }
                                 Case Else
                                     Throw New NotImplementedException
                             End Select
 
-                            .NumberOfTradeableStockPerDay = Integer.MaxValue
+                            .NumberOfTradeableStockPerDay = 1
 
                             .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
@@ -364,6 +370,10 @@ Public Class frmMain
                             Case 0
                                 Dim ruleData As PivotTrendOptionBuyMode3StrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
                                 filename = String.Format("Pivot Trend Option Buy Mode 3, ExtATRPL {0}",
+                                                         ruleData.ExitAtATRPL)
+                            Case 1
+                                Dim ruleData As PivotTrendOptionBuyMode2StrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                                filename = String.Format("Pivot Trend Option Buy Mode 2, ExtATRPL {0}",
                                                          ruleData.ExitAtATRPL)
                             Case Else
                                 Throw New NotImplementedException

@@ -112,6 +112,7 @@
     <Compile Include="Strategy Helper\StrategyRule.vb" />
     <Compile Include="Strategy Helper\Summary.vb" />
     <Compile Include="Strategy Helper\Trade.vb" />
+    <Compile Include="Strategy Rule CNC\PivotTrendOptionBuyMode2StrategyRule.vb" />
     <Compile Include="Strategy Rule CNC\PivotTrendOptionBuyMode3StrategyRule.vb" />
   </ItemGroup>
   <ItemGroup>

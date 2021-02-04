@@ -3,7 +3,7 @@ Imports System.Threading
 Imports Utilities.Numbers
 Imports Backtest.StrategyHelper
 
-Public Class PivotTrendOptionBuyMode3StrategyRule
+Public Class PivotTrendOptionBuyMode2StrategyRule
     Inherits StrategyRule
 
 #Region "Entity"
@@ -98,10 +98,12 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
                                     ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Buy)
                                 End If
                             Else
-                                If lastTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Cancel Then
-                                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Buy)
-                                ElseIf lastTrade.ExitRemark.ToUpper <> "TARGET HIT" Then
-                                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Buy)
+                                If Now >= _TradeStartTime.AddMinutes(1) Then
+                                    If lastTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Cancel Then
+                                        ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Buy)
+                                    ElseIf lastTrade.ExitRemark.ToUpper <> "TARGET HIT" Then
+                                        ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Buy)
+                                    End If
                                 End If
                             End If
                         End If
@@ -119,10 +121,12 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
                                     ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Sell)
                                 End If
                             Else
-                                If lastTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Cancel Then
-                                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Sell)
-                                ElseIf lastTrade.ExitRemark.ToUpper <> "TARGET HIT" Then
-                                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Sell)
+                                If Now >= _TradeStartTime.AddMinutes(1) Then
+                                    If lastTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Cancel Then
+                                        ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Sell)
+                                    ElseIf lastTrade.ExitRemark.ToUpper <> "TARGET HIT" Then
+                                        ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Sell)
+                                    End If
                                 End If
                             End If
                         End If
