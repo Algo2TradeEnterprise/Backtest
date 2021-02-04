@@ -194,6 +194,9 @@ Namespace StrategyHelper
                                 End While   'Second Loop
                                 startMinute = startMinute.Add(TimeSpan.FromMinutes(Me.SignalTimeFrame))
                             End While   'Minute Loop
+
+                            If _DayWiseActiveTradeCount Is Nothing Then _DayWiseActiveTradeCount = New Dictionary(Of Date, Integer)
+                            _DayWiseActiveTradeCount.Add(tradeCheckingDate.Date, NumberOfActiveTrade)
                         End If
                     End If
                     'SetOverallDrawUpDrawDownForTheDay(tradeCheckingDate)

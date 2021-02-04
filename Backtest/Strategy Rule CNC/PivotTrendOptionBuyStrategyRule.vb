@@ -88,6 +88,7 @@ Public Class PivotTrendOptionBuyStrategyRule
         End If
     End Sub
 
+#Region "Entry Signal Check"
     Private Function IsEntrySignalReceived(ByVal currentTickTime As Date) As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)
         Dim ret As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection) = Nothing
         If Not _ParentStrategy.IsTradeActive(GetCurrentTick(_TradingSymbol, currentTickTime), Trade.TypeOfTrade.CNC) Then
@@ -143,6 +144,25 @@ Public Class PivotTrendOptionBuyStrategyRule
         Return ret
     End Function
 
+    Private Function GetRolloverDay(ByVal currentTrend As Color) As Date
+        Dim ret As Date = Date.MinValue
+        For Each runningPayload In _eodPayload.OrderByDescending(Function(x)
+                                                                     Return x.Key
+                                                                 End Function)
+            If runningPayload.Value.PreviousCandlePayload IsNot Nothing AndAlso
+                runningPayload.Value.PreviousCandlePayload.PayloadDate < _TradingDate Then
+                Dim trend As Color = _pivotTrendPayload(runningPayload.Value.PreviousCandlePayload.PayloadDate)
+                If trend <> currentTrend Then
+                    ret = runningPayload.Key
+                    Exit For
+                End If
+            End If
+        Next
+        Return ret
+    End Function
+#End Region
+
+#Region "Exit Signal Check"
     Private Function IsExitSignalReceived(ByVal currentTickTime As Date, ByVal typeOfExit As ExitType, ByVal currentTrade As Trade) As Boolean
         Dim ret As Boolean = False
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
@@ -194,7 +214,9 @@ Public Class PivotTrendOptionBuyStrategyRule
         End If
         Return ret
     End Function
+#End Region
 
+#Region "PL Calculations"
     Private Function GetLossMakeupTradePL(ByVal currentTrade As Trade, ByVal currentTickTime As Date) As Decimal
         Dim ret As Decimal = 0
         Dim allTrades As List(Of Trade) = _ParentStrategy.GetAllTradesByChildTag(currentTrade.ChildTag, _TradingSymbol)
@@ -230,23 +252,7 @@ Public Class PivotTrendOptionBuyStrategyRule
         End If
         Return ret
     End Function
-
-    Private Function GetRolloverDay(ByVal currentTrend As Color) As Date
-        Dim ret As Date = Date.MinValue
-        For Each runningPayload In _eodPayload.OrderByDescending(Function(x)
-                                                                     Return x.Key
-                                                                 End Function)
-            If runningPayload.Value.PreviousCandlePayload IsNot Nothing AndAlso
-                runningPayload.Value.PreviousCandlePayload.PayloadDate < _TradingDate Then
-                Dim trend As Color = _pivotTrendPayload(runningPayload.Value.PreviousCandlePayload.PayloadDate)
-                If trend <> currentTrend Then
-                    ret = runningPayload.Key
-                    Exit For
-                End If
-            End If
-        Next
-        Return ret
-    End Function
+#End Region
 
 #Region "Public Functions"
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(ByVal currentTickTime As Date) As Task
@@ -257,71 +263,88 @@ Public Class PivotTrendOptionBuyStrategyRule
             _atrPayload.Add(_currentDayCandle.PayloadDate, _currentDayATR)
         End If
         Dim currentMinute As Date = _ParentStrategy.GetCurrentXMinuteCandleTime(currentTickTime)
-        Dim ret As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection) = IsEntrySignalReceived(currentTickTime)
-        If ret IsNot Nothing AndAlso ret.Item1 Then
-            If _ParentStrategy.GetNumberOfActiveStocks(_TradingDate, Trade.TypeOfTrade.CNC) < _userInputs.NumberOfActiveStock Then
-                Dim targetReached As Boolean = True
-                Dim targetLeftPercentage As Decimal = 0
-                If ret.Item3 = Trade.TradeExecutionDirection.Buy Then
-                    Dim highestHigh As Decimal = _eodPayload.Max(Function(x)
-                                                                     If x.Key > ret.Item2.PayloadDate AndAlso x.Key < _TradingDate Then
-                                                                         Return x.Value.High
-                                                                     Else
-                                                                         Return Decimal.MinValue
-                                                                     End If
-                                                                 End Function)
-                    Dim minHigh As Decimal = _SignalPayload.Max(Function(x)
-                                                                    If x.Key.Date = _TradingDate.Date AndAlso x.Key < currentMinute Then
-                                                                        Return x.Value.High
-                                                                    Else
-                                                                        Return Decimal.MinValue
-                                                                    End If
-                                                                End Function)
-                    If minHigh <> Decimal.MinValue AndAlso ret.Item2.PayloadDate.Date <> _TradingDate.Date Then
-                        highestHigh = Math.Max(highestHigh, minHigh)
-                    End If
-
-                    Dim atr As Decimal = _atrPayload(ret.Item2.PayloadDate)
-                    If highestHigh < ret.Item2.Close + atr Then
-                        targetReached = False
-                        If highestHigh <> Decimal.MinValue Then
-                            targetLeftPercentage = ((atr - (highestHigh - ret.Item2.Close)) / atr) * 100
-                        Else
-                            targetLeftPercentage = 100
-                        End If
-                    End If
-                ElseIf ret.Item3 = Trade.TradeExecutionDirection.Sell Then
-                    Dim lowestLow As Decimal = _eodPayload.Min(Function(x)
-                                                                   If x.Key > ret.Item2.PayloadDate AndAlso x.Key < _TradingDate Then
-                                                                       Return x.Value.Low
-                                                                   Else
-                                                                       Return Decimal.MaxValue
-                                                                   End If
-                                                               End Function)
-                    Dim minLow As Decimal = _SignalPayload.Min(Function(x)
-                                                                   If x.Key.Date = _TradingDate.Date AndAlso x.Key < currentMinute Then
-                                                                       Return x.Value.Low
-                                                                   Else
-                                                                       Return Decimal.MaxValue
-                                                                   End If
-                                                               End Function)
-                    If minLow <> Decimal.MaxValue AndAlso ret.Item2.PayloadDate.Date <> _TradingDate.Date Then
-                        lowestLow = Math.Min(lowestLow, minLow)
-                    End If
-
-                    Dim atr As Decimal = _atrPayload(ret.Item2.PayloadDate)
-                    If lowestLow > ret.Item2.Close - atr Then
-                        targetReached = False
-                        If lowestLow <> Decimal.MaxValue Then
-                            targetLeftPercentage = ((atr - (ret.Item2.Close - lowestLow)) / atr) * 100
-                        Else
-                            targetLeftPercentage = 100
-                        End If
+        If Not _ParentStrategy.IsTradeActive(GetCurrentTick(_TradingSymbol, currentTickTime), Trade.TypeOfTrade.CNC) Then
+            Dim lastCompleteTrade As Trade = _ParentStrategy.GetLastCompleteTradeOfTheStock(_TradingSymbol, _TradingDate, Trade.TypeOfTrade.CNC)
+            If lastCompleteTrade IsNot Nothing AndAlso lastCompleteTrade.ExitRemark.ToUpper.Contains("CONTRACT ROLLOVER") Then
+                Dim currentSpotTick As Payload = GetCurrentTick(_TradingSymbol, currentTickTime)
+                Dim currentOptionExpiryString As String = GetOptionInstrumentExpiryString(_TradingSymbol, _NextTradingDay)
+                Dim optionType As String = lastCompleteTrade.SupportingTradingSymbol.Substring(lastCompleteTrade.SupportingTradingSymbol.Count - 2)
+                Dim optionTradingSymbol As String = GetCurrentATMOption(currentTickTime, currentOptionExpiryString, currentSpotTick.Open, optionType, lastCompleteTrade.SpotATR)
+                If optionTradingSymbol IsNot Nothing Then
+                    Dim currentOptTick As Payload = GetCurrentTick(optionTradingSymbol, currentTickTime)
+                    If currentOptTick IsNot Nothing AndAlso currentOptTick.PayloadDate >= currentMinute AndAlso
+                        currentOptTick.Volume > 0 Then
+                        EnterDuplicateTrade(lastCompleteTrade, currentOptTick, False)
                     End If
                 End If
-                If Not targetReached Then
-                    If targetLeftPercentage >= 75 Then
-                        EnterTrade(ret.Item2, currentTickTime, ret.Item3)
+            Else
+                Dim ret As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection) = IsEntrySignalReceived(currentTickTime)
+                If ret IsNot Nothing AndAlso ret.Item1 Then
+                    If _ParentStrategy.NumberOfActiveTrade < _userInputs.NumberOfActiveStock Then
+                        Dim targetReached As Boolean = True
+                        Dim targetLeftPercentage As Decimal = 0
+                        If ret.Item3 = Trade.TradeExecutionDirection.Buy Then
+                            Dim highestHigh As Decimal = _eodPayload.Max(Function(x)
+                                                                             If x.Key > ret.Item2.PayloadDate AndAlso x.Key < _TradingDate Then
+                                                                                 Return x.Value.High
+                                                                             Else
+                                                                                 Return Decimal.MinValue
+                                                                             End If
+                                                                         End Function)
+                            Dim minHigh As Decimal = _SignalPayload.Max(Function(x)
+                                                                            If x.Key.Date = _TradingDate.Date AndAlso x.Key < currentMinute Then
+                                                                                Return x.Value.High
+                                                                            Else
+                                                                                Return Decimal.MinValue
+                                                                            End If
+                                                                        End Function)
+                            If minHigh <> Decimal.MinValue AndAlso ret.Item2.PayloadDate.Date <> _TradingDate.Date Then
+                                highestHigh = Math.Max(highestHigh, minHigh)
+                            End If
+
+                            Dim atr As Decimal = _atrPayload(ret.Item2.PayloadDate)
+                            If highestHigh < ret.Item2.Close + atr Then
+                                targetReached = False
+                                If highestHigh <> Decimal.MinValue Then
+                                    targetLeftPercentage = ((atr - (highestHigh - ret.Item2.Close)) / atr) * 100
+                                Else
+                                    targetLeftPercentage = 100
+                                End If
+                            End If
+                        ElseIf ret.Item3 = Trade.TradeExecutionDirection.Sell Then
+                            Dim lowestLow As Decimal = _eodPayload.Min(Function(x)
+                                                                           If x.Key > ret.Item2.PayloadDate AndAlso x.Key < _TradingDate Then
+                                                                               Return x.Value.Low
+                                                                           Else
+                                                                               Return Decimal.MaxValue
+                                                                           End If
+                                                                       End Function)
+                            Dim minLow As Decimal = _SignalPayload.Min(Function(x)
+                                                                           If x.Key.Date = _TradingDate.Date AndAlso x.Key < currentMinute Then
+                                                                               Return x.Value.Low
+                                                                           Else
+                                                                               Return Decimal.MaxValue
+                                                                           End If
+                                                                       End Function)
+                            If minLow <> Decimal.MaxValue AndAlso ret.Item2.PayloadDate.Date <> _TradingDate.Date Then
+                                lowestLow = Math.Min(lowestLow, minLow)
+                            End If
+
+                            Dim atr As Decimal = _atrPayload(ret.Item2.PayloadDate)
+                            If lowestLow > ret.Item2.Close - atr Then
+                                targetReached = False
+                                If lowestLow <> Decimal.MaxValue Then
+                                    targetLeftPercentage = ((atr - (ret.Item2.Close - lowestLow)) / atr) * 100
+                                Else
+                                    targetLeftPercentage = 100
+                                End If
+                            End If
+                        End If
+                        If Not targetReached Then
+                            If targetLeftPercentage >= 75 Then
+                                EnterTrade(ret.Item2, currentTickTime, ret.Item3)
+                            End If
+                        End If
                     End If
                 End If
             End If
@@ -357,6 +380,7 @@ Public Class PivotTrendOptionBuyStrategyRule
                     If IsExitSignalReceived(currentTickTime, ExitType.Target, runningTrade) Then
                         Dim currentFOTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
                         _ParentStrategy.ExitTradeByForce(runningTrade, currentFOTick, "Target Hit")
+                        _ParentStrategy.NumberOfActiveTrade -= 1
                     End If
                 End If
             Next
@@ -378,23 +402,23 @@ Public Class PivotTrendOptionBuyStrategyRule
                 _TradingDate.Date > GetLastThusrdayOfMonth(_TradingDate).Date.AddDays(-2) Then
                 For Each runningTrade In availableTrades
                     If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-                        Dim currentSpotTick As Payload = GetCurrentTick(_TradingSymbol, currentTickTime)
+                        'Dim currentSpotTick As Payload = GetCurrentTick(_TradingSymbol, currentTickTime)
                         Dim currentOptionExpiryString As String = GetOptionInstrumentExpiryString(_TradingSymbol, _NextTradingDay)
                         If Not runningTrade.SupportingTradingSymbol.Contains(currentOptionExpiryString) Then
-                            Dim optionType As String = runningTrade.SupportingTradingSymbol.Substring(runningTrade.SupportingTradingSymbol.Count - 2)
-                            Dim optionTradingSymbol As String = GetCurrentATMOption(currentTickTime, currentOptionExpiryString, currentSpotTick.Open, optionType, runningTrade.SpotATR)
-                            If optionTradingSymbol IsNot Nothing Then
-                                Dim currentMinute As Date = _ParentStrategy.GetCurrentXMinuteCandleTime(currentTickTime)
-                                Dim currentOptTick As Payload = GetCurrentTick(optionTradingSymbol, currentTickTime)
-                                If currentOptTick IsNot Nothing AndAlso currentOptTick.PayloadDate >= currentMinute AndAlso
-                                    currentOptTick.Volume > 0 Then
-                                    currentOptTick = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
-                                    _ParentStrategy.ExitTradeByForce(runningTrade, currentOptTick, "Contract Rollover")
+                            'Dim optionType As String = runningTrade.SupportingTradingSymbol.Substring(runningTrade.SupportingTradingSymbol.Count - 2)
+                            'Dim optionTradingSymbol As String = GetCurrentATMOption(currentTickTime, currentOptionExpiryString, currentSpotTick.Open, optionType, runningTrade.SpotATR)
+                            'If optionTradingSymbol IsNot Nothing Then
+                            'Dim currentMinute As Date = _ParentStrategy.GetCurrentXMinuteCandleTime(currentTickTime)
+                            'Dim currentOptTick As Payload = GetCurrentTick(optionTradingSymbol, currentTickTime)
+                            'If currentOptTick IsNot Nothing AndAlso currentOptTick.PayloadDate >= currentMinute AndAlso
+                            'currentOptTick.Volume > 0 Then
+                            Dim currentOptTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
+                            _ParentStrategy.ExitTradeByForce(runningTrade, currentOptTick, "Contract Rollover")
 
-                                    currentOptTick = GetCurrentTick(optionTradingSymbol, currentTickTime)
-                                    EnterDuplicateTrade(runningTrade, currentOptTick, False)
-                                End If
-                            End If
+                            'currentOptTick = GetCurrentTick(optionTradingSymbol, currentTickTime)
+                            'EnterDuplicateTrade(runningTrade, currentOptTick, False)
+                            'End If
+                            'End If
                         End If
                     End If
                 Next
@@ -560,6 +584,9 @@ Public Class PivotTrendOptionBuyStrategyRule
                     If currentOptTick.PayloadDate >= currentMinute AndAlso currentOptTick.Volume > 0 Then
                         If _ParentStrategy.EnterTradeIfPossible(_TradingSymbol, _TradingDate, runningOptTrade, currentOptTick) Then
                             ret = True
+                            If entryType = Trade.TypeOfEntry.Fresh Then
+                                _ParentStrategy.NumberOfActiveTrade += 1
+                            End If
                         End If
                     Else
                         _ParentStrategy.CancelTrade(runningOptTrade, currentTickTime, "Zero Volume")

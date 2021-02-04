@@ -149,6 +149,9 @@ Namespace StrategyHelper
         Public MTMSlab As Decimal = Decimal.MinValue
         Public MovementSlab As Decimal = Decimal.MinValue
         Public RealtimeTrailingPercentage As Decimal = Decimal.MinValue
+
+        Public NumberOfActiveTrade As Integer = 0
+        Protected _DayWiseActiveTradeCount As Dictionary(Of Date, Integer) = Nothing
 #End Region
 
 #Region "Public Calculated Property"
@@ -533,6 +536,19 @@ Namespace StrategyHelper
             Return ret
         End Function
 
+        Public Function GetLastCompleteTradeOfTheStock(ByVal tradingSymbol As String, ByVal tradingDate As Date, ByVal tradeType As Trade.TypeOfTrade) As Trade
+            Dim ret As Trade = Nothing
+            If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
+                Dim completeTrades As List(Of Trade) = GetSpecificTrades(tradingSymbol, tradingDate, tradeType, Trade.TradeExecutionStatus.Close)
+                If completeTrades IsNot Nothing AndAlso completeTrades.Count > 0 Then
+                    ret = completeTrades.OrderBy(Function(x)
+                                                     Return x.EntryTime
+                                                 End Function).LastOrDefault
+                End If
+            End If
+            Return ret
+        End Function
+
         Public Function GetAllTradesByChildTag(ByVal tag As String, ByVal tradingSymbol As String) As List(Of Trade)
             Dim ret As List(Of Trade) = Nothing
             If tradingSymbol IsNot Nothing Then
@@ -842,73 +858,23 @@ Namespace StrategyHelper
                         Dim cts As New CancellationTokenSource
                         OnHeartbeat("Calculating summary")
                         Dim allTradesByStock As Dictionary(Of String, List(Of Trade)) = GetAllTradesByStock()
-                        Dim summaryList As List(Of Summary) = Nothing
+                        Dim logicalTradeSummary As Dictionary(Of String, Summary) = Nothing
                         If allTradesByStock IsNot Nothing AndAlso allTradesByStock.Count > 0 Then
                             For Each runningStock In allTradesByStock
                                 Dim uniqueTagList As List(Of String) = New List(Of String)
                                 For Each runningTrade In runningStock.Value
-                                    If Not uniqueTagList.Contains(runningTrade.ChildTag) Then
-                                        uniqueTagList.Add(runningTrade.ChildTag)
+                                    If Not uniqueTagList.Contains(runningTrade.ParentTag) Then
+                                        uniqueTagList.Add(runningTrade.ParentTag)
                                     End If
                                 Next
                                 If uniqueTagList IsNot Nothing AndAlso uniqueTagList.Count > 0 Then
                                     For Each runningTag In uniqueTagList
                                         Dim tagTrades As List(Of Trade) = runningStock.Value.FindAll(Function(x)
-                                                                                                         Return x.ChildTag = runningTag
+                                                                                                         Return x.ParentTag = runningTag
                                                                                                      End Function)
                                         If tagTrades IsNot Nothing AndAlso tagTrades.Count > 0 Then
-                                            Dim halfPremiumCount As Integer = 0
-                                            Dim contractRolloverCount As Integer = 0
-                                            For Each runningTagTrade In tagTrades
-                                                If runningTagTrade.ExitRemark IsNot Nothing Then
-                                                    If runningTagTrade.ExitRemark.ToUpper = "HALF PREMIUM" OrElse
-                                                        runningTagTrade.ExitRemark.ToUpper = "ZERO PREMIUM" Then
-                                                        halfPremiumCount += 1
-                                                    ElseIf runningTagTrade.ExitRemark.ToUpper = "CONTRACT ROLLOVER" Then
-                                                        contractRolloverCount += 1
-                                                    End If
-                                                End If
-                                            Next
-
-                                            Dim runningDay As Integer = 0
-                                            Dim parentTagTrades As List(Of Trade) = runningStock.Value.FindAll(Function(x)
-                                                                                                                   Return x.ParentTag = tagTrades.Last.ParentTag
-                                                                                                               End Function)
-                                            If parentTagTrades IsNot Nothing AndAlso parentTagTrades.Count > 0 Then
-                                                Dim entryDate As Date = parentTagTrades.Min(Function(x)
-                                                                                                Return x.EntryTime
-                                                                                            End Function)
-                                                Dim exitDate As Date = parentTagTrades.Max(Function(x)
-                                                                                               Return x.ExitTime
-                                                                                           End Function)
-                                                Dim maxExitOfChildTrades As Date = tagTrades.Max(Function(x)
-                                                                                                     Return x.ExitTime
-                                                                                                 End Function)
-                                                If maxExitOfChildTrades = exitDate Then
-                                                    runningDay = exitDate.Subtract(entryDate).Days + 1
-                                                End If
-                                            End If
-
-                                            Dim summaryData As Summary = New Summary
-                                            summaryData.TradingSymbol = runningStock.Key
-                                            summaryData.Type = tagTrades.LastOrDefault.EntryType.ToString
-                                            summaryData.ChildReference = If(tagTrades.LastOrDefault.ParentTag = tagTrades.LastOrDefault.ChildTag, "", tagTrades.LastOrDefault.ParentTag)
-                                            summaryData.HalfPremium = halfPremiumCount
-                                            summaryData.ContractRollover = contractRolloverCount
-                                            summaryData.TotalCapital = tagTrades.Max(Function(x)
-                                                                                         Return x.CapitalRequiredWithMargin
-                                                                                     End Function)
-                                            summaryData.TotalPL = tagTrades.Sum(Function(x)
-                                                                                    Return x.PLAfterBrokerage
-                                                                                End Function)
-                                            summaryData.ROI = (summaryData.TotalPL / summaryData.TotalCapital) * 100
-                                            summaryData.Result = If(summaryData.ROI > 0, "Profit", "Loss")
-                                            summaryData.Reference = tagTrades.LastOrDefault.ChildTag
-                                            summaryData.Month = String.Format("{0}-{1}", tagTrades.FirstOrDefault.TradingDate.ToString("yyyy"), tagTrades.FirstOrDefault.TradingDate.ToString("MM"))
-                                            summaryData.RunningDay = runningDay
-
-                                            If summaryList Is Nothing Then summaryList = New List(Of Summary)
-                                            summaryList.Add(summaryData)
+                                            If logicalTradeSummary Is Nothing Then logicalTradeSummary = New Dictionary(Of String, Summary)
+                                            logicalTradeSummary.Add(runningTag, New Summary With {.AllTrades = tagTrades})
                                         End If
                                     Next
                                 End If
@@ -1048,14 +1014,18 @@ Namespace StrategyHelper
                             .AverageDurationInLosingTrades = If((totalTrades - totalPositiveTrades) <> 0, totalDurationInNegativeTrades / (totalTrades - totalPositiveTrades), 0)
                         End With
 
-                        Dim distinctTagList As List(Of String) = New List(Of String)
+                        Dim distinctChildTagList As List(Of String) = New List(Of String)
+                        Dim distinctParentTagList As List(Of String) = New List(Of String)
                         'Dim runningTradeTag As String = Nothing
                         For Each runningDate In allTradesData
                             For Each runningStock In runningDate.Value
                                 If runningStock.Value IsNot Nothing AndAlso runningStock.Value.Count > 0 Then
                                     For Each runningTrade In runningStock.Value
-                                        If Not distinctTagList.Contains(runningTrade.ChildTag) Then
-                                            distinctTagList.Add(runningTrade.ChildTag)
+                                        If Not distinctChildTagList.Contains(runningTrade.ChildTag) Then
+                                            distinctChildTagList.Add(runningTrade.ChildTag)
+                                        End If
+                                        If Not distinctParentTagList.Contains(runningTrade.ParentTag) Then
+                                            distinctParentTagList.Add(runningTrade.ParentTag)
                                         End If
                                         'If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
                                         '    runningTradeTag = runningTrade.ChildTag
@@ -1065,7 +1035,7 @@ Namespace StrategyHelper
                             Next
                         Next
 
-                        Dim tradeCount As Integer = distinctTagList.Count
+                        Dim tradeCount As Integer = distinctParentTagList.Count
                         Dim pl As Decimal = strategyOutputData.NetProfit
                         Dim maxCapital As Decimal = allCapitalData.Values.Max(Function(x)
                                                                                   Return x.Max(Function(y)
@@ -1425,38 +1395,96 @@ Namespace StrategyHelper
                             Erase capitalRawData
                             capitalRawData = Nothing
 
-                            If summaryList IsNot Nothing AndAlso summaryList.Count > 0 Then
+                            If _DayWiseActiveTradeCount IsNot Nothing AndAlso _DayWiseActiveTradeCount.Count > 0 Then
+                                excelWriter.CreateNewSheet("Active Trade")
+                                excelWriter.SetActiveSheet("Active Trade")
+
+                                excelWriter.SetData(1, 1, "Date")
+                                excelWriter.SetData(1, 2, "Active Trade Count")
+
+                                Dim rowNumber As Integer = 1
+                                For Each runningDay In _DayWiseActiveTradeCount
+                                    rowNumber += 1
+                                    excelWriter.SetData(rowNumber, 1, runningDay.Key.ToString("dd-MMM-yyyy"))
+                                    excelWriter.SetData(rowNumber, 2, runningDay.Value, "######0", ExcelHelper.XLAlign.Right)
+                                Next
+                            End If
+
+                            If logicalTradeSummary IsNot Nothing AndAlso logicalTradeSummary.Count > 0 Then
                                 excelWriter.CreateNewSheet("Summary")
                                 excelWriter.SetActiveSheet("Summary")
 
-                                excelWriter.SetData(1, 1, "Trading Symbol")
-                                excelWriter.SetData(1, 2, "Type")
-                                excelWriter.SetData(1, 3, "Child Reference")
-                                excelWriter.SetData(1, 4, "Half Premium")
-                                excelWriter.SetData(1, 5, "Contract Rollover")
-                                excelWriter.SetData(1, 6, "Capital")
-                                excelWriter.SetData(1, 7, "PL")
-                                excelWriter.SetData(1, 8, "ROI")
-                                excelWriter.SetData(1, 9, "Result")
-                                excelWriter.SetData(1, 10, "Reference")
-                                excelWriter.SetData(1, 11, "Month")
-                                excelWriter.SetData(1, 12, "Running Day")
+                                Dim maxTradeCount As Integer = logicalTradeSummary.Max(Function(x)
+                                                                                           Return x.Value.TradeCount
+                                                                                       End Function)
+
+                                Dim colNumber As Integer = 1
+                                excelWriter.SetData(1, colNumber, "Instrument")
+                                colNumber += 1
+                                excelWriter.SetData(1, colNumber, "Start Date")
+                                colNumber += 1
+                                For ctr As Integer = 1 To maxTradeCount
+                                    excelWriter.SetData(1, colNumber, "Contract")
+                                    colNumber += 1
+                                    excelWriter.SetData(1, colNumber, "Entry Time")
+                                    colNumber += 1
+                                    excelWriter.SetData(1, colNumber, "Entry Price")
+                                    colNumber += 1
+                                    excelWriter.SetData(1, colNumber, "Quantity")
+                                    colNumber += 1
+                                    excelWriter.SetData(1, colNumber, "Exit Time")
+                                    colNumber += 1
+                                    excelWriter.SetData(1, colNumber, "Exit Price")
+                                    colNumber += 1
+                                    excelWriter.SetData(1, colNumber, "Exit Reason")
+                                    colNumber += 1
+                                    excelWriter.SetData(1, colNumber, "PL")
+                                    colNumber += 1
+                                Next
+                                Dim afterTradeColumnNumber As Integer = colNumber
+                                excelWriter.SetData(1, colNumber, "End Date")
+                                colNumber += 1
+                                excelWriter.SetData(1, colNumber, "Overall PL")
+                                colNumber += 1
+                                excelWriter.SetData(1, colNumber, "Reference")
 
                                 Dim rowNumber As Integer = 1
-                                For Each runningSummary In summaryList
+                                For Each runningSummary In logicalTradeSummary
                                     rowNumber += 1
-                                    excelWriter.SetData(rowNumber, 1, runningSummary.TradingSymbol)
-                                    excelWriter.SetData(rowNumber, 2, runningSummary.Type)
-                                    excelWriter.SetData(rowNumber, 3, runningSummary.ChildReference)
-                                    excelWriter.SetData(rowNumber, 4, runningSummary.HalfPremium, "##,##,##0.00", ExcelHelper.XLAlign.Right)
-                                    excelWriter.SetData(rowNumber, 5, runningSummary.ContractRollover, "##,##,##0.00", ExcelHelper.XLAlign.Right)
-                                    excelWriter.SetData(rowNumber, 6, runningSummary.TotalCapital, "##,##,##0.00", ExcelHelper.XLAlign.Right)
-                                    excelWriter.SetData(rowNumber, 7, runningSummary.TotalPL, "##,##,##0.00", ExcelHelper.XLAlign.Right)
-                                    excelWriter.SetData(rowNumber, 8, runningSummary.ROI, "##,##,##0.00", ExcelHelper.XLAlign.Right)
-                                    excelWriter.SetData(rowNumber, 9, runningSummary.Result)
-                                    excelWriter.SetData(rowNumber, 10, runningSummary.Reference)
-                                    excelWriter.SetData(rowNumber, 11, runningSummary.Month)
-                                    excelWriter.SetData(rowNumber, 12, runningSummary.RunningDay)
+
+                                    colNumber = 1
+                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.Instrument)
+                                    colNumber += 1
+                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.StartDate.ToString("dd-MMM-yyyy"))
+                                    colNumber += 1
+                                    For Each runningTrade In runningSummary.Value.AllTrades.OrderBy(Function(x)
+                                                                                                        Return x.EntryTime
+                                                                                                    End Function)
+                                        If runningTrade.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel Then
+                                            excelWriter.SetData(rowNumber, colNumber, runningTrade.SupportingTradingSymbol)
+                                            colNumber += 1
+                                            excelWriter.SetData(rowNumber, colNumber, runningTrade.EntryTime.ToString("dd-MMM-yyyy HH:mm:ss"))
+                                            colNumber += 1
+                                            excelWriter.SetData(rowNumber, colNumber, runningTrade.EntryPrice, "##,##,##0.00", ExcelHelper.XLAlign.Right)
+                                            colNumber += 1
+                                            excelWriter.SetData(rowNumber, colNumber, runningTrade.Quantity, "######0", ExcelHelper.XLAlign.Right)
+                                            colNumber += 1
+                                            excelWriter.SetData(rowNumber, colNumber, runningTrade.ExitTime.ToString("dd-MMM-yyyy HH:mm:ss"))
+                                            colNumber += 1
+                                            excelWriter.SetData(rowNumber, colNumber, runningTrade.ExitPrice, "##,##,##0.00", ExcelHelper.XLAlign.Right)
+                                            colNumber += 1
+                                            excelWriter.SetData(rowNumber, colNumber, runningTrade.ExitRemark)
+                                            colNumber += 1
+                                            excelWriter.SetData(rowNumber, colNumber, runningTrade.PLAfterBrokerage, "##,##,##0.00", ExcelHelper.XLAlign.Right)
+                                            colNumber += 1
+                                        End If
+                                    Next
+                                    colNumber = afterTradeColumnNumber
+                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.EndDate.ToString("dd-MMM-yyyy"))
+                                    colNumber += 1
+                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.OverallPL, "##,##,##0.00", ExcelHelper.XLAlign.Right)
+                                    colNumber += 1
+                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Key)
                                 Next
                             End If
 
