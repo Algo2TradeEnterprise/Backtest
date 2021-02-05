@@ -748,9 +748,14 @@ Namespace StrategyHelper
                     For Each runningStock In allTradesData(runningDate)
                         If ret Is Nothing Then ret = New Dictionary(Of String, List(Of Trade))
                         If Not ret.ContainsKey(runningStock.Key) Then
-                            ret.Add(runningStock.Key, runningStock.Value)
+                            ret.Add(runningStock.Key, New List(Of Trade))
+                            For Each runningTrade In runningStock.Value
+                                ret(runningStock.Key).Add(runningTrade)
+                            Next
                         Else
-                            ret(runningStock.Key).AddRange(runningStock.Value)
+                            For Each runningTrade In runningStock.Value
+                                ret(runningStock.Key).Add(runningTrade)
+                            Next
                         End If
                     Next
                 Next

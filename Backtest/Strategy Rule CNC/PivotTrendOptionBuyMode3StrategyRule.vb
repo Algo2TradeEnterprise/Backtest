@@ -256,14 +256,15 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
                     End If
                 End If
             Else
-                Dim ret As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection) = IsEntrySignalReceived(currentTickTime)
-                If ret IsNot Nothing AndAlso ret.Item1 Then
-                    If _ParentStrategy.NumberOfActiveTrade < _userInputs.NumberOfActiveStock Then
+                Dim signal As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection) = IsEntrySignalReceived(currentTickTime)
+                If signal IsNot Nothing AndAlso signal.Item1 Then
+                    If _ParentStrategy.NumberOfActiveTrade < _userInputs.NumberOfActiveStock OrElse
+                        (lastCompleteTrade IsNot Nothing AndAlso Not lastCompleteTrade.ExitRemark.ToUpper.Contains("TARGET")) Then
                         Dim targetReached As Boolean = True
                         Dim targetLeftPercentage As Decimal = 0
-                        If ret.Item3 = Trade.TradeExecutionDirection.Buy Then
+                        If signal.Item3 = Trade.TradeExecutionDirection.Buy Then
                             Dim highestHigh As Decimal = _eodPayload.Max(Function(x)
-                                                                             If x.Key > ret.Item2.PayloadDate AndAlso x.Key < _TradingDate Then
+                                                                             If x.Key > signal.Item2.PayloadDate AndAlso x.Key < _TradingDate Then
                                                                                  Return x.Value.High
                                                                              Else
                                                                                  Return Decimal.MinValue
@@ -276,22 +277,22 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
                                                                                 Return Decimal.MinValue
                                                                             End If
                                                                         End Function)
-                            If minHigh <> Decimal.MinValue AndAlso ret.Item2.PayloadDate.Date <> _TradingDate.Date Then
+                            If minHigh <> Decimal.MinValue AndAlso signal.Item2.PayloadDate.Date <> _TradingDate.Date Then
                                 highestHigh = Math.Max(highestHigh, minHigh)
                             End If
 
-                            Dim atr As Decimal = _atrPayload(ret.Item2.PayloadDate)
-                            If highestHigh < ret.Item2.Close + atr Then
+                            Dim atr As Decimal = _atrPayload(signal.Item2.PayloadDate)
+                            If highestHigh < signal.Item2.Close + atr Then
                                 targetReached = False
                                 If highestHigh <> Decimal.MinValue Then
-                                    targetLeftPercentage = ((atr - (highestHigh - ret.Item2.Close)) / atr) * 100
+                                    targetLeftPercentage = ((atr - (highestHigh - signal.Item2.Close)) / atr) * 100
                                 Else
                                     targetLeftPercentage = 100
                                 End If
                             End If
-                        ElseIf ret.Item3 = Trade.TradeExecutionDirection.Sell Then
+                        ElseIf signal.Item3 = Trade.TradeExecutionDirection.Sell Then
                             Dim lowestLow As Decimal = _eodPayload.Min(Function(x)
-                                                                           If x.Key > ret.Item2.PayloadDate AndAlso x.Key < _TradingDate Then
+                                                                           If x.Key > signal.Item2.PayloadDate AndAlso x.Key < _TradingDate Then
                                                                                Return x.Value.Low
                                                                            Else
                                                                                Return Decimal.MaxValue
@@ -304,15 +305,15 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
                                                                                Return Decimal.MaxValue
                                                                            End If
                                                                        End Function)
-                            If minLow <> Decimal.MaxValue AndAlso ret.Item2.PayloadDate.Date <> _TradingDate.Date Then
+                            If minLow <> Decimal.MaxValue AndAlso signal.Item2.PayloadDate.Date <> _TradingDate.Date Then
                                 lowestLow = Math.Min(lowestLow, minLow)
                             End If
 
-                            Dim atr As Decimal = _atrPayload(ret.Item2.PayloadDate)
-                            If lowestLow > ret.Item2.Close - atr Then
+                            Dim atr As Decimal = _atrPayload(signal.Item2.PayloadDate)
+                            If lowestLow > signal.Item2.Close - atr Then
                                 targetReached = False
                                 If lowestLow <> Decimal.MaxValue Then
-                                    targetLeftPercentage = ((atr - (ret.Item2.Close - lowestLow)) / atr) * 100
+                                    targetLeftPercentage = ((atr - (signal.Item2.Close - lowestLow)) / atr) * 100
                                 Else
                                     targetLeftPercentage = 100
                                 End If
@@ -320,7 +321,7 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
                         End If
                         If Not targetReached Then
                             If targetLeftPercentage >= 75 Then
-                                EnterTrade(ret.Item2, currentTickTime, ret.Item3)
+                                EnterTrade(signal.Item2, currentTickTime, signal.Item3)
                             End If
                         End If
                     End If

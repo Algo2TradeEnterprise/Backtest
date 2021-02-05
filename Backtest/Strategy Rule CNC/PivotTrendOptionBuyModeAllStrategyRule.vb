@@ -262,7 +262,8 @@ Public Class PivotTrendOptionBuyModeAllStrategyRule
             Else
                 Dim ret As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection) = IsEntrySignalReceived(currentTickTime)
                 If ret IsNot Nothing AndAlso ret.Item1 Then
-                    If _ParentStrategy.NumberOfActiveTrade < _userInputs.NumberOfActiveStock Then
+                    If _ParentStrategy.NumberOfActiveTrade < _userInputs.NumberOfActiveStock OrElse
+                        (lastCompleteTrade IsNot Nothing AndAlso Not lastCompleteTrade.ExitRemark.ToUpper.Contains("TARGET")) Then
                         Dim targetReached As Boolean = True
                         Dim targetLeftPercentage As Decimal = 0
                         If ret.Item3 = Trade.TradeExecutionDirection.Buy Then
