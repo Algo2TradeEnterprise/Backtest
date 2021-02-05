@@ -741,11 +741,11 @@ Namespace StrategyHelper
             Return ret
         End Function
 
-        Public Function GetAllTradesByStock() As Dictionary(Of String, List(Of Trade))
+        Public Function GetAllTradesByStock(ByVal allTradesData As Dictionary(Of Date, Dictionary(Of String, List(Of Trade)))) As Dictionary(Of String, List(Of Trade))
             Dim ret As Dictionary(Of String, List(Of Trade)) = Nothing
-            If Me.TradesTaken IsNot Nothing AndAlso Me.TradesTaken.Count > 0 Then
-                For Each runningDate In Me.TradesTaken.Keys
-                    For Each runningStock In Me.TradesTaken(runningDate)
+            If allTradesData IsNot Nothing AndAlso allTradesData.Count > 0 Then
+                For Each runningDate In allTradesData.Keys
+                    For Each runningStock In allTradesData(runningDate)
                         If ret Is Nothing Then ret = New Dictionary(Of String, List(Of Trade))
                         If Not ret.ContainsKey(runningStock.Key) Then
                             ret.Add(runningStock.Key, runningStock.Value)
@@ -857,7 +857,7 @@ Namespace StrategyHelper
                     If allTradesData IsNot Nothing AndAlso allTradesData.Count > 0 Then
                         Dim cts As New CancellationTokenSource
                         OnHeartbeat("Calculating summary")
-                        Dim allTradesByStock As Dictionary(Of String, List(Of Trade)) = GetAllTradesByStock()
+                        Dim allTradesByStock As Dictionary(Of String, List(Of Trade)) = GetAllTradesByStock(allTradesData)
                         Dim logicalTradeSummary As Dictionary(Of String, Summary) = Nothing
                         If allTradesByStock IsNot Nothing AndAlso allTradesByStock.Count > 0 Then
                             For Each runningStock In allTradesByStock
@@ -1471,19 +1471,19 @@ Namespace StrategyHelper
                                     colNumber += 1
                                     excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.EndDate.ToString("dd-MMM-yyyy"))
                                     colNumber += 1
-                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.NumberOfDays)
+                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.NumberOfDays, "##,##,##0", ExcelHelper.XLAlign.Right)
                                     colNumber += 1
-                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.ContractRolloverTradeCount)
+                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.ContractRolloverTradeCount, "##,##,##0", ExcelHelper.XLAlign.Right)
                                     colNumber += 1
-                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.ReverseTradeCount)
+                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.ReverseTradeCount, "##,##,##0", ExcelHelper.XLAlign.Right)
                                     colNumber += 1
-                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.OverallPL)
+                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.OverallPL, "##,##,##0.00", ExcelHelper.XLAlign.Right)
                                     colNumber += 1
-                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.MaxCapital)
+                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.MaxCapital, "##,##,##0.00", ExcelHelper.XLAlign.Right)
                                     colNumber += 1
-                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.AbsoluteReturnOfInvestment)
+                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.AbsoluteReturnOfInvestment, "##,##,##0.00", ExcelHelper.XLAlign.Right)
                                     colNumber += 1
-                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.AnnuanlReturnOfInvestment)
+                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.AnnuanlReturnOfInvestment, "##,##,##0.00", ExcelHelper.XLAlign.Right)
                                     colNumber += 1
                                     excelWriter.SetData(rowNumber, colNumber, runningSummary.Key)
                                     colNumber += 1

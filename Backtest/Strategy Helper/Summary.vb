@@ -131,7 +131,11 @@
 
         Public ReadOnly Property AbsoluteReturnOfInvestment As Decimal
             Get
-                Return (Me.OverallPL / Me.MaxCapital) * 100
+                If Me.MaxCapital <> 0 Then
+                    Return (Me.OverallPL / Me.MaxCapital) * 100
+                Else
+                    Return 0
+                End If
             End Get
         End Property
 
