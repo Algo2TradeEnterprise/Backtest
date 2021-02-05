@@ -313,7 +313,7 @@ Public Class frmMain
                             tick = 0.05
                     End Select
 
-                    For tf As Integer = 5 To 15 Step 10
+                    For tf As Integer = 15 To 5 Step -10
                         For tgtMul As Integer = 1 To 2 Step 1
                             For slTyp As Integer = 1 To 3 Step 1
                                 Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
