@@ -95,7 +95,9 @@ Public Class PivotTrendOptionBuyModeAllStrategyRule
                         If rolloverDay <> Date.MinValue Then
                             If lastTrade Is Nothing OrElse lastTrade.ExitRemark.ToUpper = "TARGET HIT" Then
                                 'If currentTickTime >= _TradeStartTime.AddMinutes(1) Then
-                                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Buy)
+                                If lastTrade Is Nothing OrElse lastTrade.SignalCandle.PayloadDate <> rolloverDay Then
+                                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Buy)
+                                End If
                                 'End If
                             Else
                                 'If currentTickTime >= _TradeStartTime.AddMinutes(1) Then
@@ -118,7 +120,9 @@ Public Class PivotTrendOptionBuyModeAllStrategyRule
                         If rolloverDay <> Date.MinValue Then
                             If lastTrade Is Nothing OrElse lastTrade.ExitRemark.ToUpper = "TARGET HIT" Then
                                 'If currentTickTime >= _TradeStartTime.AddMinutes(1) Then
-                                ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Sell)
+                                If lastTrade Is Nothing OrElse lastTrade.SignalCandle.PayloadDate <> rolloverDay Then
+                                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Sell)
+                                End If
                                 'End If
                             Else
                                 'If currentTickTime >= _TradeStartTime.AddMinutes(1) Then
