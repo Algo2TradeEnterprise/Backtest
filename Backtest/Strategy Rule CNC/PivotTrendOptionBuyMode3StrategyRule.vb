@@ -12,7 +12,13 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
 
         Public ExitAtATRPL As Boolean
         Public NumberOfActiveStock As Integer
+        Public ExitMode As ModeOfExit
     End Class
+
+    Enum ModeOfExit
+        LTP = 1
+        Close
+    End Enum
 
     Private Enum ExitType
         Target = 1
@@ -162,23 +168,27 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
             Dim optionType As String = currentTrade.SupportingTradingSymbol.Substring(currentTrade.SupportingTradingSymbol.Count - 2)
             If typeOfExit = ExitType.Target Then
                 If currentTrade.EntryType = Trade.TypeOfEntry.Fresh Then      'Fresh Trade
-                    Dim currentSpotTick As Payload = GetCurrentTick(_TradingSymbol, currentTickTime)
-                    If optionType = "CE" AndAlso currentSpotTick.Open >= currentTrade.SpotPrice + currentTrade.SpotATR Then
-                        Dim pl As Decimal = GetFreshTradePL(currentTrade, currentTickTime)
-                        If pl > 0 Then
-                            ret = True
-                        Else
-                            If currentTrade.Remark1 Is Nothing Then
-                                currentTrade.UpdateTrade(Remark1:=String.Format("ATR Reached but PL {0}", pl))
+                    If _userInputs.ExitAtATRPL Then
+                        ret = GetFreshTradePL(currentTrade, currentTickTime) > Math.Abs(currentTrade.PreviousLoss)
+                    Else
+                        Dim currentSpotTick As Payload = GetCurrentTick(_TradingSymbol, currentTickTime)
+                        If optionType = "CE" AndAlso currentSpotTick.Open >= currentTrade.SpotPrice + currentTrade.SpotATR Then
+                            Dim pl As Decimal = GetFreshTradePL(currentTrade, currentTickTime)
+                            If pl > 0 Then
+                                ret = True
+                            Else
+                                If currentTrade.Remark1 Is Nothing Then
+                                    currentTrade.UpdateTrade(Remark1:=String.Format("ATR Reached but PL {0}", pl))
+                                End If
                             End If
-                        End If
-                    ElseIf optionType = "PE" AndAlso currentSpotTick.Open <= currentTrade.SpotPrice - currentTrade.SpotATR Then
-                        Dim pl As Decimal = GetFreshTradePL(currentTrade, currentTickTime)
-                        If pl > 0 Then
-                            ret = True
-                        Else
-                            If currentTrade.Remark1 Is Nothing Then
-                                currentTrade.UpdateTrade(Remark1:=String.Format("ATR Reached but PL {0}", pl))
+                        ElseIf optionType = "PE" AndAlso currentSpotTick.Open <= currentTrade.SpotPrice - currentTrade.SpotATR Then
+                            Dim pl As Decimal = GetFreshTradePL(currentTrade, currentTickTime)
+                            If pl > 0 Then
+                                ret = True
+                            Else
+                                If currentTrade.Remark1 Is Nothing Then
+                                    currentTrade.UpdateTrade(Remark1:=String.Format("ATR Reached but PL {0}", pl))
+                                End If
                             End If
                         End If
                     End If
@@ -409,22 +419,41 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
         If _dependentInstruments IsNot Nothing AndAlso _dependentInstruments.ContainsKey(tradingSymbol) Then
             Dim inputPayload As Dictionary(Of Date, Payload) = _dependentInstruments(tradingSymbol)
             If inputPayload IsNot Nothing AndAlso inputPayload.Count > 0 Then
-                Dim currentMinute As Date = New Date(currentTime.Year, currentTime.Month, currentTime.Day, currentTime.Hour, currentTime.Minute, 0)
-                Dim currentCandle As Payload = inputPayload.Where(Function(x)
-                                                                      Return x.Key <= currentMinute
-                                                                  End Function).LastOrDefault.Value
+                If _userInputs.ExitMode = ModeOfExit.Close Then
+                    Dim currentMinute As Date = New Date(currentTime.Year, currentTime.Month, currentTime.Day, currentTime.Hour, currentTime.Minute, 0)
+                    Dim currentCandle As Payload = inputPayload.Where(Function(x)
+                                                                          Return x.Key < currentMinute
+                                                                      End Function).LastOrDefault.Value
 
-                If currentCandle Is Nothing Then
-                    currentCandle = inputPayload.Where(Function(x)
-                                                           Return x.Key.Date = _TradingDate
-                                                       End Function).FirstOrDefault.Value
+                    If currentCandle Is Nothing Then
+                        currentCandle = inputPayload.Where(Function(x)
+                                                               Return x.Key.Date = _TradingDate
+                                                           End Function).FirstOrDefault.Value
+                    End If
+
+                    ret = currentCandle.Ticks.FindAll(Function(x)
+                                                          Return x.PayloadDate <= currentTime
+                                                      End Function).LastOrDefault
+
+                    If ret Is Nothing Then ret = currentCandle.Ticks.FirstOrDefault
+                Else
+                    Dim currentMinute As Date = New Date(currentTime.Year, currentTime.Month, currentTime.Day, currentTime.Hour, currentTime.Minute, 0)
+                    Dim currentCandle As Payload = inputPayload.Where(Function(x)
+                                                                          Return x.Key <= currentMinute
+                                                                      End Function).LastOrDefault.Value
+
+                    If currentCandle Is Nothing Then
+                        currentCandle = inputPayload.Where(Function(x)
+                                                               Return x.Key.Date = _TradingDate
+                                                           End Function).FirstOrDefault.Value
+                    End If
+
+                    ret = currentCandle.Ticks.FindAll(Function(x)
+                                                          Return x.PayloadDate <= currentTime
+                                                      End Function).LastOrDefault
+
+                    If ret Is Nothing Then ret = currentCandle.Ticks.FirstOrDefault
                 End If
-
-                ret = currentCandle.Ticks.FindAll(Function(x)
-                                                      Return x.PayloadDate <= currentTime
-                                                  End Function).LastOrDefault
-
-                If ret Is Nothing Then ret = currentCandle.Ticks.FirstOrDefault
             End If
         End If
         Return ret
@@ -492,6 +521,13 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
                             Exit For
                         End If
                     Next
+                ElseIf entryType = Trade.TypeOfEntry.Fresh Then
+                    If _userInputs.ExitAtATRPL Then
+                        Dim entryPrice As Decimal = currentOptTick.Open
+                        Dim targetPrice As Decimal = ConvertFloorCeling(entryPrice + currentSpotATR, _ParentStrategy.TickSize, RoundOfType.Celing)
+                        Dim pl As Decimal = _ParentStrategy.CalculatePL(_TradingSymbol, entryPrice, targetPrice, quantity, _LotSize, Trade.TypeOfStock.Options)
+                        previousLoss = (pl - 1)
+                    End If
                 End If
 
                 Dim runningOptTrade As Trade = New Trade(originatingStrategy:=_ParentStrategy,
@@ -699,25 +735,6 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
             End If
             lastDayOfMonth = lastDayOfMonth.AddDays(-1)
         End While
-        Return ret
-    End Function
-
-    Private Function CalculateStandardDeviationPA(ParamArray numbers() As Long) As Long
-        Dim ret As Long = Nothing
-        If numbers.Count > 0 Then
-            Dim sum As Long = 0
-            For i = 0 To numbers.Count - 1
-                sum = sum + numbers(i)
-            Next
-            Dim mean As Long = sum / numbers.Count
-            Dim sumVariance As Long = 0
-            For j = 0 To numbers.Count - 1
-                sumVariance = sumVariance + Math.Pow((numbers(j) - mean), 2)
-            Next
-            Dim sampleVariance As Long = sumVariance / numbers.Count
-            Dim standardDeviation As Long = Math.Sqrt(sampleVariance)
-            ret = standardDeviation
-        End If
         Return ret
     End Function
 #End Region

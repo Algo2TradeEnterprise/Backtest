@@ -298,25 +298,25 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            For mode As Integer = 3 To 3 Step -1
-                For atrPL As Integer = 0 To 1
+            For extMode As Integer = 2 To 1 Step -1
+                For atrPL As Integer = 1 To 0 Step -1
                     Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
-                                                                        exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                                        exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                                        tradeStartTime:=TimeSpan.Parse("15:28:00"),
-                                                                        lastTradeEntryTime:=TimeSpan.Parse("15:30:00"),
-                                                                        eodExitTime:=TimeSpan.Parse("15:30:00"),
-                                                                        tickSize:=tick,
-                                                                        marginMultiplier:=margin,
-                                                                        timeframe:=1,
-                                                                        heikenAshiCandle:=False,
-                                                                        stockType:=stockType,
-                                                                        databaseTable:=database,
-                                                                        dataSource:=sourceData,
-                                                                        initialCapital:=Decimal.MaxValue / 2,
-                                                                        usableCapital:=Decimal.MaxValue / 2,
-                                                                        minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
-                                                                        amountToBeWithdrawn:=0)
+                                                                    exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                    exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                    tradeStartTime:=TimeSpan.Parse("15:28:00"),
+                                                                    lastTradeEntryTime:=TimeSpan.Parse("15:30:00"),
+                                                                    eodExitTime:=TimeSpan.Parse("15:30:00"),
+                                                                    tickSize:=tick,
+                                                                    marginMultiplier:=margin,
+                                                                    timeframe:=1,
+                                                                    heikenAshiCandle:=False,
+                                                                    stockType:=stockType,
+                                                                    databaseTable:=database,
+                                                                    dataSource:=sourceData,
+                                                                    initialCapital:=Decimal.MaxValue / 2,
+                                                                    usableCapital:=Decimal.MaxValue / 2,
+                                                                    minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                                    amountToBeWithdrawn:=0)
                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                         With backtestStrategy
@@ -330,22 +330,25 @@ Public Class frmMain
                             Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
                                 Case 0
                                     .RuleEntityData = New PivotTrendOptionBuyMode3StrategyRule.StrategyRuleEntities With
-                                        {
-                                         .ExitAtATRPL = atrPL,
-                                         .NumberOfActiveStock = 5
-                                        }
+                                    {
+                                     .ExitAtATRPL = atrPL,
+                                     .ExitMode = extMode,
+                                     .NumberOfActiveStock = 5
+                                    }
                                 Case 1
+                                    Throw New NotImplementedException
                                     .RuleEntityData = New PivotTrendOptionBuyMode2StrategyRule.StrategyRuleEntities With
-                                        {
-                                         .ExitAtATRPL = atrPL,
-                                         .NumberOfActiveStock = 5
-                                        }
+                                    {
+                                     .ExitAtATRPL = atrPL,
+                                     .NumberOfActiveStock = 5
+                                    }
                                 Case 2
+                                    Throw New NotImplementedException
                                     .RuleEntityData = New PivotTrendOptionBuyModeAllStrategyRule.StrategyRuleEntities With
-                                        {
-                                         .ExitAtATRPL = atrPL,
-                                         .NumberOfActiveStock = 5
-                                        }
+                                    {
+                                     .ExitAtATRPL = atrPL,
+                                     .NumberOfActiveStock = 5
+                                    }
                                 Case Else
                                     Throw New NotImplementedException
                             End Select
@@ -375,16 +378,16 @@ Public Class frmMain
                         Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
                             Case 0
                                 Dim ruleData As PivotTrendOptionBuyMode3StrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                                filename = String.Format("Pivot Trend Option Buy Mode 3, ExtATRPL {0}",
-                                                         ruleData.ExitAtATRPL)
+                                filename = String.Format("Pivot Trend Option Buy Mode 3,ExtMd {0}, ExtATRPL {1}",
+                                                         ruleData.ExitMode.ToString, ruleData.ExitAtATRPL)
                             Case 1
                                 Dim ruleData As PivotTrendOptionBuyMode2StrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
                                 filename = String.Format("Pivot Trend Option Buy Mode 2, ExtATRPL {0}",
-                                                         ruleData.ExitAtATRPL)
+                                                     ruleData.ExitAtATRPL)
                             Case 2
                                 Dim ruleData As PivotTrendOptionBuyModeAllStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
                                 filename = String.Format("Pivot Trend Option Buy Mode All, ExtATRPL {0}",
-                                                         ruleData.ExitAtATRPL)
+                                                     ruleData.ExitAtATRPL)
                             Case Else
                                 Throw New NotImplementedException
                         End Select
