@@ -12,13 +12,7 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
 
         Public ExitAtATRPL As Boolean
         Public NumberOfActiveStock As Integer
-        Public ExitMode As ModeOfExit
     End Class
-
-    Enum ModeOfExit
-        LTP = 1
-        Close
-    End Enum
 
     Private Enum ExitType
         Target = 1
@@ -419,41 +413,22 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
         If _dependentInstruments IsNot Nothing AndAlso _dependentInstruments.ContainsKey(tradingSymbol) Then
             Dim inputPayload As Dictionary(Of Date, Payload) = _dependentInstruments(tradingSymbol)
             If inputPayload IsNot Nothing AndAlso inputPayload.Count > 0 Then
-                If _userInputs.ExitMode = ModeOfExit.Close Then
-                    Dim currentMinute As Date = New Date(currentTime.Year, currentTime.Month, currentTime.Day, currentTime.Hour, currentTime.Minute, 0)
-                    Dim currentCandle As Payload = inputPayload.Where(Function(x)
-                                                                          Return x.Key < currentMinute
-                                                                      End Function).LastOrDefault.Value
+                Dim currentMinute As Date = New Date(currentTime.Year, currentTime.Month, currentTime.Day, currentTime.Hour, currentTime.Minute, 0)
+                Dim currentCandle As Payload = inputPayload.Where(Function(x)
+                                                                      Return x.Key <= currentMinute
+                                                                  End Function).LastOrDefault.Value
 
-                    If currentCandle Is Nothing Then
-                        currentCandle = inputPayload.Where(Function(x)
-                                                               Return x.Key.Date = _TradingDate
-                                                           End Function).FirstOrDefault.Value
-                    End If
-
-                    ret = currentCandle.Ticks.FindAll(Function(x)
-                                                          Return x.PayloadDate <= currentTime
-                                                      End Function).LastOrDefault
-
-                    If ret Is Nothing Then ret = currentCandle.Ticks.FirstOrDefault
-                Else
-                    Dim currentMinute As Date = New Date(currentTime.Year, currentTime.Month, currentTime.Day, currentTime.Hour, currentTime.Minute, 0)
-                    Dim currentCandle As Payload = inputPayload.Where(Function(x)
-                                                                          Return x.Key <= currentMinute
-                                                                      End Function).LastOrDefault.Value
-
-                    If currentCandle Is Nothing Then
-                        currentCandle = inputPayload.Where(Function(x)
-                                                               Return x.Key.Date = _TradingDate
-                                                           End Function).FirstOrDefault.Value
-                    End If
-
-                    ret = currentCandle.Ticks.FindAll(Function(x)
-                                                          Return x.PayloadDate <= currentTime
-                                                      End Function).LastOrDefault
-
-                    If ret Is Nothing Then ret = currentCandle.Ticks.FirstOrDefault
+                If currentCandle Is Nothing Then
+                    currentCandle = inputPayload.Where(Function(x)
+                                                           Return x.Key.Date = _TradingDate
+                                                       End Function).FirstOrDefault.Value
                 End If
+
+                ret = currentCandle.Ticks.FindAll(Function(x)
+                                                      Return x.PayloadDate <= currentTime
+                                                  End Function).LastOrDefault
+
+                If ret Is Nothing Then ret = currentCandle.Ticks.FirstOrDefault
             End If
         End If
         Return ret

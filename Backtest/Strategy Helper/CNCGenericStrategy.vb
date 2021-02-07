@@ -8,6 +8,12 @@ Namespace StrategyHelper
         Inherits Strategy
         Implements IDisposable
 
+        Enum TickMode
+            LTP = 1
+            Close
+        End Enum
+
+        Public Property ModeOfTick As TickMode
         Public Property StockFileName As String
         Public Property RuleNumber As Integer
         Public Property RuleEntityData As RuleEntities
@@ -175,7 +181,9 @@ Namespace StrategyHelper
                                 _canceller.Token.ThrowIfCancellationRequested()
                                 While startSecond <= endSecond
                                     potentialTickSignalTime = New Date(tradeCheckingDate.Year, tradeCheckingDate.Month, tradeCheckingDate.Day, startSecond.Hours, startSecond.Minutes, startSecond.Seconds)
-                                    If potentialTickSignalTime.Second = 0 Then
+                                    Dim secondToCheck As Integer = 0
+                                    If Me.ModeOfTick = TickMode.Close Then secondToCheck = 59
+                                    If potentialTickSignalTime.Second = secondToCheck Then
                                         For Each runningStock In stockList
                                             _canceller.Token.ThrowIfCancellationRequested()
 

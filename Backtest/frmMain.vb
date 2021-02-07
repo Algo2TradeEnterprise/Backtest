@@ -298,8 +298,8 @@ Public Class frmMain
                     tick = 0.05
             End Select
 
-            For extMode As Integer = 2 To 1 Step -1
-                For atrPL As Integer = 1 To 0 Step -1
+            For tckMode As Integer = 1 To 2
+                For atrPL As Integer = 1 To 1 Step -1
                     Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
                                                                     exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                     exchangeEndTime:=TimeSpan.Parse("15:29:59"),
@@ -321,7 +321,7 @@ Public Class frmMain
 
                         With backtestStrategy
                             .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "High ATR High Volume Stocks.csv")
-
+                            .ModeOfTick = tckMode
                             .AllowBothDirectionEntryAtSameTime = False
                             .TrailingStoploss = False
                             .TickBasedStrategy = True
@@ -332,7 +332,6 @@ Public Class frmMain
                                     .RuleEntityData = New PivotTrendOptionBuyMode3StrategyRule.StrategyRuleEntities With
                                     {
                                      .ExitAtATRPL = atrPL,
-                                     .ExitMode = extMode,
                                      .NumberOfActiveStock = 5
                                     }
                                 Case 1
@@ -379,7 +378,7 @@ Public Class frmMain
                             Case 0
                                 Dim ruleData As PivotTrendOptionBuyMode3StrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
                                 filename = String.Format("Pivot Trend Option Buy Mode 3,ExtMd {0}, ExtATRPL {1}",
-                                                         ruleData.ExitMode.ToString, ruleData.ExitAtATRPL)
+                                                         backtestStrategy.ModeOfTick.ToString, ruleData.ExitAtATRPL)
                             Case 1
                                 Dim ruleData As PivotTrendOptionBuyMode2StrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
                                 filename = String.Format("Pivot Trend Option Buy Mode 2, ExtATRPL {0}",
