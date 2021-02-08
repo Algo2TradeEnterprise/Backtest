@@ -137,10 +137,6 @@ Namespace StrategyHelper
                                     Select Case Me.RuleNumber
                                         Case 0
                                             stockRule = New PivotTrendOptionBuyMode3StrategyRule(tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me.RuleEntityData, Me, _canceller, XDayOneMinutePayload)
-                                        Case 1
-                                            stockRule = New PivotTrendOptionBuyMode2StrategyRule(tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me.RuleEntityData, Me, _canceller, XDayOneMinutePayload)
-                                        Case 2
-                                            stockRule = New PivotTrendOptionBuyModeAllStrategyRule(tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me.RuleEntityData, Me, _canceller, XDayOneMinutePayload)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select

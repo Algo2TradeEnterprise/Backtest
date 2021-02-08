@@ -299,101 +299,76 @@ Public Class frmMain
             End Select
 
             For tckMode As Integer = 1 To 2 Step 1
-                For atrPL As Integer = 1 To 1 Step -1
-                    Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
-                                                                    exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                                    exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                                    tradeStartTime:=TimeSpan.Parse("15:28:00"),
-                                                                    lastTradeEntryTime:=TimeSpan.Parse("15:30:00"),
-                                                                    eodExitTime:=TimeSpan.Parse("15:30:00"),
-                                                                    tickSize:=tick,
-                                                                    marginMultiplier:=margin,
-                                                                    timeframe:=1,
-                                                                    heikenAshiCandle:=False,
-                                                                    stockType:=stockType,
-                                                                    databaseTable:=database,
-                                                                    dataSource:=sourceData,
-                                                                    initialCapital:=Decimal.MaxValue / 2,
-                                                                    usableCapital:=Decimal.MaxValue / 2,
-                                                                    minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
-                                                                    amountToBeWithdrawn:=0)
-                        AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+                Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
+                                                                exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                tradeStartTime:=TimeSpan.Parse("15:28:00"),
+                                                                lastTradeEntryTime:=TimeSpan.Parse("15:30:00"),
+                                                                eodExitTime:=TimeSpan.Parse("15:30:00"),
+                                                                tickSize:=tick,
+                                                                marginMultiplier:=margin,
+                                                                timeframe:=1,
+                                                                heikenAshiCandle:=False,
+                                                                stockType:=stockType,
+                                                                databaseTable:=database,
+                                                                dataSource:=sourceData,
+                                                                initialCapital:=Decimal.MaxValue / 2,
+                                                                usableCapital:=Decimal.MaxValue / 2,
+                                                                minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                                amountToBeWithdrawn:=0)
+                    AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                        With backtestStrategy
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "High ATR High Volume Stocks.csv")
-                            .ModeOfTick = tckMode
-                            .AllowBothDirectionEntryAtSameTime = False
-                            .TrailingStoploss = False
-                            .TickBasedStrategy = True
-                            .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+                    With backtestStrategy
+                        .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "High ATR High Volume Stocks.csv")
+                        .ModeOfTick = tckMode
+                        .AllowBothDirectionEntryAtSameTime = False
+                        .TrailingStoploss = False
+                        .TickBasedStrategy = True
+                        .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                            Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
-                                Case 0
-                                    .RuleEntityData = New PivotTrendOptionBuyMode3StrategyRule.StrategyRuleEntities With
-                                    {
-                                     .ExitAtATRPL = atrPL,
-                                     .NumberOfActiveStock = 5
-                                    }
-                                Case 1
-                                    Throw New NotImplementedException
-                                    .RuleEntityData = New PivotTrendOptionBuyMode2StrategyRule.StrategyRuleEntities With
-                                    {
-                                     .ExitAtATRPL = atrPL,
-                                     .NumberOfActiveStock = 5
-                                    }
-                                Case 2
-                                    Throw New NotImplementedException
-                                    .RuleEntityData = New PivotTrendOptionBuyModeAllStrategyRule.StrategyRuleEntities With
-                                    {
-                                     .ExitAtATRPL = atrPL,
-                                     .NumberOfActiveStock = 5
-                                    }
-                                Case Else
-                                    Throw New NotImplementedException
-                            End Select
-
-                            .NumberOfTradeableStockPerDay = Integer.MaxValue
-
-                            .NumberOfTradesPerStockPerDay = Integer.MaxValue
-
-                            .StockMaxProfitPercentagePerDay = Decimal.MaxValue
-                            .StockMaxLossPercentagePerDay = Decimal.MinValue
-
-                            .ExitOnStockFixedTargetStoploss = False
-                            .StockMaxProfitPerDay = Decimal.MaxValue
-                            .StockMaxLossPerDay = Decimal.MinValue
-
-                            .ExitOnOverAllFixedTargetStoploss = False
-                            .OverAllProfitPerDay = Decimal.MaxValue
-                            .OverAllLossPerDay = Decimal.MinValue
-
-                            .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
-                            .MTMSlab = Math.Abs(.OverAllLossPerDay)
-                            .MovementSlab = .MTMSlab / 2
-                            .RealtimeTrailingPercentage = 50
-                        End With
-
-                        Dim filename As String = String.Format("Option Buy")
                         Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
                             Case 0
-                                Dim ruleData As PivotTrendOptionBuyMode3StrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                                filename = String.Format("Pivot Trend Option Buy Mode 3,ExtMd {0}, ExtATRPL {1}",
-                                                         backtestStrategy.ModeOfTick.ToString, ruleData.ExitAtATRPL)
-                            Case 1
-                                Dim ruleData As PivotTrendOptionBuyMode2StrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                                filename = String.Format("Pivot Trend Option Buy Mode 2, ExtATRPL {0}",
-                                                     ruleData.ExitAtATRPL)
-                            Case 2
-                                Dim ruleData As PivotTrendOptionBuyModeAllStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                                filename = String.Format("Pivot Trend Option Buy Mode All, ExtATRPL {0}",
-                                                     ruleData.ExitAtATRPL)
+                                .RuleEntityData = New PivotTrendOptionBuyMode3StrategyRule.StrategyRuleEntities With
+                                {
+                                 .NumberOfActiveStock = 5
+                                }
                             Case Else
                                 Throw New NotImplementedException
                         End Select
 
-                        Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-                    End Using
-                Next
+                        .NumberOfTradeableStockPerDay = Integer.MaxValue
+
+                        .NumberOfTradesPerStockPerDay = Integer.MaxValue
+
+                        .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                        .StockMaxLossPercentagePerDay = Decimal.MinValue
+
+                        .ExitOnStockFixedTargetStoploss = False
+                        .StockMaxProfitPerDay = Decimal.MaxValue
+                        .StockMaxLossPerDay = Decimal.MinValue
+
+                        .ExitOnOverAllFixedTargetStoploss = False
+                        .OverAllProfitPerDay = Decimal.MaxValue
+                        .OverAllLossPerDay = Decimal.MinValue
+
+                        .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+                        .MTMSlab = Math.Abs(.OverAllLossPerDay)
+                        .MovementSlab = .MTMSlab / 2
+                        .RealtimeTrailingPercentage = 50
+                    End With
+
+                    Dim filename As String = String.Format("Option Buy")
+                    Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
+                        Case 0
+                            Dim ruleData As PivotTrendOptionBuyMode3StrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                            filename = String.Format("Pivot Trend Option Buy Mode 3, ExtMd {0}",
+                                                     backtestStrategy.ModeOfTick.ToString)
+                        Case Else
+                            Throw New NotImplementedException
+                    End Select
+
+                    Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                End Using
             Next
         Catch ex As Exception
             MsgBox(ex.ToString, MsgBoxStyle.Critical)
