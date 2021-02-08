@@ -482,7 +482,7 @@ Public Class HKTrendOptionBuyMode3StrategyRule
                     Next
                 ElseIf entryType = Trade.TypeOfEntry.Fresh Then
                     Dim entryPrice As Decimal = currentOptTick.Open
-                    Dim targetPrice As Decimal = ConvertFloorCeling(entryPrice + currentSpotATR, _ParentStrategy.TickSize, RoundOfType.Celing)
+                    Dim targetPrice As Decimal = ConvertFloorCeling(entryPrice + currentSpotATR / 2, _ParentStrategy.TickSize, RoundOfType.Celing)
                     Dim pl As Decimal = _ParentStrategy.CalculatePL(_TradingSymbol, entryPrice, targetPrice, quantity, _LotSize, Trade.TypeOfStock.Options)
                     previousLoss = (pl - 1)
                 End If
