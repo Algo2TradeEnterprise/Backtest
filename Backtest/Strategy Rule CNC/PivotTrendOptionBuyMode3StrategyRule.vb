@@ -96,14 +96,14 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
                 Dim lastTrade As Trade = _ParentStrategy.GetLastEntryTradeOfTheStock(_TradingSymbol, _TradingDate, Trade.TypeOfTrade.CNC)
                 If trend = Color.Green Then
                     If previousTrend = Color.Red AndAlso _pivotTrendPayload.LastOrDefault.Key = currentMinute Then
-                        If currentTickTime >= currentMinute.AddMinutes(_ParentStrategy.SignalTimeFrame - 2) Then
+                        If currentTickTime >= currentMinute.AddMinutes(_ParentStrategy.SignalTimeFrame - 2) OrElse currentTickTime >= _TradeStartTime Then
                             ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _SignalPayload(currentMinute), Trade.TradeExecutionDirection.Buy)
                         End If
                     Else
                         Dim rolloverDay As Date = GetRolloverDay(trend, _pivotTrendPayload.LastOrDefault.Key)
                         If rolloverDay <> Date.MinValue Then
                             If lastTrade Is Nothing OrElse lastTrade.ExitRemark.ToUpper = "TARGET HIT" Then
-                                If currentTickTime >= currentMinute.AddMinutes(_ParentStrategy.SignalTimeFrame - 1) Then
+                                If currentTickTime >= currentMinute.AddMinutes(_ParentStrategy.SignalTimeFrame - 1) OrElse currentTickTime >= _TradeStartTime Then
                                     If lastTrade Is Nothing OrElse lastTrade.SignalCandle.PayloadDate <> rolloverDay Then
                                         ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _SignalPayload(rolloverDay), Trade.TradeExecutionDirection.Buy)
                                     End If
@@ -119,14 +119,14 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
                     End If
                 ElseIf trend = Color.Red Then
                     If previousTrend = Color.Green AndAlso _pivotTrendPayload.LastOrDefault.Key = currentMinute Then
-                        If currentTickTime >= currentMinute.AddMinutes(_ParentStrategy.SignalTimeFrame - 2) Then
+                        If currentTickTime >= currentMinute.AddMinutes(_ParentStrategy.SignalTimeFrame - 2) OrElse currentTickTime >= _TradeStartTime Then
                             ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _SignalPayload(currentMinute), Trade.TradeExecutionDirection.Sell)
                         End If
                     Else
                         Dim rolloverDay As Date = GetRolloverDay(trend, _pivotTrendPayload.LastOrDefault.Key)
                         If rolloverDay <> Date.MinValue Then
                             If lastTrade Is Nothing OrElse lastTrade.ExitRemark.ToUpper = "TARGET HIT" Then
-                                If currentTickTime >= currentMinute.AddMinutes(_ParentStrategy.SignalTimeFrame - 1) Then
+                                If currentTickTime >= currentMinute.AddMinutes(_ParentStrategy.SignalTimeFrame - 1) OrElse currentTickTime >= _TradeStartTime Then
                                     If lastTrade Is Nothing OrElse lastTrade.SignalCandle.PayloadDate <> rolloverDay Then
                                         ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _SignalPayload(rolloverDay), Trade.TradeExecutionDirection.Sell)
                                     End If
@@ -230,7 +230,7 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(ByVal currentTickTime As Date) As Task
         Await Task.Delay(0).ConfigureAwait(False)
         Dim currentMinute As Date = _ParentStrategy.GetCurrentXMinuteCandleTime(currentTickTime)
-        If currentTickTime >= currentMinute.AddMinutes(_ParentStrategy.SignalTimeFrame - 2) AndAlso
+        If (currentTickTime >= currentMinute.AddMinutes(_ParentStrategy.SignalTimeFrame - 2) OrElse currentTickTime >= _TradeStartTime) AndAlso
             Not _pivotTrendPayload.ContainsKey(currentMinute) AndAlso _currentDayPivotTrends.ContainsKey(currentMinute) Then
             _pivotTrendPayload.Add(currentMinute, _currentDayPivotTrends(currentMinute))
         End If
@@ -325,7 +325,7 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
 
     Public Overrides Async Function IsTriggerReceivedForExitOrderAsync(ByVal currentTickTime As Date, ByVal availableTrades As List(Of Trade)) As Task
         Dim currentMinute As Date = _ParentStrategy.GetCurrentXMinuteCandleTime(currentTickTime)
-        If currentTickTime >= currentMinute.AddMinutes(_ParentStrategy.SignalTimeFrame - 2) AndAlso
+        If (currentTickTime >= currentMinute.AddMinutes(_ParentStrategy.SignalTimeFrame - 2) OrElse currentTickTime >= _TradeStartTime) AndAlso
             Not _pivotTrendPayload.ContainsKey(currentMinute) AndAlso _currentDayPivotTrends.ContainsKey(currentMinute) Then
             _pivotTrendPayload.Add(currentMinute, _currentDayPivotTrends(currentMinute))
         End If
