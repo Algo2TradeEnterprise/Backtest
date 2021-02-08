@@ -332,6 +332,11 @@ Public Class frmMain
                                 {
                                  .NumberOfActiveStock = 5
                                 }
+                            Case 1
+                                .RuleEntityData = New HKTrendOptionBuyMode3StrategyRule.StrategyRuleEntities With
+                                {
+                                 .NumberOfActiveStock = 5
+                                }
                             Case Else
                                 Throw New NotImplementedException
                         End Select
@@ -362,6 +367,10 @@ Public Class frmMain
                         Case 0
                             Dim ruleData As PivotTrendOptionBuyMode3StrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
                             filename = String.Format("Pivot Trend Option Buy Mode 3, ExtMd {0}",
+                                                     backtestStrategy.ModeOfTick.ToString)
+                        Case 1
+                            Dim ruleData As HKTrendOptionBuyMode3StrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                            filename = String.Format("HK Trend Option Buy Mode 3, ExtMd {0}",
                                                      backtestStrategy.ModeOfTick.ToString)
                         Case Else
                             Throw New NotImplementedException
