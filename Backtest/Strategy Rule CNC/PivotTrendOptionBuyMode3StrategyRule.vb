@@ -434,6 +434,14 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
                     tradeNumber = lastTrade.TradeNumber + 1
                     entryType = Trade.TypeOfEntry.LossMakeup
                     lossToRecover = pl
+                Else
+                    Dim lastCompleteTrade As Trade = _ParentStrategy.GetLastCompleteTradeOfTheStock(_TradingSymbol, _TradingDate, Trade.TypeOfTrade.CNC)
+                    If lastCompleteTrade IsNot Nothing AndAlso Not lastCompleteTrade.ExitRemark.ToUpper.Contains("TARGET") Then
+                        parentTag = lastTrade.ParentTag
+                        tradeNumber = lastTrade.TradeNumber + 1
+                        entryType = Trade.TypeOfEntry.LossMakeup
+                        lossToRecover = 0
+                    End If
                 End If
             End If
         End If

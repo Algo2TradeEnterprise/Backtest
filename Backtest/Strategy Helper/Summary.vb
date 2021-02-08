@@ -141,7 +141,7 @@
 
         Public ReadOnly Property AnnuanlReturnOfInvestment As Decimal
             Get
-                Return (Me.AbsoluteReturnOfInvestment / Me.NumberOfDays) * 365
+                Return Me.AbsoluteReturnOfInvestment / 365
             End Get
         End Property
     End Class
