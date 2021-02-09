@@ -245,18 +245,21 @@ Namespace StrategyHelper
                                 instrumentName = tradingSymbol
                             End If
                             Dim lotSize As Integer = runningRow.Item("Lot Size")
+                            Dim targetLeftPercentage As Decimal = runningRow.Item("Target Left %")
 
-                            Dim detailsOfStock As StockDetails = New StockDetails With
+                            If targetLeftPercentage >= 75 Then
+                                Dim detailsOfStock As StockDetails = New StockDetails With
                                         {.TradingSymbol = tradingSymbol,
                                          .LotSize = lotSize}
-                            'Dim detailsOfStock As StockDetails = New StockDetails With
-                            '            {.TradingSymbol = "MUTHOOTFIN",
-                            '             .LotSize = 1500}
+                                'Dim detailsOfStock As StockDetails = New StockDetails With
+                                '            {.TradingSymbol = "MUTHOOTFIN",
+                                '             .LotSize = 1500}
 
-                            If ret Is Nothing Then ret = New List(Of StockDetails)
-                            ret.Add(detailsOfStock)
+                                If ret Is Nothing Then ret = New List(Of StockDetails)
+                                ret.Add(detailsOfStock)
 
-                            If ret.Count >= Me.NumberOfTradeableStockPerDay Then Exit For
+                                If ret.Count >= Me.NumberOfTradeableStockPerDay Then Exit For
+                            End If
                         End If
                     Next
                 End If
