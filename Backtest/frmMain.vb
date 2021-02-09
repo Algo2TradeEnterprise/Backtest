@@ -319,7 +319,6 @@ Public Class frmMain
                     AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                     With backtestStrategy
-                        .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "High ATR High Volume Stocks.csv")
                         .ModeOfTick = tckMode
                         .AllowBothDirectionEntryAtSameTime = False
                         .TrailingStoploss = False
@@ -328,15 +327,18 @@ Public Class frmMain
 
                         Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
                             Case 0
+                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pivot Trend High ATR High Volume Stocks.csv")
                                 .RuleEntityData = New PivotTrendOptionBuyMode3StrategyRule.StrategyRuleEntities With
                                 {
                                  .NumberOfActiveStock = 5
                                 }
                             Case 1
+                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "HK Trend High ATR High Volume Stocks.csv")
                                 .RuleEntityData = New HKTrendOptionBuyMode3StrategyRule.StrategyRuleEntities With
                                 {
                                  .NumberOfActiveStock = 5
                                 }
+
                             Case Else
                                 Throw New NotImplementedException
                         End Select
