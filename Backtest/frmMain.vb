@@ -338,7 +338,12 @@ Public Class frmMain
                                 {
                                  .NumberOfActiveStock = 5
                                 }
-
+                            Case 2
+                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "HK MA Trend High ATR High Volume Stocks.csv")
+                                .RuleEntityData = New HKMATrendOptionBuyMode3StrategyRule.StrategyRuleEntities With
+                                {
+                                 .NumberOfActiveStock = 5
+                                }
                             Case Else
                                 Throw New NotImplementedException
                         End Select
@@ -373,6 +378,10 @@ Public Class frmMain
                         Case 1
                             Dim ruleData As HKTrendOptionBuyMode3StrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
                             filename = String.Format("HK Trend Option Buy Mode 3, ExtMd {0}",
+                                                     backtestStrategy.ModeOfTick.ToString)
+                        Case 2
+                            Dim ruleData As HKMATrendOptionBuyMode3StrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                            filename = String.Format("HK MA Trend Option Buy Mode 3, ExtMd {0}",
                                                      backtestStrategy.ModeOfTick.ToString)
                         Case Else
                             Throw New NotImplementedException
