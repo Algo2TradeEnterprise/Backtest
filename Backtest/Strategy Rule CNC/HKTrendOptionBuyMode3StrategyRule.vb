@@ -24,7 +24,7 @@ Public Class HKTrendOptionBuyMode3StrategyRule
     Private _atrPayload As Dictionary(Of Date, Decimal) = Nothing
 
     Private _currentDayCandle As Payload = Nothing
-    Private _currentDayPivotTrend As Color = Color.White
+    Private _currentDayHKTrend As Color = Color.White
     Private _currentDayATR As Decimal = Decimal.MinValue
 
     Private _dependentInstruments As Dictionary(Of String, Dictionary(Of Date, Payload)) = Nothing
@@ -50,7 +50,7 @@ Public Class HKTrendOptionBuyMode3StrategyRule
         CalculateHKTrend(_eodPayload, _hkTrendPayload)
 
         _currentDayCandle = _eodPayload.LastOrDefault.Value
-        _currentDayPivotTrend = _hkTrendPayload.LastOrDefault.Value
+        _currentDayHKTrend = _hkTrendPayload.LastOrDefault.Value
         _currentDayATR = _atrPayload.LastOrDefault.Value
 
         _eodPayload.Remove(_currentDayCandle.PayloadDate)
@@ -221,7 +221,7 @@ Public Class HKTrendOptionBuyMode3StrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         If currentTickTime >= _TradeStartTime AndAlso Not _eodPayload.ContainsKey(_TradingDate) Then
             _eodPayload.Add(_currentDayCandle.PayloadDate, _currentDayCandle)
-            _hkTrendPayload.Add(_currentDayCandle.PayloadDate, _currentDayPivotTrend)
+            _hkTrendPayload.Add(_currentDayCandle.PayloadDate, _currentDayHKTrend)
             _atrPayload.Add(_currentDayCandle.PayloadDate, _currentDayATR)
         End If
         Dim currentMinute As Date = _ParentStrategy.GetCurrentXMinuteCandleTime(currentTickTime)
@@ -320,7 +320,7 @@ Public Class HKTrendOptionBuyMode3StrategyRule
     Public Overrides Async Function IsTriggerReceivedForExitOrderAsync(ByVal currentTickTime As Date, ByVal availableTrades As List(Of Trade)) As Task
         If currentTickTime >= _TradeStartTime AndAlso Not _eodPayload.ContainsKey(_TradingDate) Then
             _eodPayload.Add(_currentDayCandle.PayloadDate, _currentDayCandle)
-            _hkTrendPayload.Add(_currentDayCandle.PayloadDate, _currentDayPivotTrend)
+            _hkTrendPayload.Add(_currentDayCandle.PayloadDate, _currentDayHKTrend)
             _atrPayload.Add(_currentDayCandle.PayloadDate, _currentDayATR)
         End If
 

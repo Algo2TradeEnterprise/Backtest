@@ -344,6 +344,12 @@ Public Class frmMain
                                 {
                                  .NumberOfActiveStock = 5
                                 }
+                            Case 3
+                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Central Pivot Trend High ATR High Volume Stocks.csv")
+                                .RuleEntityData = New CentralPivotTrendOptionBuyMode3StrategyRule.StrategyRuleEntities With
+                                {
+                                 .NumberOfActiveStock = 5
+                                }
                             Case Else
                                 Throw New NotImplementedException
                         End Select
@@ -382,6 +388,10 @@ Public Class frmMain
                         Case 2
                             Dim ruleData As HKMATrendOptionBuyMode3StrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
                             filename = String.Format("HK MA Trend Option Buy Mode 3, ExtMd {0}",
+                                                     backtestStrategy.ModeOfTick.ToString)
+                        Case 3
+                            Dim ruleData As CentralPivotTrendOptionBuyMode3StrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                            filename = String.Format("Central Pivot Trend Option Buy Mode 3, ExtMd {0}",
                                                      backtestStrategy.ModeOfTick.ToString)
                         Case Else
                             Throw New NotImplementedException

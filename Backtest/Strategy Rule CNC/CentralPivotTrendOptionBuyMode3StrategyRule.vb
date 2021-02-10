@@ -3,7 +3,7 @@ Imports System.Threading
 Imports Utilities.Numbers
 Imports Backtest.StrategyHelper
 
-Public Class HKMATrendOptionBuyMode3StrategyRule
+Public Class CentralPivotTrendOptionBuyMode3StrategyRule
     Inherits StrategyRule
 
 #Region "Entity"
@@ -20,11 +20,12 @@ Public Class HKMATrendOptionBuyMode3StrategyRule
 #End Region
 
     Private _eodPayload As Dictionary(Of Date, Payload) = Nothing
-    Private _hkMATrendPayload As Dictionary(Of Date, Color) = Nothing
+    Private _pivotPointsPayload As Dictionary(Of Date, PivotPoints) = Nothing
+    Private _pivotPointsTrendPayload As Dictionary(Of Date, Color) = Nothing
     Private _atrPayload As Dictionary(Of Date, Decimal) = Nothing
 
     Private _currentDayCandle As Payload = Nothing
-    Private _currentDayHKMATrend As Color = Color.White
+    Private _currentDayPivotPointTrend As Color = Color.White
     Private _currentDayATR As Decimal = Decimal.MinValue
 
     Private _dependentInstruments As Dictionary(Of String, Dictionary(Of Date, Payload)) = Nothing
@@ -47,14 +48,14 @@ Public Class HKMATrendOptionBuyMode3StrategyRule
 
         _eodPayload = _ParentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.EOD_POSITIONAL, _TradingSymbol, _TradingDate.AddDays(-300), _TradingDate)
         Indicator.ATR.CalculateATR(14, _eodPayload, _atrPayload)
-        CalculateHKMATrend(_eodPayload, _hkMATrendPayload)
+        CalculatePivotPointsTrend(_eodPayload, _pivotPointsTrendPayload)
 
         _currentDayCandle = _eodPayload.LastOrDefault.Value
-        _currentDayHKMATrend = _hkMATrendPayload.LastOrDefault.Value
+        _currentDayPivotPointTrend = _pivotPointsTrendPayload.LastOrDefault.Value
         _currentDayATR = _atrPayload.LastOrDefault.Value
 
         _eodPayload.Remove(_currentDayCandle.PayloadDate)
-        _hkMATrendPayload.Remove(_currentDayCandle.PayloadDate)
+        _pivotPointsTrendPayload.Remove(_currentDayCandle.PayloadDate)
         _atrPayload.Remove(_currentDayCandle.PayloadDate)
 
         Dim allRunningTrades As List(Of Trade) = _ParentStrategy.GetSpecificTrades(_TradingSymbol, _TradingDate, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
@@ -80,9 +81,9 @@ Public Class HKMATrendOptionBuyMode3StrategyRule
     Private Function IsEntrySignalReceived(ByVal currentTickTime As Date) As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)
         Dim ret As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection) = Nothing
         If Not _ParentStrategy.IsTradeActive(GetCurrentTick(_TradingSymbol, currentTickTime), Trade.TypeOfTrade.CNC) Then
-            If _hkMATrendPayload IsNot Nothing AndAlso _hkMATrendPayload.Count > 0 Then
-                Dim trend As Color = _hkMATrendPayload.LastOrDefault.Value
-                Dim previousTrend As Color = _hkMATrendPayload(_eodPayload.LastOrDefault.Value.PreviousCandlePayload.PayloadDate)
+            If _pivotPointsTrendPayload IsNot Nothing AndAlso _pivotPointsTrendPayload.Count > 0 Then
+                Dim trend As Color = _pivotPointsTrendPayload.LastOrDefault.Value
+                Dim previousTrend As Color = _pivotPointsTrendPayload(_eodPayload.LastOrDefault.Value.PreviousCandlePayload.PayloadDate)
                 Dim lastTrade As Trade = _ParentStrategy.GetLastEntryTradeOfTheStock(_TradingSymbol, _TradingDate, Trade.TypeOfTrade.CNC)
                 If trend = Color.Green Then
                     If previousTrend = Color.Red AndAlso _eodPayload.LastOrDefault.Key.Date = _TradingDate.Date Then
@@ -143,7 +144,7 @@ Public Class HKMATrendOptionBuyMode3StrategyRule
                                                                  End Function)
             If runningPayload.Value.PreviousCandlePayload IsNot Nothing AndAlso
                 runningPayload.Value.PreviousCandlePayload.PayloadDate < _TradingDate Then
-                Dim trend As Color = _hkMATrendPayload(runningPayload.Value.PreviousCandlePayload.PayloadDate)
+                Dim trend As Color = _pivotPointsTrendPayload(runningPayload.Value.PreviousCandlePayload.PayloadDate)
                 If trend <> currentTrend Then
                     ret = runningPayload.Key
                     Exit For
@@ -166,7 +167,7 @@ Public Class HKMATrendOptionBuyMode3StrategyRule
                     ret = GetLossMakeupTradePL(currentTrade, currentTickTime) > Math.Abs(currentTrade.PreviousLoss)
                 End If
             ElseIf typeOfExit = ExitType.Reverse Then
-                Dim trend As Color = _hkMATrendPayload.LastOrDefault.Value
+                Dim trend As Color = _pivotPointsTrendPayload.LastOrDefault.Value
                 If trend = Color.Red AndAlso optionType = "CE" Then
                     ret = True
                 ElseIf trend = Color.Green AndAlso optionType = "PE" Then
@@ -221,7 +222,7 @@ Public Class HKMATrendOptionBuyMode3StrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         If currentTickTime >= _TradeStartTime AndAlso Not _eodPayload.ContainsKey(_TradingDate) Then
             _eodPayload.Add(_currentDayCandle.PayloadDate, _currentDayCandle)
-            _hkMATrendPayload.Add(_currentDayCandle.PayloadDate, _currentDayHKMATrend)
+            _pivotPointsTrendPayload.Add(_currentDayCandle.PayloadDate, _currentDayPivotPointTrend)
             _atrPayload.Add(_currentDayCandle.PayloadDate, _currentDayATR)
         End If
         Dim currentMinute As Date = _ParentStrategy.GetCurrentXMinuteCandleTime(currentTickTime)
@@ -320,7 +321,7 @@ Public Class HKMATrendOptionBuyMode3StrategyRule
     Public Overrides Async Function IsTriggerReceivedForExitOrderAsync(ByVal currentTickTime As Date, ByVal availableTrades As List(Of Trade)) As Task
         If currentTickTime >= _TradeStartTime AndAlso Not _eodPayload.ContainsKey(_TradingDate) Then
             _eodPayload.Add(_currentDayCandle.PayloadDate, _currentDayCandle)
-            _hkMATrendPayload.Add(_currentDayCandle.PayloadDate, _currentDayHKMATrend)
+            _pivotPointsTrendPayload.Add(_currentDayCandle.PayloadDate, _currentDayPivotPointTrend)
             _atrPayload.Add(_currentDayCandle.PayloadDate, _currentDayATR)
         End If
 
@@ -449,7 +450,14 @@ Public Class HKMATrendOptionBuyMode3StrategyRule
             End If
         End If
 
-        ret = EnterBuyTrade(signalCandle, spotTick, spotATR, currentTickTime, childTag, parentTag, tradeNumber, entryType, direction, lossToRecover)
+        If entryType = Trade.TypeOfEntry.Fresh Then
+            If _pivotPointsPayload(signalCandle.PayloadDate).Pivot > _pivotPointsPayload(signalCandle.PreviousCandlePayload.PayloadDate).Resistance1 OrElse
+                _pivotPointsPayload(signalCandle.PayloadDate).Pivot < _pivotPointsPayload(signalCandle.PreviousCandlePayload.PayloadDate).Support1 Then
+                ret = EnterBuyTrade(signalCandle, spotTick, spotATR, currentTickTime, childTag, parentTag, tradeNumber, entryType, direction, lossToRecover)
+            End If
+        Else
+            ret = EnterBuyTrade(signalCandle, spotTick, spotATR, currentTickTime, childTag, parentTag, tradeNumber, entryType, direction, lossToRecover)
+        End If
 
         Return ret
     End Function
@@ -699,22 +707,32 @@ Public Class HKMATrendOptionBuyMode3StrategyRule
     End Function
 #End Region
 
-#Region "HK Trend Calculation"
-    Private Sub CalculateHKMATrend(ByVal inputPayload As Dictionary(Of Date, Payload), ByRef outputPayload As Dictionary(Of Date, Color))
+#Region "Pivot Points Trend Calculation"
+    Private Sub CalculatePivotPointsTrend(ByVal inputPayload As Dictionary(Of Date, Payload), ByRef outputPayload As Dictionary(Of Date, Color))
         If inputPayload IsNot Nothing AndAlso inputPayload.Count > 0 Then
-            Dim hkPayload As Dictionary(Of Date, Payload) = Nothing
-            Indicator.HeikenAshi.ConvertToHeikenAshi(inputPayload, hkPayload)
-            Dim smaPayload As Dictionary(Of Date, Decimal) = Nothing
-            Indicator.SMA.CalculateSMA(50, Payload.PayloadFields.Close, hkPayload, smaPayload)
+            For Each runningPaylod In inputPayload
+                Dim pivotPointsData As PivotPoints = New PivotPoints
+                Dim curHigh As Decimal = runningPaylod.Value.High
+                Dim curLow As Decimal = runningPaylod.Value.Low
+                Dim curClose As Decimal = runningPaylod.Value.Close
+                pivotPointsData.Pivot = (curHigh + curLow + curClose) / 3
+                pivotPointsData.Support1 = (2 * pivotPointsData.Pivot) - curHigh
+                pivotPointsData.Resistance1 = (2 * pivotPointsData.Pivot) - curLow
+                pivotPointsData.Support2 = pivotPointsData.Pivot - (curHigh - curLow)
+                pivotPointsData.Resistance2 = pivotPointsData.Pivot + (curHigh - curLow)
+                pivotPointsData.Support3 = pivotPointsData.Support2 - (curHigh - curLow)
+                pivotPointsData.Resistance3 = pivotPointsData.Resistance2 + (curHigh - curLow)
+
+                If _pivotPointsPayload Is Nothing Then _pivotPointsPayload = New Dictionary(Of Date, PivotPoints)
+                _pivotPointsPayload.Add(runningPaylod.Key, pivotPointsData)
+            Next
 
             Dim trend As Color = Color.White
-            For Each runningPayload In hkPayload
-                If runningPayload.Value.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
-                    If runningPayload.Value.Close > smaPayload(runningPayload.Key) Then
+            For Each runningPayload In inputPayload
+                If runningPayload.Value.PreviousCandlePayload IsNot Nothing Then
+                    If _pivotPointsPayload(runningPayload.Value.PayloadDate).Pivot > _pivotPointsPayload(runningPayload.Value.PreviousCandlePayload.PayloadDate).Pivot Then
                         trend = Color.Green
-                    End If
-                ElseIf runningPayload.Value.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
-                    If runningPayload.Value.Close < smaPayload(runningPayload.Key) Then
+                    ElseIf _pivotPointsPayload(runningPayload.Value.PayloadDate).Pivot < _pivotPointsPayload(runningPayload.Value.PreviousCandlePayload.PayloadDate).Pivot Then
                         trend = Color.Red
                     End If
                 End If

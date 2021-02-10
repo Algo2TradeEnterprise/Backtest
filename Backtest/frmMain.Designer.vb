@@ -104,7 +104,7 @@ Partial Class frmMain
         '
         Me.cmbRule.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.cmbRule.FormattingEnabled = True
-        Me.cmbRule.Items.AddRange(New Object() {"Pivot Trend Option Buy Mode 3 Strategy", "HK Trend Option Buy Mode 3 Strategy", "HK MA Trend Option Buy Mode 3 Strategy"})
+        Me.cmbRule.Items.AddRange(New Object() {"Pivot Trend Option Buy Mode 3 Strategy", "HK Trend Option Buy Mode 3 Strategy", "HK MA Trend Option Buy Mode 3 Strategy", "Central Pivot Trend Option Buy Mode 3 Strategy"})
         Me.cmbRule.Location = New System.Drawing.Point(123, 30)
         Me.cmbRule.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
         Me.cmbRule.Name = "cmbRule"
