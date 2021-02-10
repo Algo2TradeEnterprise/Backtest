@@ -16,7 +16,7 @@
             Get
                 If Me.AllTrades IsNot Nothing AndAlso Me.AllTrades.Count > 0 Then
                     Return Me.AllTrades.Min(Function(x)
-                                                If x.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel Then
+                                                If x.TradeCurrentStatus <> Trade.TradeStatus.Cancel Then
                                                     Return x.EntryTime.Date
                                                 Else
                                                     Return Date.MaxValue
@@ -32,7 +32,7 @@
             Get
                 If Me.AllTrades IsNot Nothing AndAlso Me.AllTrades.Count > 0 Then
                     Return Me.AllTrades.Max(Function(x)
-                                                If x.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel Then
+                                                If x.TradeCurrentStatus <> Trade.TradeStatus.Cancel Then
                                                     If x.ExitTime = Date.MinValue Then
                                                         Return Now.Date
                                                     Else
@@ -58,7 +58,7 @@
             Get
                 If Me.AllTrades IsNot Nothing AndAlso Me.AllTrades.Count > 0 Then
                     Return Me.AllTrades.FindAll(Function(x)
-                                                    Return x.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel
+                                                    Return x.TradeCurrentStatus <> Trade.TradeStatus.Cancel
                                                 End Function).Count
                 Else
                     Return Integer.MinValue
@@ -70,8 +70,7 @@
             Get
                 If Me.AllTrades IsNot Nothing AndAlso Me.AllTrades.Count > 0 Then
                     Return Me.AllTrades.FindAll(Function(x)
-                                                    Return x.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel AndAlso
-                                                    x.ExitRemark IsNot Nothing AndAlso x.ExitRemark.ToUpper.Contains("CONTRACT ROLLOVER")
+                                                    Return x.ExitType = Trade.TypeOfExit.ContractRollover
                                                 End Function).Count
                 Else
                     Return Integer.MinValue
@@ -83,8 +82,7 @@
             Get
                 If Me.AllTrades IsNot Nothing AndAlso Me.AllTrades.Count > 0 Then
                     Return Me.AllTrades.FindAll(Function(x)
-                                                    Return x.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel AndAlso
-                                                    x.ExitRemark IsNot Nothing AndAlso x.ExitRemark.ToUpper.Contains("REVERSE EXIT")
+                                                    Return x.ExitType = Trade.TypeOfExit.Reversal
                                                 End Function).Count
                 Else
                     Return Integer.MinValue
@@ -96,7 +94,7 @@
             Get
                 If Me.AllTrades IsNot Nothing AndAlso Me.AllTrades.Count > 0 Then
                     Return Me.AllTrades.Sum(Function(x)
-                                                If x.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel Then
+                                                If x.TradeCurrentStatus <> Trade.TradeStatus.Cancel Then
                                                     Return x.PLAfterBrokerage
                                                 Else
                                                     Return 0
@@ -116,8 +114,8 @@
                                                                       Return x.EntryTime
                                                                   End Function)
                         maxCapitalUsed += runningTrade.CapitalRequiredWithMargin
-                        If runningTrade.TradeCurrentStatus <> Trade.TradeExecutionStatus.Inprogress Then
-                            If Not runningTrade.ExitRemark.ToUpper.Contains("TARGET") Then
+                        If runningTrade.TradeCurrentStatus <> Trade.TradeStatus.Inprogress Then
+                            If runningTrade.ExitType <> Trade.TypeOfExit.Target Then
                                 maxCapitalUsed -= runningTrade.CapitalRequiredWithMargin + runningTrade.PLAfterBrokerage
                             End If
                         End If
@@ -139,7 +137,7 @@
             End Get
         End Property
 
-        Public ReadOnly Property AnnuanlReturnOfInvestment As Decimal
+        Public ReadOnly Property AnnualReturnOfInvestment As Decimal
             Get
                 Return Me.AbsoluteReturnOfInvestment / 365
             End Get

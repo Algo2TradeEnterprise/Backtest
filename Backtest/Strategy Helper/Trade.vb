@@ -13,44 +13,28 @@ Namespace StrategyHelper
             Options
             None
         End Enum
-        Public Enum TradeExecutionDirection
+        Public Enum TradeDirection
             Buy = 1
             Sell
             None
         End Enum
-        Public Enum TradeExecutionStatus
+        Public Enum TradeStatus
             Open = 1
             Inprogress
-            Close
+            Complete
             Cancel
             None
         End Enum
-        Public Enum TradeEntryCondition
-            Original = 1
-            Reversal
-            Onward
-            None
-        End Enum
-        Public Enum TradeExitCondition
+        Public Enum TypeOfExit
             Target = 1
-            StopLoss
-            EndOfDay
-            Cancelled
-            ForceExit
+            Stoploss
+            Reversal
+            ContractRollover
             None
-        End Enum
-        Public Enum TypeOfTrade
-            MIS = 1
-            CNC
-            None
-        End Enum
-        Enum TypeOfOrder
-            Market
-            SL
         End Enum
         Enum TypeOfEntry
             Fresh = 1
-            LossMakeup
+            Reversal
             None
         End Enum
 #End Region
@@ -58,105 +42,69 @@ Namespace StrategyHelper
 #Region "Constructor"
         Public Sub New(ByVal originatingStrategy As Strategy,
                        ByVal tradingSymbol As String,
+                       ByVal spotTradingSymbol As String,
                        ByVal stockType As TypeOfStock,
-                       ByVal orderType As TypeOfOrder,
                        ByVal tradingDate As Date,
-                       ByVal entryDirection As TradeExecutionDirection,
-                       ByVal entryPrice As Decimal,
-                       ByVal entryBuffer As Decimal,
-                       ByVal squareOffType As TypeOfTrade,
-                       ByVal entryCondition As TradeEntryCondition,
-                       ByVal entryRemark As String,
+                       ByVal signalDirection As TradeDirection,
+                       ByVal entryDirection As TradeDirection,
+                       ByVal entryType As TypeOfEntry,
                        ByVal quantity As Integer,
                        ByVal lotSize As Integer,
-                       ByVal potentialTarget As Decimal,
-                       ByVal targetRemark As String,
-                       ByVal potentialStopLoss As Decimal,
-                       ByVal stoplossBuffer As Decimal,
-                       ByVal slRemark As String,
-                       ByVal signalCandle As Payload)
-            Me._OriginatingStrategy = originatingStrategy
-            Me._TradingSymbol = tradingSymbol
-            Me._StockType = stockType
-            Me._OrderType = orderType
-            Me._EntryTime = tradingDate
-            Me._TradingDate = tradingDate.Date
-            Me._EntryDirection = entryDirection
-            Me._EntryPrice = Math.Round(entryPrice, 4)
-            Me._EntryBuffer = entryBuffer
-            Me._SquareOffType = squareOffType
-            Me._EntryCondition = entryCondition
-            Me._EntryRemark = entryRemark
-            Me._Quantity = quantity
-            Me._LotSize = lotSize
-            Me._PotentialTarget = Math.Round(potentialTarget, 4)
-            Me._TargetRemark = targetRemark
-            Me._PotentialStopLoss = Math.Round(potentialStopLoss, 4)
-            Me._StoplossBuffer = stoplossBuffer
-            Me._SLRemark = slRemark
-            Me._StoplossSetTime = Me._EntryTime
-            Me._SignalCandle = signalCandle
-            Me._TradeUpdateTimeStamp = Me._EntryTime
-            Me._TradeCurrentStatus = TradeExecutionStatus.None
-            Me._ExitTime = Date.MinValue
-            Me._ExitPrice = Decimal.MinValue
-            Me._ExitCondition = TradeExitCondition.None
-            Me._ExitRemark = Nothing
+                       ByVal signalCandle As Payload,
+                       ByVal childReference As String,
+                       ByVal parentReference As String,
+                       ByVal iterationNumber As Integer,
+                       ByVal spotPrice As Decimal,
+                       ByVal spotATR As Decimal,
+                       ByVal previousLoss As Decimal,
+                       ByVal potentialTarget As Decimal)
+            _TradingSymbol = tradingSymbol
+            _SpotTradingSymbol = spotTradingSymbol
+            _StockType = stockType
+            _TradingDate = tradingDate
+            _SignalDirection = signalDirection
+            _EntryDirection = entryDirection
+            _EntryType = entryType
+            _Quantity = quantity
+            _LotSize = lotSize
+            _SignalCandle = signalCandle
+            _ChildReference = childReference
+            _ParentReference = parentReference
+            _IterationNumber = iterationNumber
+            _SpotPrice = spotPrice
+            _SpotATR = spotATR
+            _PreviousLoss = previousLoss
+            _PotentialTarget = potentialTarget
         End Sub
 #End Region
 
 #Region "Variables"
         <NonSerialized>
         Private _OriginatingStrategy As Strategy
+
         Public ReadOnly Property TradingSymbol As String
-        Public ReadOnly Property CoreTradingSymbol As String
-            Get
-                If TradingSymbol.Contains("FUT") Then
-                    Return TradingSymbol.Remove(TradingSymbol.Count - 8)
-                Else
-                    Return TradingSymbol
-                End If
-            End Get
-        End Property
+        Public ReadOnly Property SpotTradingSymbol As String
         Public ReadOnly Property StockType As TypeOfStock
-        Public ReadOnly Property OrderType As TypeOfOrder
-        Public ReadOnly Property EntryTime As DateTime
-        Public ReadOnly Property TradingDate As Date '''''
-        Public ReadOnly Property EntryDirection As TradeExecutionDirection
-        Public ReadOnly Property FirstEntryDirection As TradeExecutionDirection
+        Public ReadOnly Property TradingDate As Date
+        Public ReadOnly Property SignalDirection As TradeDirection
+        Public ReadOnly Property EntryDirection As TradeDirection
+        Public ReadOnly Property EntryType As TypeOfEntry
+        Public ReadOnly Property EntryTime As Date
         Public ReadOnly Property EntryPrice As Decimal
-        Public ReadOnly Property EntryBuffer As Decimal
-        Public ReadOnly Property SquareOffType As TypeOfTrade
-        Public ReadOnly Property EntryCondition As TradeEntryCondition
-        Public ReadOnly Property EntryRemark As String
         Public ReadOnly Property Quantity As Integer
         Public ReadOnly Property LotSize As Integer
-        Public ReadOnly Property PotentialTarget As Decimal
-        Public ReadOnly Property TargetRemark As String
-        Public ReadOnly Property PotentialStopLoss As Decimal
-        Public ReadOnly Property StoplossBuffer As Decimal
-        Public ReadOnly Property SLRemark As String
-        Public ReadOnly Property StoplossSetTime As Date
-        Public ReadOnly Property SignalCandle As Payload
-        Public ReadOnly Property TradeUpdateTimeStamp As Date
-        Public ReadOnly Property TradeCurrentStatus As TradeExecutionStatus
-        Public ReadOnly Property ExitTime As DateTime
+        Public ReadOnly Property ExitTime As Date
         Public ReadOnly Property ExitPrice As Decimal
-        Public ReadOnly Property ExitCondition As TradeExitCondition
-        Public ReadOnly Property ExitRemark As String
-        Public ReadOnly Property ChildTag As String
-        Public ReadOnly Property ParentTag As String
-        Public ReadOnly Property TradeNumber As Integer
-        Public ReadOnly Property EntryType As TypeOfEntry
+        Public ReadOnly Property ExitType As TypeOfExit
+        Public ReadOnly Property SignalCandle As Payload
+        Public ReadOnly Property TradeCurrentStatus As TradeStatus
+        Public ReadOnly Property ChildReference As String
+        Public ReadOnly Property ParentReference As String
+        Public ReadOnly Property IterationNumber As Integer
         Public ReadOnly Property SpotPrice As Decimal
         Public ReadOnly Property SpotATR As Decimal
         Public ReadOnly Property PreviousLoss As Decimal
-        Public ReadOnly Property Remark1 As String
-        Public ReadOnly Property Remark2 As String
-        'Public ReadOnly Property Supporting7 As String
-        'Public ReadOnly Property Supporting8 As String
-        'Public ReadOnly Property Supporting9 As String
-        Public ReadOnly Property SupportingTradingSymbol As String
+        Public ReadOnly Property PotentialTarget As Decimal
 
         Public ReadOnly Property CapitalRequiredWithMargin As Decimal
             Get
@@ -166,18 +114,18 @@ Namespace StrategyHelper
 
         Public ReadOnly Property PLPoint As Decimal
             Get
-                If Me.TradeCurrentStatus = TradeExecutionStatus.Close Then
-                    If Me.EntryDirection = TradeExecutionDirection.Buy Then
+                If Me.TradeCurrentStatus = TradeStatus.Complete Then
+                    If Me.EntryDirection = TradeDirection.Buy Then
                         Return (Me.ExitPrice - Me.EntryPrice)
-                    ElseIf Me.EntryDirection = TradeExecutionDirection.Sell Then
+                    ElseIf Me.EntryDirection = TradeDirection.Sell Then
                         Return (Me.EntryPrice - Me.ExitPrice)
                     Else
                         Return Decimal.MinValue
                     End If
                 Else
-                    If Me.EntryDirection = TradeExecutionDirection.Buy Then
+                    If Me.EntryDirection = TradeDirection.Buy Then
                         Return 0
-                    ElseIf Me.EntryDirection = TradeExecutionDirection.Sell Then
+                    ElseIf Me.EntryDirection = TradeDirection.Sell Then
                         Return 0
                     Else
                         Return Decimal.MinValue
@@ -188,18 +136,18 @@ Namespace StrategyHelper
 
         Public ReadOnly Property PLBeforeBrokerage As Decimal
             Get
-                If Me.TradeCurrentStatus = TradeExecutionStatus.Close Then
-                    If Me.EntryDirection = TradeExecutionDirection.Buy Then
+                If Me.TradeCurrentStatus = TradeStatus.Complete Then
+                    If Me.EntryDirection = TradeDirection.Buy Then
                         Return ((Me.ExitPrice - Me.EntryPrice) * Me.Quantity)
-                    ElseIf Me.EntryDirection = TradeExecutionDirection.Sell Then
+                    ElseIf Me.EntryDirection = TradeDirection.Sell Then
                         Return ((Me.EntryPrice - Me.ExitPrice) * Me.Quantity)
                     Else
                         Return Decimal.MinValue
                     End If
                 Else
-                    If Me.EntryDirection = TradeExecutionDirection.Buy Then
+                    If Me.EntryDirection = TradeDirection.Buy Then
                         Return 0
-                    ElseIf Me.EntryDirection = TradeExecutionDirection.Sell Then
+                    ElseIf Me.EntryDirection = TradeDirection.Sell Then
                         Return 0
                     Else
                         Return Decimal.MinValue
@@ -210,18 +158,18 @@ Namespace StrategyHelper
 
         Public ReadOnly Property PLAfterBrokerage As Decimal
             Get
-                If Me.TradeCurrentStatus = TradeExecutionStatus.Close Then
-                    If EntryDirection = TradeExecutionDirection.Buy Then
-                        Return _OriginatingStrategy.CalculatePL(CoreTradingSymbol, EntryPrice, ExitPrice, Quantity, LotSize, StockType)
-                    ElseIf EntryDirection = TradeExecutionDirection.Sell Then
-                        Return _OriginatingStrategy.CalculatePL(CoreTradingSymbol, ExitPrice, EntryPrice, Quantity, LotSize, StockType)
+                If Me.TradeCurrentStatus = TradeStatus.Complete Then
+                    If Me.EntryDirection = TradeDirection.Buy Then
+                        Return _OriginatingStrategy.CalculatePLAfterBrokerage(SpotTradingSymbol, EntryPrice, ExitPrice, Quantity, LotSize, StockType)
+                    ElseIf Me.EntryDirection = TradeDirection.Sell Then
+                        Return _OriginatingStrategy.CalculatePLAfterBrokerage(SpotTradingSymbol, ExitPrice, EntryPrice, Quantity, LotSize, StockType)
                     Else
                         Return Decimal.MinValue
                     End If
                 Else
-                    If EntryDirection = TradeExecutionDirection.Buy Then
+                    If Me.EntryDirection = TradeDirection.Buy Then
                         Return 0
-                    ElseIf EntryDirection = TradeExecutionDirection.Sell Then
+                    ElseIf Me.EntryDirection = TradeDirection.Sell Then
                         Return 0
                     Else
                         Return Decimal.MinValue
@@ -230,21 +178,15 @@ Namespace StrategyHelper
             End Get
         End Property
 
-        Public ReadOnly Property DurationOfTrade As TimeSpan
-            Get
-                Return Me.ExitTime - Me.EntryTime
-            End Get
-        End Property
-
-        Public Property MaxDrawUp As Decimal
-        Public Property MaxDrawDown As Decimal
+        Public ReadOnly Property MaxDrawUp As Decimal
+        Public ReadOnly Property MaxDrawDown As Decimal
 
         Public ReadOnly Property MaxDrawUpPL As Decimal
             Get
-                If EntryDirection = TradeExecutionDirection.Buy Then
-                    Return _OriginatingStrategy.CalculatePL(CoreTradingSymbol, EntryPrice, MaxDrawUp, Quantity, LotSize, StockType)
-                ElseIf EntryDirection = TradeExecutionDirection.Sell Then
-                    Return _OriginatingStrategy.CalculatePL(CoreTradingSymbol, MaxDrawUp, EntryPrice, Quantity, LotSize, StockType)
+                If EntryDirection = TradeDirection.Buy Then
+                    Return _OriginatingStrategy.CalculatePLAfterBrokerage(SpotTradingSymbol, EntryPrice, MaxDrawUp, Quantity, LotSize, StockType)
+                ElseIf EntryDirection = TradeDirection.Sell Then
+                    Return _OriginatingStrategy.CalculatePLAfterBrokerage(SpotTradingSymbol, MaxDrawUp, EntryPrice, Quantity, LotSize, StockType)
                 Else
                     Return Decimal.MinValue
                 End If
@@ -253,10 +195,10 @@ Namespace StrategyHelper
 
         Public ReadOnly Property MaxDrawDownPL As Decimal
             Get
-                If EntryDirection = TradeExecutionDirection.Buy Then
-                    Return _OriginatingStrategy.CalculatePL(CoreTradingSymbol, EntryPrice, MaxDrawDown, Quantity, LotSize, StockType)
-                ElseIf EntryDirection = TradeExecutionDirection.Sell Then
-                    Return _OriginatingStrategy.CalculatePL(CoreTradingSymbol, MaxDrawDown, EntryPrice, Quantity, LotSize, StockType)
+                If EntryDirection = TradeDirection.Buy Then
+                    Return _OriginatingStrategy.CalculatePLAfterBrokerage(SpotTradingSymbol, EntryPrice, MaxDrawDown, Quantity, LotSize, StockType)
+                ElseIf EntryDirection = TradeDirection.Sell Then
+                    Return _OriginatingStrategy.CalculatePLAfterBrokerage(SpotTradingSymbol, MaxDrawDown, EntryPrice, Quantity, LotSize, StockType)
                 Else
                     Return Decimal.MinValue
                 End If
@@ -265,131 +207,56 @@ Namespace StrategyHelper
 #End Region
 
 #Region "Public Fuction"
-        Public Sub UpdateTrade(Optional ByVal TradingSymbol As String = Nothing,
-                                Optional ByVal StockType As TypeOfStock = TypeOfStock.None,
-                                Optional ByVal EntryTime As Date = Nothing,
-                                Optional ByVal TradingDate As Date = Nothing,
-                                Optional ByVal EntryDirection As TradeExecutionDirection = TradeExecutionDirection.None,
-                                Optional ByVal EntryPrice As Decimal = Decimal.MinValue,
-                                Optional ByVal EntryBuffer As Decimal = Decimal.MinValue,
-                                Optional ByVal SquareOffType As TypeOfTrade = TypeOfTrade.None,
-                                Optional ByVal EntryCondition As TradeEntryCondition = TradeEntryCondition.None,
-                                Optional ByVal EntryRemark As String = Nothing,
-                                Optional ByVal Quantity As Integer = Integer.MinValue,
-                                Optional ByVal PotentialTarget As Decimal = Decimal.MinValue,
-                                Optional ByVal TargetRemark As String = Nothing,
-                                Optional ByVal PotentialStopLoss As Decimal = Decimal.MinValue,
-                                Optional ByVal StoplossBuffer As Decimal = Decimal.MinValue,
-                                Optional ByVal SLRemark As String = Nothing,
-                                Optional ByVal StoplossSetTime As Date = Nothing,
-                                Optional ByVal SignalCandle As Payload = Nothing,
-                                Optional ByVal TradeCurrentStatus As TradeExecutionStatus = TradeExecutionStatus.None,
-                                Optional ByVal ExitTime As Date = Nothing,
-                                Optional ByVal ExitPrice As Decimal = Decimal.MinValue,
-                                Optional ByVal ExitCondition As TradeExitCondition = TradeExitCondition.None,
-                                Optional ByVal ExitRemark As String = Nothing,
-                                Optional ByVal ChildTag As String = Nothing,
-                                Optional ByVal ParentTag As String = Nothing,
-                                Optional ByVal TradeNumber As Integer = Integer.MinValue,
-                                Optional ByVal EntryType As TypeOfEntry = TypeOfEntry.None,
-                                Optional ByVal SpotPrice As Decimal = Decimal.MinValue,
-                                Optional ByVal SpotATR As Decimal = Decimal.MinValue,
-                                Optional ByVal PreviousLoss As Decimal = Decimal.MinValue,
-                                Optional ByVal Remark1 As String = Nothing,
-                                Optional ByVal Remark2 As String = Nothing,
-                                Optional ByVal SupportingTradingSymbol As String = Nothing)
-
-            If TradingSymbol IsNot Nothing Then _TradingSymbol = TradingSymbol
-            If StockType <> TypeOfStock.None Then _StockType = StockType
-            If EntryTime <> Nothing OrElse EntryTime <> Date.MinValue Then _EntryTime = EntryTime
-            If TradingDate <> Nothing OrElse TradingDate <> Date.MinValue Then _TradingDate = TradingDate
-            If EntryDirection <> TradeExecutionDirection.None Then _EntryDirection = EntryDirection
-            If EntryPrice <> Decimal.MinValue Then _EntryPrice = Math.Round(EntryPrice, 4)
-            If EntryBuffer <> Decimal.MinValue Then _EntryBuffer = EntryBuffer
-            If SquareOffType <> TypeOfTrade.None Then _SquareOffType = SquareOffType
-            If EntryCondition <> TradeEntryCondition.None Then _EntryCondition = EntryCondition
-            If EntryRemark IsNot Nothing Then _EntryRemark = EntryRemark
-            If Quantity <> Integer.MinValue Then _Quantity = Quantity
-            If PotentialTarget <> Decimal.MinValue Then _PotentialTarget = Math.Round(PotentialTarget, 4)
-            If TargetRemark IsNot Nothing Then _TargetRemark = TargetRemark
-            If PotentialStopLoss <> Decimal.MinValue Then _PotentialStopLoss = Math.Round(PotentialStopLoss, 4)
-            If StoplossBuffer <> Decimal.MinValue Then _StoplossBuffer = StoplossBuffer
-            If SLRemark IsNot Nothing Then _SLRemark = SLRemark
-            If StoplossSetTime <> Nothing OrElse StoplossSetTime <> Date.MinValue Then _StoplossSetTime = StoplossSetTime
-            If SignalCandle IsNot Nothing Then _SignalCandle = SignalCandle
-            If TradeCurrentStatus <> TradeExecutionStatus.None Then _TradeCurrentStatus = TradeCurrentStatus
-            If ExitTime <> Nothing OrElse ExitTime <> Date.MinValue Then _ExitTime = ExitTime
-            If ExitPrice <> Decimal.MinValue Then _ExitPrice = ExitPrice
-            If ExitCondition <> TradeExitCondition.None Then _ExitCondition = ExitCondition
-            If ExitRemark IsNot Nothing Then _ExitRemark = ExitRemark
-            If ChildTag IsNot Nothing Then _ChildTag = ChildTag
-            If ParentTag IsNot Nothing Then _ParentTag = ParentTag
-            If TradeNumber <> Integer.MinValue Then _TradeNumber = TradeNumber
-            If EntryType <> TypeOfEntry.None Then _EntryType = EntryType
-            If SpotPrice <> Decimal.MinValue Then _SpotPrice = SpotPrice
-            If SpotATR <> Decimal.MinValue Then _SpotATR = SpotATR
-            If PreviousLoss <> Decimal.MinValue Then _PreviousLoss = PreviousLoss
-            If Remark1 IsNot Nothing Then _Remark1 = Remark1
-            If Remark2 IsNot Nothing Then _Remark2 = Remark2
-            If SupportingTradingSymbol IsNot Nothing Then _SupportingTradingSymbol = SupportingTradingSymbol
-
-            If Me._ExitTime <> Nothing OrElse Me._ExitTime <> Date.MinValue Then
-                Me._TradeUpdateTimeStamp = Me._ExitTime
-            ElseIf Me._StoplossSetTime <> Nothing OrElse Me._StoplossSetTime <> Date.MinValue Then
-                Me._TradeUpdateTimeStamp = Me._StoplossSetTime
-            ElseIf Me._EntryTime <> Nothing OrElse Me._EntryTime <> Date.MinValue Then
-                Me._TradeUpdateTimeStamp = Me._EntryTime
-            End If
-        End Sub
-
-        Public Sub UpdateTrade(ByVal tradeToBeUsed As Trade)
-            If tradeToBeUsed Is Nothing Then Exit Sub
-            With tradeToBeUsed
-                If .TradingSymbol IsNot Nothing Then _TradingSymbol = .TradingSymbol
-                If .StockType <> TypeOfStock.None Then _StockType = .StockType
-                If .EntryTime <> Nothing OrElse .EntryTime <> Date.MinValue Then _EntryTime = .EntryTime
-                If .TradingDate <> Nothing OrElse .TradingDate <> Date.MinValue Then _TradingDate = .TradingDate
-                If .EntryDirection <> TradeExecutionDirection.None Then _EntryDirection = .EntryDirection
-                If .EntryPrice <> Decimal.MinValue Then _EntryPrice = .EntryPrice
-                If .EntryBuffer <> Decimal.MinValue Then _EntryBuffer = .EntryBuffer
-                If .SquareOffType <> TypeOfTrade.None Then _SquareOffType = .SquareOffType
-                If .EntryCondition <> TradeEntryCondition.None Then _EntryCondition = .EntryCondition
-                If .EntryRemark IsNot Nothing Then _EntryRemark = .EntryRemark
-                If .Quantity <> Integer.MinValue Then _Quantity = .Quantity
-                If .PotentialTarget <> Decimal.MinValue Then _PotentialTarget = .PotentialTarget
-                If .TargetRemark IsNot Nothing Then _TargetRemark = .TargetRemark
-                If .PotentialStopLoss <> Decimal.MinValue Then _PotentialStopLoss = .PotentialStopLoss
-                If .StoplossBuffer <> Decimal.MinValue Then _StoplossBuffer = .StoplossBuffer
-                If .SLRemark IsNot Nothing Then _SLRemark = .SLRemark
-                If .StoplossSetTime <> Nothing OrElse .StoplossSetTime <> Date.MinValue Then _StoplossSetTime = .StoplossSetTime
-                If .SignalCandle IsNot Nothing Then _SignalCandle = .SignalCandle
-                If .TradeCurrentStatus <> TradeExecutionStatus.None Then _TradeCurrentStatus = .TradeCurrentStatus
-                If .ExitTime <> Nothing OrElse .ExitTime <> Date.MinValue Then _ExitTime = .ExitTime
-                If .ExitPrice <> Decimal.MinValue Then _ExitPrice = .ExitPrice
-                If .ExitCondition <> TradeExitCondition.None Then _ExitCondition = .ExitCondition
-                If .ExitRemark IsNot Nothing Then _ExitRemark = .ExitRemark
-                If .ChildTag IsNot Nothing Then _ChildTag = .ChildTag
-                If .ParentTag IsNot Nothing Then _ParentTag = .ParentTag
-                If .TradeNumber <> Integer.MinValue Then _TradeNumber = .TradeNumber
-                If .EntryType <> TypeOfEntry.None Then _EntryType = .EntryType
-                If .SpotPrice <> Decimal.MinValue Then _SpotPrice = .SpotPrice
-                If .SpotATR <> Decimal.MinValue Then _SpotATR = .SpotATR
-                If .PreviousLoss <> Decimal.MinValue Then _PreviousLoss = .PreviousLoss
-                If .Remark1 IsNot Nothing Then _Remark1 = .Remark1
-                If .Remark2 IsNot Nothing Then _Remark2 = .Remark2
-                'If .Supporting7 IsNot Nothing Then _Supporting7 = .Supporting7
-                'If .Supporting8 IsNot Nothing Then _Supporting8 = .Supporting8
-                'If .Supporting9 IsNot Nothing Then _Supporting9 = .Supporting9
-                If .SupportingTradingSymbol IsNot Nothing Then _SupportingTradingSymbol = .SupportingTradingSymbol
-            End With
-
-            If Me._ExitTime <> Nothing OrElse Me._ExitTime <> Date.MinValue Then
-                Me._TradeUpdateTimeStamp = Me._ExitTime
-            ElseIf Me._StoplossSetTime <> Nothing OrElse Me._StoplossSetTime <> Date.MinValue Then
-                Me._TradeUpdateTimeStamp = Me._StoplossSetTime
-            ElseIf Me._EntryTime <> Nothing OrElse Me._EntryTime <> Date.MinValue Then
-                Me._TradeUpdateTimeStamp = Me._EntryTime
-            End If
+        Public Sub UpdateTrade(Optional ByVal tradingSymbol As String = Nothing,
+                               Optional ByVal spotTradingSymbol As String = Nothing,
+                               Optional ByVal stockType As TypeOfStock = TypeOfStock.None,
+                               Optional ByVal tradingDate As Date = Nothing,
+                               Optional ByVal signalDirection As TradeDirection = TradeDirection.None,
+                               Optional ByVal entryDirection As TradeDirection = TradeDirection.None,
+                               Optional ByVal entryType As TypeOfEntry = TypeOfEntry.None,
+                               Optional ByVal entryTime As Date = Nothing,
+                               Optional ByVal entryPrice As Decimal = Decimal.MinValue,
+                               Optional ByVal quantity As Integer = Integer.MinValue,
+                               Optional ByVal lotSize As Integer = Integer.MinValue,
+                               Optional ByVal exitTime As Date = Nothing,
+                               Optional ByVal exitPrice As Decimal = Decimal.MinValue,
+                               Optional ByVal exitType As TypeOfExit = TypeOfExit.None,
+                               Optional ByVal signalCandle As Payload = Nothing,
+                               Optional ByVal tradeCurrentStatus As TradeStatus = TradeStatus.None,
+                               Optional ByVal childReference As String = Nothing,
+                               Optional ByVal parentReference As String = Nothing,
+                               Optional ByVal iterationNumber As Integer = Integer.MinValue,
+                               Optional ByVal spotPrice As Decimal = Decimal.MinValue,
+                               Optional ByVal spotATR As Decimal = Decimal.MinValue,
+                               Optional ByVal previousLoss As Decimal = Decimal.MinValue,
+                               Optional ByVal potentialTarget As Decimal = Decimal.MinValue,
+                               Optional ByVal maxDrawUp As Decimal = Decimal.MinValue,
+                               Optional ByVal maxDrawDown As Decimal = Decimal.MinValue)
+            If tradingSymbol IsNot Nothing Then _TradingSymbol = tradingSymbol
+            If spotTradingSymbol IsNot Nothing Then _SpotTradingSymbol = spotTradingSymbol
+            If stockType <> TypeOfStock.None Then _StockType = stockType
+            If tradingDate <> Nothing AndAlso tradingDate <> Date.MinValue Then _TradingDate = tradingDate
+            If signalDirection <> TradeDirection.None Then _SignalDirection = signalDirection
+            If entryDirection <> TradeDirection.None Then _EntryDirection = entryDirection
+            If entryType <> TypeOfEntry.None Then _EntryType = entryType
+            If entryTime <> Nothing AndAlso entryTime <> Date.MinValue Then _EntryTime = entryTime
+            If entryPrice <> Decimal.MinValue Then _EntryPrice = entryPrice
+            If quantity <> Integer.MinValue Then _Quantity = quantity
+            If lotSize <> Integer.MinValue Then _LotSize = lotSize
+            If exitTime <> Nothing AndAlso exitTime <> Date.MinValue Then _ExitTime = exitTime
+            If exitPrice <> Decimal.MinValue Then _ExitPrice = exitPrice
+            If exitType <> TypeOfExit.None Then _ExitType = exitType
+            If signalCandle IsNot Nothing Then _SignalCandle = signalCandle
+            If tradeCurrentStatus <> TradeStatus.None Then _TradeCurrentStatus = tradeCurrentStatus
+            If childReference IsNot Nothing Then _ChildReference = childReference
+            If parentReference IsNot Nothing Then _ParentReference = parentReference
+            If iterationNumber <> Integer.MinValue Then _IterationNumber = iterationNumber
+            If spotPrice <> Decimal.MinValue Then _SpotPrice = spotPrice
+            If spotATR <> Decimal.MinValue Then _SpotATR = spotATR
+            If previousLoss <> Decimal.MinValue Then _PreviousLoss = previousLoss
+            If potentialTarget <> Decimal.MinValue Then _PotentialTarget = potentialTarget
+            If maxDrawUp <> Decimal.MinValue Then _MaxDrawUp = maxDrawUp
+            If maxDrawDown <> Decimal.MinValue Then _MaxDrawDown = maxDrawDown
         End Sub
 
         Public Sub UpdateOriginatingStrategy(ByVal originatingStrategy As Strategy)

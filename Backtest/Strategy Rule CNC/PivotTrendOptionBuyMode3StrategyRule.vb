@@ -57,7 +57,7 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
         _pivotTrendPayload.Remove(_currentDayCandle.PayloadDate)
         _atrPayload.Remove(_currentDayCandle.PayloadDate)
 
-        Dim allRunningTrades As List(Of Trade) = _ParentStrategy.GetSpecificTrades(_TradingSymbol, _TradingDate, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
+        Dim allRunningTrades As List(Of Trade) = _ParentStrategy.GetSpecificTrades(_TradingSymbol, _TradingDate, Trade.TypeOfTrade.CNC, Trade.TradeStatus.Inprogress)
         If allRunningTrades IsNot Nothing AndAlso allRunningTrades.Count > 0 Then
             _dependentInstruments = New Dictionary(Of String, Dictionary(Of Date, Payload))
             For Each runningTrade In allRunningTrades
@@ -77,8 +77,8 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
     End Sub
 
 #Region "Entry Signal Check"
-    Private Function IsEntrySignalReceived(ByVal currentTickTime As Date) As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)
-        Dim ret As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection) = Nothing
+    Private Function IsEntrySignalReceived(ByVal currentTickTime As Date) As Tuple(Of Boolean, Payload, Trade.TradeDirection)
+        Dim ret As Tuple(Of Boolean, Payload, Trade.TradeDirection) = Nothing
         If Not _ParentStrategy.IsTradeActive(GetCurrentTick(_TradingSymbol, currentTickTime), Trade.TypeOfTrade.CNC) Then
             If _pivotTrendPayload IsNot Nothing AndAlso _pivotTrendPayload.Count > 0 Then
                 Dim trend As Color = _pivotTrendPayload.LastOrDefault.Value
@@ -87,7 +87,7 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
                 If trend = Color.Green Then
                     If previousTrend = Color.Red AndAlso _eodPayload.LastOrDefault.Key.Date = _TradingDate.Date Then
                         If currentTickTime >= _TradeStartTime Then
-                            ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload.LastOrDefault.Value, Trade.TradeExecutionDirection.Buy)
+                            ret = New Tuple(Of Boolean, Payload, Trade.TradeDirection)(True, _eodPayload.LastOrDefault.Value, Trade.TradeDirection.Buy)
                         End If
                     Else
                         Dim rolloverDay As Date = GetRolloverDay(trend)
@@ -95,14 +95,14 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
                             If lastTrade Is Nothing OrElse lastTrade.ExitRemark.ToUpper = "TARGET HIT" Then
                                 If currentTickTime >= _TradeStartTime.AddMinutes(1) Then
                                     If lastTrade Is Nothing OrElse lastTrade.SignalCandle.PayloadDate <> rolloverDay Then
-                                        ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Buy)
+                                        ret = New Tuple(Of Boolean, Payload, Trade.TradeDirection)(True, _eodPayload(rolloverDay), Trade.TradeDirection.Buy)
                                     End If
                                 End If
                             Else
-                                If lastTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Cancel Then
-                                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Buy)
+                                If lastTrade.TradeCurrentStatus = Trade.TradeStatus.Cancel Then
+                                    ret = New Tuple(Of Boolean, Payload, Trade.TradeDirection)(True, _eodPayload(rolloverDay), Trade.TradeDirection.Buy)
                                 ElseIf lastTrade.ExitRemark.ToUpper <> "TARGET HIT" Then
-                                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Buy)
+                                    ret = New Tuple(Of Boolean, Payload, Trade.TradeDirection)(True, _eodPayload(rolloverDay), Trade.TradeDirection.Buy)
                                 End If
                             End If
                         End If
@@ -110,7 +110,7 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
                 ElseIf trend = Color.Red Then
                     If previousTrend = Color.Green AndAlso _eodPayload.LastOrDefault.Key.Date = _TradingDate.Date Then
                         If currentTickTime >= _TradeStartTime Then
-                            ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload.LastOrDefault.Value, Trade.TradeExecutionDirection.Sell)
+                            ret = New Tuple(Of Boolean, Payload, Trade.TradeDirection)(True, _eodPayload.LastOrDefault.Value, Trade.TradeDirection.Sell)
                         End If
                     Else
                         Dim rolloverDay As Date = GetRolloverDay(trend)
@@ -118,14 +118,14 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
                             If lastTrade Is Nothing OrElse lastTrade.ExitRemark.ToUpper = "TARGET HIT" Then
                                 If currentTickTime >= _TradeStartTime.AddMinutes(1) Then
                                     If lastTrade Is Nothing OrElse lastTrade.SignalCandle.PayloadDate <> rolloverDay Then
-                                        ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Sell)
+                                        ret = New Tuple(Of Boolean, Payload, Trade.TradeDirection)(True, _eodPayload(rolloverDay), Trade.TradeDirection.Sell)
                                     End If
                                 End If
                             Else
-                                If lastTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Cancel Then
-                                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Sell)
+                                If lastTrade.TradeCurrentStatus = Trade.TradeStatus.Cancel Then
+                                    ret = New Tuple(Of Boolean, Payload, Trade.TradeDirection)(True, _eodPayload(rolloverDay), Trade.TradeDirection.Sell)
                                 ElseIf lastTrade.ExitRemark.ToUpper <> "TARGET HIT" Then
-                                    ret = New Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection)(True, _eodPayload(rolloverDay), Trade.TradeExecutionDirection.Sell)
+                                    ret = New Tuple(Of Boolean, Payload, Trade.TradeDirection)(True, _eodPayload(rolloverDay), Trade.TradeDirection.Sell)
                                 End If
                             End If
                         End If
@@ -157,7 +157,7 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
 #Region "Exit Signal Check"
     Private Function IsExitSignalReceived(ByVal currentTickTime As Date, ByVal typeOfExit As ExitType, ByVal currentTrade As Trade) As Boolean
         Dim ret As Boolean = False
-        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeStatus.Inprogress Then
             Dim optionType As String = currentTrade.SupportingTradingSymbol.Substring(currentTrade.SupportingTradingSymbol.Count - 2)
             If typeOfExit = ExitType.Target Then
                 If currentTrade.EntryType = Trade.TypeOfEntry.Fresh Then      'Fresh Trade
@@ -181,11 +181,11 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
 #Region "PL Calculations"
     Private Function GetLossMakeupTradePL(ByVal currentTrade As Trade, ByVal currentTickTime As Date) As Decimal
         Dim ret As Decimal = 0
-        Dim allTrades As List(Of Trade) = _ParentStrategy.GetAllTradesByChildTag(currentTrade.ChildTag, _TradingSymbol)
+        Dim allTrades As List(Of Trade) = _ParentStrategy.GetAllTradesByChildTag(currentTrade.ChildReference, _TradingSymbol)
         If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
             For Each runningTrade In allTrades
                 If runningTrade.EntryType = Trade.TypeOfEntry.LossMakeup Then
-                    If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                    If runningTrade.TradeCurrentStatus = Trade.TradeStatus.Inprogress Then
                         Dim currentOptTick As Payload = GetCurrentTick(currentTrade.SupportingTradingSymbol, currentTickTime)
                         ret += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.EntryPrice, currentOptTick.Open, runningTrade.Quantity - runningTrade.LotSize, runningTrade.LotSize, runningTrade.StockType)
                     Else
@@ -199,11 +199,11 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
 
     Private Function GetFreshTradePL(ByVal currentTrade As Trade, ByVal currentTickTime As Date) As Decimal
         Dim ret As Decimal = 0
-        Dim allTrades As List(Of Trade) = _ParentStrategy.GetAllTradesByChildTag(currentTrade.ChildTag, _TradingSymbol)
+        Dim allTrades As List(Of Trade) = _ParentStrategy.GetAllTradesByChildTag(currentTrade.ChildReference, _TradingSymbol)
         If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
             For Each runningTrade In allTrades
                 If runningTrade.EntryType = Trade.TypeOfEntry.Fresh Then
-                    If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                    If runningTrade.TradeCurrentStatus = Trade.TradeStatus.Inprogress Then
                         Dim currentOptTick As Payload = GetCurrentTick(currentTrade.SupportingTradingSymbol, currentTickTime)
                         ret += _ParentStrategy.CalculatePL(_TradingSymbol, runningTrade.EntryPrice, currentOptTick.Open, runningTrade.Quantity, runningTrade.LotSize, runningTrade.StockType)
                     Else
@@ -240,7 +240,7 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
                     End If
                 End If
             Else
-                Dim signal As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection) = IsEntrySignalReceived(currentTickTime)
+                Dim signal As Tuple(Of Boolean, Payload, Trade.TradeDirection) = IsEntrySignalReceived(currentTickTime)
                 If signal IsNot Nothing AndAlso signal.Item1 Then
                     If lastCompleteTrade IsNot Nothing AndAlso Not lastCompleteTrade.ExitRemark.ToUpper.Contains("TARGET") Then
                         EnterTrade(signal.Item2, currentTickTime, signal.Item3)
@@ -248,7 +248,7 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
                         If _ParentStrategy.NumberOfActiveTrade < _userInputs.NumberOfActiveStock Then
                             Dim targetReached As Boolean = True
                             Dim targetLeftPercentage As Decimal = 0
-                            If signal.Item3 = Trade.TradeExecutionDirection.Buy Then
+                            If signal.Item3 = Trade.TradeDirection.Buy Then
                                 Dim highestHigh As Decimal = _eodPayload.Max(Function(x)
                                                                                  If x.Key > signal.Item2.PayloadDate AndAlso x.Key < _TradingDate Then
                                                                                      Return x.Value.High
@@ -276,7 +276,7 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
                                         targetLeftPercentage = 100
                                     End If
                                 End If
-                            ElseIf signal.Item3 = Trade.TradeExecutionDirection.Sell Then
+                            ElseIf signal.Item3 = Trade.TradeDirection.Sell Then
                                 Dim lowestLow As Decimal = _eodPayload.Min(Function(x)
                                                                                If x.Key > signal.Item2.PayloadDate AndAlso x.Key < _TradingDate Then
                                                                                    Return x.Value.Low
@@ -328,12 +328,12 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
         If availableTrades IsNot Nothing AndAlso availableTrades.Count > 0 Then
             'Set Drawup Drawdown
             For Each runningTrade In availableTrades
-                If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                If runningTrade.TradeCurrentStatus = Trade.TradeStatus.Inprogress Then
                     Dim currentFOTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
-                    If runningTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                    If runningTrade.EntryDirection = Trade.TradeDirection.Buy Then
                         If currentFOTick.Open > runningTrade.MaxDrawUp Then runningTrade.MaxDrawUp = currentFOTick.Open
                         If currentFOTick.Open < runningTrade.MaxDrawDown Then runningTrade.MaxDrawDown = currentFOTick.Open
-                    ElseIf runningTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                    ElseIf runningTrade.EntryDirection = Trade.TradeDirection.Sell Then
                         If currentFOTick.Open < runningTrade.MaxDrawUp Then runningTrade.MaxDrawUp = currentFOTick.Open
                         If currentFOTick.Open > runningTrade.MaxDrawDown Then runningTrade.MaxDrawDown = currentFOTick.Open
                     End If
@@ -342,7 +342,7 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
 
             'Target Exit
             For Each runningTrade In availableTrades
-                If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                If runningTrade.TradeCurrentStatus = Trade.TradeStatus.Inprogress Then
                     If IsExitSignalReceived(currentTickTime, ExitType.Target, runningTrade) Then
                         Dim currentFOTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
                         _ParentStrategy.ExitTradeByForce(runningTrade, currentFOTick, "Target Hit")
@@ -354,7 +354,7 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
             'Reverse Exit
             If currentTickTime >= _TradeStartTime Then
                 For Each runningTrade In availableTrades
-                    If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                    If runningTrade.TradeCurrentStatus = Trade.TradeStatus.Inprogress Then
                         If IsExitSignalReceived(currentTickTime, ExitType.Reverse, runningTrade) Then
                             Dim currentFOTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
                             _ParentStrategy.ExitTradeByForce(runningTrade, currentFOTick, "Reverse Exit")
@@ -367,7 +367,7 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
             If currentTickTime.Hour >= 15 AndAlso currentTickTime.Minute >= 29 OrElse
                 _TradingDate.Date > GetLastThusrdayOfMonth(_TradingDate).Date.AddDays(-2) Then
                 For Each runningTrade In availableTrades
-                    If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                    If runningTrade.TradeCurrentStatus = Trade.TradeStatus.Inprogress Then
                         Dim currentOptionExpiryString As String = GetOptionInstrumentExpiryString(_TradingSymbol, _NextTradingDay)
                         If Not runningTrade.SupportingTradingSymbol.Contains(currentOptionExpiryString) Then
                             Dim currentOptTick As Payload = GetCurrentTick(runningTrade.SupportingTradingSymbol, currentTickTime)
@@ -415,7 +415,7 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
 #End Region
 
 #Region "Place Trade"
-    Private Function EnterTrade(ByVal signalCandle As Payload, ByVal currentTickTime As Date, ByVal direction As Trade.TradeExecutionDirection) As Boolean
+    Private Function EnterTrade(ByVal signalCandle As Payload, ByVal currentTickTime As Date, ByVal direction As Trade.TradeDirection) As Boolean
         Dim ret As Boolean = False
         Dim childTag As String = System.Guid.NewGuid.ToString()
         Dim parentTag As String = childTag
@@ -427,21 +427,21 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
         Dim spotATR As Decimal = _atrPayload(signalCandle.PayloadDate)
         Dim lastTrade As Trade = _ParentStrategy.GetLastEntryTradeOfTheStock(_TradingSymbol, _TradingDate, Trade.TypeOfTrade.CNC)
         If lastTrade IsNot Nothing Then
-            Dim allTrades As List(Of Trade) = _ParentStrategy.GetAllTradesByParentTag(lastTrade.ParentTag, _TradingSymbol)
+            Dim allTrades As List(Of Trade) = _ParentStrategy.GetAllTradesByParentTag(lastTrade.ParentReference, _TradingSymbol)
             If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
                 Dim pl As Decimal = allTrades.Sum(Function(x)
                                                       Return x.PLAfterBrokerage
                                                   End Function)
                 If pl < 0 Then
-                    parentTag = lastTrade.ParentTag
-                    tradeNumber = lastTrade.TradeNumber + 1
+                    parentTag = lastTrade.ParentReference
+                    tradeNumber = lastTrade.IterationNumber + 1
                     entryType = Trade.TypeOfEntry.LossMakeup
                     lossToRecover = pl
                 Else
                     Dim lastCompleteTrade As Trade = _ParentStrategy.GetLastCompleteTradeOfTheStock(_TradingSymbol, _TradingDate, Trade.TypeOfTrade.CNC)
                     If lastCompleteTrade IsNot Nothing AndAlso Not lastCompleteTrade.ExitRemark.ToUpper.Contains("TARGET") Then
-                        parentTag = lastTrade.ParentTag
-                        tradeNumber = lastTrade.TradeNumber + 1
+                        parentTag = lastTrade.ParentReference
+                        tradeNumber = lastTrade.IterationNumber + 1
                         entryType = Trade.TypeOfEntry.LossMakeup
                         lossToRecover = 0
                     End If
@@ -457,14 +457,14 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
     Private Function EnterBuyTrade(ByVal signalCandle As Payload, ByVal currentSpotTick As Payload, ByVal currentSpotATR As Decimal,
                                    ByVal currentTickTime As Date, ByVal childTag As String, ByVal parentTag As String,
                                    ByVal tradeNumber As Integer, ByVal entryType As Trade.TypeOfEntry,
-                                   ByVal diretion As Trade.TradeExecutionDirection, ByVal previousLoss As Decimal) As Boolean
+                                   ByVal diretion As Trade.TradeDirection, ByVal previousLoss As Decimal) As Boolean
         Dim ret As Boolean = False
         Dim currentMinute As Date = _ParentStrategy.GetCurrentXMinuteCandleTime(currentTickTime)
         Dim optionExpiryString As String = GetOptionInstrumentExpiryString(_TradingSymbol, _NextTradingDay)
         Dim currentOptionTradingSymbol As String = Nothing
-        If diretion = Trade.TradeExecutionDirection.Buy Then
+        If diretion = Trade.TradeDirection.Buy Then
             currentOptionTradingSymbol = GetCurrentATMOption(currentSpotTick.PayloadDate, optionExpiryString, currentSpotTick.Open, "CE")
-        ElseIf diretion = Trade.TradeExecutionDirection.Sell Then
+        ElseIf diretion = Trade.TradeDirection.Sell Then
             currentOptionTradingSymbol = GetCurrentATMOption(currentSpotTick.PayloadDate, optionExpiryString, currentSpotTick.Open, "PE")
         End If
 
@@ -495,7 +495,7 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
                                                          stockType:=Trade.TypeOfStock.Options,
                                                          orderType:=Trade.TypeOfOrder.Market,
                                                          tradingDate:=currentOptTick.PayloadDate,
-                                                         entryDirection:=Trade.TradeExecutionDirection.Buy,
+                                                         entryDirection:=Trade.TradeDirection.Buy,
                                                          entryPrice:=currentOptTick.Open,
                                                          entryBuffer:=0,
                                                          squareOffType:=Trade.TypeOfTrade.CNC,
@@ -572,9 +572,9 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
                                                     slRemark:=100000,
                                                     signalCandle:=existingTrade.SignalCandle)
 
-            runningTrade.UpdateTrade(ChildTag:=existingTrade.ChildTag,
-                                    ParentTag:=existingTrade.ParentTag,
-                                    TradeNumber:=existingTrade.TradeNumber,
+            runningTrade.UpdateTrade(ChildTag:=existingTrade.ChildReference,
+                                    ParentTag:=existingTrade.ParentReference,
+                                    TradeNumber:=existingTrade.IterationNumber,
                                     EntryType:=existingTrade.EntryType,
                                     SpotPrice:=existingTrade.SpotPrice,
                                     SpotATR:=existingTrade.SpotATR,
