@@ -34,7 +34,7 @@
                     Return Me.AllTrades.Max(Function(x)
                                                 If x.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel Then
                                                     If x.ExitTime = Date.MinValue Then
-                                                        Return Date.MaxValue
+                                                        Return Now.Date
                                                     Else
                                                         Return x.ExitTime.Date
                                                     End If

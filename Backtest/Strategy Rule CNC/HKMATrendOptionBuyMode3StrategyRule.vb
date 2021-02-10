@@ -242,70 +242,73 @@ Public Class HKMATrendOptionBuyMode3StrategyRule
             Else
                 Dim signal As Tuple(Of Boolean, Payload, Trade.TradeExecutionDirection) = IsEntrySignalReceived(currentTickTime)
                 If signal IsNot Nothing AndAlso signal.Item1 Then
-                    If _ParentStrategy.NumberOfActiveTrade < _userInputs.NumberOfActiveStock OrElse
-                        (lastCompleteTrade IsNot Nothing AndAlso Not lastCompleteTrade.ExitRemark.ToUpper.Contains("TARGET")) Then
-                        Dim targetReached As Boolean = True
-                        Dim targetLeftPercentage As Decimal = 0
-                        If signal.Item3 = Trade.TradeExecutionDirection.Buy Then
-                            Dim highestHigh As Decimal = _eodPayload.Max(Function(x)
-                                                                             If x.Key > signal.Item2.PayloadDate AndAlso x.Key < _TradingDate Then
-                                                                                 Return x.Value.High
-                                                                             Else
-                                                                                 Return Decimal.MinValue
-                                                                             End If
-                                                                         End Function)
-                            Dim minHigh As Decimal = _SignalPayload.Max(Function(x)
-                                                                            If x.Key.Date = _TradingDate.Date AndAlso x.Key < currentMinute Then
-                                                                                Return x.Value.High
-                                                                            Else
-                                                                                Return Decimal.MinValue
-                                                                            End If
-                                                                        End Function)
-                            If minHigh <> Decimal.MinValue AndAlso signal.Item2.PayloadDate.Date <> _TradingDate.Date Then
-                                highestHigh = Math.Max(highestHigh, minHigh)
-                            End If
+                    If lastCompleteTrade IsNot Nothing AndAlso Not lastCompleteTrade.ExitRemark.ToUpper.Contains("TARGET") Then
+                        EnterTrade(signal.Item2, currentTickTime, signal.Item3)
+                    Else
+                        If _ParentStrategy.NumberOfActiveTrade < _userInputs.NumberOfActiveStock Then
+                            Dim targetReached As Boolean = True
+                            Dim targetLeftPercentage As Decimal = 0
+                            If signal.Item3 = Trade.TradeExecutionDirection.Buy Then
+                                Dim highestHigh As Decimal = _eodPayload.Max(Function(x)
+                                                                                 If x.Key > signal.Item2.PayloadDate AndAlso x.Key < _TradingDate Then
+                                                                                     Return x.Value.High
+                                                                                 Else
+                                                                                     Return Decimal.MinValue
+                                                                                 End If
+                                                                             End Function)
+                                Dim minHigh As Decimal = _SignalPayload.Max(Function(x)
+                                                                                If x.Key.Date = _TradingDate.Date AndAlso x.Key < currentMinute Then
+                                                                                    Return x.Value.High
+                                                                                Else
+                                                                                    Return Decimal.MinValue
+                                                                                End If
+                                                                            End Function)
+                                If minHigh <> Decimal.MinValue AndAlso signal.Item2.PayloadDate.Date <> _TradingDate.Date Then
+                                    highestHigh = Math.Max(highestHigh, minHigh)
+                                End If
 
-                            Dim atr As Decimal = _atrPayload(signal.Item2.PayloadDate)
-                            If highestHigh < signal.Item2.Close + atr Then
-                                targetReached = False
-                                If highestHigh <> Decimal.MinValue Then
-                                    targetLeftPercentage = ((atr - (highestHigh - signal.Item2.Close)) / atr) * 100
-                                Else
-                                    targetLeftPercentage = 100
+                                Dim atr As Decimal = _atrPayload(signal.Item2.PayloadDate)
+                                If highestHigh < signal.Item2.Close + atr Then
+                                    targetReached = False
+                                    If highestHigh <> Decimal.MinValue Then
+                                        targetLeftPercentage = ((atr - (highestHigh - signal.Item2.Close)) / atr) * 100
+                                    Else
+                                        targetLeftPercentage = 100
+                                    End If
+                                End If
+                            ElseIf signal.Item3 = Trade.TradeExecutionDirection.Sell Then
+                                Dim lowestLow As Decimal = _eodPayload.Min(Function(x)
+                                                                               If x.Key > signal.Item2.PayloadDate AndAlso x.Key < _TradingDate Then
+                                                                                   Return x.Value.Low
+                                                                               Else
+                                                                                   Return Decimal.MaxValue
+                                                                               End If
+                                                                           End Function)
+                                Dim minLow As Decimal = _SignalPayload.Min(Function(x)
+                                                                               If x.Key.Date = _TradingDate.Date AndAlso x.Key < currentMinute Then
+                                                                                   Return x.Value.Low
+                                                                               Else
+                                                                                   Return Decimal.MaxValue
+                                                                               End If
+                                                                           End Function)
+                                If minLow <> Decimal.MaxValue AndAlso signal.Item2.PayloadDate.Date <> _TradingDate.Date Then
+                                    lowestLow = Math.Min(lowestLow, minLow)
+                                End If
+
+                                Dim atr As Decimal = _atrPayload(signal.Item2.PayloadDate)
+                                If lowestLow > signal.Item2.Close - atr Then
+                                    targetReached = False
+                                    If lowestLow <> Decimal.MaxValue Then
+                                        targetLeftPercentage = ((atr - (signal.Item2.Close - lowestLow)) / atr) * 100
+                                    Else
+                                        targetLeftPercentage = 100
+                                    End If
                                 End If
                             End If
-                        ElseIf signal.Item3 = Trade.TradeExecutionDirection.Sell Then
-                            Dim lowestLow As Decimal = _eodPayload.Min(Function(x)
-                                                                           If x.Key > signal.Item2.PayloadDate AndAlso x.Key < _TradingDate Then
-                                                                               Return x.Value.Low
-                                                                           Else
-                                                                               Return Decimal.MaxValue
-                                                                           End If
-                                                                       End Function)
-                            Dim minLow As Decimal = _SignalPayload.Min(Function(x)
-                                                                           If x.Key.Date = _TradingDate.Date AndAlso x.Key < currentMinute Then
-                                                                               Return x.Value.Low
-                                                                           Else
-                                                                               Return Decimal.MaxValue
-                                                                           End If
-                                                                       End Function)
-                            If minLow <> Decimal.MaxValue AndAlso signal.Item2.PayloadDate.Date <> _TradingDate.Date Then
-                                lowestLow = Math.Min(lowestLow, minLow)
-                            End If
-
-                            Dim atr As Decimal = _atrPayload(signal.Item2.PayloadDate)
-                            If lowestLow > signal.Item2.Close - atr Then
-                                targetReached = False
-                                If lowestLow <> Decimal.MaxValue Then
-                                    targetLeftPercentage = ((atr - (signal.Item2.Close - lowestLow)) / atr) * 100
-                                Else
-                                    targetLeftPercentage = 100
+                            If Not targetReached Then
+                                If targetLeftPercentage >= 75 Then
+                                    EnterTrade(signal.Item2, currentTickTime, signal.Item3)
                                 End If
-                            End If
-                        End If
-                        If Not targetReached Then
-                            If targetLeftPercentage >= 75 Then
-                                EnterTrade(signal.Item2, currentTickTime, signal.Item3)
                             End If
                         End If
                     End If
