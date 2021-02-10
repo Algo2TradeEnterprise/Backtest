@@ -1444,6 +1444,9 @@ Namespace StrategyHelper
                                 colNumber += 1
                                 excelWriter.SetData(1, colNumber, "Annual ROI %")
                                 colNumber += 1
+                                Dim roiColumnNumber As Integer = colNumber
+                                excelWriter.SetData(1, colNumber, "Max Individual ROI %")
+                                colNumber += 1
                                 excelWriter.SetData(1, colNumber, "Reference")
                                 colNumber += 1
                                 For ctr As Integer = 1 To maxTradeCount
@@ -1462,6 +1465,12 @@ Namespace StrategyHelper
                                     excelWriter.SetData(1, colNumber, "Exit Reason")
                                     colNumber += 1
                                     excelWriter.SetData(1, colNumber, "PL")
+                                    colNumber += 1
+                                    excelWriter.SetData(1, colNumber, "Required Capital")
+                                    colNumber += 1
+                                    excelWriter.SetData(1, colNumber, "Max Drawup")
+                                    colNumber += 1
+                                    excelWriter.SetData(1, colNumber, "ROI")
                                     colNumber += 1
                                 Next
 
@@ -1482,16 +1491,21 @@ Namespace StrategyHelper
                                     colNumber += 1
                                     excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.ReverseTradeCount, "##,##,##0", ExcelHelper.XLAlign.Right)
                                     colNumber += 1
-                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.OverallPL, "##,##,##0.00", ExcelHelper.XLAlign.Right)
+                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.OverallPL, "##,##,##0", ExcelHelper.XLAlign.Right)
                                     colNumber += 1
-                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.MaxCapital, "##,##,##0.00", ExcelHelper.XLAlign.Right)
+                                    excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.MaxCapital, "##,##,##0", ExcelHelper.XLAlign.Right)
                                     colNumber += 1
                                     excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.AbsoluteReturnOfInvestment, "##,##,##0.00", ExcelHelper.XLAlign.Right)
                                     colNumber += 1
                                     excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.AnnuanlReturnOfInvestment, "##,##,##0.00", ExcelHelper.XLAlign.Right)
                                     colNumber += 1
+                                    Dim maxROI As Decimal = 0
+                                    excelWriter.SetData(rowNumber, colNumber, maxROI, "##,##,##0.00", ExcelHelper.XLAlign.Right)
+                                    colNumber += 1
                                     excelWriter.SetData(rowNumber, colNumber, runningSummary.Key)
                                     colNumber += 1
+
+                                    Dim capitalUsed As Decimal = 0
                                     For Each runningTrade In runningSummary.Value.AllTrades.OrderBy(Function(x)
                                                                                                         Return x.EntryTime
                                                                                                     End Function)
@@ -1512,8 +1526,22 @@ Namespace StrategyHelper
                                             colNumber += 1
                                             excelWriter.SetData(rowNumber, colNumber, runningTrade.PLAfterBrokerage, "##,##,##0.00", ExcelHelper.XLAlign.Right)
                                             colNumber += 1
+
+                                            capitalUsed += runningTrade.CapitalRequiredWithMargin
+                                            excelWriter.SetData(rowNumber, colNumber, capitalUsed, "##,##,##0.00", ExcelHelper.XLAlign.Right)
+                                            colNumber += 1
+                                            excelWriter.SetData(rowNumber, colNumber, runningTrade.MaxDrawUpPL, "##,##,##0.00", ExcelHelper.XLAlign.Right)
+                                            colNumber += 1
+
+                                            Dim runningROI As Decimal = (runningTrade.MaxDrawUpPL / capitalUsed) * 100
+                                            excelWriter.SetData(rowNumber, colNumber, runningROI, "##,##,##0.00", ExcelHelper.XLAlign.Right)
+                                            colNumber += 1
+                                            If runningROI > maxROI Then maxROI = runningROI
+
+                                            capitalUsed -= runningTrade.CapitalRequiredWithMargin + runningTrade.PLAfterBrokerage
                                         End If
                                     Next
+                                    excelWriter.SetData(rowNumber, roiColumnNumber, maxROI, "##,##,##0.00", ExcelHelper.XLAlign.Right)
                                 Next
                             End If
 
