@@ -253,11 +253,11 @@ Public Class frmMain
             Dim stockFileName As String = Nothing
             Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
                 Case 0
-                    stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pivot Trend High ATR High Volume Stocks.csv")
+                    stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "EOD Pivot Trend High ATR High Volume Stocks.csv")
                 Case 1
-                    stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "HK MA Trend High ATR High Volume Stocks.csv")
+                    stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "EOD HK MA Trend High ATR High Volume Stocks.csv")
                 Case 2
-                    stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Central Pivot Trend High ATR High Volume Stocks.csv")
+                    stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "EOD Central Pivot Trend High ATR High Volume Stocks.csv")
                 Case Else
                     Throw New NotImplementedException
             End Select
