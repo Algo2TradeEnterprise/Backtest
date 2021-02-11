@@ -201,6 +201,11 @@ Namespace StrategyHelper
                                 Dim entryPrice As Decimal = currentOptTick.Open
                                 Dim targetPrice As Decimal = ConvertFloorCeling(entryPrice + spotATR / 2, _ParentStrategy.TickSize, RoundOfType.Celing)
                                 Dim potentialTarget As Decimal = _ParentStrategy.CalculatePLAfterBrokerage(_TradingSymbol, entryPrice, targetPrice, quantity, _LotSize, Trade.TypeOfStock.Options) - 1
+                                If _ParentStrategy.RuleSettings.TypeOfTarget = RuleEntities.TargetType.CapitalPercentage Then
+                                    Dim capital As Decimal = currentOptTick.Open * quantity / _ParentStrategy.MarginMultiplier
+                                    If lossToRecover < 0 Then capital = capital + Math.Abs(lossToRecover)
+                                    potentialTarget = capital * _ParentStrategy.RuleSettings.CapitalPercentage / 100
+                                End If
 
                                 Dim tradeToPlace As Trade = New Trade(originatingStrategy:=_ParentStrategy,
                                                                       tradingSymbol:=optionTradingSymbol,
@@ -239,6 +244,14 @@ Namespace StrategyHelper
                             If optionTradingSymbol IsNot Nothing Then
                                 Dim currentOptTick As Payload = GetCurrentTick(optionTradingSymbol, currentTickTime)
                                 If currentOptTick IsNot Nothing Then
+                                    Dim lossToRecover As Decimal = GetOverallPL(lastTrade, Nothing)
+                                    Dim potentialTarget As Decimal = lastCompleteTrade.PotentialTarget
+                                    If _ParentStrategy.RuleSettings.TypeOfTarget = RuleEntities.TargetType.CapitalPercentage Then
+                                        Dim capital As Decimal = currentOptTick.Open * lastCompleteTrade.Quantity / _ParentStrategy.MarginMultiplier
+                                        If lossToRecover < 0 Then capital = capital + Math.Abs(lossToRecover)
+                                        potentialTarget = capital * _ParentStrategy.RuleSettings.CapitalPercentage / 100
+                                    End If
+
                                     Dim tradeToPlace As Trade = New Trade(originatingStrategy:=_ParentStrategy,
                                                                           tradingSymbol:=optionTradingSymbol,
                                                                           spotTradingSymbol:=lastCompleteTrade.SpotTradingSymbol,
@@ -257,7 +270,7 @@ Namespace StrategyHelper
                                                                           spotPrice:=lastCompleteTrade.SpotPrice,
                                                                           spotATR:=lastCompleteTrade.SpotATR,
                                                                           previousLoss:=lastCompleteTrade.PreviousLoss,
-                                                                          potentialTarget:=lastCompleteTrade.PotentialTarget)
+                                                                          potentialTarget:=potentialTarget)
                                     tradeToPlace.UpdateTrade(contractRolloverEntry:=True)
                                     If ret Is Nothing Then ret = New List(Of Tuple(Of Trade, Payload))
                                     ret.Add(New Tuple(Of Trade, Payload)(tradeToPlace, currentOptTick))
@@ -296,6 +309,11 @@ Namespace StrategyHelper
                                             Exit For
                                         End If
                                     Next
+                                    If _ParentStrategy.RuleSettings.TypeOfTarget = RuleEntities.TargetType.CapitalPercentage Then
+                                        Dim capital As Decimal = currentOptTick.Open * quantity / _ParentStrategy.MarginMultiplier
+                                        If lossToRecover < 0 Then capital = capital + Math.Abs(lossToRecover)
+                                        potentialTarget = capital * _ParentStrategy.RuleSettings.CapitalPercentage / 100
+                                    End If
 
                                     Dim tradeToPlace As Trade = New Trade(originatingStrategy:=_ParentStrategy,
                                                                           tradingSymbol:=optionTradingSymbol,
@@ -353,17 +371,25 @@ Namespace StrategyHelper
                             End If
 
                             'Exit Check
-                            If runningTrade.EntryType = Trade.TypeOfEntry.Fresh AndAlso
-                                GetFreshTradePL(runningTrade, currentTick) >= runningTrade.PotentialTarget Then
+                            Dim targetReached As Boolean = False
+                            If _ParentStrategy.RuleSettings.TypeOfTarget = RuleEntities.TargetType.CapitalPercentage Then
+                                If GetOverallPL(runningTrade, currentTick) >= runningTrade.PotentialTarget Then
+                                    targetReached = True
+                                End If
+                            ElseIf _ParentStrategy.RuleSettings.TypeOfTarget = RuleEntities.TargetType.ATR Then
+                                If runningTrade.EntryType = Trade.TypeOfEntry.Fresh AndAlso
+                                    GetFreshTradePL(runningTrade, currentTick) >= runningTrade.PotentialTarget Then
+                                    targetReached = True
+                                ElseIf runningTrade.EntryType = Trade.TypeOfEntry.Reversal AndAlso
+                                    GetLossMakeupTradePL(runningTrade, currentTick) >= runningTrade.PotentialTarget Then
+                                    targetReached = True
+                                End If
+                            Else
+                                Throw New NotImplementedException
+                            End If
+                            If targetReached Then
                                 If ret Is Nothing Then ret = New List(Of Tuple(Of Trade, Payload, Trade.TypeOfExit, Payload))
                                 ret.Add(New Tuple(Of Trade, Payload, Trade.TypeOfExit, Payload)(runningTrade, currentTick, Trade.TypeOfExit.Target, Nothing))
-                            ElseIf runningTrade.EntryType = Trade.TypeOfEntry.Reversal AndAlso
-                                GetLossMakeupTradePL(runningTrade, currentTick) >= runningTrade.PotentialTarget Then
-                                If ret Is Nothing Then ret = New List(Of Tuple(Of Trade, Payload, Trade.TypeOfExit, Payload))
-                                ret.Add(New Tuple(Of Trade, Payload, Trade.TypeOfExit, Payload)(runningTrade, currentTick, Trade.TypeOfExit.Target, Nothing))
-                                'elseIf GetOverallPL(runningTrade, currentTick) >= runningTrade.PotentialTarget Then
-                                '    If ret Is Nothing Then ret = New List(Of Tuple(Of Trade, Payload, Trade.TypeOfExit, Payload))
-                                '    ret.Add(New Tuple(Of Trade, Payload, Trade.TypeOfExit, Payload)(runningTrade, currentTick, Trade.TypeOfExit.Target, Nothing))
                             Else
                                 Dim reverseSignal As Tuple(Of Boolean, Payload) = IsReverseSignalReceived(runningTrade, currentTick)
                                 If reverseSignal IsNot Nothing AndAlso reverseSignal.Item1 AndAlso reverseSignal.Item2 IsNot Nothing Then

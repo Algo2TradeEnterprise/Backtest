@@ -264,6 +264,7 @@ Public Class frmMain
                     Throw New NotImplementedException
             End Select
 
+            Dim rule As RuleEntities = New RuleEntities With {.TypeOfTarget = RuleEntities.TargetType.CapitalPercentage, .CapitalPercentage = 20}
             Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
                                                              exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                              exchangeEndTime:=TimeSpan.Parse("15:29:59"),
@@ -278,7 +279,7 @@ Public Class frmMain
                                                              numberOfLogicalActiveTrade:=5,
                                                              stockFilename:=stockFileName,
                                                              ruleNumber:=ruleNumber,
-                                                             ruleSettings:=Nothing)
+                                                             ruleSettings:=rule)
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 Dim filename As String = String.Format("Option Buy")
