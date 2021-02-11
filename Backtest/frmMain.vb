@@ -255,10 +255,8 @@ Public Class frmMain
                 Case 0
                     stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pivot Trend High ATR High Volume Stocks.csv")
                 Case 1
-                    stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "HK Trend High ATR High Volume Stocks.csv")
-                Case 2
                     stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "HK MA Trend High ATR High Volume Stocks.csv")
-                Case 3
+                Case 2
                     stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Central Pivot Trend High ATR High Volume Stocks.csv")
                 Case Else
                     Throw New NotImplementedException
@@ -285,19 +283,11 @@ Public Class frmMain
                 Dim filename As String = String.Format("Option Buy")
                 Select Case backtestStrategy.RuleNumber
                     Case 0
-                        filename = String.Format("Pivot Trend Option Buy Mode 3")
-                        'Case 1
-                        '    Dim ruleData As HKTrendOptionBuyMode3StrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                        '    filename = String.Format("HK Trend Option Buy Mode 3, ExtMd {0}",
-                        '                             backtestStrategy.ModeOfTick.ToString)
-                        'Case 2
-                        '    Dim ruleData As HKMATrendOptionBuyMode3StrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                        '    filename = String.Format("HK MA Trend Option Buy Mode 3, ExtMd {0}",
-                        '                             backtestStrategy.ModeOfTick.ToString)
-                        'Case 3
-                        '    Dim ruleData As CentralPivotTrendOptionBuyMode3StrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                        '    filename = String.Format("Central Pivot Trend Option Buy Mode 3, ExtMd {0}",
-                        '                             backtestStrategy.ModeOfTick.ToString)
+                        filename = String.Format("Pivot Trend Option Buy, Tgt: {0}, Per:{1}", rule.TypeOfTarget.ToString, rule.CapitalPercentage)
+                    Case 1
+                        filename = String.Format("HK MA Trend Option Buy, Tgt: {0}, Per:{1}", rule.TypeOfTarget.ToString, rule.CapitalPercentage)
+                    Case 2
+                        filename = String.Format("Central Pivot Trend Option Buy, Tgt: {0}, Per:{1}", rule.TypeOfTarget.ToString, rule.CapitalPercentage)
                     Case Else
                         Throw New NotImplementedException
                 End Select
