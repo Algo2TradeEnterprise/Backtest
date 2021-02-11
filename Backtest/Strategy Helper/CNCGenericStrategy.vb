@@ -167,6 +167,25 @@ Namespace StrategyHelper
 
                                 startMinute = startMinute.Add(TimeSpan.FromMinutes(1))
                             End While
+
+                            'EOD Cancellation
+                            For Each runningStock In stockList
+                                _canceller.Token.ThrowIfCancellationRequested()
+                                Dim stockStrategyRule As StrategyRule = stocksRuleData(runningStock.TradingSymbol)
+                                Dim currentTickSignalTime As Date = New Date(tradeCheckingDate.Year, tradeCheckingDate.Month, tradeCheckingDate.Day, startMinute.Hours, startMinute.Minutes, startMinute.Seconds)
+                                _canceller.Token.ThrowIfCancellationRequested()
+                                Dim potentialCancelTrades As List(Of Trade) = GetSpecificTrades(runningStock.TradingSymbol, Trade.TradeStatus.Open)
+                                If potentialCancelTrades IsNot Nothing AndAlso potentialCancelTrades.Count > 0 Then
+                                    Dim cancelTriggers As List(Of Tuple(Of Trade, Payload, Trade.TypeOfExit, Payload)) = Nothing
+                                    cancelTriggers = Await stockStrategyRule.IsTriggerReceivedForExitOrderAsync(currentTickSignalTime, potentialCancelTrades).ConfigureAwait(False)
+                                    If cancelTriggers IsNot Nothing AndAlso cancelTriggers.Count > 0 Then
+                                        For Each runningTrigger In cancelTriggers
+                                            _canceller.Token.ThrowIfCancellationRequested()
+                                            ExitOrder(runningTrigger.Item1, runningTrigger.Item2, currentTickSignalTime, runningTrigger.Item3, runningTrigger.Item4)
+                                        Next
+                                    End If
+                                End If
+                            Next
                         End If
                     End If
                     PopulateDayWiseActiveTradeCount(tradeCheckingDate)
