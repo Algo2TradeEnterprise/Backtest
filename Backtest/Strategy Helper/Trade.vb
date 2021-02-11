@@ -50,7 +50,7 @@ Namespace StrategyHelper
                        ByVal entryType As TypeOfEntry,
                        ByVal quantity As Integer,
                        ByVal lotSize As Integer,
-                       ByVal signalCandle As Payload,
+                       ByVal entrySignalCandle As Payload,
                        ByVal childReference As String,
                        ByVal parentReference As String,
                        ByVal iterationNumber As Integer,
@@ -67,7 +67,7 @@ Namespace StrategyHelper
             _EntryType = entryType
             _Quantity = quantity
             _LotSize = lotSize
-            _SignalCandle = signalCandle
+            _EntrySignalCandle = entrySignalCandle
             _ChildReference = childReference
             _ParentReference = parentReference
             _IterationNumber = iterationNumber
@@ -96,7 +96,8 @@ Namespace StrategyHelper
         Public ReadOnly Property ExitTime As Date
         Public ReadOnly Property ExitPrice As Decimal
         Public ReadOnly Property ExitType As TypeOfExit
-        Public ReadOnly Property SignalCandle As Payload
+        Public ReadOnly Property EntrySignalCandle As Payload
+        Public ReadOnly Property ExitSignalCandle As Payload
         Public ReadOnly Property TradeCurrentStatus As TradeStatus
         Public ReadOnly Property ChildReference As String
         Public ReadOnly Property ParentReference As String
@@ -221,7 +222,8 @@ Namespace StrategyHelper
                                Optional ByVal exitTime As Date = Nothing,
                                Optional ByVal exitPrice As Decimal = Decimal.MinValue,
                                Optional ByVal exitType As TypeOfExit = TypeOfExit.None,
-                               Optional ByVal signalCandle As Payload = Nothing,
+                               Optional ByVal entrySignalCandle As Payload = Nothing,
+                               Optional ByVal exitSignalCandle As Payload = Nothing,
                                Optional ByVal tradeCurrentStatus As TradeStatus = TradeStatus.None,
                                Optional ByVal childReference As String = Nothing,
                                Optional ByVal parentReference As String = Nothing,
@@ -246,7 +248,8 @@ Namespace StrategyHelper
             If exitTime <> Nothing AndAlso exitTime <> Date.MinValue Then _ExitTime = exitTime
             If exitPrice <> Decimal.MinValue Then _ExitPrice = exitPrice
             If exitType <> TypeOfExit.None Then _ExitType = exitType
-            If signalCandle IsNot Nothing Then _SignalCandle = signalCandle
+            If entrySignalCandle IsNot Nothing Then _EntrySignalCandle = entrySignalCandle
+            If exitSignalCandle IsNot Nothing Then _EntrySignalCandle = exitSignalCandle
             If tradeCurrentStatus <> TradeStatus.None Then _TradeCurrentStatus = tradeCurrentStatus
             If childReference IsNot Nothing Then _ChildReference = childReference
             If parentReference IsNot Nothing Then _ParentReference = parentReference

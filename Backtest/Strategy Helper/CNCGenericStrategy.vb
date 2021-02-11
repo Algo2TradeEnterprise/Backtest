@@ -76,19 +76,14 @@ Namespace StrategyHelper
                             XDayEODPayload = Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.EOD_POSITIONAL, runningPair.TradingSymbol, tradeCheckingDate.AddYears(-1), tradeCheckingDate)
                             _canceller.Token.ThrowIfCancellationRequested()
                             If XDayOneMinutePayload IsNot Nothing AndAlso XDayOneMinutePayload.Count > 0 Then
-                                If XDayEODPayload IsNot Nothing AndAlso XDayEODPayload.ContainsKey(tradeCheckingDate.Date) Then
+                                If XDayEODPayload IsNot Nothing AndAlso XDayEODPayload.Count > 100 AndAlso
+                                    XDayEODPayload.ContainsKey(tradeCheckingDate.Date) Then
                                     OnHeartbeat(String.Format("Calculating indicators for {0} on {1} #{2}/{3}", runningPair.TradingSymbol, tradeCheckingDate.ToString("dd-MMM-yyyy"), stkCtr, stockList.Count))
                                     If stocksRuleData Is Nothing Then stocksRuleData = New Dictionary(Of String, StrategyRule)
                                     Dim stockRule As StrategyRule = Nothing
                                     Select Case Me.RuleNumber
                                         Case 0
-                                            stockRule = New PivotTrendOptionBuyMode3StrategyRule(tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me.RuleEntityData, Me, _canceller, XDayOneMinutePayload)
-                                            'Case 1
-                                            '    stockRule = New HKTrendOptionBuyMode3StrategyRule(tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me.RuleEntityData, Me, _canceller, XDayOneMinutePayload)
-                                            'Case 2
-                                            '    stockRule = New HKMATrendOptionBuyMode3StrategyRule(tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me.RuleEntityData, Me, _canceller, XDayOneMinutePayload)
-                                            'Case 3
-                                            '    stockRule = New CentralPivotTrendOptionBuyMode3StrategyRule(tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me.RuleEntityData, Me, _canceller, XDayOneMinutePayload)
+                                            stockRule = New PivotTrendOptionBuyMode3StrategyRule(_canceller, tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me, XDayOneMinutePayload, XDayEODPayload)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
@@ -119,30 +114,57 @@ Namespace StrategyHelper
                             While startMinute <= endMinute
                                 _canceller.Token.ThrowIfCancellationRequested()
                                 OnHeartbeat(String.Format("Checking Trade on {0}. Time:{1}", tradeCheckingDate.ToShortDateString, startMinute.ToString))
-                                Dim potentialTickSignalTime As Date = New Date(tradeCheckingDate.Year, tradeCheckingDate.Month, tradeCheckingDate.Day, startMinute.Hours, startMinute.Minutes, startMinute.Seconds)
+                                Dim currentTickSignalTime As Date = New Date(tradeCheckingDate.Year, tradeCheckingDate.Month, tradeCheckingDate.Day, startMinute.Hours, startMinute.Minutes, startMinute.Seconds)
 
                                 For Each runningStock In stockList
                                     _canceller.Token.ThrowIfCancellationRequested()
-
                                     Dim stockStrategyRule As StrategyRule = stocksRuleData(runningStock.TradingSymbol)
 
                                     _canceller.Token.ThrowIfCancellationRequested()
-                                    Dim potentialRuleExitTrades As List(Of Trade) = GetSpecificTrades(runningStock.TradingSymbol, tradeCheckingDate, Trade.TypeOfTrade.CNC, Trade.TradeStatus.Inprogress)
-                                    If potentialRuleExitTrades IsNot Nothing AndAlso potentialRuleExitTrades.Count > 0 Then
-                                        Await stockStrategyRule.IsTriggerReceivedForExitOrderAsync(potentialTickSignalTime, potentialRuleExitTrades).ConfigureAwait(False)
+                                    Await stockStrategyRule.UpdateCollectionsIfRequiredAsync(currentTickSignalTime).ConfigureAwait(False)
+
+                                    _canceller.Token.ThrowIfCancellationRequested()
+                                    Dim potentialCancelTrades As List(Of Trade) = GetSpecificTrades(runningStock.TradingSymbol, Trade.TradeStatus.Open)
+                                    If potentialCancelTrades IsNot Nothing AndAlso potentialCancelTrades.Count > 0 Then
+                                        Dim cancelTriggers As List(Of Tuple(Of Trade, Payload, Trade.TypeOfExit, Payload)) = Nothing
+                                        cancelTriggers = Await stockStrategyRule.IsTriggerReceivedForExitOrderAsync(currentTickSignalTime, potentialCancelTrades).ConfigureAwait(False)
+                                        If cancelTriggers IsNot Nothing AndAlso cancelTriggers.Count > 0 Then
+                                            For Each runningTrigger In cancelTriggers
+                                                _canceller.Token.ThrowIfCancellationRequested()
+                                                ExitOrder(runningTrigger.Item1, runningTrigger.Item2, currentTickSignalTime, runningTrigger.Item3, runningTrigger.Item4)
+                                            Next
+                                        End If
                                     End If
 
                                     _canceller.Token.ThrowIfCancellationRequested()
-                                    Await stockStrategyRule.IsTriggerReceivedForPlaceOrderAsync(potentialTickSignalTime).ConfigureAwait(False)
+                                    Dim potentialExitTrades As List(Of Trade) = GetSpecificTrades(runningStock.TradingSymbol, Trade.TradeStatus.Inprogress)
+                                    If potentialExitTrades IsNot Nothing AndAlso potentialExitTrades.Count > 0 Then
+                                        Dim exitTriggers As List(Of Tuple(Of Trade, Payload, Trade.TypeOfExit, Payload)) = Nothing
+                                        exitTriggers = Await stockStrategyRule.IsTriggerReceivedForExitOrderAsync(currentTickSignalTime, potentialExitTrades).ConfigureAwait(False)
+                                        If exitTriggers IsNot Nothing AndAlso exitTriggers.Count > 0 Then
+                                            For Each runningTrigger In exitTriggers
+                                                _canceller.Token.ThrowIfCancellationRequested()
+                                                ExitOrder(runningTrigger.Item1, runningTrigger.Item2, currentTickSignalTime, runningTrigger.Item3, runningTrigger.Item4)
+                                            Next
+                                        End If
+                                    End If
+
+                                    _canceller.Token.ThrowIfCancellationRequested()
+                                    Dim entryTriggers As List(Of Tuple(Of Trade, Payload)) = Nothing
+                                    entryTriggers = Await stockStrategyRule.IsTriggerReceivedForPlaceOrderAsync(currentTickSignalTime).ConfigureAwait(False)
+                                    If entryTriggers IsNot Nothing AndAlso entryTriggers.Count > 0 Then
+                                        For Each runningTrigger In entryTriggers
+                                            _canceller.Token.ThrowIfCancellationRequested()
+                                            PlaceOrder(runningTrigger.Item1, runningTrigger.Item2, currentTickSignalTime)
+                                        Next
+                                    End If
                                 Next
 
                                 startMinute = startMinute.Add(TimeSpan.FromMinutes(Me.SignalTimeFrame))
                             End While
-
-                            PopulateDayWiseActiveTradeCount(tradeCheckingDate)
                         End If
                     End If
-
+                    PopulateDayWiseActiveTradeCount(tradeCheckingDate)
                     tradeCheckingDate = tradeCheckingDate.AddDays(1)
                 End While
 

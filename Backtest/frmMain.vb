@@ -249,93 +249,42 @@ Public Class frmMain
         Try
             Dim startDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrStartDate)
             Dim endDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrEndDate)
-            Dim sourceData As Strategy.SourceOfData = Strategy.SourceOfData.Database
-            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
-            Dim database As Common.DataBaseTable = Common.DataBaseTable.Intraday_Cash
-            Dim margin As Decimal = 1
-            Dim tick As Decimal = 0.05
+            Dim ruleNumber As Integer = GetComboBoxIndex_ThreadSafe(cmbRule)
+            Dim stockFileName As String = Nothing
+            Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
+                Case 0
+                    stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pivot Trend High ATR High Volume Stocks.csv")
+                Case 1
+                    stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "HK Trend High ATR High Volume Stocks.csv")
+                Case 2
+                    stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "HK MA Trend High ATR High Volume Stocks.csv")
+                Case 3
+                    stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Central Pivot Trend High ATR High Volume Stocks.csv")
+                Case Else
+                    Throw New NotImplementedException
+            End Select
 
             Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
-                                                            exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                            exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                            tradeStartTime:=TimeSpan.Parse("15:28:00"),
-                                                            lastTradeEntryTime:=TimeSpan.Parse("15:30:00"),
-                                                            eodExitTime:=TimeSpan.Parse("15:30:00"),
-                                                            tickSize:=tick,
-                                                            marginMultiplier:=margin,
-                                                            timeframe:=1,
-                                                            heikenAshiCandle:=False,
-                                                            stockType:=stockType,
-                                                            databaseTable:=database,
-                                                            dataSource:=sourceData,
-                                                            initialCapital:=Decimal.MaxValue / 2,
-                                                            usableCapital:=Decimal.MaxValue / 2,
-                                                            minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
-                                                            amountToBeWithdrawn:=0)
+                                                             exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                             exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                             tradeStartTime:=TimeSpan.Parse("15:28:00"),
+                                                             tickSize:=0.05,
+                                                             marginMultiplier:=1,
+                                                             timeframe:=375,
+                                                             initialCapital:=Decimal.MaxValue / 2,
+                                                             usableCapital:=Decimal.MaxValue / 2,
+                                                             minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                             amountToBeWithdrawn:=0,
+                                                             numberOfLogicalActiveTrade:=5,
+                                                             stockFilename:=stockFileName,
+                                                             ruleNumber:=ruleNumber,
+                                                             ruleSettings:=Nothing)
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                With backtestStrategy
-                    .AllowBothDirectionEntryAtSameTime = False
-                    .TrailingStoploss = False
-                    .TickBasedStrategy = True
-                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
-
-                    Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
-                        Case 0
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Pivot Trend High ATR High Volume Stocks.csv")
-                            .RuleEntityData = New PivotTrendOptionBuyMode3StrategyRule.StrategyRuleEntities With
-                            {
-                             .NumberOfActiveStock = 5
-                            }
-                            'Case 1
-                            '    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "HK Trend High ATR High Volume Stocks.csv")
-                            '    .RuleEntityData = New HKTrendOptionBuyMode3StrategyRule.StrategyRuleEntities With
-                            '    {
-                            '     .NumberOfActiveStock = 5
-                            '    }
-                            'Case 2
-                            '    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "HK MA Trend High ATR High Volume Stocks.csv")
-                            '    .RuleEntityData = New HKMATrendOptionBuyMode3StrategyRule.StrategyRuleEntities With
-                            '    {
-                            '     .NumberOfActiveStock = 5
-                            '    }
-                            'Case 3
-                            '    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Central Pivot Trend High ATR High Volume Stocks.csv")
-                            '    .RuleEntityData = New CentralPivotTrendOptionBuyMode3StrategyRule.StrategyRuleEntities With
-                            '    {
-                            '     .NumberOfActiveStock = 5
-                            '    }
-                        Case Else
-                            Throw New NotImplementedException
-                    End Select
-
-                    .NumberOfTradeableStockPerDay = Integer.MaxValue
-
-                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
-
-                    .StockMaxProfitPercentagePerDay = Decimal.MaxValue
-                    .StockMaxLossPercentagePerDay = Decimal.MinValue
-
-                    .ExitOnStockFixedTargetStoploss = False
-                    .StockMaxProfitPerDay = Decimal.MaxValue
-                    .StockMaxLossPerDay = Decimal.MinValue
-
-                    .ExitOnOverAllFixedTargetStoploss = False
-                    .OverAllProfitPerDay = Decimal.MaxValue
-                    .OverAllLossPerDay = Decimal.MinValue
-
-                    .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
-                    .MTMSlab = Math.Abs(.OverAllLossPerDay)
-                    .MovementSlab = .MTMSlab / 2
-                    .RealtimeTrailingPercentage = 50
-                End With
-
                 Dim filename As String = String.Format("Option Buy")
-                Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
+                Select Case backtestStrategy.RuleNumber
                     Case 0
-                        Dim ruleData As PivotTrendOptionBuyMode3StrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                        filename = String.Format("Pivot Trend Option Buy Mode 3, ExtMd {0}",
-                                                 backtestStrategy.ModeOfTick.ToString)
+                        filename = String.Format("Pivot Trend Option Buy Mode 3")
                         'Case 1
                         '    Dim ruleData As HKTrendOptionBuyMode3StrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
                         '    filename = String.Format("HK Trend Option Buy Mode 3, ExtMd {0}",

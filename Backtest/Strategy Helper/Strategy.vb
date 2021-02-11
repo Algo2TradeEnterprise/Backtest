@@ -196,7 +196,7 @@ Namespace StrategyHelper
                     If currentTrade.EntryType = Trade.TypeOfEntry.Fresh Then
                         _LogicalActiveTradeCount += 1
                     End If
-                    currentTrade.UpdateTrade(tradeCurrentStatus:=Trade.TradeStatus.Open)
+                    currentTrade.UpdateTrade(entryTime:=currentTime, tradeCurrentStatus:=Trade.TradeStatus.Open)
                     Dim stockName As String = currentTrade.SpotTradingSymbol.Trim.ToUpper
                     If _TradesTaken Is Nothing Then _TradesTaken = New Dictionary(Of String, List(Of Trade))
                     If _TradesTaken.ContainsKey(stockName) Then
@@ -215,17 +215,17 @@ Namespace StrategyHelper
             End If
         End Sub
 
-        Public Sub ExitOrder(ByVal currentTrade As Trade, ByVal currentTick As Payload, ByVal currentTime As Date, ByVal exitType As Trade.TypeOfExit)
+        Public Sub ExitOrder(ByVal currentTrade As Trade, ByVal currentTick As Payload, ByVal currentTime As Date, ByVal exitType As Trade.TypeOfExit, ByVal signalCandle As Payload)
             If currentTrade IsNot Nothing AndAlso
                 (currentTrade.TradeCurrentStatus = Trade.TradeStatus.Open OrElse
                 currentTrade.TradeCurrentStatus = Trade.TradeStatus.Inprogress) Then
                 If currentTrade.TradeCurrentStatus = Trade.TradeStatus.Open Then
-                    currentTrade.UpdateTrade(exitPrice:=currentTick.Open, exitTime:=currentTime, exitType:=Trade.TypeOfExit.None, tradeCurrentStatus:=Trade.TradeStatus.Cancel)
+                    currentTrade.UpdateTrade(exitPrice:=currentTick.Open, exitTime:=currentTime, exitType:=Trade.TypeOfExit.None, exitSignalCandle:=signalCandle, tradeCurrentStatus:=Trade.TradeStatus.Cancel)
+                    InsertCapitalRequired(currentTrade.ExitTime, 0, currentTrade.CapitalRequiredWithMargin, "Cancel Order")
                 ElseIf currentTrade.TradeCurrentStatus = Trade.TradeStatus.Inprogress Then
-                    currentTrade.UpdateTrade(exitPrice:=currentTick.Open, exitTime:=currentTime, exitType:=exitType, tradeCurrentStatus:=Trade.TradeStatus.Complete)
+                    currentTrade.UpdateTrade(exitPrice:=currentTick.Open, exitTime:=currentTime, exitType:=exitType, exitSignalCandle:=signalCandle, tradeCurrentStatus:=Trade.TradeStatus.Complete)
+                    InsertCapitalRequired(currentTrade.ExitTime, 0, currentTrade.CapitalRequiredWithMargin, "Exit Order")
                 End If
-
-                InsertCapitalRequired(currentTrade.ExitTime, 0, currentTrade.CapitalRequiredWithMargin, "Exit Order")
 
                 If currentTrade.ExitType = Trade.TypeOfExit.Target Then
                     _LogicalActiveTradeCount -= 1
@@ -589,7 +589,7 @@ Namespace StrategyHelper
                                                 mainRawData(rowCtr, colCtr) = tradeTaken.MaxDrawDownPL
                                                 colCtr += 1
                                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
-                                                mainRawData(rowCtr, colCtr) = tradeTaken.SignalCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss")
+                                                mainRawData(rowCtr, colCtr) = tradeTaken.EntrySignalCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss")
                                                 colCtr += 1
                                                 If colCtr > UBound(mainRawData, 2) Then ReDim Preserve mainRawData(UBound(mainRawData, 1), 0 To UBound(mainRawData, 2) + 1)
                                                 mainRawData(rowCtr, colCtr) = String.Format("{0}-{1}", tradeTaken.TradingDate.ToString("yyyy"), tradeTaken.TradingDate.ToString("MM"))
