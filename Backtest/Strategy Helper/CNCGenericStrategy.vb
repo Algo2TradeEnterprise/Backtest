@@ -203,11 +203,12 @@ Namespace StrategyHelper
                                         {.TradingSymbol = tradingSymbol,
                                          .LotSize = lotSize}
                                 'Dim detailsOfStock As StockDetails = New StockDetails With
-                                '        {.TradingSymbol = "ICICIBANK",
-                                '         .LotSize = 1375}
+                                '    {.TradingSymbol = "ICICIBANK",
+                                '     .LotSize = 1375}
 
                                 If ret Is Nothing Then ret = New List(Of StockDetails)
                                 ret.Add(detailsOfStock)
+                                'Exit For
                             End If
                         End If
                     Next

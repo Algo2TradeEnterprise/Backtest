@@ -5,7 +5,7 @@
         Public ReadOnly Property Instrument As String
             Get
                 If Me.AllTrades IsNot Nothing AndAlso Me.AllTrades.Count > 0 Then
-                    Return Me.AllTrades.FirstOrDefault.TradingSymbol
+                    Return Me.AllTrades.FirstOrDefault.SpotTradingSymbol
                 Else
                     Return Nothing
                 End If

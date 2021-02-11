@@ -91,7 +91,7 @@ Namespace StrategyHelper
                         signal = IsFreshEntrySignalReceived(currentTickTime)
                         If signal IsNot Nothing AndAlso signal.Item1 Then
                             If lastTrade IsNot Nothing AndAlso lastTrade.ExitType = Trade.TypeOfExit.Target AndAlso
-                                lastTrade.EntrySignalCandle.PayloadDate <> signal.Item2.PayloadDate Then
+                                lastTrade.EntrySignalCandle.PayloadDate = signal.Item2.PayloadDate Then
                                 signal = Nothing
                             Else
                                 If signal.Item2.PayloadDate.Date <> _TradingDate AndAlso currentTickTime < _TradeStartTime.AddMinutes(1) Then
@@ -106,7 +106,7 @@ Namespace StrategyHelper
                         signal = IsFreshEntrySignalReceived(currentTickTime)
                         If signal IsNot Nothing AndAlso signal.Item1 Then
                             If lastTrade IsNot Nothing AndAlso lastTrade.ExitType = Trade.TypeOfExit.Target AndAlso
-                                lastTrade.EntrySignalCandle.PayloadDate <> signal.Item2.PayloadDate Then
+                                lastTrade.EntrySignalCandle.PayloadDate = signal.Item2.PayloadDate Then
                                 signal = Nothing
                             Else
                                 If signal.Item2.PayloadDate <> currentMinute AndAlso

@@ -227,7 +227,7 @@ Namespace StrategyHelper
                     InsertCapitalRequired(currentTrade.ExitTime, 0, currentTrade.CapitalRequiredWithMargin, "Cancel Order")
                 ElseIf currentTrade.TradeCurrentStatus = Trade.TradeStatus.Inprogress Then
                     currentTrade.UpdateTrade(exitPrice:=currentTick.Open, exitTime:=currentTime, exitType:=exitType, exitSignalCandle:=signalCandle, tradeCurrentStatus:=Trade.TradeStatus.Complete)
-                    InsertCapitalRequired(currentTrade.ExitTime, 0, currentTrade.CapitalRequiredWithMargin, "Exit Order")
+                    InsertCapitalRequired(currentTrade.ExitTime, 0, currentTrade.CapitalRequiredWithMargin + currentTrade.PLAfterBrokerage, "Exit Order")
                 End If
 
                 If currentTrade.ExitType = Trade.TypeOfExit.Target Then
@@ -378,8 +378,14 @@ Namespace StrategyHelper
                                                                                                              Return x.ParentReference = runningTag
                                                                                                          End Function)
                                             If tagTrades IsNot Nothing AndAlso tagTrades.Count > 0 Then
-                                                If logicalTradeSummary Is Nothing Then logicalTradeSummary = New Dictionary(Of String, Summary)
-                                                logicalTradeSummary.Add(runningTag, New Summary With {.AllTrades = tagTrades})
+                                                Dim validTrade As Trade = tagTrades.Find(Function(x)
+                                                                                             Return x.TradeCurrentStatus = Trade.TradeStatus.Complete OrElse
+                                                                                             x.TradeCurrentStatus = Trade.TradeStatus.Inprogress
+                                                                                         End Function)
+                                                If validTrade IsNot Nothing Then
+                                                    If logicalTradeSummary Is Nothing Then logicalTradeSummary = New Dictionary(Of String, Summary)
+                                                    logicalTradeSummary.Add(runningTag, New Summary With {.AllTrades = tagTrades})
+                                                End If
                                             End If
                                         Next
                                     End If
@@ -748,10 +754,12 @@ Namespace StrategyHelper
                                         colNumber += 1
                                         excelWriter.SetData(1, colNumber, "Annual ROI %")
                                         colNumber += 1
+                                        Dim roiColumnNumber As Integer = colNumber
+                                        excelWriter.SetData(1, colNumber, "Max Individual ROI %")
+                                        colNumber += 1
                                         excelWriter.SetData(1, colNumber, "Reference")
                                         colNumber += 1
                                         For ctr As Integer = 1 To maxTradeCount
-                                            canceller.Token.ThrowIfCancellationRequested()
                                             excelWriter.SetData(1, colNumber, "Contract")
                                             colNumber += 1
                                             excelWriter.SetData(1, colNumber, "Entry Time")
@@ -768,14 +776,17 @@ Namespace StrategyHelper
                                             colNumber += 1
                                             excelWriter.SetData(1, colNumber, "PL")
                                             colNumber += 1
+                                            excelWriter.SetData(1, colNumber, "Required Capital")
+                                            colNumber += 1
+                                            excelWriter.SetData(1, colNumber, "Max Drawup")
+                                            colNumber += 1
+                                            excelWriter.SetData(1, colNumber, "ROI")
+                                            colNumber += 1
                                         Next
 
                                         rowNumber = 1
                                         For Each runningSummary In logicalTradeSummary
-                                            canceller.Token.ThrowIfCancellationRequested()
                                             rowNumber += 1
-
-                                            OnHeartbeat(String.Format("Summary sheet printing: #{0}/{1} #3/3", rowNumber, logicalTradeSummary.Count))
 
                                             colNumber = 1
                                             excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.Instrument)
@@ -790,16 +801,21 @@ Namespace StrategyHelper
                                             colNumber += 1
                                             excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.ReverseTradeCount, "##,##,##0", ExcelHelper.XLAlign.Right)
                                             colNumber += 1
-                                            excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.OverallPL, "##,##,##0.00", ExcelHelper.XLAlign.Right)
+                                            excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.OverallPL, "##,##,##0", ExcelHelper.XLAlign.Right)
                                             colNumber += 1
-                                            excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.MaxCapital, "##,##,##0.00", ExcelHelper.XLAlign.Right)
+                                            excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.MaxCapital, "##,##,##0", ExcelHelper.XLAlign.Right)
                                             colNumber += 1
                                             excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.AbsoluteReturnOfInvestment, "##,##,##0.00", ExcelHelper.XLAlign.Right)
                                             colNumber += 1
                                             excelWriter.SetData(rowNumber, colNumber, runningSummary.Value.AnnualReturnOfInvestment, "##,##,##0.00", ExcelHelper.XLAlign.Right)
                                             colNumber += 1
+                                            Dim maxROI As Decimal = 0
+                                            excelWriter.SetData(rowNumber, colNumber, maxROI, "##,##,##0.00", ExcelHelper.XLAlign.Right)
+                                            colNumber += 1
                                             excelWriter.SetData(rowNumber, colNumber, runningSummary.Key)
                                             colNumber += 1
+
+                                            Dim capitalUsed As Decimal = 0
                                             For Each runningTrade In runningSummary.Value.AllTrades.OrderBy(Function(x)
                                                                                                                 Return x.EntryTime
                                                                                                             End Function)
@@ -820,8 +836,22 @@ Namespace StrategyHelper
                                                     colNumber += 1
                                                     excelWriter.SetData(rowNumber, colNumber, runningTrade.PLAfterBrokerage, "##,##,##0.00", ExcelHelper.XLAlign.Right)
                                                     colNumber += 1
+
+                                                    capitalUsed += runningTrade.CapitalRequiredWithMargin
+                                                    excelWriter.SetData(rowNumber, colNumber, capitalUsed, "##,##,##0.00", ExcelHelper.XLAlign.Right)
+                                                    colNumber += 1
+                                                    excelWriter.SetData(rowNumber, colNumber, runningTrade.MaxDrawUpPL, "##,##,##0.00", ExcelHelper.XLAlign.Right)
+                                                    colNumber += 1
+
+                                                    Dim runningROI As Decimal = (runningTrade.MaxDrawUpPL / capitalUsed) * 100
+                                                    excelWriter.SetData(rowNumber, colNumber, runningROI, "##,##,##0.00", ExcelHelper.XLAlign.Right)
+                                                    colNumber += 1
+                                                    If runningROI > maxROI Then maxROI = runningROI
+
+                                                    capitalUsed -= runningTrade.CapitalRequiredWithMargin + runningTrade.PLAfterBrokerage
                                                 End If
                                             Next
+                                            excelWriter.SetData(rowNumber, roiColumnNumber, maxROI, "##,##,##0.00", ExcelHelper.XLAlign.Right)
                                         Next
                                     End If
 
