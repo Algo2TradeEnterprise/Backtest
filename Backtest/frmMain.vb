@@ -283,11 +283,11 @@ Public Class frmMain
                 Dim filename As String = String.Format("Option Buy")
                 Select Case backtestStrategy.RuleNumber
                     Case 0
-                        filename = String.Format("Pivot Trend Option Buy, Tgt: {0}, Per:{1}", rule.TypeOfTarget.ToString, rule.CapitalPercentage)
+                        filename = String.Format("Pivot Trend Option Buy, Tgt {0}, Per {1}", rule.TypeOfTarget.ToString, rule.CapitalPercentage)
                     Case 1
-                        filename = String.Format("HK MA Trend Option Buy, Tgt: {0}, Per:{1}", rule.TypeOfTarget.ToString, rule.CapitalPercentage)
+                        filename = String.Format("HK MA Trend Option Buy, Tgt {0}, Per {1}", rule.TypeOfTarget.ToString, rule.CapitalPercentage)
                     Case 2
-                        filename = String.Format("Central Pivot Trend Option Buy, Tgt: {0}, Per:{1}", rule.TypeOfTarget.ToString, rule.CapitalPercentage)
+                        filename = String.Format("Central Pivot Trend Option Buy, Tgt {0}, Per {1}", rule.TypeOfTarget.ToString, rule.CapitalPercentage)
                     Case Else
                         Throw New NotImplementedException
                 End Select
