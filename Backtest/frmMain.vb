@@ -303,6 +303,8 @@ Public Class frmMain
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using
+        Catch cex As OperationCanceledException
+            MsgBox(cex.Message, MsgBoxStyle.Critical)
         Catch ex As Exception
             MsgBox(ex.ToString, MsgBoxStyle.Critical)
         Finally

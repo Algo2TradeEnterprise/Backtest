@@ -48,6 +48,7 @@ Namespace StrategyHelper
                        ByVal signalDirection As TradeDirection,
                        ByVal entryDirection As TradeDirection,
                        ByVal entryType As TypeOfEntry,
+                       ByVal entryPrice As Decimal,
                        ByVal quantity As Integer,
                        ByVal lotSize As Integer,
                        ByVal entrySignalCandle As Payload,
@@ -58,6 +59,7 @@ Namespace StrategyHelper
                        ByVal spotATR As Decimal,
                        ByVal previousLoss As Decimal,
                        ByVal potentialTarget As Decimal)
+            _OriginatingStrategy = originatingStrategy
             _TradingSymbol = tradingSymbol
             _SpotTradingSymbol = spotTradingSymbol
             _StockType = stockType
@@ -65,6 +67,7 @@ Namespace StrategyHelper
             _SignalDirection = signalDirection
             _EntryDirection = entryDirection
             _EntryType = entryType
+            _EntryPrice = entryPrice
             _Quantity = quantity
             _LotSize = lotSize
             _EntrySignalCandle = entrySignalCandle
@@ -106,6 +109,7 @@ Namespace StrategyHelper
         Public ReadOnly Property SpotATR As Decimal
         Public ReadOnly Property PreviousLoss As Decimal
         Public ReadOnly Property PotentialTarget As Decimal
+        Public ReadOnly Property ContractRolloverEntry As Boolean
 
         Public ReadOnly Property CapitalRequiredWithMargin As Decimal
             Get
@@ -233,7 +237,8 @@ Namespace StrategyHelper
                                Optional ByVal previousLoss As Decimal = Decimal.MinValue,
                                Optional ByVal potentialTarget As Decimal = Decimal.MinValue,
                                Optional ByVal maxDrawUp As Decimal = Decimal.MinValue,
-                               Optional ByVal maxDrawDown As Decimal = Decimal.MinValue)
+                               Optional ByVal maxDrawDown As Decimal = Decimal.MinValue,
+                               Optional ByVal contractRolloverEntry As Boolean = False)
             If tradingSymbol IsNot Nothing Then _TradingSymbol = tradingSymbol
             If spotTradingSymbol IsNot Nothing Then _SpotTradingSymbol = spotTradingSymbol
             If stockType <> TypeOfStock.None Then _StockType = stockType
@@ -249,7 +254,7 @@ Namespace StrategyHelper
             If exitPrice <> Decimal.MinValue Then _ExitPrice = exitPrice
             If exitType <> TypeOfExit.None Then _ExitType = exitType
             If entrySignalCandle IsNot Nothing Then _EntrySignalCandle = entrySignalCandle
-            If exitSignalCandle IsNot Nothing Then _EntrySignalCandle = exitSignalCandle
+            If exitSignalCandle IsNot Nothing Then _ExitSignalCandle = exitSignalCandle
             If tradeCurrentStatus <> TradeStatus.None Then _TradeCurrentStatus = tradeCurrentStatus
             If childReference IsNot Nothing Then _ChildReference = childReference
             If parentReference IsNot Nothing Then _ParentReference = parentReference
@@ -260,6 +265,7 @@ Namespace StrategyHelper
             If potentialTarget <> Decimal.MinValue Then _PotentialTarget = potentialTarget
             If maxDrawUp <> Decimal.MinValue Then _MaxDrawUp = maxDrawUp
             If maxDrawDown <> Decimal.MinValue Then _MaxDrawDown = maxDrawDown
+            If  contractRolloverEntry Then _ContractRolloverEntry = contractRolloverEntry
         End Sub
 
         Public Sub UpdateOriginatingStrategy(ByVal originatingStrategy As Strategy)

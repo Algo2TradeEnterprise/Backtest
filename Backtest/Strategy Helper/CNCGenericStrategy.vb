@@ -46,7 +46,7 @@ Namespace StrategyHelper
                     _canceller.Token.ThrowIfCancellationRequested()
                     Dim stockList As List(Of StockDetails) = GetStockData(tradeCheckingDate)
                     _canceller.Token.ThrowIfCancellationRequested()
-                    OnHeartbeat("Adding Running stocks")
+                    OnHeartbeat("Adding active stocks")
                     Dim activeStocks As List(Of StockDetails) = GetAllActiveStocks()
                     If activeStocks IsNot Nothing AndAlso activeStocks.Count > 0 Then
                         For Each runningStock In activeStocks
@@ -62,6 +62,7 @@ Namespace StrategyHelper
                     If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
                         Dim checkForEntryExit As Boolean = False
                         Dim stocksRuleData As Dictionary(Of String, StrategyRule) = Nothing
+                        OnHeartbeat("Connecting DB")
                         Dim nextTradingDay As Date = Cmn.GetNexTradingDay(Common.DataBaseTable.EOD_POSITIONAL, tradeCheckingDate)
                         If nextTradingDay = Date.MinValue Then nextTradingDay = Now.Date
                         Dim stkCtr As Integer = 0
@@ -160,7 +161,7 @@ Namespace StrategyHelper
                                     End If
                                 Next
 
-                                startMinute = startMinute.Add(TimeSpan.FromMinutes(Me.SignalTimeFrame))
+                                startMinute = startMinute.Add(TimeSpan.FromMinutes(1))
                             End While
                         End If
                     End If
@@ -202,8 +203,8 @@ Namespace StrategyHelper
                                         {.TradingSymbol = tradingSymbol,
                                          .LotSize = lotSize}
                                 'Dim detailsOfStock As StockDetails = New StockDetails With
-                                '            {.TradingSymbol = "ICICIBANK",
-                                '             .LotSize = 1375}
+                                '        {.TradingSymbol = "ICICIBANK",
+                                '         .LotSize = 1375}
 
                                 If ret Is Nothing Then ret = New List(Of StockDetails)
                                 ret.Add(detailsOfStock)

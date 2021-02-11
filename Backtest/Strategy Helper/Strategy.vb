@@ -57,6 +57,7 @@ Namespace StrategyHelper
             Me.StockFileName = stockFilename
             Me.RuleNumber = ruleNumber
             Me.RuleSettings = ruleSettings
+            _AvailableCapital = Me.UsableCapital
 
             Cmn = New Common(_canceller)
             'AddHandler Cmn.Heartbeat, AddressOf OnHeartbeat
@@ -191,9 +192,11 @@ Namespace StrategyHelper
 
         Public Sub PlaceOrder(ByVal currentTrade As Trade, ByVal currentTick As Payload, ByVal currentTime As Date)
             If currentTrade IsNot Nothing Then
-                If Me._AvailableCapital >= currentTrade.CapitalRequiredWithMargin AndAlso
-                    _LogicalActiveTradeCount < Me.NumberOfLogicalActiveTrade Then
-                    If currentTrade.EntryType = Trade.TypeOfEntry.Fresh Then
+                If (Me._AvailableCapital >= currentTrade.CapitalRequiredWithMargin AndAlso
+                    _LogicalActiveTradeCount < Me.NumberOfLogicalActiveTrade) OrElse
+                    currentTrade.EntryType <> Trade.TypeOfEntry.Fresh OrElse currentTrade.ContractRolloverEntry Then
+                    If currentTrade.EntryType = Trade.TypeOfEntry.Fresh AndAlso
+                        Not currentTrade.ContractRolloverEntry Then
                         _LogicalActiveTradeCount += 1
                     End If
                     currentTrade.UpdateTrade(entryTime:=currentTime, tradeCurrentStatus:=Trade.TradeStatus.Open)
@@ -231,7 +234,8 @@ Namespace StrategyHelper
                     _LogicalActiveTradeCount -= 1
                 Else
                     If currentTrade.TradeCurrentStatus = Trade.TradeStatus.Cancel AndAlso
-                        currentTrade.EntryType = Trade.TypeOfEntry.Fresh Then
+                        currentTrade.EntryType = Trade.TypeOfEntry.Fresh AndAlso
+                        Not currentTrade.ContractRolloverEntry Then
                         _LogicalActiveTradeCount -= 1
                     End If
                 End If
@@ -319,6 +323,8 @@ Namespace StrategyHelper
                         Dim stockData As StockDetails = New StockDetails With
                             {.TradingSymbol = runningStock,
                             .LotSize = lastEntryTrade.LotSize}
+
+                        If ret Is Nothing Then ret = New List(Of StockDetails)
                         ret.Add(stockData)
                     End If
                 Next
@@ -349,6 +355,11 @@ Namespace StrategyHelper
                             allCapitalData IsNot Nothing AndAlso allCapitalData.Count > 0 AndAlso
                             allDayWiseActiveTradeCount IsNot Nothing AndAlso allDayWiseActiveTradeCount.Count > 0 Then
                             OnHeartbeat("Calculating summary")
+                            For Each runningStock In allTradesData
+                                For Each runningTrade In runningStock.Value
+                                    runningTrade.UpdateOriginatingStrategy(Me)
+                                Next
+                            Next
                             Dim logicalTradeSummary As Dictionary(Of String, Summary) = Nothing
                             If allTradesData IsNot Nothing AndAlso allTradesData.Count > 0 Then
                                 For Each runningStock In allTradesData

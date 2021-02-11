@@ -118,14 +118,6 @@ Namespace StrategyHelper
                     End If
                 End If
 
-                If currentTickTime >= _TradeStartTime Then
-                    signal = IsFreshEntrySignalReceived(currentTickTime)
-                ElseIf _ParentStrategy.SignalTimeFrame < 375 Then
-                    currentMinute = _ParentStrategy.GetCurrentXMinuteCandleTime(currentTickTime, _ParentStrategy.SignalTimeFrame)
-                    If currentTickTime >= currentMinute.AddMinutes(_ParentStrategy.SignalTimeFrame - 2) Then
-                        signal = IsFreshEntrySignalReceived(currentTickTime)
-                    End If
-                End If
                 If signal IsNot Nothing AndAlso signal.Item1 Then
                     Dim targetReached As Boolean = True
                     Dim targetLeftPercentage As Decimal = 0
@@ -138,7 +130,7 @@ Namespace StrategyHelper
                                                                             End If
                                                                         End Function)
                         If (_ParentStrategy.SignalTimeFrame >= 375 AndAlso signal.Item2.PayloadDate.Date <> _TradingDate.Date) OrElse
-                            signal.Item2.PayloadDate <> currentMinute Then
+                            (_ParentStrategy.SignalTimeFrame < 375 AndAlso signal.Item2.PayloadDate <> currentMinute) Then
                             Dim todayHigh As Decimal = _InputMinPayload.Max(Function(x)
                                                                                 If x.Key.Date = _TradingDate.Date AndAlso x.Key < currentTickTime Then
                                                                                     Return x.Value.High
@@ -168,7 +160,7 @@ Namespace StrategyHelper
                                                                           End If
                                                                       End Function)
                         If (_ParentStrategy.SignalTimeFrame >= 375 AndAlso signal.Item2.PayloadDate.Date <> _TradingDate.Date) OrElse
-                            signal.Item2.PayloadDate <> currentMinute Then
+                            (_ParentStrategy.SignalTimeFrame < 375 AndAlso signal.Item2.PayloadDate <> currentMinute) Then
                             Dim todayLow As Decimal = _InputMinPayload.Min(Function(x)
                                                                                If x.Key.Date = _TradingDate.Date AndAlso x.Key < currentTickTime Then
                                                                                    Return x.Value.Low
@@ -208,7 +200,7 @@ Namespace StrategyHelper
                                 Dim quantity As Integer = _LotSize
                                 Dim entryPrice As Decimal = currentOptTick.Open
                                 Dim targetPrice As Decimal = ConvertFloorCeling(entryPrice + spotATR / 2, _ParentStrategy.TickSize, RoundOfType.Celing)
-                                Dim potentialTarget As Decimal = _ParentStrategy.CalculatePLAfterBrokerage(_TradingSymbol, entryPrice, targetPrice, quantity, _LotSize, Trade.TypeOfStock.Options)
+                                Dim potentialTarget As Decimal = _ParentStrategy.CalculatePLAfterBrokerage(_TradingSymbol, entryPrice, targetPrice, quantity, _LotSize, Trade.TypeOfStock.Options) - 1
 
                                 Dim tradeToPlace As Trade = New Trade(originatingStrategy:=_ParentStrategy,
                                                                       tradingSymbol:=optionTradingSymbol,
@@ -218,6 +210,7 @@ Namespace StrategyHelper
                                                                       signalDirection:=directionToCheck,
                                                                       entryDirection:=Trade.TradeDirection.Buy,
                                                                       entryType:=entryType,
+                                                                      entryPrice:=currentOptTick.Open,
                                                                       quantity:=quantity,
                                                                       lotSize:=_LotSize,
                                                                       entrySignalCandle:=signal.Item2,
@@ -254,6 +247,7 @@ Namespace StrategyHelper
                                                                           signalDirection:=lastCompleteTrade.SignalDirection,
                                                                           entryDirection:=lastCompleteTrade.EntryDirection,
                                                                           entryType:=lastCompleteTrade.EntryType,
+                                                                          entryPrice:=currentOptTick.Open,
                                                                           quantity:=lastCompleteTrade.Quantity,
                                                                           lotSize:=lastCompleteTrade.LotSize,
                                                                           entrySignalCandle:=lastCompleteTrade.EntrySignalCandle,
@@ -264,7 +258,7 @@ Namespace StrategyHelper
                                                                           spotATR:=lastCompleteTrade.SpotATR,
                                                                           previousLoss:=lastCompleteTrade.PreviousLoss,
                                                                           potentialTarget:=lastCompleteTrade.PotentialTarget)
-
+                                    tradeToPlace.UpdateTrade(contractRolloverEntry:=True)
                                     If ret Is Nothing Then ret = New List(Of Tuple(Of Trade, Payload))
                                     ret.Add(New Tuple(Of Trade, Payload)(tradeToPlace, currentOptTick))
                                 End If
@@ -297,7 +291,8 @@ Namespace StrategyHelper
                                         Dim pl As Decimal = _ParentStrategy.CalculatePLAfterBrokerage(_TradingSymbol, entryPrice, targetPrice, ctr * _LotSize, _LotSize, Trade.TypeOfStock.Options)
                                         If pl >= lossToRecover * -1 Then
                                             quantity = ctr * _LotSize + _LotSize
-                                            potentialTarget = _ParentStrategy.CalculatePLAfterBrokerage(_TradingSymbol, entryPrice, targetPrice, quantity, _LotSize, Trade.TypeOfStock.Options)
+                                            'potentialTarget = _ParentStrategy.CalculatePLAfterBrokerage(_TradingSymbol, entryPrice, targetPrice, quantity, _LotSize, Trade.TypeOfStock.Options)
+                                            potentialTarget = pl - 1
                                             Exit For
                                         End If
                                     Next
@@ -310,6 +305,7 @@ Namespace StrategyHelper
                                                                           signalDirection:=directionToCheck,
                                                                           entryDirection:=Trade.TradeDirection.Buy,
                                                                           entryType:=entryType,
+                                                                          entryPrice:=currentOptTick.Open,
                                                                           quantity:=quantity,
                                                                           lotSize:=_LotSize,
                                                                           entrySignalCandle:=lastCompleteTrade.ExitSignalCandle,
@@ -357,9 +353,17 @@ Namespace StrategyHelper
                             End If
 
                             'Exit Check
-                            If GetOverallPL(runningTrade, currentTick) >= runningTrade.PotentialTarget Then
+                            If runningTrade.EntryType = Trade.TypeOfEntry.Fresh AndAlso
+                                GetFreshTradePL(runningTrade, currentTick) >= runningTrade.PotentialTarget Then
                                 If ret Is Nothing Then ret = New List(Of Tuple(Of Trade, Payload, Trade.TypeOfExit, Payload))
                                 ret.Add(New Tuple(Of Trade, Payload, Trade.TypeOfExit, Payload)(runningTrade, currentTick, Trade.TypeOfExit.Target, Nothing))
+                            ElseIf runningTrade.EntryType = Trade.TypeOfEntry.Reversal AndAlso
+                                GetLossMakeupTradePL(runningTrade, currentTick) >= runningTrade.PotentialTarget Then
+                                If ret Is Nothing Then ret = New List(Of Tuple(Of Trade, Payload, Trade.TypeOfExit, Payload))
+                                ret.Add(New Tuple(Of Trade, Payload, Trade.TypeOfExit, Payload)(runningTrade, currentTick, Trade.TypeOfExit.Target, Nothing))
+                                'elseIf GetOverallPL(runningTrade, currentTick) >= runningTrade.PotentialTarget Then
+                                '    If ret Is Nothing Then ret = New List(Of Tuple(Of Trade, Payload, Trade.TypeOfExit, Payload))
+                                '    ret.Add(New Tuple(Of Trade, Payload, Trade.TypeOfExit, Payload)(runningTrade, currentTick, Trade.TypeOfExit.Target, Nothing))
                             Else
                                 Dim reverseSignal As Tuple(Of Boolean, Payload) = IsReverseSignalReceived(runningTrade, currentTick)
                                 If reverseSignal IsNot Nothing AndAlso reverseSignal.Item1 AndAlso reverseSignal.Item2 IsNot Nothing Then
@@ -426,13 +430,47 @@ Namespace StrategyHelper
             Dim allTrades As List(Of Trade) = _ParentStrategy.GetAllTradesByParentTag(currentTrade.ParentReference, _TradingSymbol)
             If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
                 For Each runningTrade In allTrades
-                    If runningTrade.TradeCurrentStatus = Trade.TradeStatus.Cancel Then
+                    If runningTrade.TradeCurrentStatus <> Trade.TradeStatus.Cancel Then
                         If runningTrade.TradeCurrentStatus = Trade.TradeStatus.Inprogress Then
                             If runningTrade.EntryDirection = Trade.TradeDirection.Buy Then
                                 ret += _ParentStrategy.CalculatePLAfterBrokerage(_TradingSymbol, runningTrade.EntryPrice, currentTick.Open, runningTrade.Quantity, runningTrade.LotSize, runningTrade.StockType)
                             ElseIf runningTrade.EntryDirection = Trade.TradeDirection.Sell Then
                                 ret += _ParentStrategy.CalculatePLAfterBrokerage(_TradingSymbol, currentTick.Open, runningTrade.EntryPrice, runningTrade.Quantity, runningTrade.LotSize, runningTrade.StockType)
                             End If
+                        Else
+                            ret += runningTrade.PLAfterBrokerage
+                        End If
+                    End If
+                Next
+            End If
+            Return ret
+        End Function
+
+        Private Function GetLossMakeupTradePL(ByVal currentTrade As Trade, ByVal currentTick As Payload) As Decimal
+            Dim ret As Decimal = 0
+            Dim allTrades As List(Of Trade) = _ParentStrategy.GetAllTradesByChildTag(currentTrade.ChildReference, _TradingSymbol)
+            If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
+                For Each runningTrade In allTrades
+                    If runningTrade.EntryType = Trade.TypeOfEntry.Reversal Then
+                        If runningTrade.TradeCurrentStatus = Trade.TradeStatus.Inprogress Then
+                            ret += _ParentStrategy.CalculatePLAfterBrokerage(_TradingSymbol, runningTrade.EntryPrice, currentTick.Open, runningTrade.Quantity - runningTrade.LotSize, runningTrade.LotSize, runningTrade.StockType)
+                        Else
+                            ret += _ParentStrategy.CalculatePLAfterBrokerage(_TradingSymbol, runningTrade.EntryPrice, runningTrade.ExitPrice, runningTrade.Quantity - runningTrade.LotSize, runningTrade.LotSize, runningTrade.StockType)
+                        End If
+                    End If
+                Next
+            End If
+            Return ret
+        End Function
+
+        Private Function GetFreshTradePL(ByVal currentTrade As Trade, ByVal currentTick As Payload) As Decimal
+            Dim ret As Decimal = 0
+            Dim allTrades As List(Of Trade) = _ParentStrategy.GetAllTradesByChildTag(currentTrade.ChildReference, _TradingSymbol)
+            If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
+                For Each runningTrade In allTrades
+                    If runningTrade.EntryType = Trade.TypeOfEntry.Fresh Then
+                        If runningTrade.TradeCurrentStatus = Trade.TradeStatus.Inprogress Then
+                            ret += _ParentStrategy.CalculatePLAfterBrokerage(_TradingSymbol, runningTrade.EntryPrice, currentTick.Open, runningTrade.Quantity, runningTrade.LotSize, runningTrade.StockType)
                         Else
                             ret += runningTrade.PLAfterBrokerage
                         End If
