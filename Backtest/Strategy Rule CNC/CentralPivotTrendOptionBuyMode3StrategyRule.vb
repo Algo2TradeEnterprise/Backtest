@@ -133,21 +133,38 @@ Public Class CentralPivotTrendOptionBuyMode3StrategyRule
 #Region "Pivot Points Trend Calculation"
     Private Sub CalculatePivotPoints(ByVal inputPayload As Dictionary(Of Date, Payload), ByRef outputPayload As Dictionary(Of Date, PivotPoints))
         If inputPayload IsNot Nothing AndAlso inputPayload.Count > 0 Then
-            For Each runningPaylod In inputPayload
+            For Each runningPayload In inputPayload
                 Dim pivotPointsData As PivotPoints = New PivotPoints
-                Dim curHigh As Decimal = runningPaylod.Value.High
-                Dim curLow As Decimal = runningPaylod.Value.Low
-                Dim curClose As Decimal = runningPaylod.Value.Close
-                pivotPointsData.Pivot = (curHigh + curLow + curClose) / 3
-                pivotPointsData.Support1 = (2 * pivotPointsData.Pivot) - curHigh
-                pivotPointsData.Resistance1 = (2 * pivotPointsData.Pivot) - curLow
-                pivotPointsData.Support2 = pivotPointsData.Pivot - (curHigh - curLow)
-                pivotPointsData.Resistance2 = pivotPointsData.Pivot + (curHigh - curLow)
-                pivotPointsData.Support3 = pivotPointsData.Support2 - (curHigh - curLow)
-                pivotPointsData.Resistance3 = pivotPointsData.Resistance2 + (curHigh - curLow)
+                Dim curHigh As Decimal = _InputMinPayload.Max(Function(x)
+                                                                  If x.Key.Date = runningPayload.Key.Date Then
+                                                                      Return x.Value.High
+                                                                  Else
+                                                                      Return Decimal.MinValue
+                                                                  End If
+                                                              End Function)
+                If curHigh <> Decimal.MinValue Then
+                    Dim curLow As Decimal = _InputMinPayload.Min(Function(x)
+                                                                     If x.Key.Date = runningPayload.Key.Date Then
+                                                                         Return x.Value.Low
+                                                                     Else
+                                                                         Return Decimal.MaxValue
+                                                                     End If
+                                                                 End Function)
+                    Dim curClose As Decimal = _InputMinPayload.Where(Function(x)
+                                                                         Return x.Key.Date = runningPayload.Key.Date
+                                                                     End Function).LastOrDefault.Value.Close
 
-                If outputPayload Is Nothing Then outputPayload = New Dictionary(Of Date, PivotPoints)
-                outputPayload.Add(runningPaylod.Key, pivotPointsData)
+                    pivotPointsData.Pivot = (curHigh + curLow + curClose) / 3
+                    pivotPointsData.Support1 = (2 * pivotPointsData.Pivot) - curHigh
+                    pivotPointsData.Resistance1 = (2 * pivotPointsData.Pivot) - curLow
+                    pivotPointsData.Support2 = pivotPointsData.Pivot - (curHigh - curLow)
+                    pivotPointsData.Resistance2 = pivotPointsData.Pivot + (curHigh - curLow)
+                    pivotPointsData.Support3 = pivotPointsData.Support2 - (curHigh - curLow)
+                    pivotPointsData.Resistance3 = pivotPointsData.Resistance2 + (curHigh - curLow)
+
+                    If outputPayload Is Nothing Then outputPayload = New Dictionary(Of Date, PivotPoints)
+                    outputPayload.Add(runningPayload.Key, pivotPointsData)
+                End If
             Next
         End If
     End Sub
