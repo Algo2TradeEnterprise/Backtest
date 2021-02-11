@@ -69,10 +69,10 @@ Public Class PivotTrendOptionBuyMode3StrategyRule
                     End If
                 End If
             Next
-            _dependentInstruments.Add(_TradingSymbol, _InputPayload)
+            _dependentInstruments.Add(_TradingSymbol, _InputMinPayload)
         Else
             _dependentInstruments = New Dictionary(Of String, Dictionary(Of Date, Payload))
-            _dependentInstruments.Add(_TradingSymbol, _InputPayload)
+            _dependentInstruments.Add(_TradingSymbol, _InputMinPayload)
         End If
     End Sub
 

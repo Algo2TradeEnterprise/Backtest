@@ -33,10 +33,10 @@ Namespace StrategyHelper
         Protected ReadOnly _NextTradingDay As Date
         Protected ReadOnly _TradingSymbol As String
         Protected ReadOnly _LotSize As Integer
-        Protected ReadOnly _Entities As RuleEntities
         Protected ReadOnly _ParentStrategy As Strategy
         Protected ReadOnly _Cts As CancellationTokenSource
-        Protected ReadOnly _InputPayload As Dictionary(Of Date, Payload)
+        Protected ReadOnly _InputMinPayload As Dictionary(Of Date, Payload)
+        Protected ReadOnly _InputEODPayload As Dictionary(Of Date, Payload)
         Protected ReadOnly _TradeStartTime As Date
 
         Protected _SignalPayload As Dictionary(Of Date, Payload)
@@ -45,29 +45,29 @@ Namespace StrategyHelper
                        ByVal nextTradingDay As Date,
                        ByVal tradingSymbol As String,
                        ByVal lotSize As Integer,
-                       ByVal entities As RuleEntities,
                        ByVal parentStrategy As Strategy,
                        ByVal canceller As CancellationTokenSource,
-                       ByVal inputPayload As Dictionary(Of Date, Payload))
+                       ByVal inputMinPayload As Dictionary(Of Date, Payload),
+                       ByVal inputEODPayload As Dictionary(Of Date, Payload))
             _TradingDate = tradingDate
             _NextTradingDay = nextTradingDay
             _TradingSymbol = tradingSymbol
             _LotSize = lotSize
-            _Entities = entities
             _ParentStrategy = parentStrategy
             _Cts = canceller
-            _InputPayload = inputPayload
+            _InputMinPayload = inputMinPayload
+            _InputEODPayload = inputEODPayload
             _TradeStartTime = New Date(_TradingDate.Year, _TradingDate.Month, _TradingDate.Day, _ParentStrategy.TradeStartTime.Hours, _ParentStrategy.TradeStartTime.Minutes, _ParentStrategy.TradeStartTime.Seconds)
         End Sub
 
         Public Overridable Sub CompletePreProcessing()
-            If _ParentStrategy IsNot Nothing AndAlso _InputPayload IsNot Nothing AndAlso _InputPayload.Count > 0 Then
+            If _ParentStrategy IsNot Nothing AndAlso _InputMinPayload IsNot Nothing AndAlso _InputMinPayload.Count > 0 Then
                 If _ParentStrategy.SignalTimeFrame > 1 Then
                     Dim exchangeStartTime As Date = New Date(_TradingDate.Year, _TradingDate.Month, _TradingDate.Day,
                                                              _ParentStrategy.ExchangeStartTime.Hours, _ParentStrategy.ExchangeStartTime.Minutes, _ParentStrategy.ExchangeStartTime.Seconds)
-                    _SignalPayload = Common.ConvertPayloadsToXMinutes(_InputPayload, _ParentStrategy.SignalTimeFrame, exchangeStartTime)
+                    _SignalPayload = Common.ConvertPayloadsToXMinutes(_InputMinPayload, _ParentStrategy.SignalTimeFrame, exchangeStartTime)
                 Else
-                    _SignalPayload = _InputPayload
+                    _SignalPayload = _InputMinPayload
                 End If
             End If
         End Sub

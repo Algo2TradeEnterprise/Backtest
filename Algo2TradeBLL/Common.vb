@@ -807,6 +807,8 @@ Public Class Common
                 cm = New MySqlCommand("SELECT MIN(`SnapshotDate`) FROM `eod_prices_commodity` WHERE `SnapshotDate`<=@ed AND `SnapshotDate`>@sd", conn)
             Case DataBaseTable.EOD_Futures
                 cm = New MySqlCommand("SELECT MIN(`SnapshotDate`) FROM `eod_prices_futures` WHERE `SnapshotDate`<=@ed AND `SnapshotDate`>@sd", conn)
+            Case DataBaseTable.EOD_POSITIONAL
+                cm = New MySqlCommand("SELECT MIN(`SnapshotDate`) FROM `eod_positional_data` WHERE `SnapshotDate`<=@ed AND `SnapshotDate`>@sd", conn)
         End Select
 
         _cts.Token.ThrowIfCancellationRequested()
