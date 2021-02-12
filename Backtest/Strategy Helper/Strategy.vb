@@ -213,6 +213,8 @@ Namespace StrategyHelper
                     Dim currentMinute As Date = GetCurrentXMinuteCandleTime(currentTime, 1)
                     If currentTick.PayloadDate >= currentMinute AndAlso currentTick.Volume > 0 Then
                         currentTrade.UpdateTrade(entryPrice:=currentTick.Open, entryTime:=currentTime, tradeCurrentStatus:=Trade.TradeStatus.Inprogress)
+                    Else
+                        ExitOrder(currentTrade, currentTick, currentTime, Trade.TypeOfExit.None, Nothing)
                     End If
                 End If
             End If
@@ -816,6 +818,7 @@ Namespace StrategyHelper
                                             colNumber += 1
 
                                             Dim capitalUsed As Decimal = 0
+                                            Dim previousLoss As Decimal = 0
                                             For Each runningTrade In runningSummary.Value.AllTrades.OrderBy(Function(x)
                                                                                                                 Return x.EntryTime
                                                                                                             End Function)
@@ -840,15 +843,16 @@ Namespace StrategyHelper
                                                     capitalUsed += runningTrade.CapitalRequiredWithMargin
                                                     excelWriter.SetData(rowNumber, colNumber, capitalUsed, "##,##,##0.00", ExcelHelper.XLAlign.Right)
                                                     colNumber += 1
-                                                    excelWriter.SetData(rowNumber, colNumber, runningTrade.MaxDrawUpPL, "##,##,##0.00", ExcelHelper.XLAlign.Right)
+                                                    excelWriter.SetData(rowNumber, colNumber, runningTrade.MaxDrawUpPL + previousLoss, "##,##,##0.00", ExcelHelper.XLAlign.Right)
                                                     colNumber += 1
 
-                                                    Dim runningROI As Decimal = (runningTrade.MaxDrawUpPL / capitalUsed) * 100
+                                                    Dim runningROI As Decimal = ((runningTrade.MaxDrawUpPL + previousLoss) / capitalUsed) * 100
                                                     excelWriter.SetData(rowNumber, colNumber, runningROI, "##,##,##0.00", ExcelHelper.XLAlign.Right)
                                                     colNumber += 1
                                                     If runningROI > maxROI Then maxROI = runningROI
 
                                                     capitalUsed -= runningTrade.CapitalRequiredWithMargin + runningTrade.PLAfterBrokerage
+                                                    previousLoss += runningTrade.PLAfterBrokerage
                                                 End If
                                             Next
                                             excelWriter.SetData(rowNumber, roiColumnNumber, maxROI, "##,##,##0.00", ExcelHelper.XLAlign.Right)
