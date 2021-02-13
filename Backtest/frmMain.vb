@@ -262,7 +262,7 @@ Public Class frmMain
                     Throw New NotImplementedException
             End Select
 
-            Dim tgtPerList As List(Of Decimal) = New List(Of Decimal) From {0, 15, 25, 50}
+            Dim tgtPerList As List(Of Decimal) = New List(Of Decimal) From {0, 5, 10, 15}
             For Each runningTgt In tgtPerList
                 Dim rule As RuleEntities = Nothing
                 If runningTgt = 0 Then
