@@ -400,6 +400,10 @@ Namespace StrategyHelper
                                                                                             Return x.OverallPL
                                                                                         End Function)
                                 Dim tradeCount As Integer = logicalTradeSummary.Count
+                                Dim individualMaxCapital As Decimal = logicalTradeSummary.Values.Max(Function(x)
+                                                                                                         Return x.MaxCapital
+                                                                                                     End Function)
+
                                 Dim maxCapital As Decimal = allCapitalData.Max(Function(x)
                                                                                    Return x.RunningCapital
                                                                                End Function)
@@ -414,11 +418,12 @@ Namespace StrategyHelper
                                                  fileName)
                                 Else
                                     Dim roi As Decimal = (totalPL / maxCapital) * 100
-                                    fileName = String.Format("PL {0},Cap {1},ROI {2},LgclTrd {3},{4}.xlsx",
+                                    fileName = String.Format("PL {0},Cap {1},ROI {2},LgclTrd {3},MxCp {4},{5}.xlsx",
                                                  Math.Round(totalPL, 0),
                                                  Math.Round(maxCapital, 0),
                                                  Math.Round(roi, 0),
                                                  tradeCount,
+                                                 Math.Round(individualMaxCapital, 0),
                                                  fileName)
                                 End If
 
