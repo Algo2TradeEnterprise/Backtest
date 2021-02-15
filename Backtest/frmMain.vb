@@ -251,7 +251,7 @@ Public Class frmMain
             Dim endDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrEndDate)
             Dim ruleNumber As Integer = GetComboBoxIndex_ThreadSafe(cmbRule)
             Dim stockFileName As String = Nothing
-            Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
+            Select Case ruleNumber
                 Case 0
                     stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "EOD Pivot Trend High ATR High Volume Stocks.csv")
                 Case 1
