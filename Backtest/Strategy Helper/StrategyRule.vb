@@ -225,7 +225,7 @@ Namespace StrategyHelper
                                                                       spotPrice:=currentSpotTick.Open,
                                                                       spotATR:=spotATR,
                                                                       previousLoss:=lossToRecover,
-                                                                      potentialTarget:=potentialTarget)
+                                                                      potentialTarget:=Math.Max(potentialTarget, 1000))
 
                                 If ret Is Nothing Then ret = New List(Of Tuple(Of Trade, Payload))
                                 ret.Add(New Tuple(Of Trade, Payload)(tradeToPlace, currentOptTick))
@@ -270,7 +270,7 @@ Namespace StrategyHelper
                                                                           spotPrice:=lastCompleteTrade.SpotPrice,
                                                                           spotATR:=lastCompleteTrade.SpotATR,
                                                                           previousLoss:=lastCompleteTrade.PreviousLoss,
-                                                                          potentialTarget:=potentialTarget)
+                                                                          potentialTarget:=Math.Max(potentialTarget, 1000))
                                     tradeToPlace.UpdateTrade(contractRolloverEntry:=True)
                                     If ret Is Nothing Then ret = New List(Of Tuple(Of Trade, Payload))
                                     ret.Add(New Tuple(Of Trade, Payload)(tradeToPlace, currentOptTick))
@@ -333,7 +333,7 @@ Namespace StrategyHelper
                                                                           spotPrice:=currentSpotTick.Open,
                                                                           spotATR:=spotATR,
                                                                           previousLoss:=lossToRecover,
-                                                                          potentialTarget:=potentialTarget)
+                                                                          potentialTarget:=Math.Max(potentialTarget, 1000))
 
                                     If ret Is Nothing Then ret = New List(Of Tuple(Of Trade, Payload))
                                     ret.Add(New Tuple(Of Trade, Payload)(tradeToPlace, currentOptTick))
