@@ -260,6 +260,8 @@ Public Class frmMain
                     stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "EOD Central Pivot Trend High ATR High Volume Stocks.csv")
                 Case 3
                     stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "EOD HK Keltner Trend High ATR High Volume Stocks.csv")
+                Case 4
+                    stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "EOD Ichimoku Trend High ATR High Volume Stocks.csv")
                 Case Else
                     Throw New NotImplementedException
             End Select
@@ -300,6 +302,8 @@ Public Class frmMain
                             filename = String.Format("Central Pivot Trend Option Buy, Tgt {0}, Per {1}", rule.TypeOfTarget.ToString, rule.CapitalPercentage)
                         Case 3
                             filename = String.Format("HK Keltner Trend Option Buy, Tgt {0}, Per {1}", rule.TypeOfTarget.ToString, rule.CapitalPercentage)
+                        Case 4
+                            filename = String.Format("Ichimoku Trend Option Buy, Tgt {0}, Per {1}", rule.TypeOfTarget.ToString, rule.CapitalPercentage)
                         Case Else
                             Throw New NotImplementedException
                     End Select

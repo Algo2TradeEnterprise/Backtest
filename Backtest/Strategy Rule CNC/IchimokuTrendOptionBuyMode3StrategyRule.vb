@@ -3,10 +3,10 @@ Imports System.Threading
 Imports Utilities.Numbers
 Imports Backtest.StrategyHelper
 
-Public Class HKKeltnerTrendOptionBuyMode3StrategyRule
+Public Class IchimokuTrendOptionBuyMode3StrategyRule
     Inherits StrategyRule
 
-    Private _hkKeltnerTrendPayload As Dictionary(Of Date, Color) = Nothing
+    Private _ichimokuTrendPayload As Dictionary(Of Date, Color) = Nothing
     Private _currentDayPivotTrends As Dictionary(Of Date, Color) = Nothing
 
     Public Sub New(ByVal canceller As CancellationTokenSource,
@@ -23,11 +23,11 @@ Public Class HKKeltnerTrendOptionBuyMode3StrategyRule
     Public Overrides Sub CompletePreProcessing()
         MyBase.CompletePreProcessing()
 
-        CalculateHKKeltnerChannelTrend(_SignalPayload, _hkKeltnerTrendPayload)
-        If _hkKeltnerTrendPayload IsNot Nothing AndAlso _hkKeltnerTrendPayload.Count > 0 Then
-            For Each runningPaylod In _hkKeltnerTrendPayload.OrderByDescending(Function(x)
-                                                                                   Return x.Key
-                                                                               End Function)
+        CalculateIchimokuTrend(_SignalPayload, _ichimokuTrendPayload)
+        If _ichimokuTrendPayload IsNot Nothing AndAlso _ichimokuTrendPayload.Count > 0 Then
+            For Each runningPaylod In _ichimokuTrendPayload.OrderByDescending(Function(x)
+                                                                                  Return x.Key
+                                                                              End Function)
                 If runningPaylod.Key.Date = _TradingDate.Date Then
                     If _currentDayPivotTrends Is Nothing Then _currentDayPivotTrends = New Dictionary(Of Date, Color)
                     _currentDayPivotTrends.Add(runningPaylod.Key, runningPaylod.Value)
@@ -37,7 +37,7 @@ Public Class HKKeltnerTrendOptionBuyMode3StrategyRule
             Next
             If _currentDayPivotTrends IsNot Nothing AndAlso _currentDayPivotTrends.Count > 0 Then
                 For Each runningPaylod In _currentDayPivotTrends
-                    _hkKeltnerTrendPayload.Remove(runningPaylod.Key)
+                    _ichimokuTrendPayload.Remove(runningPaylod.Key)
                 Next
             End If
         End If
@@ -47,35 +47,35 @@ Public Class HKKeltnerTrendOptionBuyMode3StrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         If _ParentStrategy.SignalTimeFrame >= 375 Then
             If currentTickTime >= _TradeStartTime Then
-                If Not _hkKeltnerTrendPayload.ContainsKey(_TradingDate) AndAlso _currentDayPivotTrends.ContainsKey(_TradingDate) Then
-                    _hkKeltnerTrendPayload.Add(_TradingDate, _currentDayPivotTrends(_TradingDate))
+                If Not _ichimokuTrendPayload.ContainsKey(_TradingDate) AndAlso _currentDayPivotTrends.ContainsKey(_TradingDate) Then
+                    _ichimokuTrendPayload.Add(_TradingDate, _currentDayPivotTrends(_TradingDate))
                 End If
             End If
         Else
             Dim currentMinute As Date = _ParentStrategy.GetCurrentXMinuteCandleTime(currentTickTime, _ParentStrategy.SignalTimeFrame)
             If (currentTickTime >= currentMinute.AddMinutes(_ParentStrategy.SignalTimeFrame - 2) OrElse currentTickTime >= _TradeStartTime) AndAlso
-                Not _hkKeltnerTrendPayload.ContainsKey(currentMinute) AndAlso _currentDayPivotTrends.ContainsKey(currentMinute) Then
-                _hkKeltnerTrendPayload.Add(currentMinute, _currentDayPivotTrends(currentMinute))
+                Not _ichimokuTrendPayload.ContainsKey(currentMinute) AndAlso _currentDayPivotTrends.ContainsKey(currentMinute) Then
+                _ichimokuTrendPayload.Add(currentMinute, _currentDayPivotTrends(currentMinute))
             End If
         End If
     End Function
 
     Protected Overrides Function IsReverseSignalReceived(currentTrade As Trade, currentTick As Payload) As Tuple(Of Boolean, Payload)
         Dim ret As Tuple(Of Boolean, Payload) = Nothing
-        Dim trend As Color = _hkKeltnerTrendPayload.LastOrDefault.Value
+        Dim trend As Color = _ichimokuTrendPayload.LastOrDefault.Value
         If trend = Color.Red AndAlso currentTrade.SignalDirection = Trade.TradeDirection.Buy Then
-            ret = New Tuple(Of Boolean, Payload)(True, _SignalPayload(_hkKeltnerTrendPayload.LastOrDefault.Key))
+            ret = New Tuple(Of Boolean, Payload)(True, _SignalPayload(_ichimokuTrendPayload.LastOrDefault.Key))
         ElseIf trend = Color.Green AndAlso currentTrade.SignalDirection = Trade.TradeDirection.Sell Then
-            ret = New Tuple(Of Boolean, Payload)(True, _SignalPayload(_hkKeltnerTrendPayload.LastOrDefault.Key))
+            ret = New Tuple(Of Boolean, Payload)(True, _SignalPayload(_ichimokuTrendPayload.LastOrDefault.Key))
         End If
         Return ret
     End Function
 
     Protected Overrides Function IsFreshEntrySignalReceived(currentTickTime As Date) As Tuple(Of Boolean, Payload, Trade.TradeDirection)
         Dim ret As Tuple(Of Boolean, Payload, Trade.TradeDirection) = Nothing
-        Dim potentialSignalCandle As Payload = _SignalPayload(_hkKeltnerTrendPayload.LastOrDefault.Key)
-        Dim trend As Color = _hkKeltnerTrendPayload(potentialSignalCandle.PayloadDate)
-        Dim previousTrend As Color = _hkKeltnerTrendPayload(potentialSignalCandle.PreviousCandlePayload.PayloadDate)
+        Dim potentialSignalCandle As Payload = _SignalPayload(_ichimokuTrendPayload.LastOrDefault.Key)
+        Dim trend As Color = _ichimokuTrendPayload(potentialSignalCandle.PayloadDate)
+        Dim previousTrend As Color = _ichimokuTrendPayload(potentialSignalCandle.PreviousCandlePayload.PayloadDate)
         If trend = Color.Green Then
             If previousTrend = Color.Red Then
                 ret = New Tuple(Of Boolean, Payload, Trade.TradeDirection)(True, potentialSignalCandle, Trade.TradeDirection.Buy)
@@ -107,7 +107,7 @@ Public Class HKKeltnerTrendOptionBuyMode3StrategyRule
                                                                     End Function)
             If runningPayload.Value.PreviousCandlePayload IsNot Nothing AndAlso
                 runningPayload.Value.PreviousCandlePayload.PayloadDate < currentTime Then
-                Dim trend As Color = _hkKeltnerTrendPayload(runningPayload.Value.PreviousCandlePayload.PayloadDate)
+                Dim trend As Color = _ichimokuTrendPayload(runningPayload.Value.PreviousCandlePayload.PayloadDate)
                 If trend <> currentTrend Then
                     ret = runningPayload.Key
                     Exit For
@@ -117,26 +117,19 @@ Public Class HKKeltnerTrendOptionBuyMode3StrategyRule
         Return ret
     End Function
 
-#Region "HK Keltner Trend Calculation"
-    Private Sub CalculateHKKeltnerChannelTrend(ByVal inputPayload As Dictionary(Of Date, Payload), ByRef outputPayload As Dictionary(Of Date, Color))
+#Region "Ichimoku Trend Calculation"
+    Private Sub CalculateIchimokuTrend(ByVal inputPayload As Dictionary(Of Date, Payload), ByRef outputPayload As Dictionary(Of Date, Color))
         If inputPayload IsNot Nothing AndAlso inputPayload.Count > 0 Then
-            Dim hkPayload As Dictionary(Of Date, Payload) = Nothing
-            Indicator.HeikenAshi.ConvertToHeikenAshi(inputPayload, hkPayload)
-            Dim emaPayload As Dictionary(Of Date, Decimal) = Nothing
-            Dim highKeltnerPayload As Dictionary(Of Date, Decimal) = Nothing
-            Dim lowKeltnerPayload As Dictionary(Of Date, Decimal) = Nothing
-            Indicator.KeltnerChannel.CalculateEMAKeltnerChannel(50, 0.5, hkPayload, highKeltnerPayload, lowKeltnerPayload, emaPayload)
+            Dim leadingSpanAPayload As Dictionary(Of Date, Decimal) = Nothing
+            Dim leadingSpanBPayload As Dictionary(Of Date, Decimal) = Nothing
+            Indicator.IchimokuClouds.CalculateIchimokuClouds(9, 26, 52, 26, inputPayload, Nothing, Nothing, leadingSpanAPayload, leadingSpanBPayload, Nothing)
 
             Dim trend As Color = Color.White
-            For Each runningPayload In hkPayload
-                If runningPayload.Value.CandleStrengthHeikenAshi = Payload.StrongCandle.Bullish Then
-                    If runningPayload.Value.Close > highKeltnerPayload(runningPayload.Key) Then
-                        trend = Color.Green
-                    End If
-                ElseIf runningPayload.Value.CandleStrengthHeikenAshi = Payload.StrongCandle.Bearish Then
-                    If runningPayload.Value.Close < lowKeltnerPayload(runningPayload.Key) Then
-                        trend = Color.Red
-                    End If
+            For Each runningPayload In inputPayload
+                If runningPayload.Value.Close > Math.Max(leadingSpanAPayload(runningPayload.Key), leadingSpanBPayload(runningPayload.Key)) Then
+                    trend = Color.Green
+                ElseIf runningPayload.Value.Close < Math.Min(leadingSpanAPayload(runningPayload.Key), leadingSpanBPayload(runningPayload.Key)) Then
+                    trend = Color.Red
                 End If
 
                 If outputPayload Is Nothing Then outputPayload = New Dictionary(Of Date, Color)

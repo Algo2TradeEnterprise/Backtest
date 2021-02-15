@@ -113,6 +113,7 @@
     <Compile Include="Strategy Rule CNC\CentralPivotTrendOptionBuyMode3StrategyRule.vb" />
     <Compile Include="Strategy Rule CNC\HKKeltnerTrendOptionBuyMode3StrategyRule.vb" />
     <Compile Include="Strategy Rule CNC\HKMATrendOptionBuyMode3StrategyRule.vb" />
+    <Compile Include="Strategy Rule CNC\IchimokuTrendOptionBuyMode3StrategyRule.vb" />
     <Compile Include="Strategy Rule CNC\PivotTrendOptionBuyMode3StrategyRule.vb" />
   </ItemGroup>
   <ItemGroup>
