@@ -205,6 +205,16 @@ Namespace StrategyHelper
                                     Dim capital As Decimal = currentOptTick.Open * quantity / _ParentStrategy.MarginMultiplier
                                     If lossToRecover < 0 Then capital = capital + Math.Abs(lossToRecover)
                                     potentialTarget = capital * _ParentStrategy.RuleSettings.CapitalPercentage / 100
+
+                                    If potentialTarget < 1000 AndAlso
+                                        _ParentStrategy.RuleSettings.TypeOfQuantity = RuleEntities.QuantityType.Increase Then
+                                        Dim multiplier As Integer = Math.Ceiling(1000 / potentialTarget)
+                                        quantity = _LotSize * multiplier
+
+                                        capital = currentOptTick.Open * quantity / _ParentStrategy.MarginMultiplier
+                                        If lossToRecover < 0 Then capital = capital + Math.Abs(lossToRecover)
+                                        potentialTarget = capital * _ParentStrategy.RuleSettings.CapitalPercentage / 100
+                                    End If
                                 End If
 
                                 Dim tradeToPlace As Trade = New Trade(originatingStrategy:=_ParentStrategy,
