@@ -94,6 +94,7 @@
     <Compile Include="Indicators\Gann.vb" />
     <Compile Include="Indicators\HeikenAshi.vb" />
     <Compile Include="Indicators\IchimokuClouds.vb" />
+    <Compile Include="Indicators\KeltnerChannel.vb" />
     <Compile Include="Indicators\MACD.vb" />
     <Compile Include="Indicators\OutputGann.vb" />
     <Compile Include="Indicators\ParabolicSAR.vb" />

@@ -89,6 +89,8 @@ Namespace StrategyHelper
                                             stockRule = New HKMATrendOptionBuyMode3StrategyRule(_canceller, tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me, XDayOneMinutePayload, XDayEODPayload)
                                         Case 2
                                             stockRule = New CentralPivotTrendOptionBuyMode3StrategyRule(_canceller, tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me, XDayOneMinutePayload, XDayEODPayload)
+                                        Case 3
+                                            stockRule = New HKKeltnerTrendOptionBuyMode3StrategyRule(_canceller, tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me, XDayOneMinutePayload, XDayEODPayload)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select

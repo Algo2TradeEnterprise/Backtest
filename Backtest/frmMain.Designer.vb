@@ -57,7 +57,7 @@ Partial Class frmMain
         '
         Me.cmbRule.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.cmbRule.FormattingEnabled = True
-        Me.cmbRule.Items.AddRange(New Object() {"Pivot Trend Option Buy Mode 3 Strategy", "HK MA Trend Option Buy Mode 3 Strategy", "Central Pivot Trend Option Buy Mode 3 Strategy"})
+        Me.cmbRule.Items.AddRange(New Object() {"Pivot Trend Option Buy Mode 3 Strategy", "HK MA Trend Option Buy Mode 3 Strategy", "Central Pivot Trend Option Buy Mode 3 Strategy", "HK Keltner Trend Option Buy Mode 3 Strategy"})
         Me.cmbRule.Location = New System.Drawing.Point(123, 30)
         Me.cmbRule.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
         Me.cmbRule.Name = "cmbRule"
@@ -98,7 +98,7 @@ Partial Class frmMain
         '
         Me.dtpckrStartDate.Format = System.Windows.Forms.DateTimePickerFormat.[Short]
         Me.dtpckrStartDate.Location = New System.Drawing.Point(105, 87)
-        Me.dtpckrStartDate.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+        Me.dtpckrStartDate.Margin = New System.Windows.Forms.Padding(4)
         Me.dtpckrStartDate.Name = "dtpckrStartDate"
         Me.dtpckrStartDate.Size = New System.Drawing.Size(161, 22)
         Me.dtpckrStartDate.TabIndex = 27
@@ -107,7 +107,7 @@ Partial Class frmMain
         '
         Me.dtpckrEndDate.Format = System.Windows.Forms.DateTimePickerFormat.[Short]
         Me.dtpckrEndDate.Location = New System.Drawing.Point(447, 87)
-        Me.dtpckrEndDate.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
+        Me.dtpckrEndDate.Margin = New System.Windows.Forms.Padding(4)
         Me.dtpckrEndDate.Name = "dtpckrEndDate"
         Me.dtpckrEndDate.Size = New System.Drawing.Size(160, 22)
         Me.dtpckrEndDate.TabIndex = 28
