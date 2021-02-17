@@ -9,6 +9,8 @@ Public Class HKMATrendOptionBuyMode3StrategyRule
     Private _hkmaTrendPayload As Dictionary(Of Date, Color) = Nothing
     Private _currentDayPivotTrends As Dictionary(Of Date, Color) = Nothing
 
+    Private _smaPayload As Dictionary(Of Date, Decimal) = Nothing
+
     Public Sub New(ByVal canceller As CancellationTokenSource,
                     ByVal tradingDate As Date,
                     ByVal nextTradingDay As Date,
@@ -41,6 +43,8 @@ Public Class HKMATrendOptionBuyMode3StrategyRule
                 Next
             End If
         End If
+
+        Indicator.SMA.CalculateSMA(50, Payload.PayloadFields.Close, _SignalPayload, _smaPayload)
     End Sub
 
     Public Overrides Async Function UpdateCollectionsIfRequiredAsync(currentTickTime As Date) As Task
@@ -78,22 +82,34 @@ Public Class HKMATrendOptionBuyMode3StrategyRule
         Dim previousTrend As Color = _hkmaTrendPayload(potentialSignalCandle.PreviousCandlePayload.PayloadDate)
         If trend = Color.Green Then
             If previousTrend = Color.Red Then
-                ret = New Tuple(Of Boolean, Payload, Trade.TradeDirection)(True, potentialSignalCandle, Trade.TradeDirection.Buy)
+                Dim sma As Decimal = _smaPayload(potentialSignalCandle.PayloadDate)
+                If potentialSignalCandle.Close - sma < _ATRPayload(potentialSignalCandle.PayloadDate.Date) Then
+                    ret = New Tuple(Of Boolean, Payload, Trade.TradeDirection)(True, potentialSignalCandle, Trade.TradeDirection.Buy)
+                End If
             Else
                 Dim rolloverDay As Date = GetRolloverDay(trend, potentialSignalCandle.PayloadDate)
                 If rolloverDay <> Date.MinValue Then
                     potentialSignalCandle = _SignalPayload(rolloverDay)
-                    ret = New Tuple(Of Boolean, Payload, Trade.TradeDirection)(True, potentialSignalCandle, Trade.TradeDirection.Buy)
+                    Dim sma As Decimal = _smaPayload(potentialSignalCandle.PayloadDate)
+                    If potentialSignalCandle.Close - sma < _ATRPayload(potentialSignalCandle.PayloadDate.Date) Then
+                        ret = New Tuple(Of Boolean, Payload, Trade.TradeDirection)(True, potentialSignalCandle, Trade.TradeDirection.Buy)
+                    End If
                 End If
             End If
         ElseIf trend = Color.Red Then
             If previousTrend = Color.Green Then
-                ret = New Tuple(Of Boolean, Payload, Trade.TradeDirection)(True, potentialSignalCandle, Trade.TradeDirection.Sell)
+                Dim sma As Decimal = _smaPayload(potentialSignalCandle.PayloadDate)
+                If sma - potentialSignalCandle.Close < _ATRPayload(potentialSignalCandle.PayloadDate.Date) Then
+                    ret = New Tuple(Of Boolean, Payload, Trade.TradeDirection)(True, potentialSignalCandle, Trade.TradeDirection.Sell)
+                End If
             Else
                 Dim rolloverDay As Date = GetRolloverDay(trend, potentialSignalCandle.PayloadDate)
                 If rolloverDay <> Date.MinValue Then
                     potentialSignalCandle = _SignalPayload(rolloverDay)
-                    ret = New Tuple(Of Boolean, Payload, Trade.TradeDirection)(True, potentialSignalCandle, Trade.TradeDirection.Sell)
+                    Dim sma As Decimal = _smaPayload(potentialSignalCandle.PayloadDate)
+                    If sma - potentialSignalCandle.Close < _ATRPayload(potentialSignalCandle.PayloadDate.Date) Then
+                        ret = New Tuple(Of Boolean, Payload, Trade.TradeDirection)(True, potentialSignalCandle, Trade.TradeDirection.Sell)
+                    End If
                 End If
             End If
         End If
