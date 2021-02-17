@@ -289,7 +289,7 @@ Namespace StrategyHelper
                         ElseIf lastCompleteTrade.ExitType = Trade.TypeOfExit.Reversal Then
                             Dim childTag As String = System.Guid.NewGuid.ToString()
                             Dim parentTag As String = lastTrade.ParentReference
-                            Dim iterationNumber As Integer = lastTrade.IterationNumber + 1
+                            Dim iterationNumber As Integer = lastCompleteTrade.IterationNumber + 1
                             Dim entryType As Trade.TypeOfEntry = Trade.TypeOfEntry.Reversal
                             Dim lossToRecover As Decimal = GetOverallPL(lastTrade, Nothing)
                             Dim currentSpotTick As Payload = GetCurrentTick(_TradingSymbol, currentTickTime)
