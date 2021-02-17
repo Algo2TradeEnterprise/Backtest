@@ -267,8 +267,8 @@ Public Class frmMain
             End Select
 
             Dim tgtPerList As List(Of Decimal) = New List(Of Decimal) From {0, 5, 10, 15}
-            For Each runningTgt In tgtPerList
-                For qtyTyp As Integer = 1 To 2
+            For qtyTyp As Integer = 1 To 2
+                For Each runningTgt In tgtPerList
                     Dim rule As RuleEntities = Nothing
                     If runningTgt = 0 Then
                         rule = New RuleEntities With {.TypeOfTarget = RuleEntities.TargetType.ATR, .CapitalPercentage = runningTgt, .TypeOfQuantity = qtyTyp}
