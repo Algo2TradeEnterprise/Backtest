@@ -408,6 +408,10 @@ Namespace StrategyHelper
                                                                                    Return x.RunningCapital
                                                                                End Function)
 
+                                Dim maxIteration As Integer = logicalTradeSummary.Values.Max(Function(x)
+                                                                                                 Return x.ReverseTradeCount
+                                                                                             End Function) + 1
+
                                 If tradeCount = 0 Then
                                     fileName = String.Format("PL {0},Cap {1},ROI {2},LgclTrd {3},MaxDays {4},{5}.xlsx",
                                                  Math.Round(totalPL, 0),
@@ -418,12 +422,13 @@ Namespace StrategyHelper
                                                  fileName)
                                 Else
                                     Dim roi As Decimal = (totalPL / maxCapital) * 100
-                                    fileName = String.Format("PL {0},Cap {1},ROI {2},LgclTrd {3},MxCp {4},{5}.xlsx",
+                                    fileName = String.Format("PL {0},Cap {1},ROI {2},LgclTrd {3},MxCp {4},MxItr {5},{6}.xlsx",
                                                  Math.Round(totalPL, 0),
                                                  Math.Round(maxCapital, 0),
                                                  Math.Round(roi, 0),
                                                  tradeCount,
                                                  Math.Round(individualMaxCapital, 0),
+                                                 maxIteration,
                                                  fileName)
                                 End If
 

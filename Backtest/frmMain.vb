@@ -268,14 +268,14 @@ Public Class frmMain
                     Throw New NotImplementedException
             End Select
 
-            Dim tgtPerList As List(Of Decimal) = New List(Of Decimal) From {0, 5, 10, 15}
-            For qtyTyp As Integer = 1 To 2
+            Dim tgtPerList As List(Of Decimal) = New List(Of Decimal) From {0, 5, 10}
+            For sgnlTyp As Integer = 1 To 2
                 For Each runningTgt In tgtPerList
                     Dim rule As RuleEntities = Nothing
                     If runningTgt = 0 Then
-                        rule = New RuleEntities With {.TypeOfTarget = RuleEntities.TargetType.ATR, .CapitalPercentage = runningTgt, .TypeOfQuantity = qtyTyp}
+                        rule = New RuleEntities With {.TypeOfTarget = RuleEntities.TargetType.ATR, .CapitalPercentage = runningTgt, .TypeOfQuantity = RuleEntities.QuantityType.Normal, .TypeOfSignal = sgnlTyp}
                     Else
-                        rule = New RuleEntities With {.TypeOfTarget = RuleEntities.TargetType.CapitalPercentage, .CapitalPercentage = runningTgt, .TypeOfQuantity = qtyTyp}
+                        rule = New RuleEntities With {.TypeOfTarget = RuleEntities.TargetType.CapitalPercentage, .CapitalPercentage = runningTgt, .TypeOfQuantity = RuleEntities.QuantityType.Normal, .TypeOfSignal = sgnlTyp}
                     End If
 
                     Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
@@ -298,17 +298,17 @@ Public Class frmMain
                         Dim filename As String = String.Format("Option Buy")
                         Select Case backtestStrategy.RuleNumber
                             Case 0
-                                filename = String.Format("Pivot,Tgt {0},Per {1},Qty {2}", rule.TypeOfTarget.ToString, rule.CapitalPercentage, rule.TypeOfQuantity)
+                                filename = String.Format("Pivot,Tgt {0},Per {1},Sgnl {2}", rule.TypeOfTarget.ToString, rule.CapitalPercentage, rule.TypeOfSignal)
                             Case 1
-                                filename = String.Format("HK MA,Tgt {0},Per {1},Qty {2}", rule.TypeOfTarget.ToString, rule.CapitalPercentage, rule.TypeOfQuantity)
+                                filename = String.Format("HK MA,Tgt {0},Per {1},Sgnl {2}", rule.TypeOfTarget.ToString, rule.CapitalPercentage, rule.TypeOfSignal)
                             Case 2
-                                filename = String.Format("Central Pivot,Tgt {0},Per {1},Qty {2}", rule.TypeOfTarget.ToString, rule.CapitalPercentage, rule.TypeOfQuantity)
+                                filename = String.Format("Central Pivot,Tgt {0},Per {1},Sgnl {2}", rule.TypeOfTarget.ToString, rule.CapitalPercentage, rule.TypeOfSignal)
                             Case 3
-                                filename = String.Format("HK Keltner,Tgt {0},Per {1},Qty {2}", rule.TypeOfTarget.ToString, rule.CapitalPercentage, rule.TypeOfQuantity)
+                                filename = String.Format("HK Keltner,Tgt {0},Per {1},Sgnl {2}", rule.TypeOfTarget.ToString, rule.CapitalPercentage, rule.TypeOfSignal)
                             Case 4
-                                filename = String.Format("Ichimoku,Tgt {0},Per {1},Qty {2}", rule.TypeOfTarget.ToString, rule.CapitalPercentage, rule.TypeOfQuantity)
+                                filename = String.Format("Ichimoku,Tgt {0},Per {1},Sgnl {2}", rule.TypeOfTarget.ToString, rule.CapitalPercentage, rule.TypeOfSignal)
                             Case 5
-                                filename = String.Format("TII,Tgt {0},Per {1},Qty {2}", rule.TypeOfTarget.ToString, rule.CapitalPercentage, rule.TypeOfQuantity)
+                                filename = String.Format("TII,Tgt {0},Per {1},Sgnl {2}", rule.TypeOfTarget.ToString, rule.CapitalPercentage, rule.TypeOfSignal)
                             Case Else
                                 Throw New NotImplementedException
                         End Select

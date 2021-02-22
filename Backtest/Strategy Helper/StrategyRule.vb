@@ -90,9 +90,15 @@ Namespace StrategyHelper
                     If currentTickTime >= _TradeStartTime Then
                         signal = IsFreshEntrySignalReceived(currentTickTime)
                         If signal IsNot Nothing AndAlso signal.Item1 Then
-                            If lastTrade IsNot Nothing AndAlso lastTrade.ExitType = Trade.TypeOfExit.Target AndAlso
-                                lastTrade.EntrySignalCandle.PayloadDate = signal.Item2.PayloadDate Then
-                                signal = Nothing
+                            If _ParentStrategy.RuleSettings.TypeOfSignal = RuleEntities.SignalType.DifferentSignal Then
+                                If lastTrade IsNot Nothing AndAlso lastTrade.ExitType = Trade.TypeOfExit.Target AndAlso
+                                    lastTrade.EntrySignalCandle.PayloadDate = signal.Item2.PayloadDate Then
+                                    signal = Nothing
+                                Else
+                                    If signal.Item2.PayloadDate.Date <> _TradingDate AndAlso currentTickTime < _TradeStartTime.AddMinutes(1) Then
+                                        signal = Nothing
+                                    End If
+                                End If
                             Else
                                 If signal.Item2.PayloadDate.Date <> _TradingDate AndAlso currentTickTime < _TradeStartTime.AddMinutes(1) Then
                                     signal = Nothing
@@ -105,9 +111,16 @@ Namespace StrategyHelper
                     If (currentTickTime >= currentMinute.AddMinutes(_ParentStrategy.SignalTimeFrame - 2) OrElse currentTickTime >= _TradeStartTime) Then
                         signal = IsFreshEntrySignalReceived(currentTickTime)
                         If signal IsNot Nothing AndAlso signal.Item1 Then
-                            If lastTrade IsNot Nothing AndAlso lastTrade.ExitType = Trade.TypeOfExit.Target AndAlso
-                                lastTrade.EntrySignalCandle.PayloadDate = signal.Item2.PayloadDate Then
-                                signal = Nothing
+                            If _ParentStrategy.RuleSettings.TypeOfSignal = RuleEntities.SignalType.DifferentSignal Then
+                                If lastTrade IsNot Nothing AndAlso lastTrade.ExitType = Trade.TypeOfExit.Target AndAlso
+                                    lastTrade.EntrySignalCandle.PayloadDate = signal.Item2.PayloadDate Then
+                                    signal = Nothing
+                                Else
+                                    If signal.Item2.PayloadDate <> currentMinute AndAlso
+                                        (currentTickTime < currentMinute.AddMinutes(_ParentStrategy.SignalTimeFrame - 1) OrElse currentTickTime < _TradeStartTime.AddMinutes(1)) Then
+                                        signal = Nothing
+                                    End If
+                                End If
                             Else
                                 If signal.Item2.PayloadDate <> currentMinute AndAlso
                                     (currentTickTime < currentMinute.AddMinutes(_ParentStrategy.SignalTimeFrame - 1) OrElse currentTickTime < _TradeStartTime.AddMinutes(1)) Then
