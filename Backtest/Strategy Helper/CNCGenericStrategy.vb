@@ -93,6 +93,8 @@ Namespace StrategyHelper
                                             stockRule = New HKKeltnerTrendOptionBuyMode3StrategyRule(_canceller, tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me, XDayOneMinutePayload, XDayEODPayload)
                                         Case 4
                                             stockRule = New IchimokuTrendOptionBuyMode3StrategyRule(_canceller, tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me, XDayOneMinutePayload, XDayEODPayload)
+                                        Case 5
+                                            stockRule = New TIITrendOptionBuyMode3StrategyRule(_canceller, tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me, XDayOneMinutePayload, XDayEODPayload)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
@@ -230,8 +232,8 @@ Namespace StrategyHelper
                                         {.TradingSymbol = tradingSymbol,
                                          .LotSize = lotSize}
                                 'Dim detailsOfStock As StockDetails = New StockDetails With
-                                '    {.TradingSymbol = "ICICIBANK",
-                                '     .LotSize = 1375}
+                                '    {.TradingSymbol = "RELIANCE",
+                                '     .LotSize = 250}
 
                                 If ret Is Nothing Then ret = New List(Of StockDetails)
                                 ret.Add(detailsOfStock)
