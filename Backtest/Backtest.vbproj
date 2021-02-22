@@ -115,6 +115,7 @@
     <Compile Include="Strategy Rule CNC\HKMATrendOptionBuyMode3StrategyRule.vb" />
     <Compile Include="Strategy Rule CNC\IchimokuTrendOptionBuyMode3StrategyRule.vb" />
     <Compile Include="Strategy Rule CNC\PivotTrendOptionBuyMode3StrategyRule.vb" />
+    <Compile Include="Strategy Rule CNC\TIITrendOptionBuyMode3StrategyRule.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="frmMain.resx">

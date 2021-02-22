@@ -262,6 +262,8 @@ Public Class frmMain
                     stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "EOD HK Keltner Trend High ATR High Volume Stocks.csv")
                 Case 4
                     stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "EOD Ichimoku Trend High ATR High Volume Stocks.csv")
+                Case 5
+                    stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "EOD Ichimoku Trend High ATR High Volume Stocks.csv")
                 Case Else
                     Throw New NotImplementedException
             End Select
@@ -282,7 +284,7 @@ Public Class frmMain
                                                                      tradeStartTime:=TimeSpan.Parse("15:28:00"),
                                                                      tickSize:=0.05,
                                                                      marginMultiplier:=1,
-                                                                     timeframe:=375,
+                                                                     timeframe:=60,
                                                                      initialCapital:=Decimal.MaxValue / 2,
                                                                      usableCapital:=Decimal.MaxValue / 2,
                                                                      minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
@@ -305,6 +307,8 @@ Public Class frmMain
                                 filename = String.Format("HK Keltner,Tgt {0},Per {1},Qty {2}", rule.TypeOfTarget.ToString, rule.CapitalPercentage, rule.TypeOfQuantity)
                             Case 4
                                 filename = String.Format("Ichimoku,Tgt {0},Per {1},Qty {2}", rule.TypeOfTarget.ToString, rule.CapitalPercentage, rule.TypeOfQuantity)
+                            Case 5
+                                filename = String.Format("TII,Tgt {0},Per {1},Qty {2}", rule.TypeOfTarget.ToString, rule.CapitalPercentage, rule.TypeOfQuantity)
                             Case Else
                                 Throw New NotImplementedException
                         End Select
