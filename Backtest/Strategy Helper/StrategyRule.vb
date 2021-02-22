@@ -406,7 +406,7 @@ Namespace StrategyHelper
                                     If ret Is Nothing Then ret = New List(Of Tuple(Of Trade, Payload, Trade.TypeOfExit, Payload))
                                     ret.Add(New Tuple(Of Trade, Payload, Trade.TypeOfExit, Payload)(runningTrade, currentTick, Trade.TypeOfExit.Reversal, reverseSignal.Item2))
                                 Else
-                                    Dim expiryDate As Date = GetLastThusrdayOfMonth(_TradingDate).Date.AddDays(-2)
+                                    Dim expiryDate As Date = GetLastThusrdayOfMonth(_TradingDate).Date.AddDays(-3)
                                     expiryDate = New Date(expiryDate.Year, expiryDate.Month, expiryDate.Day, 15, 29, 0)
                                     If currentTickTime >= expiryDate Then
                                         Dim currentOptionExpiryString As String = GetOptionInstrumentExpiryString(_TradingSymbol, _NextTradingDay)
