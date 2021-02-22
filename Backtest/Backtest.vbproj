@@ -148,10 +148,6 @@
       <Project>{92c02644-75d1-43af-a3d3-392ec95f137f}</Project>
       <Name>Algo2TradeBLL</Name>
     </ProjectReference>
-    <ProjectReference Include="..\BacktesterExcelModifier\BacktesterExcelModifier.vbproj">
-      <Project>{203dd67b-9fb7-4a94-9b30-c7ed22fa0b00}</Project>
-      <Name>BacktesterExcelModifier</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Utilities\Utilities.vbproj">
       <Project>{0524d87f-b8bf-4cc2-b955-49950110fe9a}</Project>
       <Name>Utilities</Name>
