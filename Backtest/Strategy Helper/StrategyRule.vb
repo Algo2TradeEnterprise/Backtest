@@ -525,7 +525,7 @@ Namespace StrategyHelper
         Protected Function GetOptionInstrumentExpiryString(ByVal coreInstrumentName As String, ByVal tradingDate As Date) As String
             Dim ret As String = Nothing
             Dim lastThursday As Date = GetLastThusrdayOfMonth(tradingDate)
-            If tradingDate.Date > lastThursday.Date.AddDays(-2) Then
+            If tradingDate.Date > lastThursday.Date.AddDays(-3) Then
                 ret = String.Format("{0}{1}", coreInstrumentName, tradingDate.AddDays(10).ToString("yyMMM")).ToUpper
             Else
                 ret = String.Format("{0}{1}", coreInstrumentName, tradingDate.ToString("yyMMM")).ToUpper

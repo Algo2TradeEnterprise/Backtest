@@ -284,7 +284,7 @@ Public Class frmMain
                                                                      tradeStartTime:=TimeSpan.Parse("15:28:00"),
                                                                      tickSize:=0.05,
                                                                      marginMultiplier:=1,
-                                                                     timeframe:=60,
+                                                                     timeframe:=375,
                                                                      initialCapital:=Decimal.MaxValue / 2,
                                                                      usableCapital:=Decimal.MaxValue / 2,
                                                                      minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
