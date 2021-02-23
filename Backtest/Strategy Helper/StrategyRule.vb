@@ -503,7 +503,7 @@ Namespace StrategyHelper
                     If runningTrade.EntryType = Trade.TypeOfEntry.Reversal Then
                         If runningTrade.TradeCurrentStatus = Trade.TradeStatus.Inprogress Then
                             ret += _ParentStrategy.CalculatePLAfterBrokerage(_TradingSymbol, runningTrade.EntryPrice, currentTick.Open, runningTrade.Quantity - runningTrade.LotSize, runningTrade.LotSize, runningTrade.StockType)
-                        Else
+                        ElseIf runningTrade.TradeCurrentStatus <> Trade.TradeStatus.Cancel Then
                             ret += _ParentStrategy.CalculatePLAfterBrokerage(_TradingSymbol, runningTrade.EntryPrice, runningTrade.ExitPrice, runningTrade.Quantity - runningTrade.LotSize, runningTrade.LotSize, runningTrade.StockType)
                         End If
                     End If
