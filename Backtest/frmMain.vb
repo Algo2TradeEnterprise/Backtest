@@ -263,7 +263,7 @@ Public Class frmMain
                 Case 4
                     stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "EOD Ichimoku Trend High ATR High Volume Stocks.csv")
                 Case 5
-                    stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "EOD Ichimoku Trend High ATR High Volume Stocks.csv")
+                    stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Hourly TII Trend High ATR High Volume Stocks.csv")
                 Case Else
                     Throw New NotImplementedException
             End Select
