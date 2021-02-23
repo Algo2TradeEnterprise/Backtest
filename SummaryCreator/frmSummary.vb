@@ -226,12 +226,13 @@ Public Class frmSummary
             If folderPath IsNot Nothing AndAlso Directory.Exists(folderPath) Then
                 Dim dt As DataTable = New DataTable
                 dt.Columns.Add("Target")
-                dt.Columns.Add("Volume")
+                dt.Columns.Add("Signal")
                 dt.Columns.Add("PL")
                 dt.Columns.Add("Capital")
                 dt.Columns.Add("ROI")
                 dt.Columns.Add("Number Of Logical Trade")
                 dt.Columns.Add("Max Logical Capital")
+                dt.Columns.Add("Max Iteration")
 
                 Dim info As DirectoryInfo = New DirectoryInfo(folderPath)
                 For Each runningFile In info.GetFiles().OrderBy(Function(x)
@@ -245,17 +246,19 @@ Public Class frmSummary
                     Dim roi As String = filename.Split(",")(2).Split(" ")(1)
                     Dim numberOfLogicalTrade As String = filename.Split(",")(3).Split(" ")(1)
                     Dim maxLogicalCapital As String = filename.Split(",")(4).Split(" ")(1)
-                    Dim target As String = filename.Split(",")(7).Split(" ")(1)
-                    Dim volumeType As String = filename.Split(",")(8).Split(" ")(1)
+                    Dim maxIteration As String = filename.Split(",")(5).Split(" ")(1)
+                    Dim target As String = filename.Split(",")(8).Split(" ")(1)
+                    Dim signalType As String = filename.Split(",")(9).Split(" ")(1)
 
                     Dim row As DataRow = dt.NewRow
                     row("Target") = IIf(Val(target) = 0, "ATR", target)
-                    row("Volume") = volumeType
+                    row("Signal") = signalType
                     row("PL") = pl
                     row("Capital") = capital
                     row("ROI") = roi
                     row("Number Of Logical Trade") = numberOfLogicalTrade
                     row("Max Logical Capital") = maxLogicalCapital
+                    row("Max Iteration") = maxIteration
 
                     dt.Rows.Add(row)
                 Next
