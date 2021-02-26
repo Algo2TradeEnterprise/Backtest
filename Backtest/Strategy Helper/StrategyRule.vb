@@ -441,12 +441,13 @@ Namespace StrategyHelper
                                                                Return x.Key.Date = _TradingDate
                                                            End Function).FirstOrDefault.Value
                     End If
+                    If currentCandle IsNot Nothing Then
+                        ret = currentCandle.Ticks.FindAll(Function(x)
+                                                              Return x.PayloadDate <= currentTime
+                                                          End Function).LastOrDefault
 
-                    ret = currentCandle.Ticks.FindAll(Function(x)
-                                                          Return x.PayloadDate <= currentTime
-                                                      End Function).LastOrDefault
-
-                    If ret Is Nothing Then ret = currentCandle.Ticks.FirstOrDefault
+                        If ret Is Nothing Then ret = currentCandle.Ticks.FirstOrDefault
+                    End If
                 End If
             End If
             Return ret
