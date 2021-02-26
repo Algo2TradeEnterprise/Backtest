@@ -8,8 +8,10 @@ Public Class HKMATrendOptionBuyMode3StrategyRule
 
     Private _hkPayload As Dictionary(Of Date, Payload) = Nothing
     Private _smaPayload As Dictionary(Of Date, Decimal) = Nothing
-
     Private _hkmaTrendPayload As Dictionary(Of Date, Color) = Nothing
+
+    Private _currentDayHKPayloads As Dictionary(Of Date, Payload) = Nothing
+    Private _currentDaySMAPayloads As Dictionary(Of Date, Decimal) = Nothing
     Private _currentDayPivotTrends As Dictionary(Of Date, Color) = Nothing
 
     Public Sub New(ByVal canceller As CancellationTokenSource,
@@ -26,41 +28,53 @@ Public Class HKMATrendOptionBuyMode3StrategyRule
     Public Overrides Sub CompletePreProcessing()
         MyBase.CompletePreProcessing()
 
+        Indicator.HeikenAshi.ConvertToHeikenAshi(_SignalPayload, _hkPayload)
+        Indicator.SMA.CalculateSMA(50, Payload.PayloadFields.Close, _hkPayload, _smaPayload)
         CalculateHKMATrend(_SignalPayload, _hkmaTrendPayload)
-        If _hkmaTrendPayload IsNot Nothing AndAlso _hkmaTrendPayload.Count > 0 Then
-            For Each runningPaylod In _hkmaTrendPayload.OrderByDescending(Function(x)
-                                                                              Return x.Key
-                                                                          End Function)
+
+        If _hkPayload IsNot Nothing AndAlso _hkPayload.Count > 0 Then
+            For Each runningPaylod In _hkPayload.OrderByDescending(Function(x)
+                                                                       Return x.Key
+                                                                   End Function)
                 If runningPaylod.Key.Date = _TradingDate.Date Then
+                    If _currentDayHKPayloads Is Nothing Then _currentDayHKPayloads = New Dictionary(Of Date, Payload)
+                    _currentDayHKPayloads.Add(runningPaylod.Key, _hkPayload(runningPaylod.Key))
+                    If _currentDaySMAPayloads Is Nothing Then _currentDaySMAPayloads = New Dictionary(Of Date, Decimal)
+                    _currentDaySMAPayloads.Add(runningPaylod.Key, _smaPayload(runningPaylod.Key))
                     If _currentDayPivotTrends Is Nothing Then _currentDayPivotTrends = New Dictionary(Of Date, Color)
-                    _currentDayPivotTrends.Add(runningPaylod.Key, runningPaylod.Value)
+                    _currentDayPivotTrends.Add(runningPaylod.Key, _hkmaTrendPayload(runningPaylod.Key))
                 Else
                     Exit For
                 End If
             Next
-            If _currentDayPivotTrends IsNot Nothing AndAlso _currentDayPivotTrends.Count > 0 Then
-                For Each runningPaylod In _currentDayPivotTrends
+            If _currentDayHKPayloads IsNot Nothing AndAlso _currentDayHKPayloads.Count > 0 Then
+                For Each runningPaylod In _currentDayHKPayloads
+                    _hkPayload.Remove(runningPaylod.Key)
+                    _smaPayload.Remove(runningPaylod.Key)
                     _hkmaTrendPayload.Remove(runningPaylod.Key)
                 Next
             End If
         End If
 
-        Indicator.HeikenAshi.ConvertToHeikenAshi(_SignalPayload, _hkPayload)
-        Indicator.SMA.CalculateSMA(50, Payload.PayloadFields.Close, _hkPayload, _smaPayload)
+
     End Sub
 
     Public Overrides Async Function UpdateCollectionsIfRequiredAsync(currentTickTime As Date) As Task
         Await Task.Delay(0).ConfigureAwait(False)
         If _ParentStrategy.SignalTimeFrame >= 375 Then
             If currentTickTime >= _TradeStartTime Then
-                If Not _hkmaTrendPayload.ContainsKey(_TradingDate) AndAlso _currentDayPivotTrends.ContainsKey(_TradingDate) Then
+                If Not _hkPayload.ContainsKey(_TradingDate) AndAlso _currentDayHKPayloads.ContainsKey(_TradingDate) Then
+                    _hkPayload.Add(_TradingDate, _currentDayHKPayloads(_TradingDate))
+                    _smaPayload.Add(_TradingDate, _currentDaySMAPayloads(_TradingDate))
                     _hkmaTrendPayload.Add(_TradingDate, _currentDayPivotTrends(_TradingDate))
                 End If
             End If
         Else
             Dim currentMinute As Date = _ParentStrategy.GetCurrentXMinuteCandleTime(currentTickTime, _ParentStrategy.SignalTimeFrame)
             If (currentTickTime >= currentMinute.AddMinutes(_ParentStrategy.SignalTimeFrame - 2) OrElse currentTickTime >= _TradeStartTime) AndAlso
-                Not _hkmaTrendPayload.ContainsKey(currentMinute) AndAlso _currentDayPivotTrends.ContainsKey(currentMinute) Then
+                Not _hkPayload.ContainsKey(currentMinute) AndAlso _currentDayHKPayloads.ContainsKey(currentMinute) Then
+                _hkPayload.Add(currentMinute, _currentDayHKPayloads(currentMinute))
+                _smaPayload.Add(currentMinute, _currentDaySMAPayloads(currentMinute))
                 _hkmaTrendPayload.Add(currentMinute, _currentDayPivotTrends(currentMinute))
             End If
         End If
