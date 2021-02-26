@@ -84,17 +84,7 @@ Namespace StrategyHelper
                                     Dim stockRule As StrategyRule = Nothing
                                     Select Case Me.RuleNumber
                                         Case 0
-                                            stockRule = New PivotTrendOptionBuyMode3StrategyRule(_canceller, tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me, XDayOneMinutePayload, XDayEODPayload)
-                                        Case 1
                                             stockRule = New HKMATrendOptionBuyMode3StrategyRule(_canceller, tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me, XDayOneMinutePayload, XDayEODPayload)
-                                        Case 2
-                                            stockRule = New CentralPivotTrendOptionBuyMode3StrategyRule(_canceller, tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me, XDayOneMinutePayload, XDayEODPayload)
-                                        Case 3
-                                            stockRule = New HKKeltnerTrendOptionBuyMode3StrategyRule(_canceller, tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me, XDayOneMinutePayload, XDayEODPayload)
-                                        Case 4
-                                            stockRule = New IchimokuTrendOptionBuyMode3StrategyRule(_canceller, tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me, XDayOneMinutePayload, XDayEODPayload)
-                                        Case 5
-                                            stockRule = New TIITrendOptionBuyMode3StrategyRule(_canceller, tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me, XDayOneMinutePayload, XDayEODPayload)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select

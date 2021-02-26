@@ -6,10 +6,11 @@ Imports Backtest.StrategyHelper
 Public Class HKMATrendOptionBuyMode3StrategyRule
     Inherits StrategyRule
 
+    Private _hkPayload As Dictionary(Of Date, Payload) = Nothing
+    Private _smaPayload As Dictionary(Of Date, Decimal) = Nothing
+
     Private _hkmaTrendPayload As Dictionary(Of Date, Color) = Nothing
     Private _currentDayPivotTrends As Dictionary(Of Date, Color) = Nothing
-
-    Private _smaPayload As Dictionary(Of Date, Decimal) = Nothing
 
     Public Sub New(ByVal canceller As CancellationTokenSource,
                     ByVal tradingDate As Date,
@@ -44,7 +45,8 @@ Public Class HKMATrendOptionBuyMode3StrategyRule
             End If
         End If
 
-        Indicator.SMA.CalculateSMA(50, Payload.PayloadFields.Close, _SignalPayload, _smaPayload)
+        Indicator.HeikenAshi.ConvertToHeikenAshi(_SignalPayload, _hkPayload)
+        Indicator.SMA.CalculateSMA(50, Payload.PayloadFields.Close, _hkPayload, _smaPayload)
     End Sub
 
     Public Overrides Async Function UpdateCollectionsIfRequiredAsync(currentTickTime As Date) As Task
@@ -66,11 +68,25 @@ Public Class HKMATrendOptionBuyMode3StrategyRule
 
     Protected Overrides Function IsReverseSignalReceived(currentTrade As Trade, currentTick As Payload) As Tuple(Of Boolean, Payload)
         Dim ret As Tuple(Of Boolean, Payload) = Nothing
-        Dim trend As Color = _hkmaTrendPayload.LastOrDefault.Value
-        If trend = Color.Red AndAlso currentTrade.SignalDirection = Trade.TradeDirection.Buy Then
-            ret = New Tuple(Of Boolean, Payload)(True, _SignalPayload(_hkmaTrendPayload.LastOrDefault.Key))
-        ElseIf trend = Color.Green AndAlso currentTrade.SignalDirection = Trade.TradeDirection.Sell Then
-            ret = New Tuple(Of Boolean, Payload)(True, _SignalPayload(_hkmaTrendPayload.LastOrDefault.Key))
+        If _ParentStrategy.RuleSettings.TypeOfReverse = RuleEntities.ReverseType.Strong Then
+            Dim trend As Color = _hkmaTrendPayload.LastOrDefault.Value
+            If trend = Color.Red AndAlso currentTrade.SignalDirection = Trade.TradeDirection.Buy Then
+                ret = New Tuple(Of Boolean, Payload)(True, _SignalPayload(_hkmaTrendPayload.LastOrDefault.Key))
+            ElseIf trend = Color.Green AndAlso currentTrade.SignalDirection = Trade.TradeDirection.Sell Then
+                ret = New Tuple(Of Boolean, Payload)(True, _SignalPayload(_hkmaTrendPayload.LastOrDefault.Key))
+            End If
+        Else
+            Dim hkCandle As Payload = _hkPayload.LastOrDefault.Value
+            Dim sma As Decimal = _smaPayload(hkCandle.PayloadDate)
+            If currentTrade.SignalDirection = Trade.TradeDirection.Buy Then
+                If hkCandle.CandleColor = Color.Red AndAlso hkCandle.Close < sma Then
+                    ret = New Tuple(Of Boolean, Payload)(True, _SignalPayload(hkCandle.PayloadDate))
+                End If
+            ElseIf currentTrade.SignalDirection = Trade.TradeDirection.Sell Then
+                If hkCandle.CandleColor = Color.Green AndAlso hkCandle.Close > sma Then
+                    ret = New Tuple(Of Boolean, Payload)(True, _SignalPayload(hkCandle.PayloadDate))
+                End If
+            End If
         End If
         Return ret
     End Function
@@ -98,6 +114,19 @@ Public Class HKMATrendOptionBuyMode3StrategyRule
                 If rolloverDay <> Date.MinValue Then
                     potentialSignalCandle = _SignalPayload(rolloverDay)
                     ret = New Tuple(Of Boolean, Payload, Trade.TradeDirection)(True, potentialSignalCandle, Trade.TradeDirection.Sell)
+                End If
+            End If
+        End If
+        If ret IsNot Nothing AndAlso ret.Item1 Then
+            Dim hkCandle As Payload = _hkPayload.LastOrDefault.Value
+            Dim sma As Decimal = _smaPayload(hkCandle.PayloadDate)
+            If ret.Item3 = Trade.TradeDirection.Buy Then
+                If hkCandle.Close < sma Then
+                    ret = Nothing
+                End If
+            ElseIf ret.Item3 = Trade.TradeDirection.Sell Then
+                If hkCandle.Close > sma Then
+                    ret = Nothing
                 End If
             End If
         End If

@@ -15,9 +15,16 @@
             SameSignal
         End Enum
 
+        Enum ReverseType
+            Strong = 1
+            Any
+        End Enum
+
         Public TypeOfTarget As TargetType
         Public CapitalPercentage As Decimal
         Public TypeOfQuantity As QuantityType
         Public TypeOfSignal As SignalType
+        Public TypeOfReverse As ReverseType
+        Public TargetLeftPercentage As Decimal
     End Class
 End Namespace

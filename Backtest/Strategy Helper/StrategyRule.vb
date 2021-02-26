@@ -132,104 +132,71 @@ Namespace StrategyHelper
                 End If
 
                 If signal IsNot Nothing AndAlso signal.Item1 Then
-                    Dim targetReached As Boolean = True
-                    Dim targetLeftPercentage As Decimal = 0
-                    If signal.Item3 = Trade.TradeDirection.Buy Then
-                        Dim highestHigh As Decimal = _SignalPayload.Max(Function(x)
-                                                                            If x.Key > signal.Item2.PayloadDate AndAlso x.Key < _TradingDate Then
-                                                                                Return x.Value.High
-                                                                            Else
-                                                                                Return Decimal.MinValue
-                                                                            End If
-                                                                        End Function)
-                        If (_ParentStrategy.SignalTimeFrame >= 375 AndAlso signal.Item2.PayloadDate.Date <> _TradingDate.Date) OrElse
-                            (_ParentStrategy.SignalTimeFrame < 375 AndAlso signal.Item2.PayloadDate <> currentMinute) Then
-                            Dim todayHigh As Decimal = _InputMinPayload.Max(Function(x)
-                                                                                If x.Key.Date = _TradingDate.Date AndAlso x.Key < currentTickTime Then
-                                                                                    Return x.Value.High
-                                                                                Else
-                                                                                    Return Decimal.MinValue
-                                                                                End If
-                                                                            End Function)
+                    Dim childTag As String = System.Guid.NewGuid.ToString()
+                    Dim parentTag As String = childTag
+                    Dim iterationNumber As Integer = 1
+                    Dim entryType As Trade.TypeOfEntry = Trade.TypeOfEntry.Fresh
+                    Dim lossToRecover As Decimal = 0
+                    Dim currentSpotTick As Payload = GetCurrentTick(_TradingSymbol, currentTickTime)
+                    Dim spotATR As Decimal = _ATRPayload(signal.Item2.PayloadDate.Date)
+                    Dim directionToCheck As Trade.TradeDirection = signal.Item3
 
-                            highestHigh = Math.Max(highestHigh, todayHigh)
-                        End If
+                    Dim optionExpiryString As String = GetOptionInstrumentExpiryString(_TradingSymbol, _NextTradingDay)
+                    Dim optionTradingSymbol As String = GetCurrentATMOption(currentTickTime, optionExpiryString, currentSpotTick.Open, directionToCheck)
+                    If optionTradingSymbol IsNot Nothing Then
+                        Dim currentOptTick As Payload = GetCurrentTick(optionTradingSymbol, currentSpotTick.PayloadDate)
+                        If currentOptTick IsNot Nothing Then
+                            Dim quantity As Integer = _LotSize
+                            Dim entryPrice As Decimal = currentOptTick.Open
+                            Dim targetPrice As Decimal = ConvertFloorCeling(entryPrice + spotATR / 2, _ParentStrategy.TickSize, RoundOfType.Celing)
+                            Dim potentialTarget As Decimal = _ParentStrategy.CalculatePLAfterBrokerage(_TradingSymbol, entryPrice, targetPrice, quantity, _LotSize, Trade.TypeOfStock.Options) - 1
+                            If _ParentStrategy.RuleSettings.TypeOfTarget = RuleEntities.TargetType.CapitalPercentage Then
+                                Dim capital As Decimal = currentOptTick.Open * quantity / _ParentStrategy.MarginMultiplier
+                                If lossToRecover < 0 Then capital = capital + Math.Abs(lossToRecover)
+                                potentialTarget = capital * _ParentStrategy.RuleSettings.CapitalPercentage / 100
 
-                        Dim atr As Decimal = _ATRPayload(signal.Item2.PayloadDate.Date)
-                        If highestHigh < signal.Item2.Close + atr Then
-                            targetReached = False
-                            If highestHigh <> Decimal.MinValue Then
-                                targetLeftPercentage = ((atr - (highestHigh - signal.Item2.Close)) / atr) * 100
-                            Else
-                                targetLeftPercentage = 100
-                            End If
-                        End If
-                    ElseIf signal.Item3 = Trade.TradeDirection.Sell Then
-                        Dim lowestLow As Decimal = _SignalPayload.Min(Function(x)
-                                                                          If x.Key > signal.Item2.PayloadDate AndAlso x.Key < _TradingDate Then
-                                                                              Return x.Value.Low
-                                                                          Else
-                                                                              Return Decimal.MaxValue
-                                                                          End If
-                                                                      End Function)
-                        If (_ParentStrategy.SignalTimeFrame >= 375 AndAlso signal.Item2.PayloadDate.Date <> _TradingDate.Date) OrElse
-                            (_ParentStrategy.SignalTimeFrame < 375 AndAlso signal.Item2.PayloadDate <> currentMinute) Then
-                            Dim todayLow As Decimal = _InputMinPayload.Min(Function(x)
-                                                                               If x.Key.Date = _TradingDate.Date AndAlso x.Key < currentTickTime Then
-                                                                                   Return x.Value.Low
-                                                                               Else
-                                                                                   Return Decimal.MaxValue
-                                                                               End If
-                                                                           End Function)
+                                If potentialTarget < 1000 AndAlso
+                                    _ParentStrategy.RuleSettings.TypeOfQuantity = RuleEntities.QuantityType.Increase Then
+                                    Dim multiplier As Integer = Math.Ceiling(1000 / potentialTarget)
+                                    quantity = _LotSize * multiplier
 
-                            lowestLow = Math.Min(lowestLow, todayLow)
-                        End If
-
-                        Dim atr As Decimal = _ATRPayload(signal.Item2.PayloadDate.Date)
-                        If lowestLow > signal.Item2.Close - atr Then
-                            targetReached = False
-                            If lowestLow <> Decimal.MaxValue Then
-                                targetLeftPercentage = ((atr - (signal.Item2.Close - lowestLow)) / atr) * 100
-                            Else
-                                targetLeftPercentage = 100
-                            End If
-                        End If
-                    End If
-                    If Not targetReached AndAlso targetLeftPercentage >= 75 Then
-                        Dim childTag As String = System.Guid.NewGuid.ToString()
-                        Dim parentTag As String = childTag
-                        Dim iterationNumber As Integer = 1
-                        Dim entryType As Trade.TypeOfEntry = Trade.TypeOfEntry.Fresh
-                        Dim lossToRecover As Decimal = 0
-                        Dim currentSpotTick As Payload = GetCurrentTick(_TradingSymbol, currentTickTime)
-                        Dim spotATR As Decimal = _ATRPayload(signal.Item2.PayloadDate.Date)
-                        Dim directionToCheck As Trade.TradeDirection = signal.Item3
-
-                        Dim optionExpiryString As String = GetOptionInstrumentExpiryString(_TradingSymbol, _NextTradingDay)
-                        Dim optionTradingSymbol As String = GetCurrentATMOption(currentTickTime, optionExpiryString, currentSpotTick.Open, directionToCheck)
-                        If optionTradingSymbol IsNot Nothing Then
-                            Dim currentOptTick As Payload = GetCurrentTick(optionTradingSymbol, currentSpotTick.PayloadDate)
-                            If currentOptTick IsNot Nothing Then
-                                Dim quantity As Integer = _LotSize
-                                Dim entryPrice As Decimal = currentOptTick.Open
-                                Dim targetPrice As Decimal = ConvertFloorCeling(entryPrice + spotATR / 2, _ParentStrategy.TickSize, RoundOfType.Celing)
-                                Dim potentialTarget As Decimal = _ParentStrategy.CalculatePLAfterBrokerage(_TradingSymbol, entryPrice, targetPrice, quantity, _LotSize, Trade.TypeOfStock.Options) - 1
-                                If _ParentStrategy.RuleSettings.TypeOfTarget = RuleEntities.TargetType.CapitalPercentage Then
-                                    Dim capital As Decimal = currentOptTick.Open * quantity / _ParentStrategy.MarginMultiplier
+                                    capital = currentOptTick.Open * quantity / _ParentStrategy.MarginMultiplier
                                     If lossToRecover < 0 Then capital = capital + Math.Abs(lossToRecover)
                                     potentialTarget = capital * _ParentStrategy.RuleSettings.CapitalPercentage / 100
+                                End If
+                            End If
 
-                                    If potentialTarget < 1000 AndAlso
-                                        _ParentStrategy.RuleSettings.TypeOfQuantity = RuleEntities.QuantityType.Increase Then
-                                        Dim multiplier As Integer = Math.Ceiling(1000 / potentialTarget)
-                                        quantity = _LotSize * multiplier
+                            targetPrice = CalculateTargetFromPL(entryPrice, quantity, potentialTarget)
+                            Dim targetPoint As Decimal = targetPrice - entryPrice
 
-                                        capital = currentOptTick.Open * quantity / _ParentStrategy.MarginMultiplier
-                                        If lossToRecover < 0 Then capital = capital + Math.Abs(lossToRecover)
-                                        potentialTarget = capital * _ParentStrategy.RuleSettings.CapitalPercentage / 100
+                            Dim potentialEntryTick As Payload = GetCurrentTick(optionTradingSymbol, signal.Item2.PayloadDate.AddDays(1))
+                            If _ParentStrategy.SignalTimeFrame < 375 Then
+                                potentialEntryTick = GetCurrentTick(optionTradingSymbol, signal.Item2.PayloadDate)
+                            End If
+                            Dim targetReached As Boolean = True
+                            If potentialEntryTick IsNot Nothing Then
+                                If (_ParentStrategy.SignalTimeFrame >= 375 AndAlso signal.Item2.PayloadDate.Date = _TradingDate.Date) OrElse
+                                    signal.Item2.PayloadDate = currentMinute Then
+                                    targetReached = False
+                                Else
+                                    Dim optionPayload As Dictionary(Of Date, Payload) = _DependentInstrumentsPayload(optionTradingSymbol.Trim.ToUpper)
+                                    Dim timeToCheckFrom As Date = signal.Item2.PayloadDate.AddDays(1)
+                                    If _ParentStrategy.SignalTimeFrame < 375 Then timeToCheckFrom = signal.Item2.PayloadDate
+
+                                    Dim maxHigh As Decimal = optionPayload.Max(Function(x)
+                                                                                   If x.Key > timeToCheckFrom AndAlso x.Key < currentTickTime Then
+                                                                                       Return x.Value.High
+                                                                                   Else
+                                                                                       Return Decimal.MinValue
+                                                                                   End If
+                                                                               End Function)
+                                    If maxHigh < potentialEntryTick.Open + targetPoint * _ParentStrategy.RuleSettings.TargetLeftPercentage / 100 Then
+                                        targetReached = False
                                     End If
                                 End If
+                            End If
 
+                            If Not targetReached Then
                                 Dim tradeToPlace As Trade = New Trade(originatingStrategy:=_ParentStrategy,
                                                                       tradingSymbol:=optionTradingSymbol,
                                                                       spotTradingSymbol:=_TradingSymbol,
@@ -441,11 +408,22 @@ Namespace StrategyHelper
 #End Region
 
 #Region "Private Functions"
+        Private Function CalculateTargetFromPL(ByVal buyPrice As Decimal, ByVal quantity As Integer, ByVal NetProfitOfTrade As Decimal) As Decimal
+            Dim ret As Decimal = buyPrice
+            For ret = buyPrice To Decimal.MaxValue Step _ParentStrategy.TickSize
+                Dim plAfterBrokerage As Decimal = _ParentStrategy.CalculatePLAfterBrokerage(_TradingSymbol, buyPrice, ret, quantity, _LotSize, Trade.TypeOfStock.Options)
+                If plAfterBrokerage >= NetProfitOfTrade Then
+                    Exit For
+                End If
+            Next
+            Return ret
+        End Function
+
         Private Function GetCurrentTick(ByVal tradingSymbol As String, ByVal currentTime As Date) As Payload
             Dim ret As Payload = Nothing
             If Not _DependentInstrumentsPayload.ContainsKey(tradingSymbol.Trim.ToUpper) Then
                 Dim inputPayload As Dictionary(Of Date, Payload) = Nothing
-                inputPayload = _ParentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.Intraday_Futures_Options, tradingSymbol.Trim.ToUpper, _TradingDate.AddDays(-50), _TradingDate)
+                inputPayload = _ParentStrategy.Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.Intraday_Futures_Options, tradingSymbol.Trim.ToUpper, _TradingDate.AddDays(-100), _TradingDate)
                 If inputPayload IsNot Nothing AndAlso inputPayload.Count > 0 Then
                     _DependentInstrumentsPayload.Add(tradingSymbol.Trim.ToUpper, inputPayload)
                 End If
