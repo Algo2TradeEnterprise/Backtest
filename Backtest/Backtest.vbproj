@@ -110,12 +110,7 @@
     <Compile Include="Strategy Helper\StrategyRule.vb" />
     <Compile Include="Strategy Helper\Summary.vb" />
     <Compile Include="Strategy Helper\Trade.vb" />
-    <Compile Include="Strategy Rule CNC\CentralPivotTrendOptionBuyMode3StrategyRule.vb" />
-    <Compile Include="Strategy Rule CNC\HKKeltnerTrendOptionBuyMode3StrategyRule.vb" />
-    <Compile Include="Strategy Rule CNC\HKMATrendOptionBuyMode3StrategyRule.vb" />
-    <Compile Include="Strategy Rule CNC\IchimokuTrendOptionBuyMode3StrategyRule.vb" />
-    <Compile Include="Strategy Rule CNC\PivotTrendOptionBuyMode3StrategyRule.vb" />
-    <Compile Include="Strategy Rule CNC\TIITrendOptionBuyMode3StrategyRule.vb" />
+    <Compile Include="Strategy Rule CNC\OptionBuyStrategyRule.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="frmMain.resx">

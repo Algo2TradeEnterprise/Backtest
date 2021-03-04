@@ -830,6 +830,42 @@ Public Class Common
         Return ret
     End Function
 
+    Public Function GetExpiryDate(ByVal tableName As DataBaseTable, ByVal tradingSymbol As String) As Date
+        Dim ret As Date = Date.MinValue
+
+        Dim dt As DataTable = Nothing
+        Dim conn As MySqlConnection = OpenDBConnection()
+        Dim cm As MySqlCommand = Nothing
+        Dim activeInstruments As List(Of ActiveInstrumentData) = Nothing
+
+        Select Case tableName
+            Case DataBaseTable.Intraday_Cash, DataBaseTable.EOD_Cash, DataBaseTable.EOD_POSITIONAL
+                cm = New MySqlCommand("SELECT `EXPIRY` FROM `active_instruments_cash` WHERE `TRADING_SYMBOL` = @trd", conn)
+            Case DataBaseTable.Intraday_Currency, DataBaseTable.EOD_Currency
+                cm = New MySqlCommand("SELECT `EXPIRY` FROM `active_instruments_currency` WHERE `TRADING_SYMBOL` = @trd", conn)
+            Case DataBaseTable.Intraday_Commodity, DataBaseTable.EOD_Commodity
+                cm = New MySqlCommand("SELECT `EXPIRY` FROM `active_instruments_commodity` WHERE `TRADING_SYMBOL` = @trd", conn)
+            Case DataBaseTable.Intraday_Futures, DataBaseTable.EOD_Futures, DataBaseTable.Intraday_Futures_Options
+                cm = New MySqlCommand("SELECT `EXPIRY` FROM `active_instruments_futures` WHERE `TRADING_SYMBOL` = @trd", conn)
+            Case Else
+                Throw New NotImplementedException
+        End Select
+
+        OnHeartbeat(String.Format("Getting expiry from DataBase for {0}", tradingSymbol))
+
+        cm.Parameters.AddWithValue("@trd", tradingSymbol)
+        Dim adapter As New MySqlDataAdapter(cm)
+        adapter.SelectCommand.CommandTimeout = 300
+        dt = New DataTable()
+        adapter.Fill(dt)
+        If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
+            If Not IsDBNull(dt.Rows(0).Item(0)) Then
+                ret = dt.Rows(0).Item(0)
+            End If
+        End If
+        Return ret
+    End Function
+
     Public Function GetCurrentTradingSymbolWithInstrumentToken(ByVal tableName As DataBaseTable, ByVal tradingDate As Date, ByVal rawInstrumentName As String) As Tuple(Of String, String)
         Dim ret As Tuple(Of String, String) = Nothing
         Dim dt As DataTable = Nothing

@@ -35,6 +35,8 @@ Namespace StrategyHelper
         Enum TypeOfEntry
             Fresh = 1
             Reversal
+            Stoploss
+            Rollover
             None
         End Enum
 #End Region
@@ -49,14 +51,14 @@ Namespace StrategyHelper
                        ByVal entryDirection As TradeDirection,
                        ByVal entryType As TypeOfEntry,
                        ByVal entryPrice As Decimal,
-                       ByVal quantity As Integer,
+                       ByVal quantity As Long,
                        ByVal lotSize As Integer,
                        ByVal entrySignalCandle As Payload,
                        ByVal childReference As String,
                        ByVal parentReference As String,
                        ByVal iterationNumber As Integer,
                        ByVal spotPrice As Decimal,
-                       ByVal spotATR As Decimal,
+                       ByVal requiredCapital As Decimal,
                        ByVal previousLoss As Decimal,
                        ByVal potentialTarget As Decimal)
             _OriginatingStrategy = originatingStrategy
@@ -75,7 +77,7 @@ Namespace StrategyHelper
             _ParentReference = parentReference
             _IterationNumber = iterationNumber
             _SpotPrice = spotPrice
-            _SpotATR = spotATR
+            _RequiredCapital = requiredCapital
             _PreviousLoss = previousLoss
             _PotentialTarget = potentialTarget
         End Sub
@@ -94,7 +96,7 @@ Namespace StrategyHelper
         Public ReadOnly Property EntryType As TypeOfEntry
         Public ReadOnly Property EntryTime As Date
         Public ReadOnly Property EntryPrice As Decimal
-        Public ReadOnly Property Quantity As Integer
+        Public ReadOnly Property Quantity As Long
         Public ReadOnly Property LotSize As Integer
         Public ReadOnly Property ExitTime As Date
         Public ReadOnly Property ExitPrice As Decimal
@@ -106,7 +108,7 @@ Namespace StrategyHelper
         Public ReadOnly Property ParentReference As String
         Public ReadOnly Property IterationNumber As Integer
         Public ReadOnly Property SpotPrice As Decimal
-        Public ReadOnly Property SpotATR As Decimal
+        Public ReadOnly Property RequiredCapital As Decimal
         Public ReadOnly Property PreviousLoss As Decimal
         Public ReadOnly Property PotentialTarget As Decimal
         Public ReadOnly Property ContractRolloverEntry As Boolean
@@ -233,7 +235,7 @@ Namespace StrategyHelper
                                Optional ByVal parentReference As String = Nothing,
                                Optional ByVal iterationNumber As Integer = Integer.MinValue,
                                Optional ByVal spotPrice As Decimal = Decimal.MinValue,
-                               Optional ByVal spotATR As Decimal = Decimal.MinValue,
+                               Optional ByVal requiredCapital As Decimal = Decimal.MinValue,
                                Optional ByVal previousLoss As Decimal = Decimal.MinValue,
                                Optional ByVal potentialTarget As Decimal = Decimal.MinValue,
                                Optional ByVal maxDrawUp As Decimal = Decimal.MinValue,
@@ -260,12 +262,12 @@ Namespace StrategyHelper
             If parentReference IsNot Nothing Then _ParentReference = parentReference
             If iterationNumber <> Integer.MinValue Then _IterationNumber = iterationNumber
             If spotPrice <> Decimal.MinValue Then _SpotPrice = spotPrice
-            If spotATR <> Decimal.MinValue Then _SpotATR = spotATR
+            If requiredCapital <> Decimal.MinValue Then _RequiredCapital = requiredCapital
             If previousLoss <> Decimal.MinValue Then _PreviousLoss = previousLoss
             If potentialTarget <> Decimal.MinValue Then _PotentialTarget = potentialTarget
             If maxDrawUp <> Decimal.MinValue Then _MaxDrawUp = maxDrawUp
             If maxDrawDown <> Decimal.MinValue Then _MaxDrawDown = maxDrawDown
-            If  contractRolloverEntry Then _ContractRolloverEntry = contractRolloverEntry
+            If contractRolloverEntry Then _ContractRolloverEntry = contractRolloverEntry
         End Sub
 
         Public Sub UpdateOriginatingStrategy(ByVal originatingStrategy As Strategy)

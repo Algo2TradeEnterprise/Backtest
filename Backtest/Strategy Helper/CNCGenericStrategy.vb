@@ -84,17 +84,7 @@ Namespace StrategyHelper
                                     Dim stockRule As StrategyRule = Nothing
                                     Select Case Me.RuleNumber
                                         Case 0
-                                            stockRule = New PivotTrendOptionBuyMode3StrategyRule(_canceller, tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me, XDayOneMinutePayload, XDayEODPayload)
-                                        Case 1
-                                            stockRule = New HKMATrendOptionBuyMode3StrategyRule(_canceller, tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me, XDayOneMinutePayload, XDayEODPayload)
-                                        Case 2
-                                            stockRule = New CentralPivotTrendOptionBuyMode3StrategyRule(_canceller, tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me, XDayOneMinutePayload, XDayEODPayload)
-                                        Case 3
-                                            stockRule = New HKKeltnerTrendOptionBuyMode3StrategyRule(_canceller, tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me, XDayOneMinutePayload, XDayEODPayload)
-                                        Case 4
-                                            stockRule = New IchimokuTrendOptionBuyMode3StrategyRule(_canceller, tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me, XDayOneMinutePayload, XDayEODPayload)
-                                        Case 5
-                                            stockRule = New TIITrendOptionBuyMode3StrategyRule(_canceller, tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me, XDayOneMinutePayload, XDayEODPayload)
+                                            stockRule = New OptionBuyStrategyRule(_canceller, tradeCheckingDate, nextTradingDay, runningPair.TradingSymbol, runningPair.LotSize, Me, XDayOneMinutePayload, XDayEODPayload)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
@@ -208,41 +198,12 @@ Namespace StrategyHelper
 #Region "Stock Selection"
         Private Function GetStockData(ByVal tradingDate As Date) As List(Of StockDetails)
             Dim ret As List(Of StockDetails) = Nothing
-            If Me.StockFileName IsNot Nothing Then
-                Dim dt As DataTable = Nothing
-                Using csvHelper As New Utilities.DAL.CSVHelper(Me.StockFileName, ",", _canceller)
-                    dt = csvHelper.GetDataTableFromCSV(1)
-                End Using
-                If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
-                    For Each runningRow As DataRow In dt.Rows
-                        Dim rowDate As Date = runningRow.Item("Date")
-                        If rowDate.Date = tradingDate.Date Then
-                            Dim tradingSymbol As String = runningRow.Item("Trading Symbol")
-                            Dim instrumentName As String = Nothing
-                            If tradingSymbol.Contains("FUT") Then
-                                instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
-                            Else
-                                instrumentName = tradingSymbol
-                            End If
-                            Dim lotSize As Integer = runningRow.Item("Lot Size")
-                            Dim targetLeftPercentage As Decimal = runningRow.Item("Target Left %")
+            Dim detailsOfStock As StockDetails = New StockDetails With
+                {.TradingSymbol = "NIFTY BANK",
+                 .LotSize = 25}
 
-                            If targetLeftPercentage >= 75 Then
-                                Dim detailsOfStock As StockDetails = New StockDetails With
-                                        {.TradingSymbol = tradingSymbol,
-                                         .LotSize = lotSize}
-                                'Dim detailsOfStock As StockDetails = New StockDetails With
-                                '    {.TradingSymbol = "RELIANCE",
-                                '     .LotSize = 250}
-
-                                If ret Is Nothing Then ret = New List(Of StockDetails)
-                                ret.Add(detailsOfStock)
-                                'Exit For
-                            End If
-                        End If
-                    Next
-                End If
-            End If
+            If ret Is Nothing Then ret = New List(Of StockDetails)
+            ret.Add(detailsOfStock)
             Return ret
         End Function
 #End Region

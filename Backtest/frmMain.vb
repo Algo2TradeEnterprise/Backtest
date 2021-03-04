@@ -251,71 +251,38 @@ Public Class frmMain
             Dim endDate As Date = GetDateTimePickerValue_ThreadSafe(dtpckrEndDate)
             Dim ruleNumber As Integer = GetComboBoxIndex_ThreadSafe(cmbRule)
             Dim stockFileName As String = Nothing
-            Select Case ruleNumber
-                Case 0
-                    stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "EOD Pivot Trend High ATR High Volume Stocks.csv")
-                Case 1
-                    stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "EOD HK MA Trend High ATR High Volume Stocks.csv")
-                Case 2
-                    stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "EOD Central Pivot Trend High ATR High Volume Stocks.csv")
-                Case 3
-                    stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "EOD HK Keltner Trend High ATR High Volume Stocks.csv")
-                Case 4
-                    stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "EOD Ichimoku Trend High ATR High Volume Stocks.csv")
-                Case 5
-                    stockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Hourly TII Trend High ATR High Volume Stocks.csv")
-                Case Else
-                    Throw New NotImplementedException
-            End Select
 
-            Dim tgtPerList As List(Of Decimal) = New List(Of Decimal) From {0, 5, 10}
-            For sgnlTyp As Integer = 1 To 2
-                For Each runningTgt In tgtPerList
-                    Dim rule As RuleEntities = Nothing
-                    If runningTgt = 0 Then
-                        rule = New RuleEntities With {.TypeOfTarget = RuleEntities.TargetType.ATR, .CapitalPercentage = runningTgt, .TypeOfQuantity = RuleEntities.QuantityType.Normal, .TypeOfSignal = sgnlTyp}
-                    Else
-                        rule = New RuleEntities With {.TypeOfTarget = RuleEntities.TargetType.CapitalPercentage, .CapitalPercentage = runningTgt, .TypeOfQuantity = RuleEntities.QuantityType.Normal, .TypeOfSignal = sgnlTyp}
-                    End If
+            Dim tgtPerList As List(Of Decimal) = New List(Of Decimal) From {50}
+            For Each runningTgt In tgtPerList
+                Dim rule As RuleEntities = New RuleEntities With {.TargetCapitalPercentage = runningTgt}
 
-                    Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
-                                                                     exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                                     exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                                     tradeStartTime:=TimeSpan.Parse("15:28:00"),
-                                                                     tickSize:=0.05,
-                                                                     marginMultiplier:=1,
-                                                                     timeframe:=375,
-                                                                     initialCapital:=Decimal.MaxValue / 2,
-                                                                     usableCapital:=Decimal.MaxValue / 2,
-                                                                     minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
-                                                                     amountToBeWithdrawn:=0,
-                                                                     numberOfLogicalActiveTrade:=5,
-                                                                     stockFilename:=stockFileName,
-                                                                     ruleNumber:=ruleNumber,
-                                                                     ruleSettings:=rule)
-                        AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+                Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
+                                                                 exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                 exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                 tradeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                 tickSize:=0.05,
+                                                                 marginMultiplier:=1,
+                                                                 timeframe:=1,
+                                                                 initialCapital:=Decimal.MaxValue / 2,
+                                                                 usableCapital:=Decimal.MaxValue / 2,
+                                                                 minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                                 amountToBeWithdrawn:=0,
+                                                                 numberOfLogicalActiveTrade:=Integer.MaxValue,
+                                                                 stockFilename:=stockFileName,
+                                                                 ruleNumber:=ruleNumber,
+                                                                 ruleSettings:=rule)
+                    AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                        Dim filename As String = String.Format("Option Buy")
-                        Select Case backtestStrategy.RuleNumber
-                            Case 0
-                                filename = String.Format("Pivot,Tgt {0},Per {1},Sgnl {2}", rule.TypeOfTarget.ToString, rule.CapitalPercentage, rule.TypeOfSignal)
-                            Case 1
-                                filename = String.Format("HK MA,Tgt {0},Per {1},Sgnl {2}", rule.TypeOfTarget.ToString, rule.CapitalPercentage, rule.TypeOfSignal)
-                            Case 2
-                                filename = String.Format("Central Pivot,Tgt {0},Per {1},Sgnl {2}", rule.TypeOfTarget.ToString, rule.CapitalPercentage, rule.TypeOfSignal)
-                            Case 3
-                                filename = String.Format("HK Keltner,Tgt {0},Per {1},Sgnl {2}", rule.TypeOfTarget.ToString, rule.CapitalPercentage, rule.TypeOfSignal)
-                            Case 4
-                                filename = String.Format("Ichimoku,Tgt {0},Per {1},Sgnl {2}", rule.TypeOfTarget.ToString, rule.CapitalPercentage, rule.TypeOfSignal)
-                            Case 5
-                                filename = String.Format("TII,Tgt {0},Per {1},Sgnl {2}", rule.TypeOfTarget.ToString, rule.CapitalPercentage, rule.TypeOfSignal)
-                            Case Else
-                                Throw New NotImplementedException
-                        End Select
+                    Dim filename As String = String.Format("Option Buy")
+                    Select Case backtestStrategy.RuleNumber
+                        Case 0
+                            filename = String.Format("Option Buy")
+                        Case Else
+                            Throw New NotImplementedException
+                    End Select
 
-                        Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-                    End Using
-                Next
+                    Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                End Using
             Next
         Catch cex As OperationCanceledException
             MsgBox(cex.Message, MsgBoxStyle.Critical)
