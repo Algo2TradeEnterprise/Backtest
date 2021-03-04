@@ -137,7 +137,12 @@ Namespace StrategyHelper
                             Dim peEntryPrice As Decimal = peOptTick.High
                             Dim requiredCapital As Decimal = ceEntryPrice * _LotSize + peEntryPrice * _LotSize
                             Dim potentialTarget As Decimal = requiredCapital * _ParentStrategy.RuleSettings.TargetCapitalPercentage / 100
-                            If lossToRecover < 0 Then potentialTarget = potentialTarget + Math.Abs(lossToRecover)
+                            Dim originalTarget As Decimal = potentialTarget
+                            If iterationNumber > 1 Then
+                                originalTarget = lastCompleteTrade.OriginalTarget
+                                potentialTarget = originalTarget + originalTarget * (iterationNumber - 1) * 30 / 100
+                                If lossToRecover < 0 Then potentialTarget = potentialTarget + Math.Abs(lossToRecover)
+                            End If
 
                             Dim ceTrade As Trade = New Trade(originatingStrategy:=_ParentStrategy,
                                                             tradingSymbol:=ceTradingSymbol,
@@ -157,7 +162,8 @@ Namespace StrategyHelper
                                                             spotPrice:=currentSpotTick.Open,
                                                             requiredCapital:=ceEntryPrice * quantity + peEntryPrice * quantity,
                                                             previousLoss:=lossToRecover,
-                                                            potentialTarget:=potentialTarget)
+                                                            potentialTarget:=potentialTarget,
+                                                            originalTarget:=originalTarget)
 
                             If ret Is Nothing Then ret = New List(Of Tuple(Of Trade, Payload))
                             ret.Add(New Tuple(Of Trade, Payload)(ceTrade, ceOptTick))
@@ -180,7 +186,8 @@ Namespace StrategyHelper
                                                             spotPrice:=currentSpotTick.Open,
                                                             requiredCapital:=ceEntryPrice * quantity + peEntryPrice * quantity,
                                                             previousLoss:=lossToRecover,
-                                                            potentialTarget:=potentialTarget)
+                                                            potentialTarget:=potentialTarget,
+                                                            originalTarget:=originalTarget)
 
                             If ret Is Nothing Then ret = New List(Of Tuple(Of Trade, Payload))
                             ret.Add(New Tuple(Of Trade, Payload)(peTrade, peOptTick))

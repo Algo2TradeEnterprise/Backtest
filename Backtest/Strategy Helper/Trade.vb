@@ -60,7 +60,8 @@ Namespace StrategyHelper
                        ByVal spotPrice As Decimal,
                        ByVal requiredCapital As Decimal,
                        ByVal previousLoss As Decimal,
-                       ByVal potentialTarget As Decimal)
+                       ByVal potentialTarget As Decimal,
+                       ByVal originalTarget As Decimal)
             _OriginatingStrategy = originatingStrategy
             _TradingSymbol = tradingSymbol
             _SpotTradingSymbol = spotTradingSymbol
@@ -80,6 +81,7 @@ Namespace StrategyHelper
             _RequiredCapital = requiredCapital
             _PreviousLoss = previousLoss
             _PotentialTarget = potentialTarget
+            _OriginalTarget = originalTarget
         End Sub
 #End Region
 
@@ -110,6 +112,7 @@ Namespace StrategyHelper
         Public ReadOnly Property SpotPrice As Decimal
         Public ReadOnly Property RequiredCapital As Decimal
         Public ReadOnly Property PreviousLoss As Decimal
+        Public ReadOnly Property OriginalTarget As Decimal
         Public ReadOnly Property PotentialTarget As Decimal
         Public ReadOnly Property ContractRolloverEntry As Boolean
 
