@@ -6763,6 +6763,89 @@ Public Class frmMain
                         Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
                     End Using
 #End Region
+                Case 73
+#Region "AOL Opening Candle Breakout"
+                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Futures
+                    Dim database As Common.DataBaseTable = Common.DataBaseTable.None
+                    Dim margin As Decimal = 0
+                    Dim tick As Decimal = 0
+                    Select Case stockType
+                        Case Trade.TypeOfStock.Cash
+                            database = Common.DataBaseTable.Intraday_Cash
+                            margin = 1
+                            tick = 0.05
+                        Case Trade.TypeOfStock.Commodity
+                            database = Common.DataBaseTable.Intraday_Commodity
+                            margin = 70
+                            tick = 1
+                        Case Trade.TypeOfStock.Currency
+                            database = Common.DataBaseTable.Intraday_Currency
+                            margin = 98
+                            tick = 0.0025
+                        Case Trade.TypeOfStock.Futures
+                            database = Common.DataBaseTable.Intraday_Futures
+                            margin = 2
+                            tick = 0.05
+                    End Select
+
+                    Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+                                                                     exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                     exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                     tradeStartTime:=TimeSpan.Parse("9:20:00"),
+                                                                     lastTradeEntryTime:=TimeSpan.Parse("14:44:59"),
+                                                                     eodExitTime:=TimeSpan.Parse("15:15:00"),
+                                                                     tickSize:=tick,
+                                                                     marginMultiplier:=margin,
+                                                                     timeframe:=5,
+                                                                     heikenAshiCandle:=False,
+                                                                     stockType:=stockType,
+                                                                     optionStockType:=Trade.TypeOfStock.None,
+                                                                     databaseTable:=database,
+                                                                     dataSource:=sourceData,
+                                                                     initialCapital:=Decimal.MaxValue / 2,
+                                                                     usableCapital:=Decimal.MaxValue / 2,
+                                                                     minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                                     amountToBeWithdrawn:=0)
+                        AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+
+                        With backtestStrategy
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "NIFTY.csv")
+
+                            .AllowBothDirectionEntryAtSameTime = False
+                            .TrailingStoploss = False
+                            .TickBasedStrategy = True
+                            .RuleNumber = ruleNumber
+
+                            .RuleEntityData = New AOLOpeningCandleBreakout.StrategyRuleEntities With
+                                              {.QuantityMultiplier = 1}
+
+                            .NumberOfTradeableStockPerDay = Integer.MaxValue
+
+                            .NumberOfTradesPerStockPerDay = 1
+
+                            .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                            .StockMaxLossPercentagePerDay = Decimal.MinValue
+
+                            .ExitOnStockFixedTargetStoploss = False
+                            .StockMaxProfitPerDay = Decimal.MaxValue
+                            .StockMaxLossPerDay = Decimal.MinValue
+
+                            .ExitOnOverAllFixedTargetStoploss = False
+                            .OverAllProfitPerDay = Decimal.MaxValue
+                            .OverAllLossPerDay = Decimal.MinValue
+
+                            .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+                            .MTMSlab = Math.Abs(.OverAllLossPerDay)
+                            .MovementSlab = .MTMSlab / 2
+                            .RealtimeTrailingPercentage = 50
+                        End With
+
+                        Dim ruleData As AOLOpeningCandleBreakout.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                        Dim filename As String = String.Format("AOL Opening Candle Breakout Strategy Output")
+
+                        Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                    End Using
+#End Region
                 Case Else
                     Throw New NotImplementedException
             End Select

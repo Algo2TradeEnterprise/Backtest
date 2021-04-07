@@ -266,6 +266,8 @@ Namespace StrategyHelper
                                             stockRule = New FirstFavourableFractalTopGainerLooserStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2, stockList(stock).SupportingDate)
                                         Case 72
                                             stockRule = New DiamondStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Slab)
+                                        Case 73
+                                            stockRule = New AOLOpeningCandleBreakout(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
