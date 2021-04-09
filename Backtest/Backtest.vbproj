@@ -133,7 +133,7 @@
     <Compile Include="Strategy Rule MIS\AnchorSatelliteLossMakeupHKFuturesStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\AnchorSatelliteLossMakeupHKStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\AnchorSatelliteLossMakeupStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\AOLOpeningCandleBreakout.vb" />
+    <Compile Include="Strategy Rule MIS\AOLOpeningCandleBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\AtTheMoneyOptionBuyOnlyStrategy.vb" />
     <Compile Include="Strategy Rule MIS\BollingerCloseStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\BollingerTouchStrategyRule.vb" />
@@ -144,6 +144,7 @@
     <Compile Include="Strategy Rule MIS\EMAAttractionStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\EMADirectionBasedHammerCandleBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\EmaSmaCrossoverStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\EveryXMinCandleBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\FavourableCandleBreakoutAfterVStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\FibonacciBacktestStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\FibonacciOpeningRangeBreakoutStrategyRule.vb" />

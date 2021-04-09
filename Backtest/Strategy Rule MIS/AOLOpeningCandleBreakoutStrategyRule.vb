@@ -3,7 +3,7 @@ Imports System.Threading
 Imports Backtest.StrategyHelper
 Imports Utilities.Numbers.NumberManipulation
 
-Public Class AOLOpeningCandleBreakout
+Public Class AOLOpeningCandleBreakoutStrategyRule
     Inherits StrategyRule
 
 #Region "Entity"
