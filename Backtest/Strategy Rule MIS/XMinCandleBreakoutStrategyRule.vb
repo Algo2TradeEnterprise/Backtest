@@ -3,7 +3,7 @@ Imports System.Threading
 Imports Backtest.StrategyHelper
 Imports Utilities.Numbers.NumberManipulation
 
-Public Class EveryXMinCandleBreakoutStrategyRule
+Public Class XMinCandleBreakoutStrategyRule
     Inherits StrategyRule
 
 #Region "Entity"
@@ -14,6 +14,7 @@ Public Class EveryXMinCandleBreakoutStrategyRule
     End Class
 #End Region
 
+    Private ReadOnly _siganlTime As Date
     Private ReadOnly _userInputs As StrategyRuleEntities
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -21,9 +22,11 @@ Public Class EveryXMinCandleBreakoutStrategyRule
                    ByVal tradingDate As Date,
                    ByVal tradingSymbol As String,
                    ByVal canceller As CancellationTokenSource,
-                   ByVal entities As RuleEntities)
+                   ByVal entities As RuleEntities,
+                   ByVal signalTime As Date)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _userInputs = _entities
+        _siganlTime = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, signalTime.Hour, signalTime.Minute, 0)
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -36,12 +39,9 @@ Public Class EveryXMinCandleBreakoutStrategyRule
         Dim currentMinuteCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         Dim parameter As PlaceOrderParameters = Nothing
         If currentMinuteCandle IsNot Nothing AndAlso currentMinuteCandle.PreviousCandlePayload IsNot Nothing AndAlso Me.EligibleToTakeTrade AndAlso
-            currentMinuteCandle.PayloadDate >= _tradeStartTime Then
+            currentMinuteCandle.PayloadDate >= _tradeStartTime AndAlso currentMinuteCandle.PreviousCandlePayload.PayloadDate = _siganlTime AndAlso
+            Not _parentStrategy.IsTradeOpen(currentMinuteCandle, Trade.TypeOfTrade.MIS) AndAlso Not _parentStrategy.IsTradeActive(currentMinuteCandle, Trade.TypeOfTrade.MIS) Then
             Dim signalCandle As Payload = currentMinuteCandle.PreviousCandlePayload
-            Dim lastTrade As Trade = _parentStrategy.GetLastTradeOfTheStock(currentMinuteCandle, Trade.TypeOfTrade.MIS)
-            If lastTrade IsNot Nothing AndAlso lastTrade.SignalCandle.PayloadDate = signalCandle.PayloadDate Then
-                signalCandle = Nothing
-            End If
             If signalCandle IsNot Nothing Then
                 Dim quantity As Integer = _parentStrategy.CalculateQuantityFromInvestment(Me.LotSize, _userInputs.Capital, signalCandle.Close, Trade.TypeOfStock.Cash, True)
                 Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Close, RoundOfType.Celing)

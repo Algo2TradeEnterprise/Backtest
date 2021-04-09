@@ -6847,7 +6847,7 @@ Public Class frmMain
                     End Using
 #End Region
                 Case 74
-#Region "Every X-Min Candle Breakout Strategy"
+#Region "X-Min Candle Breakout Strategy"
                     Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
                     Dim database As Common.DataBaseTable = Common.DataBaseTable.None
                     Dim margin As Decimal = 0
@@ -6874,8 +6874,8 @@ Public Class frmMain
                     Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                      exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                      exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                                     tradeStartTime:=TimeSpan.Parse("9:20:00"),
-                                                                     lastTradeEntryTime:=TimeSpan.Parse("11:01:00"),
+                                                                     tradeStartTime:=TimeSpan.Parse("09:20:00"),
+                                                                     lastTradeEntryTime:=TimeSpan.Parse("11:10:00"),
                                                                      eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                                      tickSize:=tick,
                                                                      marginMultiplier:=margin,
@@ -6899,12 +6899,12 @@ Public Class frmMain
                             .TickBasedStrategy = True
                             .RuleNumber = ruleNumber
 
-                            .RuleEntityData = New EveryXMinCandleBreakoutStrategyRule.StrategyRuleEntities With
+                            .RuleEntityData = New XMinCandleBreakoutStrategyRule.StrategyRuleEntities With
                                               {.Capital = 5000}
 
                             .NumberOfTradeableStockPerDay = Integer.MaxValue
 
-                            .NumberOfTradesPerStockPerDay = Integer.MaxValue
+                            .NumberOfTradesPerStockPerDay = 1
 
                             .StockMaxProfitPercentagePerDay = Decimal.MaxValue
                             .StockMaxLossPercentagePerDay = Decimal.MinValue
@@ -6923,8 +6923,8 @@ Public Class frmMain
                             .RealtimeTrailingPercentage = 50
                         End With
 
-                        Dim ruleData As EveryXMinCandleBreakoutStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                        Dim filename As String = String.Format("Every XMin Candle Breakout Strategy Output")
+                        Dim ruleData As XMinCandleBreakoutStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                        Dim filename As String = String.Format("XMin Candle Breakout Strategy Output")
 
                         Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
                     End Using

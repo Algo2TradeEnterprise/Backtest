@@ -56,7 +56,7 @@ Namespace StrategyHelper
                 PrintArrayToExcel(filename, tradesFileName, capitalFileName)
             Else
                 Dim strategyName As String = String.Format("Strategy{0}", Me.RuleNumber)
-                OnHeartbeat("Getting unique instrument list")
+                'OnHeartbeat("Getting unique instrument list")
                 'Dim allInstrumentList As List(Of String) = GetUniqueInstrumentList(startDate, endDate)
                 'Dim dataFtchr As DataFetcher = New DataFetcher(_canceller, My.Settings.ServerName, allInstrumentList, startDate.AddDays(-25), endDate, Me.StockType, Me.OptionStockType, strategyName)
                 'AddHandler dataFtchr.Heartbeat, AddressOf OnHeartbeat
@@ -74,6 +74,7 @@ Namespace StrategyHelper
                     Me.AvailableCapital = Me.UsableCapital
                     Me.OverAllLossPerDay = portfolioLossPerDay
                     TradesTaken = New Dictionary(Of Date, Dictionary(Of String, List(Of Trade)))
+                    OnHeartbeat("Getting instrument list")
                     Dim stockList As Dictionary(Of String, StockDetails) = Await GetStockDataAsync(tradeCheckingDate).ConfigureAwait(False)
 
                     _canceller.Token.ThrowIfCancellationRequested()
@@ -269,7 +270,7 @@ Namespace StrategyHelper
                                         Case 73
                                             stockRule = New AOLOpeningCandleBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case 74
-                                            stockRule = New EveryXMinCandleBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                            stockRule = New XMinCandleBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).SupportingDate)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
@@ -1909,6 +1910,36 @@ Namespace StrategyHelper
                                             End If
                                         End If
                                     End If
+                                End If
+                            Next
+                        Case 74
+                            Dim counter As Integer = 0
+                            For i = 0 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i).Item("Date")
+                                If rowDate.Date = tradingDate.Date Then
+                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
+                                    Dim instrumentName As String = Nothing
+                                    If tradingSymbol.Contains("FUT") Then
+                                        instrumentName = tradingSymbol.Remove(tradingSymbol.Count - 8)
+                                    Else
+                                        instrumentName = tradingSymbol
+                                    End If
+                                    Dim lotsize As Integer = dt.Rows(i).Item("Lot Size")
+                                    Dim slab As Decimal = dt.Rows(i).Item("Slab")
+                                    Dim signalTime As Date = dt.Rows(i).Item("Signal Time")
+                                    Dim detailsOfStock As StockDetails = New StockDetails With
+                                                {.StockName = instrumentName,
+                                                 .TradingSymbol = tradingSymbol,
+                                                 .LotSize = lotsize,
+                                                 .Slab = slab,
+                                                 .SupportingDate = signalTime,
+                                                 .EligibleToTakeTrade = True}
+
+                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                    ret.Add(instrumentName, detailsOfStock)
+
+                                    counter += 1
+                                    If counter = Me.NumberOfTradeableStockPerDay Then Exit For
                                 End If
                             Next
                         Case Else

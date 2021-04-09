@@ -144,7 +144,7 @@
     <Compile Include="Strategy Rule MIS\EMAAttractionStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\EMADirectionBasedHammerCandleBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\EmaSmaCrossoverStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\EveryXMinCandleBreakoutStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\XMinCandleBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\FavourableCandleBreakoutAfterVStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\FibonacciBacktestStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\FibonacciOpeningRangeBreakoutStrategyRule.vb" />
