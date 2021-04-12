@@ -332,13 +332,18 @@ Namespace StrategyHelper
         Private Function GetStockData(ByVal tradingDate As Date, ByVal tradeStartingDate As Date) As Dictionary(Of String, StockDetails)
             Dim ret As Dictionary(Of String, StockDetails) = Nothing
 
-            Dim detailsOfStock As StockDetails = New StockDetails With
-                                    {.StockName = "TCS",
-                                    .LotSize = 1,
-                                    .EligibleToTakeTrade = True}
+            Dim nifty50Stocklist As List(Of String) = New List(Of String) From
+            {"ADANIPORTS", "ASIANPAINT", "AXISBANK", "BAJAJ-AUTO", "BAJFINANCE", "BAJAJFINSV", "BPCL", "BHARTIARTL", "BRITANNIA", "CIPLA", "COALINDIA", "DIVISLAB", "DRREDDY", "EICHERMOT", "GRASIM", "HCLTECH", "HDFCBANK", "HDFCLIFE", "HEROMOTOCO", "HINDALCO", "HINDUNILVR", "HDFC", "ICICIBANK", "ITC", "IOC", "INDUSINDBK", "INFY", "JSWSTEEL", "KOTAKBANK", "LT", "M&M", "MARUTI", "NTPC", "NESTLEIND", "ONGC", "POWERGRID", "RELIANCE", "SBILIFE", "SHREECEM", "SBIN", "SUNPHARMA", "TCS", "TATACONSUM", "TATAMOTORS", "TATASTEEL", "TECHM", "TITAN", "UPL", "ULTRACEMCO", "WIPRO"}
 
-            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-            ret.Add(detailsOfStock.StockName, detailsOfStock)
+            For Each runningStock In nifty50Stocklist
+                Dim detailsOfStock As StockDetails = New StockDetails With
+                                    {.StockName = runningStock.Trim.ToUpper,
+                                     .LotSize = 1,
+                                     .EligibleToTakeTrade = True}
+
+                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                ret.Add(detailsOfStock.StockName, detailsOfStock)
+            Next
 
             Return ret
         End Function
