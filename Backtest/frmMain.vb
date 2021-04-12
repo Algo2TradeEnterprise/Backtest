@@ -6871,7 +6871,9 @@ Public Class frmMain
                             tick = 0.05
                     End Select
 
-                    Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+                    For tgtMul As Integer = 1 To 5
+                        For brkevn As Integer = 0 To 1
+                            Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                      exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                      exchangeEndTime:=TimeSpan.Parse("15:29:59"),
                                                                      tradeStartTime:=TimeSpan.Parse("09:20:00"),
@@ -6889,46 +6891,49 @@ Public Class frmMain
                                                                      usableCapital:=Decimal.MaxValue / 2,
                                                                      minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
                                                                      amountToBeWithdrawn:=0)
-                        AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+                                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                        With backtestStrategy
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "F&O Stocklist.csv")
+                                With backtestStrategy
+                                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "F&O Stocklist.csv")
 
-                            .AllowBothDirectionEntryAtSameTime = False
-                            .TrailingStoploss = False
-                            .TickBasedStrategy = True
-                            .RuleNumber = ruleNumber
+                                    .AllowBothDirectionEntryAtSameTime = False
+                                    .TrailingStoploss = False
+                                    .TickBasedStrategy = True
+                                    .RuleNumber = ruleNumber
 
-                            .RuleEntityData = New XMinCandleBreakoutStrategyRule.StrategyRuleEntities With
-                                              {.MaxLossPerTrade = -500,
-                                               .TargetMultiplier = 2}
+                                    .RuleEntityData = New XMinCandleBreakoutStrategyRule.StrategyRuleEntities With
+                                                      {.MaxLossPerTrade = -500,
+                                                       .TargetMultiplier = tgtMul,
+                                                       .BreakevenMovement = brkevn}
 
-                            .NumberOfTradeableStockPerDay = Integer.MaxValue
+                                    .NumberOfTradeableStockPerDay = Integer.MaxValue
 
-                            .NumberOfTradesPerStockPerDay = 1
+                                    .NumberOfTradesPerStockPerDay = 1
 
-                            .StockMaxProfitPercentagePerDay = Decimal.MaxValue
-                            .StockMaxLossPercentagePerDay = Decimal.MinValue
+                                    .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                                    .StockMaxLossPercentagePerDay = Decimal.MinValue
 
-                            .ExitOnStockFixedTargetStoploss = False
-                            .StockMaxProfitPerDay = Decimal.MaxValue
-                            .StockMaxLossPerDay = Decimal.MinValue
+                                    .ExitOnStockFixedTargetStoploss = False
+                                    .StockMaxProfitPerDay = Decimal.MaxValue
+                                    .StockMaxLossPerDay = Decimal.MinValue
 
-                            .ExitOnOverAllFixedTargetStoploss = False
-                            .OverAllProfitPerDay = Decimal.MaxValue
-                            .OverAllLossPerDay = Decimal.MinValue
+                                    .ExitOnOverAllFixedTargetStoploss = False
+                                    .OverAllProfitPerDay = Decimal.MaxValue
+                                    .OverAllLossPerDay = Decimal.MinValue
 
-                            .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
-                            .MTMSlab = Math.Abs(.OverAllLossPerDay)
-                            .MovementSlab = .MTMSlab / 2
-                            .RealtimeTrailingPercentage = 50
-                        End With
+                                    .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+                                    .MTMSlab = Math.Abs(.OverAllLossPerDay)
+                                    .MovementSlab = .MTMSlab / 2
+                                    .RealtimeTrailingPercentage = 50
+                                End With
 
-                        Dim ruleData As XMinCandleBreakoutStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                        Dim filename As String = String.Format("XMin Candle Breakout Strategy Output")
+                                Dim ruleData As XMinCandleBreakoutStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                                Dim filename As String = String.Format("XMinCndlBrkot,Tgt {0},Brkevn {1}", ruleData.TargetMultiplier, ruleData.BreakevenMovement)
 
-                        Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-                    End Using
+                                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                            End Using
+                        Next
+                    Next
 #End Region
                 Case Else
                     Throw New NotImplementedException
