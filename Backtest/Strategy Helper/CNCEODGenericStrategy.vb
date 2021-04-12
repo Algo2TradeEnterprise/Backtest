@@ -78,7 +78,7 @@ Namespace StrategyHelper
                             Dim XDayPayload As Dictionary(Of Date, Payload) = Nothing
                             Dim currentDayPayload As Dictionary(Of Date, Payload) = Nothing
                             If Me.DataSource = SourceOfData.Database Then
-                                XDayPayload = Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.EOD_POSITIONAL, stock, startDate, tradeCheckingDate.AddDays(15))
+                                XDayPayload = Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.EOD_POSITIONAL, stock, startDate.AddYears(-3), tradeCheckingDate.AddDays(15))
                             ElseIf Me.DataSource = SourceOfData.Live Then
                                 XDayPayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, stock, tradeCheckingDate.AddYears(-10), tradeCheckingDate).ConfigureAwait(False)
                             End If
@@ -109,9 +109,7 @@ Namespace StrategyHelper
                                     Dim tradingSymbol As String = currentDayPayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
                                         Case 0
-                                            stockRule = New ValueInvestingWithExitAndReEntryStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 1
-                                            stockRule = New ValueInvestingWithExitAndIncrementedReEntryStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                            stockRule = New WeeklyReverseTrendStrategyRule(XDayPayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
@@ -264,6 +262,29 @@ Namespace StrategyHelper
                                             EnterTradeIfPossible(runningPotentialEntryTrade, entryTick)
                                         Next
                                     End If
+
+                                    'Modify Stoploss
+                                    _canceller.Token.ThrowIfCancellationRequested()
+                                    Dim potentialRuleModifyTrades As List(Of Trade) = GetSpecificTrades(currentDayCandlePayload, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
+                                    If potentialRuleModifyTrades IsNot Nothing AndAlso potentialRuleModifyTrades.Count > 0 Then
+                                        For Each runningModifyTrade In potentialRuleModifyTrades
+                                            _canceller.Token.ThrowIfCancellationRequested()
+                                            Dim modifyOrderDetails As Tuple(Of Boolean, Decimal, String) = Await stockStrategyRule.IsTriggerReceivedForModifyStoplossOrderAsync(runningTick, runningModifyTrade).ConfigureAwait(False)
+                                            If modifyOrderDetails IsNot Nothing AndAlso modifyOrderDetails.Item1 Then
+                                                _canceller.Token.ThrowIfCancellationRequested()
+                                                Dim exitTick As Payload = New Payload(Payload.CandleDataSource.Calculated) With {
+                                                            .Open = modifyOrderDetails.Item2,
+                                                            .Low = modifyOrderDetails.Item2,
+                                                            .High = modifyOrderDetails.Item2,
+                                                            .Close = modifyOrderDetails.Item2,
+                                                            .PayloadDate = runningTick.PayloadDate,
+                                                            .TradingSymbol = runningTick.TradingSymbol
+                                                        }
+                                                runningModifyTrade.UpdateTrade(PotentialStopLoss:=modifyOrderDetails.Item2, SLRemark:=modifyOrderDetails.Item3)
+                                            End If
+                                        Next
+                                        stockList(stockName).ModifyStoplossOrderDoneForTheMinute = True
+                                    End If
                                 End If
                             Next
                         End If
@@ -312,7 +333,7 @@ Namespace StrategyHelper
             Dim ret As Dictionary(Of String, StockDetails) = Nothing
 
             Dim detailsOfStock As StockDetails = New StockDetails With
-                                    {.StockName = "RELIANCE",
+                                    {.StockName = "TCS",
                                     .LotSize = 1,
                                     .EligibleToTakeTrade = True}
 

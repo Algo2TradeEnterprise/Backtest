@@ -111,8 +111,7 @@
     <Compile Include="Strategy Helper\StrategyOutput.vb" />
     <Compile Include="Strategy Helper\StrategyRule.vb" />
     <Compile Include="Strategy Helper\Trade.vb" />
-    <Compile Include="Strategy Rule CNC\ValueInvestingWithExitAndIncrementedReEntryStrategyRule.vb" />
-    <Compile Include="Strategy Rule CNC\ValueInvestingWithExitAndReEntryStrategyRule.vb" />
+    <Compile Include="Strategy Rule CNC\WeeklyReverseTrendStrategyRule.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="frmMain.resx">

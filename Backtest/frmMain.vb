@@ -254,7 +254,7 @@ Public Class frmMain
                 Case Trade.TypeOfStock.Cash
                     database = Common.DataBaseTable.Intraday_Cash
                     margin = 1
-                    tick = 0.01
+                    tick = 0.05
                 Case Trade.TypeOfStock.Commodity
                     database = Common.DataBaseTable.Intraday_Commodity
                     margin = 1
@@ -271,84 +271,61 @@ Public Class frmMain
 
             Dim rule As Integer = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-            For incrsPer As Decimal = 5 To 15 Step 2
-                For rtrn As Decimal = 5 To 10 Step 1
-                    For ext As Integer = 0 To 1
-                        Using backtestStrategy As New CNCEODGenericStrategy(canceller:=_canceller,
-                                                                        exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                                        exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                                        tradeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                                        lastTradeEntryTime:=TimeSpan.Parse("15:29:59"),
-                                                                        eodExitTime:=TimeSpan.Parse("15:29:59"),
-                                                                        tickSize:=tick,
-                                                                        marginMultiplier:=margin,
-                                                                        timeframe:=1,
-                                                                        heikenAshiCandle:=False,
-                                                                        stockType:=stockType,
-                                                                        databaseTable:=database,
-                                                                        dataSource:=sourceData,
-                                                                        initialCapital:=Decimal.MaxValue / 2,
-                                                                        usableCapital:=Decimal.MaxValue / 2,
-                                                                        minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
-                                                                        amountToBeWithdrawn:=0)
-                            AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+            Using backtestStrategy As New CNCEODGenericStrategy(canceller:=_canceller,
+                                                                exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                tradeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                lastTradeEntryTime:=TimeSpan.Parse("15:29:59"),
+                                                                eodExitTime:=TimeSpan.Parse("15:29:59"),
+                                                                tickSize:=tick,
+                                                                marginMultiplier:=margin,
+                                                                timeframe:=1,
+                                                                heikenAshiCandle:=False,
+                                                                stockType:=stockType,
+                                                                databaseTable:=database,
+                                                                dataSource:=sourceData,
+                                                                initialCapital:=Decimal.MaxValue / 2,
+                                                                usableCapital:=Decimal.MaxValue / 2,
+                                                                minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
+                                                                amountToBeWithdrawn:=0)
+                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                            With backtestStrategy
-                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "")
+                With backtestStrategy
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "")
 
-                                .RuleNumber = rule
+                    .RuleNumber = rule
 
-                                Select Case rule
-                                    Case 0
-                                        .RuleEntityData = New ValueInvestingWithExitAndReEntryStrategyRule.StrategyRuleEntities With
-                                        {
-                                         .InitialInvestment = 10000,
-                                         .PercentageOfIncreaseDesireEachPeriod = incrsPer,
-                                         .ReturnPercentage = rtrn,
-                                         .ExitAtExactReturnPercentage = ext
-                                        }
-                                    Case 1
-                                        .RuleEntityData = New ValueInvestingWithExitAndIncrementedReEntryStrategyRule.StrategyRuleEntities With
-                                        {
-                                         .InitialInvestment = 10000,
-                                         .PercentageOfIncreaseDesireEachPeriod = incrsPer,
-                                         .ReturnPercentage = rtrn,
-                                         .ExitAtExactReturnPercentage = ext
-                                        }
-                                    Case Else
-                                        Throw New NotImplementedException
-                                End Select
+                    Select Case rule
+                        Case 0
+                            .RuleEntityData = New WeeklyReverseTrendStrategyRule.StrategyRuleEntities With
+                            {
+                             .TargetPercentage = 3,
+                             .MaxLossPerTrade = -500
+                            }
+                        Case Else
+                            Throw New NotImplementedException
+                    End Select
 
 
-                                .NumberOfTradeableStockPerDay = 1
+                    .NumberOfTradeableStockPerDay = 1
 
-                                .NumberOfTradesPerDay = Integer.MaxValue
-                                .NumberOfTradesPerStockPerDay = Integer.MaxValue
+                    .NumberOfTradesPerDay = Integer.MaxValue
+                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
-                                .TickBasedStrategy = True
-                            End With
+                    .TickBasedStrategy = True
+                End With
 
-                            Dim filename As String = Nothing
-                            Select Case rule
-                                Case 0
-                                    Dim ruleEntity As ValueInvestingWithExitAndReEntryStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                                    filename = String.Format("WklyVluInvstngWtExtNdReEty,IncrsPer {0},RtrnPer {1},HghExt {2}",
-                                                             ruleEntity.PercentageOfIncreaseDesireEachPeriod,
-                                                             ruleEntity.ReturnPercentage,
-                                                             ruleEntity.ExitAtExactReturnPercentage)
-                                Case 1
-                                    Dim ruleEntity As ValueInvestingWithExitAndIncrementedReEntryStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                                    filename = String.Format("VluInvstngWtExtNdIncrmntdReEty,IncrsPer {0},HghExt {1}",
-                                                         ruleEntity.PercentageOfIncreaseDesireEachPeriod, ruleEntity.ExitAtExactReturnPercentage)
-                                Case Else
-                                    Throw New NotImplementedException
-                            End Select
+                Dim filename As String = Nothing
+                Select Case rule
+                    Case 0
+                        Dim ruleEntity As WeeklyReverseTrendStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                        filename = String.Format("Weekly Reverse Trend Strategy Output")
+                    Case Else
+                        Throw New NotImplementedException
+                End Select
 
-                            Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-                        End Using
-                    Next
-                Next
-            Next
+                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+            End Using
         Catch cex As OperationCanceledException
             MsgBox(cex.Message, MsgBoxStyle.Exclamation)
         Catch ex As Exception
