@@ -77,7 +77,7 @@ Namespace StrategyHelper
                             Dim XDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             Dim currentDayOneMinutePayload As Dictionary(Of Date, Payload) = Nothing
                             If Me.DataSource = SourceOfData.Database Then
-                                XDayOneMinutePayload = Cmn.GetRawPayloadForSpecificTradingSymbol(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-90), tradeCheckingDate)
+                                XDayOneMinutePayload = Cmn.GetRawPayloadForSpecificTradingSymbol(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-10), tradeCheckingDate)
                             ElseIf Me.DataSource = SourceOfData.Live Then
                                 XDayOneMinutePayload = Await Cmn.GetHistoricalDataAsync(Me.DatabaseTable, stock, tradeCheckingDate.AddDays(-20), tradeCheckingDate).ConfigureAwait(False)
                             End If
@@ -105,11 +105,7 @@ Namespace StrategyHelper
                                     Dim tradingSymbol As String = currentDayOneMinutePayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
                                         Case 0
-                                            Throw New NotImplementedException
-                                        Case 1
-                                            stockRule = New PreviousCandleSwingHighStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
-                                        Case 4
-                                            stockRule = New BelowFractalLowStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                            stockRule = New BelowSupportFractalHighBreakoutStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -202,6 +198,21 @@ Namespace StrategyHelper
                                                                 End If
                                                             Next
                                                             stockList(stockName).CancelOrderDoneForTheMinute = True
+                                                        End If
+                                                    End If
+                                                    _canceller.Token.ThrowIfCancellationRequested()
+                                                    Dim potentialRuleExitTrades As List(Of Trade) = GetSpecificTrades(currentMinuteCandlePayload, Trade.TypeOfTrade.CNC, Trade.TradeExecutionStatus.Inprogress)
+                                                    If potentialRuleExitTrades IsNot Nothing AndAlso potentialRuleExitTrades.Count > 0 Then
+                                                        If Me.TickBasedStrategy OrElse Not stockList(stockName).ExitOrderDoneForTheMinute Then
+                                                            For Each runningExitTrade In potentialRuleExitTrades
+                                                                _canceller.Token.ThrowIfCancellationRequested()
+                                                                Dim exitOrderDetails As Tuple(Of Boolean, String) = Await stockStrategyRule.IsTriggerReceivedForExitOrderAsync(runningTick, runningExitTrade).ConfigureAwait(False)
+                                                                If exitOrderDetails IsNot Nothing AndAlso exitOrderDetails.Item1 Then
+                                                                    _canceller.Token.ThrowIfCancellationRequested()
+                                                                    ExitTradeByForce(runningExitTrade, runningTick, exitOrderDetails.Item2)
+                                                                End If
+                                                            Next
+                                                            stockList(stockName).ExitOrderDoneForTheMinute = True
                                                         End If
                                                     End If
 
@@ -318,13 +329,18 @@ Namespace StrategyHelper
         Private Function GetStockData(tradingDate As Date) As Dictionary(Of String, StockDetails)
             Dim ret As Dictionary(Of String, StockDetails) = Nothing
 
-            Dim detailsOfStock As StockDetails = New StockDetails With
-                                    {.StockName = "NIFTYBEES",
-                                    .LotSize = 1,
-                                    .EligibleToTakeTrade = True}
+            Dim nifty50Stocklist As List(Of String) = New List(Of String) From
+            {"ADANIPORTS", "ASIANPAINT", "AXISBANK", "BAJAJ-AUTO", "BAJFINANCE", "BAJAJFINSV", "BPCL", "BHARTIARTL", "BRITANNIA", "CIPLA", "COALINDIA", "DIVISLAB", "DRREDDY", "EICHERMOT", "GRASIM", "HCLTECH", "HDFCBANK", "HDFCLIFE", "HEROMOTOCO", "HINDALCO", "HINDUNILVR", "HDFC", "ICICIBANK", "ITC", "IOC", "INDUSINDBK", "INFY", "JSWSTEEL", "KOTAKBANK", "LT", "M&M", "MARUTI", "NTPC", "NESTLEIND", "ONGC", "POWERGRID", "RELIANCE", "SBILIFE", "SHREECEM", "SBIN", "SUNPHARMA", "TCS", "TATAMOTORS", "TATASTEEL", "TECHM", "TITAN", "UPL", "ULTRACEMCO", "WIPRO"}
 
-            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-            ret.Add(detailsOfStock.StockName, detailsOfStock)
+            For Each runningStock In nifty50Stocklist
+                Dim detailsOfStock As StockDetails = New StockDetails With
+                                    {.StockName = runningStock.Trim.ToUpper,
+                                     .LotSize = 1,
+                                     .EligibleToTakeTrade = True}
+
+                If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                ret.Add(detailsOfStock.StockName, detailsOfStock)
+            Next
 
             Return ret
         End Function
