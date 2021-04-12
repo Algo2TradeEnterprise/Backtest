@@ -82,10 +82,10 @@ Public Class WeeklyReverseTrendStrategyRule
 
                 Dim entryPrice As Decimal = signalCandle.High + buffer
                 Dim stoplossPrice As Decimal = signalCandle.Low - buffer
-                Dim targetPrice As Decimal = entryPrice + ConvertFloorCeling(entryPrice * _userInputs.TargetPercentage / 100, _parentStrategy.TickSize, RoundOfType.Celing)
 
                 Dim quantity As Integer = _parentStrategy.CalculateQuantityFromSL(_tradingSymbol, entryPrice, stoplossPrice, Math.Abs(_userInputs.MaxLossPerTrade) * -1, _parentStrategy.StockType)
                 If currentDayCandle.Open > entryPrice Then entryPrice = currentDayCandle.Open
+                Dim targetPrice As Decimal = entryPrice + ConvertFloorCeling(entryPrice * _userInputs.TargetPercentage / 100, _parentStrategy.TickSize, RoundOfType.Celing)
 
                 Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                                                                 .EntryPrice = entryPrice,
