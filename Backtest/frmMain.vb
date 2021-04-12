@@ -6892,7 +6892,7 @@ Public Class frmMain
                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                         With backtestStrategy
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "F&o Stocklist.csv")
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "F&O Stocklist.csv")
 
                             .AllowBothDirectionEntryAtSameTime = False
                             .TrailingStoploss = False
@@ -6900,7 +6900,8 @@ Public Class frmMain
                             .RuleNumber = ruleNumber
 
                             .RuleEntityData = New XMinCandleBreakoutStrategyRule.StrategyRuleEntities With
-                                              {.Capital = 5000}
+                                              {.MaxLossPerTrade = -500,
+                                               .TargetMultiplier = 2}
 
                             .NumberOfTradeableStockPerDay = Integer.MaxValue
 

@@ -10,7 +10,8 @@ Public Class XMinCandleBreakoutStrategyRule
     Public Class StrategyRuleEntities
         Inherits RuleEntities
 
-        Public Capital As Decimal
+        Public MaxLossPerTrade As Decimal
+        Public TargetMultiplier As Decimal
     End Class
 #End Region
 
@@ -43,7 +44,6 @@ Public Class XMinCandleBreakoutStrategyRule
             Not _parentStrategy.IsTradeOpen(currentMinuteCandle, Trade.TypeOfTrade.MIS) AndAlso Not _parentStrategy.IsTradeActive(currentMinuteCandle, Trade.TypeOfTrade.MIS) Then
             Dim signalCandle As Payload = currentMinuteCandle.PreviousCandlePayload
             If signalCandle IsNot Nothing Then
-                Dim quantity As Integer = _parentStrategy.CalculateQuantityFromInvestment(Me.LotSize, _userInputs.Capital, signalCandle.Close, Trade.TypeOfStock.Cash, True)
                 Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Close, RoundOfType.Celing)
 
                 Dim buyPrice As Decimal = signalCandle.High + buffer
@@ -61,13 +61,16 @@ Public Class XMinCandleBreakoutStrategyRule
                     entryDirection = Trade.TradeExecutionDirection.Sell
                 End If
 
+                Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, buyPrice, sellPrice, Math.Abs(_userInputs.MaxLossPerTrade) * -1, _parentStrategy.StockType)
+                Dim tgtPoint As Decimal = ConvertFloorCeling((buyPrice - sellPrice) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
+
                 If entryDirection = Trade.TradeExecutionDirection.Buy Then
                     parameter = New PlaceOrderParameters With {
                             .EntryPrice = buyPrice,
                             .EntryDirection = Trade.TradeExecutionDirection.Buy,
                             .Quantity = quantity,
-                            .Stoploss = .EntryPrice - 1000000,
-                            .Target = .EntryPrice + 1000000,
+                            .Stoploss = sellPrice,
+                            .Target = .EntryPrice + tgtPoint,
                             .Buffer = buffer,
                             .SignalCandle = signalCandle,
                             .OrderType = Trade.TypeOfOrder.SL,
@@ -79,8 +82,8 @@ Public Class XMinCandleBreakoutStrategyRule
                             .EntryPrice = sellPrice,
                             .EntryDirection = Trade.TradeExecutionDirection.Sell,
                             .Quantity = quantity,
-                            .Stoploss = .EntryPrice + 1000000,
-                            .Target = .EntryPrice - 1000000,
+                            .Stoploss = buyPrice,
+                            .Target = .EntryPrice - tgtPoint,
                             .Buffer = buffer,
                             .SignalCandle = signalCandle,
                             .OrderType = Trade.TypeOfOrder.SL,
