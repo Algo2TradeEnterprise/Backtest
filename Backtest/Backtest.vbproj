@@ -103,8 +103,6 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
     <Compile Include="Strategy Helper\Capital.vb" />
-    <Compile Include="Strategy Helper\CNCCandleGenericStrategy.vb" />
-    <Compile Include="Strategy Helper\CNCEODGenericStrategy.vb" />
     <Compile Include="Strategy Helper\CNCGenericStrategy.vb" />
     <Compile Include="Strategy Helper\MISGenericStrategy.vb" />
     <Compile Include="Strategy Helper\PlaceOrderParameters.vb" />
@@ -114,14 +112,7 @@
     <Compile Include="Strategy Helper\StrategyOutput.vb" />
     <Compile Include="Strategy Helper\StrategyRule.vb" />
     <Compile Include="Strategy Helper\Trade.vb" />
-    <Compile Include="Strategy Rule CNC\BelowFractalLowMultiStrategyRule.vb" />
-    <Compile Include="Strategy Rule CNC\BelowFractalLowSingleStrategyRule.vb" />
     <Compile Include="Strategy Rule CNC\BelowSupportFractalHighBreakoutStrategyRule.vb" />
-    <Compile Include="Strategy Rule CNC\PreviousCandleLowStrategyRule.vb" />
-    <Compile Include="Strategy Rule CNC\PreviousCandleSwingHighStrategyRule.vb" />
-    <Compile Include="Strategy Rule CNC\PreviousDayLowStrategyRule.vb" />
-    <Compile Include="Strategy Rule CNC\PreviousSwingHighStrategyRule.vb" />
-    <Compile Include="Strategy Rule CNC\PreviousSwingLowStrategyRule.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="frmMain.resx">

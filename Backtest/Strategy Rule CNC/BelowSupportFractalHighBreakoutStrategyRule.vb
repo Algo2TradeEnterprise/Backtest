@@ -125,15 +125,19 @@ Public Class BelowSupportFractalHighBreakoutStrategyRule
 
     Private Function GetSignalForEntry(ByVal currentCandle As Payload, ByVal currentTick As Payload) As Tuple(Of Boolean, Payload, Decimal, Decimal, Decimal)
         Dim ret As Tuple(Of Boolean, Payload, Decimal, Decimal, Decimal) = Nothing
-        If _fractalHighPayload(currentCandle.PreviousCandlePayload.PayloadDate) < _pivotPayload(currentCandle.PreviousCandlePayload.PayloadDate).Support3 AndAlso
-            _fractalLowPayload(currentCandle.PreviousCandlePayload.PayloadDate) < _pivotPayload(currentCandle.PreviousCandlePayload.PayloadDate).Support3 Then
-            Dim signalCandle As Payload = currentCandle.PreviousCandlePayload
-            Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Close, RoundOfType.Floor)
-            Dim entryPrice As Decimal = _fractalHighPayload(signalCandle.PayloadDate) + buffer
-            Dim stoploss As Decimal = _fractalLowPayload(signalCandle.PayloadDate) - buffer
+        Try
+            If _fractalHighPayload(currentCandle.PreviousCandlePayload.PayloadDate) < _pivotPayload(currentCandle.PreviousCandlePayload.PayloadDate).Support3 AndAlso
+                _fractalLowPayload(currentCandle.PreviousCandlePayload.PayloadDate) < _pivotPayload(currentCandle.PreviousCandlePayload.PayloadDate).Support3 Then
+                Dim signalCandle As Payload = currentCandle.PreviousCandlePayload
+                Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Close, RoundOfType.Floor)
+                Dim entryPrice As Decimal = _fractalHighPayload(signalCandle.PayloadDate) + buffer
+                Dim stoploss As Decimal = _fractalLowPayload(signalCandle.PayloadDate) - buffer
 
-            ret = New Tuple(Of Boolean, Payload, Decimal, Decimal, Decimal)(True, signalCandle, entryPrice, stoploss, buffer)
-        End If
+                ret = New Tuple(Of Boolean, Payload, Decimal, Decimal, Decimal)(True, signalCandle, entryPrice, stoploss, buffer)
+            End If
+        Catch ex As Exception
+            Throw ex
+        End Try
         Return ret
     End Function
 End Class
