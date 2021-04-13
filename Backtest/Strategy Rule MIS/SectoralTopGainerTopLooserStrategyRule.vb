@@ -12,6 +12,7 @@ Public Class SectoralTopGainerTopLooserStrategyRule
 
         Public TargetMultiplier As Decimal
         Public MaxLossPerTrade As Decimal
+        Public BreakevenMovement As Boolean
     End Class
 #End Region
 
@@ -81,7 +82,7 @@ Public Class SectoralTopGainerTopLooserStrategyRule
         Dim currentMinuteCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         If Me.ForceTakeTrade AndAlso Not Controller Then
             Dim quantity As Integer = Me.LotSize
-            Dim slPoint As Decimal = _parentStrategy.CalculatorTargetOrStoploss(Me.TradingSymbol, currentTick.Open, quantity, Math.Abs(_userInputs.MaxLossPerTrade) * -1, Me.Direction, _parentStrategy.StockType)
+            Dim stoploss As Decimal = _parentStrategy.CalculatorTargetOrStoploss(Me.TradingSymbol, currentTick.Open, quantity, Math.Abs(_userInputs.MaxLossPerTrade) * -1, Me.Direction, _parentStrategy.StockType)
             Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(Me.TradingSymbol, currentTick.Open, quantity, Math.Abs(_userInputs.MaxLossPerTrade) * _userInputs.TargetMultiplier, Me.Direction, _parentStrategy.StockType)
 
             If Me.Direction = Trade.TradeExecutionDirection.Buy Then
@@ -90,12 +91,12 @@ Public Class SectoralTopGainerTopLooserStrategyRule
                                 .EntryPrice = currentTick.Open,
                                 .EntryDirection = Trade.TradeExecutionDirection.Buy,
                                 .Quantity = quantity,
-                                .Stoploss = .EntryPrice - slPoint,
+                                .Stoploss = stoploss,
                                 .Target = target,
                                 .Buffer = 0,
                                 .SignalCandle = currentMinuteCandle,
                                 .OrderType = Trade.TypeOfOrder.Market,
-                                .Supporting1 = slPoint
+                                .Supporting1 = Math.Abs(currentTick.Open - stoploss)
                             }
 
                 ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
@@ -107,12 +108,12 @@ Public Class SectoralTopGainerTopLooserStrategyRule
                                 .EntryPrice = currentTick.Open,
                                 .EntryDirection = Trade.TradeExecutionDirection.Sell,
                                 .Quantity = quantity,
-                                .Stoploss = .EntryPrice + slPoint,
+                                .Stoploss = stoploss,
                                 .Target = target,
                                 .Buffer = 0,
                                 .SignalCandle = currentMinuteCandle,
                                 .OrderType = Trade.TypeOfOrder.Market,
-                                .Supporting1 = slPoint
+                                .Supporting1 = Math.Abs(currentTick.Open - stoploss)
                             }
 
                 ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
@@ -133,12 +134,22 @@ Public Class SectoralTopGainerTopLooserStrategyRule
                             Dim allSectors As List(Of String) = _parentStrategy.AllSectoralStockList.Keys.ToList
                             For Each runningSector In allSectors
                                 If Not IsSectorActive(runningSector) Then
-                                    Dim gainer As SectoralTopGainerTopLooserStrategyRule = GetSectoralTopGainerStock(runningSector, currentMinuteCandle, 1)
-                                    If gainer IsNot Nothing Then
-                                        gainer.EligibleToTakeTrade = True
-                                        gainer.ForceTakeTrade = True
-                                        gainer.Direction = Trade.TradeExecutionDirection.Buy
-                                    End If
+                                    Dim ctr As Integer = 0
+                                    While True
+                                        ctr += 1
+                                        Dim gainer As SectoralTopGainerTopLooserStrategyRule = GetSectoralTopGainerStock(runningSector, currentMinuteCandle, ctr)
+                                        If gainer IsNot Nothing Then
+                                            Dim stockPrice As Decimal = gainer._signalPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate).Close
+                                            Dim stoploss As Decimal = _parentStrategy.CalculatorTargetOrStoploss(Me.TradingSymbol, stockPrice, gainer.LotSize, Math.Abs(_userInputs.MaxLossPerTrade) * -1, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
+                                            If stockPrice - stoploss > 0 Then
+                                                gainer.EligibleToTakeTrade = True
+                                                gainer.ForceTakeTrade = True
+                                                gainer.Direction = Trade.TradeExecutionDirection.Buy
+                                            End If
+                                        Else
+                                            Exit While
+                                        End If
+                                    End While
                                 End If
                             Next
                         End If
@@ -149,12 +160,22 @@ Public Class SectoralTopGainerTopLooserStrategyRule
                             Dim allSectors As List(Of String) = _parentStrategy.AllSectoralStockList.Keys.ToList
                             For Each runningSector In allSectors
                                 If Not IsSectorActive(runningSector) Then
-                                    Dim looser As SectoralTopGainerTopLooserStrategyRule = GetSectoralTopLooserStock(runningSector, currentMinuteCandle, 1)
-                                    If looser IsNot Nothing Then
-                                        looser.EligibleToTakeTrade = True
-                                        looser.ForceTakeTrade = True
-                                        looser.Direction = Trade.TradeExecutionDirection.Sell
-                                    End If
+                                    Dim ctr As Integer = 0
+                                    While True
+                                        ctr += 1
+                                        Dim looser As SectoralTopGainerTopLooserStrategyRule = GetSectoralTopLooserStock(runningSector, currentMinuteCandle, ctr)
+                                        If looser IsNot Nothing Then
+                                            Dim stockPrice As Decimal = looser._signalPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate).Close
+                                            Dim stoploss As Decimal = _parentStrategy.CalculatorTargetOrStoploss(Me.TradingSymbol, stockPrice, looser.LotSize, Math.Abs(_userInputs.MaxLossPerTrade) * -1, Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
+                                            If stoploss - stockPrice > 0 Then
+                                                looser.EligibleToTakeTrade = True
+                                                looser.ForceTakeTrade = True
+                                                looser.Direction = Trade.TradeExecutionDirection.Sell
+                                            End If
+                                        Else
+                                            Exit While
+                                        End If
+                                    End While
                                 End If
                             Next
                         End If
@@ -178,6 +199,21 @@ Public Class SectoralTopGainerTopLooserStrategyRule
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
+        If _userInputs.BreakevenMovement AndAlso currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+            Dim slPoint As Decimal = currentTrade.Supporting1
+            Dim potentialSL As Decimal = Decimal.MinValue
+            Dim brkevenPoint As Decimal = _parentStrategy.GetBreakevenPoint(Me.TradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, currentTrade.LotSize, currentTrade.StockType)
+            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy AndAlso
+                currentTick.Open >= currentTrade.EntryPrice + slPoint Then
+                potentialSL = currentTrade.EntryPrice + brkevenPoint
+            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell AndAlso
+                currentTick.Open <= currentTrade.EntryPrice - slPoint Then
+                potentialSL = currentTrade.EntryPrice - brkevenPoint
+            End If
+            If potentialSL <> Decimal.MinValue AndAlso potentialSL <> currentTrade.PotentialStopLoss Then
+                ret = New Tuple(Of Boolean, Decimal, String)(True, potentialSL, "Breakeven Movement")
+            End If
+        End If
         Return ret
     End Function
 

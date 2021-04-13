@@ -317,7 +317,8 @@ Public Class frmMain
                             .RuleEntityData = New SectoralTopGainerTopLooserStrategyRule.StrategyRuleEntities With
                                 {
                                  .MaxLossPerTrade = -1500,
-                                 .TargetMultiplier = 2
+                                 .TargetMultiplier = 2,
+                                 .BreakevenMovement = False
                                 }
 
                             .NumberOfTradeableStockPerDay = Integer.MaxValue
