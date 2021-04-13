@@ -106,16 +106,13 @@
     <Compile Include="Strategy Helper\MISGenericStrategy.vb" />
     <Compile Include="Strategy Helper\PlaceOrderParameters.vb" />
     <Compile Include="Strategy Helper\RuleEntities.vb" />
+    <Compile Include="Strategy Helper\SectoralStockFetcher.vb" />
     <Compile Include="Strategy Helper\StockDetails.vb" />
     <Compile Include="Strategy Helper\Strategy.vb" />
     <Compile Include="Strategy Helper\StrategyOutput.vb" />
     <Compile Include="Strategy Helper\StrategyRule.vb" />
     <Compile Include="Strategy Helper\Trade.vb" />
-    <Compile Include="Strategy Rule MIS\OpeningPriceOptionsATRTraillingStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\OptionLadderStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\PreviousDayHLSellStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\TopGainerLooserStrategyRule.vb" />
-    <Compile Include="Strategy Rule MIS\TopGainerLosserOfEverySlabStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\SectoralTopGainerTopLooserStrategyRule.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="frmMain.resx">

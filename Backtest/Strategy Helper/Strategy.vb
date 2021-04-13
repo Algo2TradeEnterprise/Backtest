@@ -152,6 +152,13 @@ Namespace StrategyHelper
 #End Region
 
 #Region "Public Calculated Property"
+        Private _AllSectoralStockList As Dictionary(Of String, List(Of String))
+        Public ReadOnly Property AllSectoralStockList As Dictionary(Of String, List(Of String))
+            Get
+                Return _AllSectoralStockList
+            End Get
+        End Property
+
         Public ReadOnly Property TotalPLAfterBrokerage(ByVal currentDate As Date) As Decimal
             Get
                 Dim ret As Decimal = 0
@@ -390,6 +397,31 @@ Namespace StrategyHelper
 #End Region
 
 #Region "Public Functions"
+        Public Function GetSector(ByVal rawInstrumentName As String) As String
+            Dim ret As String = Nothing
+            If Me.AllSectoralStockList IsNot Nothing AndAlso AllSectoralStockList.Count > 0 Then
+                For Each runningSector In Me.AllSectoralStockList
+                    If runningSector.Value IsNot Nothing AndAlso runningSector.Value.Count > 0 Then
+                        If runningSector.Value.Contains(rawInstrumentName.ToUpper.Trim) Then
+                            ret = runningSector.Key
+                            Exit For
+                        End If
+                    End If
+                Next
+            End If
+            Return ret
+        End Function
+
+        Public Function GetAllStockOfSector(ByVal sector As String) As List(Of String)
+            Dim ret As List(Of String) = Nothing
+            If Me.AllSectoralStockList IsNot Nothing AndAlso AllSectoralStockList.Count > 0 Then
+                If Me.AllSectoralStockList.ContainsKey(sector.ToUpper.Trim) Then
+                    ret = Me.AllSectoralStockList(sector.ToUpper.Trim)
+                End If
+            End If
+            Return ret
+        End Function
+
         Public Function IsTradeActive(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TypeOfTrade, Optional ByVal tradeDirection As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None) As Boolean
             Dim ret As Boolean = False
             Dim tradeDate As Date = currentMinutePayload.PayloadDate.Date
@@ -1320,6 +1352,26 @@ Namespace StrategyHelper
 
 #Region "Public MustOverride Function"
         Public MustOverride Async Function TestStrategyAsync(startDate As Date, endDate As Date, ByVal filename As String) As Task
+#End Region
+
+#Region "Protected Functions"
+        Protected Async Function PopulateAllSectoralStockListAsync() As Task
+            Using sctr As New SectoralStockFetcher(_canceller)
+                Dim allSectors As List(Of SectoralStockFetcher.SectorType) = sctr.GetAllSectorList()
+                If allSectors IsNot Nothing AndAlso allSectors.Count > 0 Then
+                    _AllSectoralStockList = New Dictionary(Of String, List(Of String))
+                    Dim ctr As Integer = 0
+                    For Each runningSector In allSectors
+                        ctr += 1
+                        OnHeartbeat(String.Format("Getting stocklist for {0} #{1}/{2}", runningSector.ToString, ctr, allSectors.Count))
+                        Dim stocklist As List(Of String) = Await sctr.GetSectoralStocklist(runningSector).ConfigureAwait(False)
+                        If stocklist IsNot Nothing AndAlso stocklist.Count > 0 Then
+                            _AllSectoralStockList.Add(runningSector.ToString.ToUpper, stocklist)
+                        End If
+                    Next
+                End If
+            End Using
+        End Function
 #End Region
 
 #Region "Private Functions"

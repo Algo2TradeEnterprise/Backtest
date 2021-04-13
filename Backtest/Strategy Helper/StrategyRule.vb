@@ -42,12 +42,13 @@ Namespace StrategyHelper
         Protected ReadOnly _parentStrategy As Strategy
         Protected ReadOnly _tradingDate As Date
         Public ReadOnly TradingSymbol As String
+        Public ReadOnly RawInstrumentName As String
         Protected ReadOnly _inputPayload As Dictionary(Of Date, Payload)
         Protected ReadOnly _cts As CancellationTokenSource
         Protected ReadOnly _entities As RuleEntities
         Public ReadOnly Controller As Boolean
 
-        Public DependentInstrument As List(Of StrategyRule)
+        Public DependentInstruments As List(Of StrategyRule)
         Public ControllerInstrument As StrategyRule
 
         Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
@@ -55,6 +56,7 @@ Namespace StrategyHelper
                        ByVal parentStrategy As Strategy,
                        ByVal tradingDate As Date,
                        ByVal tradingSymbol As String,
+                       ByVal rawInstrumentName As String,
                        ByVal entities As RuleEntities,
                        ByVal controlller As Boolean,
                        ByVal canceller As CancellationTokenSource)
@@ -63,6 +65,7 @@ Namespace StrategyHelper
             _parentStrategy = parentStrategy
             _tradingDate = tradingDate
             Me.TradingSymbol = tradingSymbol
+            Me.RawInstrumentName = rawInstrumentName
             _cts = canceller
             _entities = entities
             Me.Controller = controlller
@@ -88,7 +91,7 @@ Namespace StrategyHelper
             End If
         End Sub
 
-        Public Overridable Sub CompletePairProcessing()
+        Public Overridable Sub CompleteDependentProcessing()
 
         End Sub
 
