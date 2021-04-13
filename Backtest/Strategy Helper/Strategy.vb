@@ -1347,6 +1347,13 @@ Namespace StrategyHelper
                     End If
                     If allTradesData IsNot Nothing AndAlso allTradesData.Count > 0 Then
                         Dim cts As New CancellationTokenSource
+
+                        Dim maxCapital As Decimal = allCapitalData.Values.Max(Function(x)
+                                                                                  Return x.Max(Function(y)
+                                                                                                   Return y.RunningCapital
+                                                                                               End Function)
+                                                                              End Function)
+
                         Dim totalTrades As Integer = allTradesData.Values.Sum(Function(x)
                                                                                   Return x.Values.Sum(Function(y)
                                                                                                           Return y.FindAll(Function(z)
@@ -1478,19 +1485,19 @@ Namespace StrategyHelper
                             .AverageDurationInLosingTrades = If((totalTrades - totalPositiveTrades) <> 0, totalDurationInNegativeTrades / (totalTrades - totalPositiveTrades), 0)
                         End With
 
-                        Dim maxInvestment As Decimal = allTradesData.Values.Max(Function(x)
-                                                                                    Return x.Values.Max(Function(y)
-                                                                                                            Return y.Max(Function(z)
-                                                                                                                             If z.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel Then
-                                                                                                                                 Return Val(z.Supporting3)
-                                                                                                                             Else
-                                                                                                                                 Return Decimal.MinValue
-                                                                                                                             End If
-                                                                                                                         End Function)
-                                                                                                        End Function)
-                                                                                End Function)
+                        'Dim maxInvestment As Decimal = allTradesData.Values.Max(Function(x)
+                        '                                                            Return x.Values.Max(Function(y)
+                        '                                                                                    Return y.Max(Function(z)
+                        '                                                                                                     If z.TradeCurrentStatus <> Trade.TradeExecutionStatus.Cancel Then
+                        '                                                                                                         Return Val(z.Supporting3)
+                        '                                                                                                     Else
+                        '                                                                                                         Return Decimal.MinValue
+                        '                                                                                                     End If
+                        '                                                                                                 End Function)
+                        '                                                                                End Function)
+                        '                                                        End Function)
 
-                        fileName = String.Format("PL {0}, Cap {1}, {2}.xlsx", Math.Round(strategyOutputData.NetProfit, 0), Math.Round(maxInvestment, 0), fileName)
+                        fileName = String.Format("PL {0}, Cap {1}, {2}.xlsx", Math.Round(strategyOutputData.NetProfit, 0), Math.Round(maxCapital, 0), fileName)
                         Dim filepath As String = Path.Combine(My.Application.Info.DirectoryPath, "BackTest Output", fileName)
                         If File.Exists(filepath) Then File.Delete(filepath)
 
