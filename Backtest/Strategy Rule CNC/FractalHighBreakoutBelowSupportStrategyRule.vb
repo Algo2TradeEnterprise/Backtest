@@ -3,7 +3,7 @@ Imports System.Threading
 Imports Backtest.StrategyHelper
 Imports Utilities.Numbers.NumberManipulation
 
-Public Class BelowSupportFractalHighBreakoutStrategyRule
+Public Class FractalHighBreakoutBelowSupportStrategyRule
     Inherits StrategyRule
 
 #Region "Entity"

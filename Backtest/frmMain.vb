@@ -310,15 +310,15 @@ Public Class frmMain
                                                             initialCapital:=Decimal.MaxValue / 2,
                                                             usableCapital:=Decimal.MaxValue / 2,
                                                             minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
-                                                            amountToBeWithdrawn:=5000)
+                                                            amountToBeWithdrawn:=0)
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                 With backtestStrategy
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "")
+                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Fractal High Breakout Below Support.csv")
 
                     .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                    .RuleEntityData = New BelowSupportFractalHighBreakoutStrategyRule.StrategyRuleEntities With
+                    .RuleEntityData = New FractalHighBreakoutBelowSupportStrategyRule.StrategyRuleEntities With
                                         {
                                          .MaxLossPerTrade = -500,
                                          .TargetMultiplier = 3
@@ -332,8 +332,8 @@ Public Class frmMain
                     .TickBasedStrategy = True
                 End With
 
-                'Dim ruleData As PreviousCandleSwingHighStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                Dim filename As String = String.Format("Below Support Fractal High Breakout CNC Output, TF {0}", backtestStrategy.SignalTimeFrame)
+                Dim ruleData As FractalHighBreakoutBelowSupportStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                Dim filename As String = String.Format("FrctlHghBrkotBlwSprtCNC")
 
                 Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
             End Using
