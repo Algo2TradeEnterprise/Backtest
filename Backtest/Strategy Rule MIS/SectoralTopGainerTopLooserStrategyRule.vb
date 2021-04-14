@@ -133,7 +133,7 @@ Public Class SectoralTopGainerTopLooserStrategyRule
                         If currentTick.Open >= buyPrice Then
                             Dim allSectors As List(Of String) = _parentStrategy.AllSectoralStockList.Keys.ToList
                             For Each runningSector In allSectors
-                                If Not IsSectorActive(runningSector) Then
+                                If Not IsSectorActive(runningSector, Trade.TradeExecutionDirection.Buy) Then
                                     Dim ctr As Integer = 0
                                     While True
                                         ctr += 1
@@ -159,7 +159,7 @@ Public Class SectoralTopGainerTopLooserStrategyRule
                         If currentTick.Open <= sellPrice Then
                             Dim allSectors As List(Of String) = _parentStrategy.AllSectoralStockList.Keys.ToList
                             For Each runningSector In allSectors
-                                If Not IsSectorActive(runningSector) Then
+                                If Not IsSectorActive(runningSector, Trade.TradeExecutionDirection.Sell) Then
                                     Dim ctr As Integer = 0
                                     While True
                                         ctr += 1
@@ -223,7 +223,7 @@ Public Class SectoralTopGainerTopLooserStrategyRule
         Return ret
     End Function
 
-    Private Function IsSectorActive(ByVal sector As String) As Boolean
+    Private Function IsSectorActive(ByVal sector As String, ByVal direction As Trade.TradeExecutionDirection) As Boolean
         Dim ret As Boolean = False
         Dim sectoralStocklist As List(Of String) = _parentStrategy.GetAllStockOfSector(sector)
         If sectoralStocklist IsNot Nothing AndAlso sectoralStocklist.Count > 0 Then
@@ -231,7 +231,7 @@ Public Class SectoralTopGainerTopLooserStrategyRule
                 For Each runningInstrument As SectoralTopGainerTopLooserStrategyRule In Me.DependentInstruments
                     If sectoralStocklist.Contains(runningInstrument.RawInstrumentName) Then
                         If runningInstrument.ForceTakeTrade OrElse (runningInstrument.DummyCandle IsNot Nothing AndAlso
-                            _parentStrategy.IsTradeActive(runningInstrument.DummyCandle, Trade.TypeOfTrade.MIS)) Then
+                            _parentStrategy.IsTradeActive(runningInstrument.DummyCandle, Trade.TypeOfTrade.MIS, direction)) Then
                             ret = True
                             Exit For
                         End If
