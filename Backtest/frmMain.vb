@@ -6956,7 +6956,7 @@ Public Class frmMain
                             tick = 0.0025
                         Case Trade.TypeOfStock.Futures
                             database = Common.DataBaseTable.Intraday_Futures
-                            margin = 2
+                            margin = 4
                             tick = 0.05
                     End Select
 
@@ -6991,8 +6991,7 @@ Public Class frmMain
                                     .RuleNumber = ruleNumber
 
                                     .RuleEntityData = New LowRangeCandleBreakoutStrategyRule.StrategyRuleEntities With
-                                                      {.MaxLossPerTrade = -500,
-                                                       .TargetMultiplier = tgtMul,
+                                                      {.TargetMultiplier = tgtMul,
                                                        .BreakevenMovement = brkevn}
 
                                     .NumberOfTradeableStockPerDay = Integer.MaxValue

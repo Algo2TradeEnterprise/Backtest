@@ -10,7 +10,6 @@ Public Class LowRangeCandleBreakoutStrategyRule
     Public Class StrategyRuleEntities
         Inherits RuleEntities
 
-        Public MaxLossPerTrade As Decimal
         Public TargetMultiplier As Decimal
         Public BreakevenMovement As Boolean
     End Class
@@ -58,15 +57,14 @@ Public Class LowRangeCandleBreakoutStrategyRule
             End If
             If signalCandle IsNot Nothing Then
                 Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Close, RoundOfType.Celing)
+                Dim tgtPnt As Decimal = ConvertFloorCeling(Math.Abs(signal.Item3 - signal.Item4) * _userInputs.TargetMultiplier, _parentStrategy.TickSize, RoundOfType.Celing)
                 If signal.Item5 = Trade.TradeExecutionDirection.Buy Then
-                    Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, signal.Item3, signal.Item4, Math.Abs(_userInputs.MaxLossPerTrade) * -1, _parentStrategy.StockType)
-                    Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, signal.Item3, quantity, Math.Abs(_userInputs.MaxLossPerTrade) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
                     parameter = New PlaceOrderParameters With {
                             .EntryPrice = signal.Item3,
                             .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                            .Quantity = quantity,
+                            .Quantity = Me.LotSize,
                             .Stoploss = signal.Item4,
-                            .Target = target,
+                            .Target = .EntryPrice + tgtPnt,
                             .Buffer = buffer,
                             .SignalCandle = signalCandle,
                             .OrderType = Trade.TypeOfOrder.SL,
@@ -75,14 +73,12 @@ Public Class LowRangeCandleBreakoutStrategyRule
                         }
                     ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
                 ElseIf signal.Item5 = Trade.TradeExecutionDirection.Sell Then
-                    Dim quantity As Integer = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, signal.Item4, signal.Item3, Math.Abs(_userInputs.MaxLossPerTrade) * -1, _parentStrategy.StockType)
-                    Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, signal.Item3, quantity, Math.Abs(_userInputs.MaxLossPerTrade) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Sell, _parentStrategy.StockType)
                     parameter = New PlaceOrderParameters With {
                             .EntryPrice = signal.Item3,
                             .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                            .Quantity = quantity,
+                            .Quantity = Me.LotSize,
                             .Stoploss = signal.Item4,
-                            .Target = target,
+                            .Target = .EntryPrice - tgtPnt,
                             .Buffer = buffer,
                             .SignalCandle = signalCandle,
                             .OrderType = Trade.TypeOfOrder.SL,
