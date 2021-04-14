@@ -62,19 +62,19 @@ Public Class BelowSupportFractalHighBreakoutStrategyRule
                 Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, entryPrice, quantity, Math.Abs(_userInputs.MaxLossPerTrade) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType)
 
                 parameter = New PlaceOrderParameters With {
-                                .EntryPrice = entryPrice,
-                                .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                                .Quantity = quantity,
-                                .Stoploss = stoploss,
-                                .Target = target,
-                                .Buffer = buffer,
-                                .SignalCandle = signalCandle,
-                                .OrderType = Trade.TypeOfOrder.SL,
-                                .Supporting1 = signalCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss"),
-                                .Supporting2 = _fractalHighPayload(signalCandle.PayloadDate),
-                                .Supporting3 = _fractalHighPayload(signalCandle.PayloadDate),
-                                .Supporting4 = _pivotPayload(signalCandle.PayloadDate).Support3
-                            }
+                            .EntryPrice = entryPrice,
+                            .EntryDirection = Trade.TradeExecutionDirection.Buy,
+                            .Quantity = quantity,
+                            .Stoploss = stoploss,
+                            .Target = target,
+                            .Buffer = buffer,
+                            .SignalCandle = signalCandle,
+                            .OrderType = Trade.TypeOfOrder.SL,
+                            .Supporting1 = signalCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss"),
+                            .Supporting2 = _fractalHighPayload(signalCandle.PayloadDate),
+                            .Supporting3 = _fractalHighPayload(signalCandle.PayloadDate),
+                            .Supporting4 = _pivotPayload(signalCandle.PayloadDate).Support3
+                        }
             End If
         End If
         If parameter IsNot Nothing Then
@@ -132,7 +132,9 @@ Public Class BelowSupportFractalHighBreakoutStrategyRule
             Dim entryPrice As Decimal = _fractalHighPayload(signalCandle.PayloadDate) + buffer
             Dim stoploss As Decimal = _fractalLowPayload(signalCandle.PayloadDate) - buffer
 
-            ret = New Tuple(Of Boolean, Payload, Decimal, Decimal, Decimal)(True, signalCandle, entryPrice, stoploss, buffer)
+            If entryPrice - stoploss >= 0.1 Then
+                ret = New Tuple(Of Boolean, Payload, Decimal, Decimal, Decimal)(True, signalCandle, entryPrice, stoploss, buffer)
+            End If
         End If
         Return ret
     End Function
