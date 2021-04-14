@@ -96,7 +96,8 @@ Public Class SectoralTopGainerTopLooserStrategyRule
                                 .Buffer = 0,
                                 .SignalCandle = currentMinuteCandle,
                                 .OrderType = Trade.TypeOfOrder.Market,
-                                .Supporting1 = Math.Abs(currentTick.Open - stoploss)
+                                .Supporting1 = Math.Abs(currentTick.Open - stoploss),
+                                .Supporting2 = _parentStrategy.GetSector(Me.RawInstrumentName)
                             }
 
                 ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
@@ -113,7 +114,8 @@ Public Class SectoralTopGainerTopLooserStrategyRule
                                 .Buffer = 0,
                                 .SignalCandle = currentMinuteCandle,
                                 .OrderType = Trade.TypeOfOrder.Market,
-                                .Supporting1 = Math.Abs(currentTick.Open - stoploss)
+                                .Supporting1 = Math.Abs(currentTick.Open - stoploss),
+                                .Supporting2 = _parentStrategy.GetSector(Me.RawInstrumentName)
                             }
 
                 ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
