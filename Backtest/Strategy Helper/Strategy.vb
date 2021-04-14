@@ -697,25 +697,27 @@ Namespace StrategyHelper
                                 If stockName.ToUpper.Contains("FUT") Then
                                     stock = stockName.Remove(stockName.Count - 8)
                                 End If
-                                If allOneMinutePayload.ContainsKey(stock) AndAlso allOneMinutePayload(stock).ContainsKey(candleTime) Then
-                                    currentPayload = allOneMinutePayload(stock)(candleTime).Ticks.FindAll(Function(x)
-                                                                                                              Return x.PayloadDate >= currentTimeOfExit
-                                                                                                          End Function).FirstOrDefault
-                                End If
-                                If currentPayload Is Nothing Then           'If the current time is more than last available Tick then move to the next available minute
-                                    currentPayload = allOneMinutePayload(stock).Where(Function(x)
-                                                                                          Return x.Key >= currentTimeOfExit
-                                                                                      End Function).FirstOrDefault.Value
-                                End If
-                                If currentPayload Is Nothing Then           'If current time payload is not available then pick last available payload
-                                    Dim lastPayloadTime As Date = allOneMinutePayload(stock).Keys.LastOrDefault
-                                    currentPayload = allOneMinutePayload(stock)(lastPayloadTime)
-                                End If
-                                If currentPayload IsNot Nothing Then
-                                    If currentPayload.PayloadDate.Date <> currentTimeOfExit.Date Then exitRemark = String.Format("Open Trade No Candle {0}", currentPayload.PayloadDate.ToShortDateString)
-                                    ExitStockTradesByForce(currentPayload, tradeType, exitRemark)
-                                Else
-                                    Throw New ApplicationException("Current Payload is NULL in 'ExitAllTradeByForce'")
+                                If allOneMinutePayload.ContainsKey(stock) Then
+                                    If allOneMinutePayload(stock).ContainsKey(candleTime) Then
+                                        currentPayload = allOneMinutePayload(stock)(candleTime).Ticks.FindAll(Function(x)
+                                                                                                                  Return x.PayloadDate >= currentTimeOfExit
+                                                                                                              End Function).FirstOrDefault
+                                    End If
+                                    If currentPayload Is Nothing Then           'If the current time is more than last available Tick then move to the next available minute
+                                        currentPayload = allOneMinutePayload(stock).Where(Function(x)
+                                                                                              Return x.Key >= currentTimeOfExit
+                                                                                          End Function).FirstOrDefault.Value
+                                    End If
+                                    If currentPayload Is Nothing Then           'If current time payload is not available then pick last available payload
+                                        Dim lastPayloadTime As Date = allOneMinutePayload(stock).Keys.LastOrDefault
+                                        currentPayload = allOneMinutePayload(stock)(lastPayloadTime)
+                                    End If
+                                    If currentPayload IsNot Nothing Then
+                                        If currentPayload.PayloadDate.Date <> currentTimeOfExit.Date Then exitRemark = String.Format("Open Trade No Candle {0}", currentPayload.PayloadDate.ToShortDateString)
+                                        ExitStockTradesByForce(currentPayload, tradeType, exitRemark)
+                                    Else
+                                        Throw New ApplicationException("Current Payload is NULL in 'ExitAllTradeByForce'")
+                                    End If
                                 End If
                             Next
                         End If
@@ -885,7 +887,7 @@ Namespace StrategyHelper
                 potentialBrokerage = New Calculator.BrokerageAttributes
                 Select Case typeOfStock
                     Case Trade.TypeOfStock.Cash
-                        calculator.Intraday_Equity(buyPrice, sellPrice, quantity, potentialBrokerage)
+                        calculator.Delivery_Equity(buyPrice, sellPrice, quantity, potentialBrokerage)
                     Case Trade.TypeOfStock.Commodity
                         stockName = stockName.Remove(stockName.Count - 8)
                         calculator.Commodity_MCX(stockName, buyPrice, sellPrice, quantity, potentialBrokerage)
@@ -936,7 +938,7 @@ Namespace StrategyHelper
                     If tradeDirection = Trade.TradeExecutionDirection.Buy Then
                         Select Case typeOfStock
                             Case Trade.TypeOfStock.Cash
-                                calculator.Intraday_Equity(entryPrice, exitPrice, quantity, potentialBrokerage)
+                                calculator.Delivery_Equity(entryPrice, exitPrice, quantity, potentialBrokerage)
                             Case Trade.TypeOfStock.Commodity
                                 calculator.Commodity_MCX(coreStockName, entryPrice, exitPrice, quantity, potentialBrokerage)
                             Case Trade.TypeOfStock.Currency
@@ -949,7 +951,7 @@ Namespace StrategyHelper
                     ElseIf tradeDirection = Trade.TradeExecutionDirection.Sell Then
                         Select Case typeOfStock
                             Case Trade.TypeOfStock.Cash
-                                calculator.Intraday_Equity(exitPrice, entryPrice, quantity, potentialBrokerage)
+                                calculator.Delivery_Equity(exitPrice, entryPrice, quantity, potentialBrokerage)
                             Case Trade.TypeOfStock.Commodity
                                 calculator.Commodity_MCX(coreStockName, exitPrice, entryPrice, quantity, potentialBrokerage)
                             Case Trade.TypeOfStock.Currency
@@ -966,7 +968,7 @@ Namespace StrategyHelper
                     If tradeDirection = Trade.TradeExecutionDirection.Buy Then
                         Select Case typeOfStock
                             Case Trade.TypeOfStock.Cash
-                                calculator.Intraday_Equity(entryPrice, exitPrice, quantity, potentialBrokerage)
+                                calculator.Delivery_Equity(entryPrice, exitPrice, quantity, potentialBrokerage)
                             Case Trade.TypeOfStock.Commodity
                                 calculator.Commodity_MCX(coreStockName, entryPrice, exitPrice, quantity, potentialBrokerage)
                             Case Trade.TypeOfStock.Currency
@@ -979,7 +981,7 @@ Namespace StrategyHelper
                     ElseIf tradeDirection = Trade.TradeExecutionDirection.Sell Then
                         Select Case typeOfStock
                             Case Trade.TypeOfStock.Cash
-                                calculator.Intraday_Equity(exitPrice, entryPrice, quantity, potentialBrokerage)
+                                calculator.Delivery_Equity(exitPrice, entryPrice, quantity, potentialBrokerage)
                             Case Trade.TypeOfStock.Commodity
                                 calculator.Commodity_MCX(coreStockName, exitPrice, entryPrice, quantity, potentialBrokerage)
                             Case Trade.TypeOfStock.Currency
