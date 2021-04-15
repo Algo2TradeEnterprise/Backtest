@@ -308,7 +308,7 @@ Public Class frmMain
                                                             databaseTable:=database,
                                                             dataSource:=sourceData,
                                                             initialCapital:=Decimal.MaxValue / 2,
-                                                            usableCapital:=Decimal.MaxValue / 2,
+                                                            usableCapital:=200000,
                                                             minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
                                                             amountToBeWithdrawn:=0)
                 AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
