@@ -40,6 +40,7 @@ Public Class ATFNiftySwingTradingWithMatingale
             Not _parentStrategy.IsTradeActive(currentTick, _parentStrategy.TradeType) Then
             Dim entryDirection As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
             Dim iteration As Integer = 1
+            Dim previousLoss As Decimal = 0
             If currentTick.Open >= _buyPrice Then
                 entryDirection = Trade.TradeExecutionDirection.Buy
             ElseIf currentTick.Open <= _sellPrice Then
@@ -49,6 +50,7 @@ Public Class ATFNiftySwingTradingWithMatingale
                 Dim lastTrade As Trade = _parentStrategy.GetLastEntryTradeOfTheStock(currentMinuteCandle, Trade.TypeOfTrade.CNC)
                 If lastTrade IsNot Nothing AndAlso lastTrade.ExitRemark.ToUpper = "STOPLOSS" Then
                     iteration = Val(lastTrade.Supporting4) + 1
+                    previousLoss = Val(lastTrade.Supporting5) + lastTrade.PLAfterBrokerage
                 End If
                 If lastTrade IsNot Nothing AndAlso lastTrade.EntryDirection = entryDirection Then
                     If lastTrade.ExitRemark.ToUpper = "TARGET" Then
@@ -71,7 +73,8 @@ Public Class ATFNiftySwingTradingWithMatingale
                             .Supporting1 = currentMinuteCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss"),
                             .Supporting2 = _buyPrice,
                             .Supporting3 = _sellPrice,
-                            .Supporting4 = iteration
+                            .Supporting4 = iteration,
+                            .Supporting5 = previousLoss
                         }
             ElseIf entryDirection = Trade.TradeExecutionDirection.Sell Then
                 parameter = New PlaceOrderParameters With {
@@ -86,7 +89,8 @@ Public Class ATFNiftySwingTradingWithMatingale
                             .Supporting1 = currentMinuteCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss"),
                             .Supporting2 = _buyPrice,
                             .Supporting3 = _sellPrice,
-                            .Supporting4 = iteration
+                            .Supporting4 = iteration,
+                            .Supporting5 = previousLoss
                         }
             End If
         End If
@@ -104,18 +108,29 @@ Public Class ATFNiftySwingTradingWithMatingale
                 If currentTick.Open <= _sellPrice Then
                     ret = New Tuple(Of Boolean, String)(True, "Stoploss")
                 ElseIf currentTick.Open >= currentTrade.EntryPrice + 100 Then
-                    ret = New Tuple(Of Boolean, String)(True, "Target")
+                    If currentTrade.Supporting4 = 1 Then
+                        ret = New Tuple(Of Boolean, String)(True, "Target")
+                    Else
+                        If currentTrade.PLAfterBrokerage + Val(currentTrade.Supporting5) >= Math.Abs(Val(currentTrade.Supporting5)) / (Math.Pow(2, Val(currentTrade.Supporting4) - 1) - 1) Then
+                            ret = New Tuple(Of Boolean, String)(True, "Target")
+                        End If
+                    End If
                 End If
             ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
                 If currentTick.Open >= _buyPrice Then
                     ret = New Tuple(Of Boolean, String)(True, "Stoploss")
                 ElseIf currentTick.Open <= currentTrade.EntryPrice - 100 Then
-                    ret = New Tuple(Of Boolean, String)(True, "Target")
+                    If currentTrade.Supporting4 = 1 Then
+                        ret = New Tuple(Of Boolean, String)(True, "Target")
+                    Else
+                        If currentTrade.PLAfterBrokerage + Val(currentTrade.Supporting5) >= Math.Abs(Val(currentTrade.Supporting5)) / (Math.Pow(2, Val(currentTrade.Supporting4) - 1) - 1) Then
+                            ret = New Tuple(Of Boolean, String)(True, "Target")
+                        End If
+                    End If
                 End If
-            ElseIf _lastTradingDayOfThisContract Then
-                If currentTick.PayloadDate >= _eodExitTime Then
-                    ret = New Tuple(Of Boolean, String)(True, "EOC Exit")
-                End If
+            End If
+            If _lastTradingDayOfThisContract AndAlso currentTick.PayloadDate >= _eodExitTime Then
+                ret = New Tuple(Of Boolean, String)(True, "EOC Exit")
             End If
         End If
         Return ret

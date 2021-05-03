@@ -281,7 +281,7 @@ Public Class frmMain
                     Select Case stockType
                         Case Trade.TypeOfStock.Cash
                             database = Common.DataBaseTable.Intraday_Cash
-                            margin = 1
+                            margin = 5
                             tick = 0.05
                         Case Trade.TypeOfStock.Commodity
                             database = Common.DataBaseTable.Intraday_Commodity
