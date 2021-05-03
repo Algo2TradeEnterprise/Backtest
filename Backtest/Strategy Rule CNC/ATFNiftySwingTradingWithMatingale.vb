@@ -47,7 +47,7 @@ Public Class ATFNiftySwingTradingWithMatingale
             End If
             If entryDirection <> Trade.TradeExecutionDirection.None Then
                 Dim lastTrade As Trade = _parentStrategy.GetLastEntryTradeOfTheStock(currentMinuteCandle, Trade.TypeOfTrade.CNC)
-                If lastTrade IsNot Nothing Then
+                If lastTrade IsNot Nothing AndAlso lastTrade.ExitRemark.ToUpper = "STOPLOSS" Then
                     iteration = Val(lastTrade.Supporting4) + 1
                 End If
             End If
