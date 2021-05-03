@@ -50,12 +50,19 @@ Public Class ATFNiftySwingTradingWithMatingale
                 If lastTrade IsNot Nothing AndAlso lastTrade.ExitRemark.ToUpper = "STOPLOSS" Then
                     iteration = Val(lastTrade.Supporting4) + 1
                 End If
+                If lastTrade IsNot Nothing AndAlso lastTrade.EntryDirection = entryDirection Then
+                    If lastTrade.ExitRemark.ToUpper = "TARGET" Then
+                        If lastTrade.Supporting2 = _buyPrice AndAlso lastTrade.Supporting3 = _sellPrice Then
+                            entryDirection = Trade.TradeExecutionDirection.None
+                        End If
+                    End If
+                End If
             End If
             If entryDirection = Trade.TradeExecutionDirection.Buy Then
                 parameter = New PlaceOrderParameters With {
                             .EntryPrice = currentTick.Open,
                             .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                            .Quantity = Me.LotSize * iteration,
+                            .Quantity = Me.LotSize * Math.Pow(2, iteration - 1),
                             .Stoploss = .EntryPrice - 1000000,
                             .Target = .EntryPrice + 1000000,
                             .Buffer = 0,
@@ -70,7 +77,7 @@ Public Class ATFNiftySwingTradingWithMatingale
                 parameter = New PlaceOrderParameters With {
                             .EntryPrice = currentTick.Open,
                             .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                            .Quantity = Me.LotSize * iteration,
+                            .Quantity = Me.LotSize * Math.Pow(2, iteration - 1),
                             .Stoploss = .EntryPrice + 1000000,
                             .Target = .EntryPrice - 1000000,
                             .Buffer = 0,
@@ -93,10 +100,18 @@ Public Class ATFNiftySwingTradingWithMatingale
         Dim ret As Tuple(Of Boolean, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy AndAlso currentTick.Open <= _sellPrice Then
-                ret = New Tuple(Of Boolean, String)(True, "Stoploss")
-            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell AndAlso currentTick.Open >= _buyPrice Then
-                ret = New Tuple(Of Boolean, String)(True, "Stoploss")
+            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                If currentTick.Open <= _sellPrice Then
+                    ret = New Tuple(Of Boolean, String)(True, "Stoploss")
+                ElseIf currentTick.Open >= currentTrade.EntryPrice + 100 Then
+                    ret = New Tuple(Of Boolean, String)(True, "Target")
+                End If
+            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                If currentTick.Open >= _buyPrice Then
+                    ret = New Tuple(Of Boolean, String)(True, "Stoploss")
+                ElseIf currentTick.Open <= currentTrade.EntryPrice - 100 Then
+                    ret = New Tuple(Of Boolean, String)(True, "Target")
+                End If
             ElseIf _lastTradingDayOfThisContract Then
                 If currentTick.PayloadDate >= _eodExitTime Then
                     ret = New Tuple(Of Boolean, String)(True, "EOC Exit")
