@@ -61,16 +61,17 @@ Namespace StrategyHelper
                 Me.AvailableCapital = Me.UsableCapital
                 While tradeCheckingDate <= endDate.Date
                     _canceller.Token.ThrowIfCancellationRequested()
-                    Dim stockList As Dictionary(Of String, StockDetails) = GetActiveStocks()
-                    Dim tempstockList As Dictionary(Of String, StockDetails) = GetStockData(tradeCheckingDate)
-                    If tempstockList IsNot Nothing AndAlso tempstockList.Count > 0 Then
-                        For Each runningStock In tempstockList
-                            If stockList Is Nothing Then stockList = New Dictionary(Of String, StockDetails)
-                            If Not stockList.ContainsKey(runningStock.Key) Then
-                                stockList.Add(runningStock.Key, runningStock.Value)
-                            End If
-                        Next
-                    End If
+                    'Dim stockList As Dictionary(Of String, StockDetails) = GetActiveStocks()
+                    'Dim tempstockList As Dictionary(Of String, StockDetails) = GetStockData(tradeCheckingDate)
+                    'If tempstockList IsNot Nothing AndAlso tempstockList.Count > 0 Then
+                    '    For Each runningStock In tempstockList
+                    '        If stockList Is Nothing Then stockList = New Dictionary(Of String, StockDetails)
+                    '        If Not stockList.ContainsKey(runningStock.Key) Then
+                    '            stockList.Add(runningStock.Key, runningStock.Value)
+                    '        End If
+                    '    Next
+                    'End If
+                    Dim stockList As Dictionary(Of String, StockDetails) = GetStockData(tradeCheckingDate)
 
                     _canceller.Token.ThrowIfCancellationRequested()
                     If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
@@ -116,6 +117,8 @@ Namespace StrategyHelper
                                     Select Case RuleNumber
                                         Case 0
                                             stockRule = New FractalHighBreakoutBelowSupportStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData)
+                                        Case 1
+                                            stockRule = New ATFNiftySwingTradingWithMatingale(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, _canceller, RuleEntityData, stockList(stock).Supporting1, stockList(stock).Supporting2, stockList(stock).Supporting3)
                                     End Select
 
                                     AddHandler stockRule.Heartbeat, AddressOf OnHeartbeat
@@ -374,21 +377,45 @@ Namespace StrategyHelper
                     dt = csvHelper.GetDataTableFromCSV(0)
                 End Using
                 If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
-                    Dim counter As Integer = 0
-                    For i = 0 To dt.Rows.Count - 1
-                        Dim rowDate As Date = dt.Rows(i).Item("Date")
-                        If rowDate.Date = tradingDate.Date Then
-                            Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
+                    Select Case Me.RuleNumber
+                        Case 1
+                            For i = 0 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i).Item("Date")
+                                If rowDate.Date = tradingDate.Date Then
+                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
+                                    Dim lotSize As Integer = dt.Rows(i).Item("Lot Size")
+                                    Dim buyPrice As Decimal = dt.Rows(i).Item("Buy Price")
+                                    Dim sellPrice As Decimal = dt.Rows(i).Item("Sell Price")
+                                    Dim lastTradingDay As Decimal = dt.Rows(i).Item("Last Trading Day")
 
-                            Dim detailsOfStock As StockDetails = New StockDetails With
-                                    {.StockName = tradingSymbol.Trim.ToUpper,
-                                     .LotSize = 1,
-                                     .EligibleToTakeTrade = True}
+                                    Dim detailsOfStock As StockDetails = New StockDetails With
+                                            {.StockName = tradingSymbol.Trim.ToUpper,
+                                             .LotSize = lotSize,
+                                             .Supporting1 = buyPrice,
+                                             .Supporting2 = sellPrice,
+                                             .Supporting3 = lastTradingDay,
+                                             .EligibleToTakeTrade = True}
 
-                            If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
-                            ret.Add(detailsOfStock.StockName, detailsOfStock)
-                        End If
-                    Next
+                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                    ret.Add(detailsOfStock.StockName, detailsOfStock)
+                                End If
+                            Next
+                        Case Else
+                            For i = 0 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i).Item("Date")
+                                If rowDate.Date = tradingDate.Date Then
+                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
+
+                                    Dim detailsOfStock As StockDetails = New StockDetails With
+                                            {.StockName = tradingSymbol.Trim.ToUpper,
+                                             .LotSize = 1,
+                                             .EligibleToTakeTrade = True}
+
+                                    If ret Is Nothing Then ret = New Dictionary(Of String, StockDetails)
+                                    ret.Add(detailsOfStock.StockName, detailsOfStock)
+                                End If
+                            Next
+                    End Select
                 End If
             End If
             Return ret

@@ -271,72 +271,138 @@ Public Class frmMain
             Else
                 sourceData = Strategy.SourceOfData.Database
             End If
-            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
-            Dim database As Common.DataBaseTable = Common.DataBaseTable.None
-            Dim margin As Decimal = 0
-            Dim tick As Decimal = 0
-            Select Case stockType
-                Case Trade.TypeOfStock.Cash
-                    database = Common.DataBaseTable.Intraday_Cash
-                    margin = 1
-                    tick = 0.05
-                Case Trade.TypeOfStock.Commodity
-                    database = Common.DataBaseTable.Intraday_Commodity
-                    margin = 1
-                    tick = 1
-                Case Trade.TypeOfStock.Currency
-                    database = Common.DataBaseTable.Intraday_Currency
-                    margin = 1
-                    tick = 0.0025
-                Case Trade.TypeOfStock.Futures
-                    database = Common.DataBaseTable.Intraday_Futures
-                    margin = 1
-                    tick = 0.05
+
+            Select Case GetComboBoxIndex_ThreadSafe(cmbRule)
+                Case 0
+                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
+                    Dim database As Common.DataBaseTable = Common.DataBaseTable.None
+                    Dim margin As Decimal = 0
+                    Dim tick As Decimal = 0
+                    Select Case stockType
+                        Case Trade.TypeOfStock.Cash
+                            database = Common.DataBaseTable.Intraday_Cash
+                            margin = 1
+                            tick = 0.05
+                        Case Trade.TypeOfStock.Commodity
+                            database = Common.DataBaseTable.Intraday_Commodity
+                            margin = 1
+                            tick = 1
+                        Case Trade.TypeOfStock.Currency
+                            database = Common.DataBaseTable.Intraday_Currency
+                            margin = 1
+                            tick = 0.0025
+                        Case Trade.TypeOfStock.Futures
+                            database = Common.DataBaseTable.Intraday_Futures
+                            margin = 1
+                            tick = 0.05
+                    End Select
+
+                    Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
+                                                                    exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                    exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                    tradeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                    lastTradeEntryTime:=TimeSpan.Parse("15:30:00"),
+                                                                    eodExitTime:=TimeSpan.Parse("15:29:59"),
+                                                                    tickSize:=tick,
+                                                                    marginMultiplier:=margin,
+                                                                    timeframe:=5,
+                                                                    heikenAshiCandle:=False,
+                                                                    stockType:=stockType,
+                                                                    databaseTable:=database,
+                                                                    dataSource:=sourceData,
+                                                                    initialCapital:=Decimal.MaxValue / 2,
+                                                                    usableCapital:=200000,
+                                                                    minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
+                                                                    amountToBeWithdrawn:=0)
+                        AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+
+                        With backtestStrategy
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Fractal High Breakout Below Support.csv")
+
+                            .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+
+                            .RuleEntityData = New FractalHighBreakoutBelowSupportStrategyRule.StrategyRuleEntities With
+                                                {
+                                                 .MaxLossPerTrade = -500,
+                                                 .TargetMultiplier = 3
+                                                }
+
+                            .NumberOfTradeableStockPerDay = 1
+
+                            .NumberOfTradesPerDay = Integer.MaxValue
+                            .NumberOfTradesPerStockPerDay = Integer.MaxValue
+
+                            .TickBasedStrategy = True
+                        End With
+
+                        Dim ruleData As FractalHighBreakoutBelowSupportStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                        Dim filename As String = String.Format("FrctlHghBrkotBlwSprtCNC")
+
+                        Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                    End Using
+                Case 1
+                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Futures
+                    Dim database As Common.DataBaseTable = Common.DataBaseTable.None
+                    Dim margin As Decimal = 0
+                    Dim tick As Decimal = 0
+                    Select Case stockType
+                        Case Trade.TypeOfStock.Cash
+                            database = Common.DataBaseTable.Intraday_Cash
+                            margin = 1
+                            tick = 0.05
+                        Case Trade.TypeOfStock.Commodity
+                            database = Common.DataBaseTable.Intraday_Commodity
+                            margin = 1
+                            tick = 1
+                        Case Trade.TypeOfStock.Currency
+                            database = Common.DataBaseTable.Intraday_Currency
+                            margin = 1
+                            tick = 0.0025
+                        Case Trade.TypeOfStock.Futures
+                            database = Common.DataBaseTable.Intraday_Futures
+                            margin = 1
+                            tick = 0.05
+                    End Select
+
+                    Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
+                                                                    exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                    exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                    tradeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                    lastTradeEntryTime:=TimeSpan.Parse("15:30:00"),
+                                                                    eodExitTime:=TimeSpan.Parse("15:14:59"),
+                                                                    tickSize:=tick,
+                                                                    marginMultiplier:=margin,
+                                                                    timeframe:=1,
+                                                                    heikenAshiCandle:=False,
+                                                                    stockType:=stockType,
+                                                                    databaseTable:=database,
+                                                                    dataSource:=sourceData,
+                                                                    initialCapital:=Decimal.MaxValue / 2,
+                                                                    usableCapital:=Decimal.MaxValue / 2,
+                                                                    minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
+                                                                    amountToBeWithdrawn:=0)
+                        AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+
+                        With backtestStrategy
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATF Nifty Swing Trading Stocklist.csv")
+
+                            .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+
+                            .RuleEntityData = Nothing
+
+                            .NumberOfTradeableStockPerDay = Integer.MaxValue
+
+                            .NumberOfTradesPerDay = Integer.MaxValue
+                            .NumberOfTradesPerStockPerDay = Integer.MaxValue
+
+                            .TickBasedStrategy = True
+                        End With
+
+                        Dim filename As String = String.Format("ATFNiftySwingTrading")
+
+                        Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                    End Using
             End Select
-
-            Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
-                                                            exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                            exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                            tradeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                            lastTradeEntryTime:=TimeSpan.Parse("15:30:00"),
-                                                            eodExitTime:=TimeSpan.Parse("15:29:59"),
-                                                            tickSize:=tick,
-                                                            marginMultiplier:=margin,
-                                                            timeframe:=5,
-                                                            heikenAshiCandle:=False,
-                                                            stockType:=stockType,
-                                                            databaseTable:=database,
-                                                            dataSource:=sourceData,
-                                                            initialCapital:=Decimal.MaxValue / 2,
-                                                            usableCapital:=200000,
-                                                            minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
-                                                            amountToBeWithdrawn:=0)
-                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
-
-                With backtestStrategy
-                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Fractal High Breakout Below Support.csv")
-
-                    .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
-
-                    .RuleEntityData = New FractalHighBreakoutBelowSupportStrategyRule.StrategyRuleEntities With
-                                        {
-                                         .MaxLossPerTrade = -500,
-                                         .TargetMultiplier = 3
-                                        }
-
-                    .NumberOfTradeableStockPerDay = 1
-
-                    .NumberOfTradesPerDay = Integer.MaxValue
-                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
-
-                    .TickBasedStrategy = True
-                End With
-
-                Dim ruleData As FractalHighBreakoutBelowSupportStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
-                Dim filename As String = String.Format("FrctlHghBrkotBlwSprtCNC")
-
-                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-            End Using
         Catch ex As Exception
             MsgBox(ex.ToString, MsgBoxStyle.Critical)
         Finally
