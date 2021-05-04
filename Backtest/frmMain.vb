@@ -364,44 +364,46 @@ Public Class frmMain
                             tick = 0.05
                     End Select
 
-                    Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
-                                                                    exchangeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                                    exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                                    tradeStartTime:=TimeSpan.Parse("09:15:00"),
-                                                                    lastTradeEntryTime:=TimeSpan.Parse("15:30:00"),
-                                                                    eodExitTime:=TimeSpan.Parse("15:14:59"),
-                                                                    tickSize:=tick,
-                                                                    marginMultiplier:=margin,
-                                                                    timeframe:=1,
-                                                                    heikenAshiCandle:=False,
-                                                                    stockType:=stockType,
-                                                                    databaseTable:=database,
-                                                                    dataSource:=sourceData,
-                                                                    initialCapital:=Decimal.MaxValue / 2,
-                                                                    usableCapital:=Decimal.MaxValue / 2,
-                                                                    minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
-                                                                    amountToBeWithdrawn:=0)
-                        AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+                    For atrPer As Decimal = 15 To 25 Step 5
+                        Using backtestStrategy As New CNCGenericStrategy(canceller:=_canceller,
+                                                                        exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                        exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                        tradeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                        lastTradeEntryTime:=TimeSpan.Parse("15:30:00"),
+                                                                        eodExitTime:=TimeSpan.Parse("15:14:59"),
+                                                                        tickSize:=tick,
+                                                                        marginMultiplier:=margin,
+                                                                        timeframe:=1,
+                                                                        heikenAshiCandle:=False,
+                                                                        stockType:=stockType,
+                                                                        databaseTable:=database,
+                                                                        dataSource:=sourceData,
+                                                                        initialCapital:=Decimal.MaxValue / 2,
+                                                                        usableCapital:=Decimal.MaxValue / 2,
+                                                                        minimumEarnedCapitalToWithdraw:=Decimal.MaxValue / 2,
+                                                                        amountToBeWithdrawn:=0)
+                            AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
-                        With backtestStrategy
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATF Nifty Swing Trading Stocklist.csv")
+                            With backtestStrategy
+                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATF Nifty Swing Trading Stocklist.csv")
 
-                            .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
+                                .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                            .RuleEntityData = Nothing
+                                .RuleEntityData = New ATFNiftySwingTradingWithMatingale.StrategyRuleEntities With {.ATRPercentage = atrPer}
 
-                            .NumberOfTradeableStockPerDay = Integer.MaxValue
+                                .NumberOfTradeableStockPerDay = Integer.MaxValue
 
-                            .NumberOfTradesPerDay = Integer.MaxValue
-                            .NumberOfTradesPerStockPerDay = Integer.MaxValue
+                                .NumberOfTradesPerDay = Integer.MaxValue
+                                .NumberOfTradesPerStockPerDay = Integer.MaxValue
 
-                            .TickBasedStrategy = True
-                        End With
+                                .TickBasedStrategy = True
+                            End With
 
-                        Dim filename As String = String.Format("ATFNiftySwingTrading")
+                            Dim filename As String = String.Format("ATFNiftySwingTrading,ATRPer {0}", atrPer)
 
-                        Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
-                    End Using
+                            Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                        End Using
+                    Next
             End Select
         Catch ex As Exception
             MsgBox(ex.ToString, MsgBoxStyle.Critical)

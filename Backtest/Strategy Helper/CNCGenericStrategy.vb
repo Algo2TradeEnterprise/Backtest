@@ -384,15 +384,15 @@ Namespace StrategyHelper
                                 If rowDate.Date = tradingDate.Date Then
                                     Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
                                     Dim lotSize As Integer = dt.Rows(i).Item("Lot Size")
-                                    Dim buyPrice As Decimal = dt.Rows(i).Item("Buy Price")
-                                    Dim sellPrice As Decimal = dt.Rows(i).Item("Sell Price")
+                                    Dim monthlyOpenPrice As Decimal = dt.Rows(i).Item("Monthly Open Price")
+                                    Dim monthlyATR As Decimal = dt.Rows(i).Item("Monthly ATR")
                                     Dim lastTradingDay As Decimal = dt.Rows(i).Item("Last Trading Day")
 
                                     Dim detailsOfStock As StockDetails = New StockDetails With
                                             {.StockName = tradingSymbol.Trim.ToUpper,
                                              .LotSize = lotSize,
-                                             .Supporting1 = buyPrice,
-                                             .Supporting2 = sellPrice,
+                                             .Supporting1 = monthlyOpenPrice,
+                                             .Supporting2 = monthlyATR,
                                              .Supporting3 = lastTradingDay,
                                              .EligibleToTakeTrade = True}
 

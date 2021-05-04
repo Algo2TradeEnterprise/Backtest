@@ -1,14 +1,26 @@
 ﻿Imports Algo2TradeBLL
 Imports System.Threading
+Imports Utilities.Numbers
 Imports Backtest.StrategyHelper
 
 Public Class ATFNiftySwingTradingWithMatingale
     Inherits StrategyRule
 
+#Region "Entity"
+    Public Class StrategyRuleEntities
+        Inherits RuleEntities
+
+        Public ATRPercentage As Integer
+    End Class
+#End Region
+
     Private ReadOnly _buyPrice As Decimal
     Private ReadOnly _sellPrice As Decimal
+    Private ReadOnly _monthlyOpenPrice As Decimal
+    Private ReadOnly _monthlyATR As Decimal
     Private ReadOnly _lastTradingDayOfThisContract As Boolean
     Private ReadOnly _eodExitTime As Date
+    Private ReadOnly _userInputs As StrategyRuleEntities
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
                    ByVal parentStrategy As Strategy,
@@ -16,14 +28,17 @@ Public Class ATFNiftySwingTradingWithMatingale
                    ByVal tradingSymbol As String,
                    ByVal canceller As CancellationTokenSource,
                    ByVal entities As RuleEntities,
-                   ByVal buyPrice As Decimal,
-                   ByVal sellPrice As Decimal,
+                   ByVal monthlyOpenPrice As Decimal,
+                   ByVal monthlyATR As Decimal,
                    ByVal lastTradingDayOfThisContract As Boolean)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
-        _buyPrice = buyPrice
-        _sellPrice = sellPrice
+        _userInputs = _entities
+        _monthlyOpenPrice = monthlyOpenPrice
+        _monthlyATR = monthlyATR
         _lastTradingDayOfThisContract = lastTradingDayOfThisContract
         _eodExitTime = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, _parentStrategy.EODExitTime.Hours, _parentStrategy.EODExitTime.Minutes, _parentStrategy.EODExitTime.Seconds)
+        _buyPrice = ConvertFloorCeling(_monthlyOpenPrice + (_monthlyATR * _userInputs.ATRPercentage / 100) / 2, _parentStrategy.TickSize, RoundOfType.Celing)
+        _sellPrice = ConvertFloorCeling(_monthlyOpenPrice - (_monthlyATR * _userInputs.ATRPercentage / 100) / 2, _parentStrategy.TickSize, RoundOfType.Celing)
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -54,7 +69,7 @@ Public Class ATFNiftySwingTradingWithMatingale
                 End If
                 If lastTrade IsNot Nothing AndAlso lastTrade.EntryDirection = entryDirection Then
                     If lastTrade.ExitRemark.ToUpper = "TARGET" Then
-                        If lastTrade.Supporting2 = _buyPrice AndAlso lastTrade.Supporting3 = _sellPrice Then
+                        If lastTrade.Supporting2 = _monthlyOpenPrice AndAlso lastTrade.Supporting3 = _monthlyATR Then
                             entryDirection = Trade.TradeExecutionDirection.None
                         End If
                     End If
@@ -70,9 +85,9 @@ Public Class ATFNiftySwingTradingWithMatingale
                             .Buffer = 0,
                             .SignalCandle = currentMinuteCandle,
                             .OrderType = Trade.TypeOfOrder.Market,
-                            .Supporting1 = currentMinuteCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss"),
-                            .Supporting2 = _buyPrice,
-                            .Supporting3 = _sellPrice,
+                            .Supporting1 = String.Format("{0},{1}", _buyPrice, _sellPrice),
+                            .Supporting2 = _monthlyOpenPrice,
+                            .Supporting3 = _monthlyATR,
                             .Supporting4 = iteration,
                             .Supporting5 = previousLoss
                         }
@@ -86,9 +101,9 @@ Public Class ATFNiftySwingTradingWithMatingale
                             .Buffer = 0,
                             .SignalCandle = currentMinuteCandle,
                             .OrderType = Trade.TypeOfOrder.Market,
-                            .Supporting1 = currentMinuteCandle.PayloadDate.ToString("dd-MMM-yyyy HH:mm:ss"),
-                            .Supporting2 = _buyPrice,
-                            .Supporting3 = _sellPrice,
+                            .Supporting1 = String.Format("{0},{1}", _buyPrice, _sellPrice),
+                            .Supporting2 = _monthlyOpenPrice,
+                            .Supporting3 = _monthlyATR,
                             .Supporting4 = iteration,
                             .Supporting5 = previousLoss
                         }
@@ -107,25 +122,29 @@ Public Class ATFNiftySwingTradingWithMatingale
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
                 If currentTick.Open <= _sellPrice Then
                     ret = New Tuple(Of Boolean, String)(True, "Stoploss")
-                ElseIf currentTick.Open >= currentTrade.EntryPrice + 100 Then
-                    If currentTrade.Supporting4 = 1 Then
+                End If
+                If currentTrade.Supporting4 = 1 Then
+                    Dim loss As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, _buyPrice, _sellPrice, currentTrade.Quantity, currentTrade.LotSize, currentTrade.StockType)
+                    If currentTrade.PLAfterBrokerage >= Math.Abs(loss) Then
                         ret = New Tuple(Of Boolean, String)(True, "Target")
-                    Else
-                        If currentTrade.PLAfterBrokerage + Val(currentTrade.Supporting5) >= Math.Abs(Val(currentTrade.Supporting5)) / (Math.Pow(2, Val(currentTrade.Supporting4) - 1) - 1) Then
-                            ret = New Tuple(Of Boolean, String)(True, "Target")
-                        End If
+                    End If
+                Else
+                    If currentTrade.PLAfterBrokerage + Val(currentTrade.Supporting5) >= Math.Abs(Val(currentTrade.Supporting5)) / (Math.Pow(2, Val(currentTrade.Supporting4) - 1) - 1) Then
+                        ret = New Tuple(Of Boolean, String)(True, "Target")
                     End If
                 End If
             ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
                 If currentTick.Open >= _buyPrice Then
                     ret = New Tuple(Of Boolean, String)(True, "Stoploss")
-                ElseIf currentTick.Open <= currentTrade.EntryPrice - 100 Then
-                    If currentTrade.Supporting4 = 1 Then
+                End If
+                If currentTrade.Supporting4 = 1 Then
+                    Dim loss As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, _buyPrice, _sellPrice, currentTrade.Quantity, currentTrade.LotSize, currentTrade.StockType)
+                    If currentTrade.PLAfterBrokerage >= Math.Abs(loss) Then
                         ret = New Tuple(Of Boolean, String)(True, "Target")
-                    Else
-                        If currentTrade.PLAfterBrokerage + Val(currentTrade.Supporting5) >= Math.Abs(Val(currentTrade.Supporting5)) / (Math.Pow(2, Val(currentTrade.Supporting4) - 1) - 1) Then
-                            ret = New Tuple(Of Boolean, String)(True, "Target")
-                        End If
+                    End If
+                Else
+                    If currentTrade.PLAfterBrokerage + Val(currentTrade.Supporting5) >= Math.Abs(Val(currentTrade.Supporting5)) / (Math.Pow(2, Val(currentTrade.Supporting4) - 1) - 1) Then
+                        ret = New Tuple(Of Boolean, String)(True, "Target")
                     End If
                 End If
             End If
