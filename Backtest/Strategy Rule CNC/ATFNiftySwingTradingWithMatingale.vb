@@ -10,7 +10,8 @@ Public Class ATFNiftySwingTradingWithMatingale
     Public Class StrategyRuleEntities
         Inherits RuleEntities
 
-        Public ATRPercentage As Integer
+        Public ATRPercentage As Decimal
+        Public TargetMultiplier As Decimal
     End Class
 #End Region
 
@@ -55,7 +56,6 @@ Public Class ATFNiftySwingTradingWithMatingale
             Not _parentStrategy.IsTradeActive(currentTick, _parentStrategy.TradeType) Then
             Dim entryDirection As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
             Dim iteration As Integer = 1
-            Dim previousLoss As Decimal = 0
             If currentTick.Open >= _buyPrice Then
                 entryDirection = Trade.TradeExecutionDirection.Buy
             ElseIf currentTick.Open <= _sellPrice Then
@@ -65,7 +65,6 @@ Public Class ATFNiftySwingTradingWithMatingale
                 Dim lastTrade As Trade = _parentStrategy.GetLastEntryTradeOfTheStock(currentMinuteCandle, Trade.TypeOfTrade.CNC)
                 If lastTrade IsNot Nothing AndAlso lastTrade.ExitRemark.ToUpper = "STOPLOSS" Then
                     iteration = Val(lastTrade.Supporting4) + 1
-                    previousLoss = Val(lastTrade.Supporting5) + lastTrade.PLAfterBrokerage
                 End If
                 If lastTrade IsNot Nothing AndAlso lastTrade.EntryDirection = entryDirection Then
                     If lastTrade.ExitRemark.ToUpper = "TARGET" Then
@@ -75,38 +74,42 @@ Public Class ATFNiftySwingTradingWithMatingale
                     End If
                 End If
             End If
-            If entryDirection = Trade.TradeExecutionDirection.Buy Then
-                parameter = New PlaceOrderParameters With {
+            If entryDirection <> Trade.TradeExecutionDirection.None Then
+                Dim loss As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, _buyPrice, _sellPrice, Me.LotSize, Me.LotSize, _parentStrategy.StockType)
+                Dim target As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, currentTick.Open, Me.LotSize, Math.Abs(loss) * _userInputs.TargetMultiplier, entryDirection, _parentStrategy.StockType)
+
+
+                If entryDirection = Trade.TradeExecutionDirection.Buy Then
+                    parameter = New PlaceOrderParameters With {
                             .EntryPrice = currentTick.Open,
                             .EntryDirection = Trade.TradeExecutionDirection.Buy,
-                            .Quantity = Me.LotSize * Math.Pow(2, iteration - 1),
-                            .Stoploss = .EntryPrice - 1000000,
-                            .Target = .EntryPrice + 1000000,
+                            .Quantity = Me.LotSize,
+                            .Stoploss = _sellPrice,
+                            .Target = target,
                             .Buffer = 0,
                             .SignalCandle = currentMinuteCandle,
                             .OrderType = Trade.TypeOfOrder.Market,
                             .Supporting1 = String.Format("{0},{1}", _buyPrice, _sellPrice),
                             .Supporting2 = _monthlyOpenPrice,
                             .Supporting3 = _monthlyATR,
-                            .Supporting4 = iteration,
-                            .Supporting5 = previousLoss
+                            .Supporting4 = iteration
                         }
-            ElseIf entryDirection = Trade.TradeExecutionDirection.Sell Then
-                parameter = New PlaceOrderParameters With {
+                ElseIf entryDirection = Trade.TradeExecutionDirection.Sell Then
+                    parameter = New PlaceOrderParameters With {
                             .EntryPrice = currentTick.Open,
                             .EntryDirection = Trade.TradeExecutionDirection.Sell,
-                            .Quantity = Me.LotSize * Math.Pow(2, iteration - 1),
-                            .Stoploss = .EntryPrice + 1000000,
-                            .Target = .EntryPrice - 1000000,
+                            .Quantity = Me.LotSize,
+                            .Stoploss = _buyPrice,
+                            .Target = target,
                             .Buffer = 0,
                             .SignalCandle = currentMinuteCandle,
                             .OrderType = Trade.TypeOfOrder.Market,
                             .Supporting1 = String.Format("{0},{1}", _buyPrice, _sellPrice),
                             .Supporting2 = _monthlyOpenPrice,
                             .Supporting3 = _monthlyATR,
-                            .Supporting4 = iteration,
-                            .Supporting5 = previousLoss
+                            .Supporting4 = iteration
                         }
+                End If
             End If
         End If
         If parameter IsNot Nothing Then
@@ -119,37 +122,24 @@ Public Class ATFNiftySwingTradingWithMatingale
         Dim ret As Tuple(Of Boolean, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
-            If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
-                If currentTick.Open <= _sellPrice Then
-                    ret = New Tuple(Of Boolean, String)(True, "Stoploss")
-                End If
-                If currentTrade.Supporting4 = 1 Then
-                    Dim loss As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, _buyPrice, _sellPrice, currentTrade.Quantity, currentTrade.LotSize, currentTrade.StockType)
-                    If currentTrade.PLAfterBrokerage >= Math.Abs(loss) Then
-                        ret = New Tuple(Of Boolean, String)(True, "Target")
-                    End If
-                Else
-                    If currentTrade.PLAfterBrokerage + Val(currentTrade.Supporting5) >= Math.Abs(Val(currentTrade.Supporting5)) / (Math.Pow(2, Val(currentTrade.Supporting4) - 1) - 1) Then
-                        ret = New Tuple(Of Boolean, String)(True, "Target")
-                    End If
-                End If
-            ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
-                If currentTick.Open >= _buyPrice Then
-                    ret = New Tuple(Of Boolean, String)(True, "Stoploss")
-                End If
-                If currentTrade.Supporting4 = 1 Then
-                    Dim loss As Decimal = _parentStrategy.CalculatePL(_tradingSymbol, _buyPrice, _sellPrice, currentTrade.Quantity, currentTrade.LotSize, currentTrade.StockType)
-                    If currentTrade.PLAfterBrokerage >= Math.Abs(loss) Then
-                        ret = New Tuple(Of Boolean, String)(True, "Target")
-                    End If
-                Else
-                    If currentTrade.PLAfterBrokerage + Val(currentTrade.Supporting5) >= Math.Abs(Val(currentTrade.Supporting5)) / (Math.Pow(2, Val(currentTrade.Supporting4) - 1) - 1) Then
-                        ret = New Tuple(Of Boolean, String)(True, "Target")
-                    End If
-                End If
-            End If
             If _lastTradingDayOfThisContract AndAlso currentTick.PayloadDate >= _eodExitTime Then
                 ret = New Tuple(Of Boolean, String)(True, "EOC Exit")
+            End If
+
+            If ret Is Nothing Then
+                If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy Then
+                    If currentTick.Open <= currentTrade.PotentialStopLoss Then
+                        ret = New Tuple(Of Boolean, String)(True, "Stoploss")
+                    ElseIf currentTick.Open >= currentTrade.PotentialTarget Then
+                        ret = New Tuple(Of Boolean, String)(True, "Target")
+                    End If
+                ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell Then
+                    If currentTick.Open >= currentTrade.PotentialStopLoss Then
+                        ret = New Tuple(Of Boolean, String)(True, "Stoploss")
+                    ElseIf currentTick.Open <= currentTrade.PotentialTarget Then
+                        ret = New Tuple(Of Boolean, String)(True, "Target")
+                    End If
+                End If
             End If
         End If
         Return ret

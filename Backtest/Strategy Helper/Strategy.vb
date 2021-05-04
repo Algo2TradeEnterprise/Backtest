@@ -938,7 +938,7 @@ Namespace StrategyHelper
                     If tradeDirection = Trade.TradeExecutionDirection.Buy Then
                         Select Case typeOfStock
                             Case Trade.TypeOfStock.Cash
-                                calculator.Delivery_Equity(entryPrice, exitPrice, quantity, potentialBrokerage)
+                                calculator.FO_Futures(entryPrice, exitPrice, quantity, potentialBrokerage)
                             Case Trade.TypeOfStock.Commodity
                                 calculator.Commodity_MCX(coreStockName, entryPrice, exitPrice, quantity, potentialBrokerage)
                             Case Trade.TypeOfStock.Currency
@@ -951,7 +951,7 @@ Namespace StrategyHelper
                     ElseIf tradeDirection = Trade.TradeExecutionDirection.Sell Then
                         Select Case typeOfStock
                             Case Trade.TypeOfStock.Cash
-                                calculator.Delivery_Equity(exitPrice, entryPrice, quantity, potentialBrokerage)
+                                calculator.FO_Futures(exitPrice, entryPrice, quantity, potentialBrokerage)
                             Case Trade.TypeOfStock.Commodity
                                 calculator.Commodity_MCX(coreStockName, exitPrice, entryPrice, quantity, potentialBrokerage)
                             Case Trade.TypeOfStock.Currency
@@ -968,7 +968,7 @@ Namespace StrategyHelper
                     If tradeDirection = Trade.TradeExecutionDirection.Buy Then
                         Select Case typeOfStock
                             Case Trade.TypeOfStock.Cash
-                                calculator.Delivery_Equity(entryPrice, exitPrice, quantity, potentialBrokerage)
+                                calculator.FO_Futures(entryPrice, exitPrice, quantity, potentialBrokerage)
                             Case Trade.TypeOfStock.Commodity
                                 calculator.Commodity_MCX(coreStockName, entryPrice, exitPrice, quantity, potentialBrokerage)
                             Case Trade.TypeOfStock.Currency
@@ -981,7 +981,7 @@ Namespace StrategyHelper
                     ElseIf tradeDirection = Trade.TradeExecutionDirection.Sell Then
                         Select Case typeOfStock
                             Case Trade.TypeOfStock.Cash
-                                calculator.Delivery_Equity(exitPrice, entryPrice, quantity, potentialBrokerage)
+                                calculator.FO_Futures(exitPrice, entryPrice, quantity, potentialBrokerage)
                             Case Trade.TypeOfStock.Commodity
                                 calculator.Commodity_MCX(coreStockName, exitPrice, entryPrice, quantity, potentialBrokerage)
                             Case Trade.TypeOfStock.Currency

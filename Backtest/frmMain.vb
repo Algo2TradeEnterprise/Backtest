@@ -389,7 +389,8 @@ Public Class frmMain
 
                                 .RuleNumber = GetComboBoxIndex_ThreadSafe(cmbRule)
 
-                                .RuleEntityData = New ATFNiftySwingTradingWithMatingale.StrategyRuleEntities With {.ATRPercentage = atrPer}
+                                .RuleEntityData = New ATFNiftySwingTradingWithMatingale.StrategyRuleEntities With
+                                    {.ATRPercentage = atrPer, .TargetMultiplier = 2}
 
                                 .NumberOfTradeableStockPerDay = Integer.MaxValue
 
@@ -399,7 +400,9 @@ Public Class frmMain
                                 .TickBasedStrategy = True
                             End With
 
-                            Dim filename As String = String.Format("ATFNiftySwingTrading,ATRPer {0}", atrPer)
+                            Dim ruleData As ATFNiftySwingTradingWithMatingale.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                            Dim filename As String = String.Format("ATFNiftySwingTrading,ATRPer {0},Tgt {1}",
+                                                                   ruleData.ATRPercentage, ruleData.TargetMultiplier)
 
                             Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
                         End Using
