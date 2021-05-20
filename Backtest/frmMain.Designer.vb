@@ -25,9 +25,6 @@ Partial Class frmMain
         Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(frmMain))
         Me.btnStart = New System.Windows.Forms.Button()
         Me.lblProgress = New System.Windows.Forms.Label()
-        Me.grpbxDataSource = New System.Windows.Forms.GroupBox()
-        Me.rdbLive = New System.Windows.Forms.RadioButton()
-        Me.rdbDatabase = New System.Windows.Forms.RadioButton()
         Me.cmbRule = New System.Windows.Forms.ComboBox()
         Me.lblChooseRule = New System.Windows.Forms.Label()
         Me.lblStartDate = New System.Windows.Forms.Label()
@@ -35,23 +32,16 @@ Partial Class frmMain
         Me.dtpckrStartDate = New System.Windows.Forms.DateTimePicker()
         Me.dtpckrEndDate = New System.Windows.Forms.DateTimePicker()
         Me.btnStop = New System.Windows.Forms.Button()
-        Me.grpbxStrategyType = New System.Windows.Forms.GroupBox()
-        Me.rdbCNCEOD = New System.Windows.Forms.RadioButton()
-        Me.rdbCNCCandle = New System.Windows.Forms.RadioButton()
-        Me.rdbCNCTick = New System.Windows.Forms.RadioButton()
-        Me.rdbMIS = New System.Windows.Forms.RadioButton()
         Me.grpBxDBConnection = New System.Windows.Forms.GroupBox()
         Me.rdbRemoteDBConnection = New System.Windows.Forms.RadioButton()
         Me.rdbLocalDBConnection = New System.Windows.Forms.RadioButton()
-        Me.grpbxDataSource.SuspendLayout()
-        Me.grpbxStrategyType.SuspendLayout()
         Me.grpBxDBConnection.SuspendLayout()
         Me.SuspendLayout()
         '
         'btnStart
         '
         Me.btnStart.Font = New System.Drawing.Font("Microsoft Sans Serif", 12.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.btnStart.Location = New System.Drawing.Point(486, 57)
+        Me.btnStart.Location = New System.Drawing.Point(299, 104)
         Me.btnStart.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
         Me.btnStart.Name = "btnStart"
         Me.btnStart.Size = New System.Drawing.Size(181, 57)
@@ -61,54 +51,17 @@ Partial Class frmMain
         '
         'lblProgress
         '
-        Me.lblProgress.Location = New System.Drawing.Point(7, 210)
+        Me.lblProgress.Location = New System.Drawing.Point(7, 175)
         Me.lblProgress.Name = "lblProgress"
-        Me.lblProgress.Size = New System.Drawing.Size(665, 77)
+        Me.lblProgress.Size = New System.Drawing.Size(665, 112)
         Me.lblProgress.TabIndex = 1
         Me.lblProgress.Text = "Progress Status ....."
-        '
-        'grpbxDataSource
-        '
-        Me.grpbxDataSource.Controls.Add(Me.rdbLive)
-        Me.grpbxDataSource.Controls.Add(Me.rdbDatabase)
-        Me.grpbxDataSource.Location = New System.Drawing.Point(15, 140)
-        Me.grpbxDataSource.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
-        Me.grpbxDataSource.Name = "grpbxDataSource"
-        Me.grpbxDataSource.Padding = New System.Windows.Forms.Padding(3, 2, 3, 2)
-        Me.grpbxDataSource.Size = New System.Drawing.Size(190, 62)
-        Me.grpbxDataSource.TabIndex = 24
-        Me.grpbxDataSource.TabStop = False
-        Me.grpbxDataSource.Text = "Data Source"
-        '
-        'rdbLive
-        '
-        Me.rdbLive.AutoSize = True
-        Me.rdbLive.Location = New System.Drawing.Point(115, 25)
-        Me.rdbLive.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
-        Me.rdbLive.Name = "rdbLive"
-        Me.rdbLive.Size = New System.Drawing.Size(55, 21)
-        Me.rdbLive.TabIndex = 1
-        Me.rdbLive.Text = "Live"
-        Me.rdbLive.UseVisualStyleBackColor = True
-        '
-        'rdbDatabase
-        '
-        Me.rdbDatabase.AutoSize = True
-        Me.rdbDatabase.Checked = True
-        Me.rdbDatabase.Location = New System.Drawing.Point(7, 23)
-        Me.rdbDatabase.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
-        Me.rdbDatabase.Name = "rdbDatabase"
-        Me.rdbDatabase.Size = New System.Drawing.Size(90, 21)
-        Me.rdbDatabase.TabIndex = 0
-        Me.rdbDatabase.TabStop = True
-        Me.rdbDatabase.Text = "Database"
-        Me.rdbDatabase.UseVisualStyleBackColor = True
         '
         'cmbRule
         '
         Me.cmbRule.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.cmbRule.FormattingEnabled = True
-        Me.cmbRule.Items.AddRange(New Object() {"Reversal HHLL Breakout", "Fractal Trend Line", "Market Plus Market Minus", "Highest Lowest Point", "Heikenashi Reverse Slab", "EMA Scalping", "Supertrend Cut Reversal", "BNF Martingale Strategy", "HigherLow LowerHigh Breakout", "Always in Trade Martingale Strategy", "Martingale Strategy", "Anchor Satellite HK Strategy", "Small Opening Range Breakout", "Loss Makeup Favourable Fractal Breakout", "HK Reverse Slab Martingale Strategy", "Low Price Option Buy Only Strategy", "Low Price Option OI Change Buy Only Strategy", "Lower Price Option Buy Only EOD Strategy", "Every Minute Top Gainer Losser HK Reversal Strategy", "Loss Makeup Rainbow Strategy", "Anchor Satellite Loss Makeup Strategy", "Anchor Satellite Loss Makeup HK Strategy", "Loss Makeup Neutral Slab Strategy", "Neutral Slab Martingale Strategy", "Anchor Satellite Loss Makeup HK Futures Strategy", "HK Reversal Single Trade Strategy", "Momentum Reversal Strategy", "Stochastic Divergence Strategy", "Pair Anchor Satellite Loss Makeup HK Strategy", "Two Third Strategy", "Small Range Breakout", "Highest Lowest Point Anchor Satellite Strategy", "EMA SMA Crossover Strategy", "Bollinger Close Strategy", "Outside VWAP Strategy", "Higher Timeframe Signal Martingale Strategy", "Squeeze Breakout Strategy", "Multi Trade Loss Makeup Strategy", "Momentum Reversal Modified Strategy", "HK Reverse Exit Strategy", "Both Direction Multi Trades HK Strategy", "Market Entry Strategy", "HK Reversal Loss Makeup Strategy", "Supertrend Cut Strategy", "Both Direction Multi Trades Strategy", "Day High Low Swing Trendline Strategy", "Fibonacci Backtest Strategy", "Swing At Day High Low Strategy", "Fibonacci Opening Range Breakout Strategy", "Previous Day HK Trend Strategy", "Previous Day HK Trend Bollinger Strategy", "EMA Attraction Strategy", "Buy Below Fractal Strategy", "HK Reversal Martingale Strategy", "HK Reversal Adaptive Martingale Strategy", "Bollinger Touch Strategy", "At The Money Option Buy Only Strategy", "Previous Day HK Trend Swing Strategy", "Pre Market Options Direction Based Strategy", "Multi Timeframe Moving Average Strategy", "HK Reversal Adaptive Martingale With Direction Strategy 1", "Anchored VWAP Direction Strategy", "HK Reversal Adaptive Martingale With Direction Strategy 2", "Favourable Candle Breakout After V Strategy", "HK Forward Breakout Adaptive Martingale Strategy", "Favourable Fractal Previous Level Breakout Adaptive Martingale Strategy", "Untouch VWAP Adaptive Martingale Strategy", "HK Untouch VWAP Adaptive Martingale Strategy", "Single Trade Risk Reward Strategy", "MA Direction Based Strategy", "EMA Direction Based Hammer Candle Breakout Strategy", "First Favourable Fractal Top Gainer Looser Strategy", "Diamond Strategy", "AOL Opening Candle Breakout Strategy", "X-Min Candle Breakout Strategy", "Low Range Candle Breakout"})
+        Me.cmbRule.Items.AddRange(New Object() {"ORB Strategy"})
         Me.cmbRule.Location = New System.Drawing.Point(123, 16)
         Me.cmbRule.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
         Me.cmbRule.Name = "cmbRule"
@@ -166,7 +119,7 @@ Partial Class frmMain
         'btnStop
         '
         Me.btnStop.Font = New System.Drawing.Font("Microsoft Sans Serif", 12.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.btnStop.Location = New System.Drawing.Point(486, 129)
+        Me.btnStop.Location = New System.Drawing.Point(486, 104)
         Me.btnStop.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
         Me.btnStop.Name = "btnStop"
         Me.btnStop.Size = New System.Drawing.Size(181, 57)
@@ -174,72 +127,11 @@ Partial Class frmMain
         Me.btnStop.Text = "Stop"
         Me.btnStop.UseVisualStyleBackColor = True
         '
-        'grpbxStrategyType
-        '
-        Me.grpbxStrategyType.Controls.Add(Me.rdbCNCEOD)
-        Me.grpbxStrategyType.Controls.Add(Me.rdbCNCCandle)
-        Me.grpbxStrategyType.Controls.Add(Me.rdbCNCTick)
-        Me.grpbxStrategyType.Controls.Add(Me.rdbMIS)
-        Me.grpbxStrategyType.Location = New System.Drawing.Point(15, 83)
-        Me.grpbxStrategyType.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
-        Me.grpbxStrategyType.Name = "grpbxStrategyType"
-        Me.grpbxStrategyType.Padding = New System.Windows.Forms.Padding(3, 2, 3, 2)
-        Me.grpbxStrategyType.Size = New System.Drawing.Size(443, 56)
-        Me.grpbxStrategyType.TabIndex = 29
-        Me.grpbxStrategyType.TabStop = False
-        Me.grpbxStrategyType.Text = "Strategy Type"
-        '
-        'rdbCNCEOD
-        '
-        Me.rdbCNCEOD.AutoSize = True
-        Me.rdbCNCEOD.Location = New System.Drawing.Point(335, 20)
-        Me.rdbCNCEOD.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
-        Me.rdbCNCEOD.Name = "rdbCNCEOD"
-        Me.rdbCNCEOD.Size = New System.Drawing.Size(91, 21)
-        Me.rdbCNCEOD.TabIndex = 3
-        Me.rdbCNCEOD.Text = "CNC EOD"
-        Me.rdbCNCEOD.UseVisualStyleBackColor = True
-        '
-        'rdbCNCCandle
-        '
-        Me.rdbCNCCandle.AutoSize = True
-        Me.rdbCNCCandle.Location = New System.Drawing.Point(211, 20)
-        Me.rdbCNCCandle.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
-        Me.rdbCNCCandle.Name = "rdbCNCCandle"
-        Me.rdbCNCCandle.Size = New System.Drawing.Size(105, 21)
-        Me.rdbCNCCandle.TabIndex = 2
-        Me.rdbCNCCandle.Text = "CNC Candle"
-        Me.rdbCNCCandle.UseVisualStyleBackColor = True
-        '
-        'rdbCNCTick
-        '
-        Me.rdbCNCTick.AutoSize = True
-        Me.rdbCNCTick.Location = New System.Drawing.Point(98, 20)
-        Me.rdbCNCTick.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
-        Me.rdbCNCTick.Name = "rdbCNCTick"
-        Me.rdbCNCTick.Size = New System.Drawing.Size(87, 21)
-        Me.rdbCNCTick.TabIndex = 1
-        Me.rdbCNCTick.Text = "CNC Tick"
-        Me.rdbCNCTick.UseVisualStyleBackColor = True
-        '
-        'rdbMIS
-        '
-        Me.rdbMIS.AutoSize = True
-        Me.rdbMIS.Checked = True
-        Me.rdbMIS.Location = New System.Drawing.Point(7, 20)
-        Me.rdbMIS.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
-        Me.rdbMIS.Name = "rdbMIS"
-        Me.rdbMIS.Size = New System.Drawing.Size(52, 21)
-        Me.rdbMIS.TabIndex = 0
-        Me.rdbMIS.TabStop = True
-        Me.rdbMIS.Text = "MIS"
-        Me.rdbMIS.UseVisualStyleBackColor = True
-        '
         'grpBxDBConnection
         '
         Me.grpBxDBConnection.Controls.Add(Me.rdbRemoteDBConnection)
         Me.grpBxDBConnection.Controls.Add(Me.rdbLocalDBConnection)
-        Me.grpBxDBConnection.Location = New System.Drawing.Point(211, 140)
+        Me.grpBxDBConnection.Location = New System.Drawing.Point(15, 99)
         Me.grpBxDBConnection.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
         Me.grpBxDBConnection.Name = "grpBxDBConnection"
         Me.grpBxDBConnection.Padding = New System.Windows.Forms.Padding(3, 2, 3, 2)
@@ -279,13 +171,11 @@ Partial Class frmMain
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.ClientSize = New System.Drawing.Size(679, 291)
         Me.Controls.Add(Me.grpBxDBConnection)
-        Me.Controls.Add(Me.grpbxStrategyType)
         Me.Controls.Add(Me.btnStop)
         Me.Controls.Add(Me.dtpckrEndDate)
         Me.Controls.Add(Me.dtpckrStartDate)
         Me.Controls.Add(Me.lblEndDate)
         Me.Controls.Add(Me.lblStartDate)
-        Me.Controls.Add(Me.grpbxDataSource)
         Me.Controls.Add(Me.cmbRule)
         Me.Controls.Add(Me.lblChooseRule)
         Me.Controls.Add(Me.lblProgress)
@@ -296,10 +186,6 @@ Partial Class frmMain
         Me.Name = "frmMain"
         Me.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen
         Me.Text = "Algo2Trade Backtest"
-        Me.grpbxDataSource.ResumeLayout(False)
-        Me.grpbxDataSource.PerformLayout()
-        Me.grpbxStrategyType.ResumeLayout(False)
-        Me.grpbxStrategyType.PerformLayout()
         Me.grpBxDBConnection.ResumeLayout(False)
         Me.grpBxDBConnection.PerformLayout()
         Me.ResumeLayout(False)
@@ -309,9 +195,6 @@ Partial Class frmMain
 
     Friend WithEvents btnStart As Button
     Friend WithEvents lblProgress As Label
-    Friend WithEvents grpbxDataSource As GroupBox
-    Friend WithEvents rdbLive As RadioButton
-    Friend WithEvents rdbDatabase As RadioButton
     Friend WithEvents cmbRule As ComboBox
     Friend WithEvents lblChooseRule As Label
     Friend WithEvents lblStartDate As Label
@@ -319,11 +202,6 @@ Partial Class frmMain
     Friend WithEvents dtpckrStartDate As DateTimePicker
     Friend WithEvents dtpckrEndDate As DateTimePicker
     Friend WithEvents btnStop As Button
-    Friend WithEvents grpbxStrategyType As GroupBox
-    Friend WithEvents rdbCNCTick As RadioButton
-    Friend WithEvents rdbMIS As RadioButton
-    Friend WithEvents rdbCNCEOD As RadioButton
-    Friend WithEvents rdbCNCCandle As RadioButton
     Friend WithEvents grpBxDBConnection As GroupBox
     Friend WithEvents rdbRemoteDBConnection As RadioButton
     Friend WithEvents rdbLocalDBConnection As RadioButton
