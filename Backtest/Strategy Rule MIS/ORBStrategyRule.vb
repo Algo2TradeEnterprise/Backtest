@@ -41,9 +41,11 @@ Public Class ORBStrategyRule
             currentMinuteCandle.PreviousCandlePayload.PayloadDate.Date = _tradingDate.Date AndAlso
             Not _parentStrategy.IsTradeOpen(currentMinuteCandle, Trade.TypeOfTrade.MIS) AndAlso
             Not _parentStrategy.IsTradeActive(currentMinuteCandle, Trade.TypeOfTrade.MIS) Then
-            Dim signalCandle As Payload = currentMinuteCandle.PreviousCandlePayload
-            If currentTick.Open < signalCandle.High Then
-                Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
+            Dim lastExitTrade As Trade = _parentStrategy.GetLastExitTradeOfTheStock(currentMinuteCandle, Trade.TypeOfTrade.MIS)
+            If lastExitTrade Is Nothing Then
+                Dim signalCandle As Payload = currentMinuteCandle.PreviousCandlePayload
+                If currentTick.Open < signalCandle.High Then
+                    Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                              .EntryPrice = signalCandle.High,
                              .EntryDirection = Trade.TradeExecutionDirection.Buy,
                              .Quantity = Me.LotSize,
@@ -55,9 +57,9 @@ Public Class ORBStrategyRule
                              .Supporting1 = "Stoploss Order"
                          }
 
-                ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
-            Else
-                Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
+                    ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
+                Else
+                    Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                             .EntryPrice = signalCandle.High,
                             .EntryDirection = Trade.TradeExecutionDirection.Buy,
                             .Quantity = Me.LotSize,
@@ -69,11 +71,11 @@ Public Class ORBStrategyRule
                             .Supporting1 = "Market Order"
                         }
 
-                ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
-            End If
+                    ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
+                End If
 
-            If currentTick.Open > signalCandle.Low Then
-                Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
+                If currentTick.Open > signalCandle.Low Then
+                    Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                              .EntryPrice = signalCandle.Low,
                              .EntryDirection = Trade.TradeExecutionDirection.Sell,
                              .Quantity = Me.LotSize,
@@ -85,9 +87,9 @@ Public Class ORBStrategyRule
                              .Supporting1 = "Stoploss Order"
                          }
 
-                ret.Item2.Add(parameter)
-            Else
-                Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
+                    ret.Item2.Add(parameter)
+                Else
+                    Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
                             .EntryPrice = signalCandle.Low,
                             .EntryDirection = Trade.TradeExecutionDirection.Sell,
                             .Quantity = Me.LotSize,
@@ -99,7 +101,8 @@ Public Class ORBStrategyRule
                             .Supporting1 = "Market Order"
                         }
 
-                ret.Item2.Add(parameter)
+                    ret.Item2.Add(parameter)
+                End If
             End If
         End If
         Return ret
@@ -108,6 +111,13 @@ Public Class ORBStrategyRule
     Public Overrides Async Function IsTriggerReceivedForExitOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, String))
         Dim ret As Tuple(Of Boolean, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
+        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
+            Dim currentMinuteCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
+            Dim lastExitTrade As Trade = _parentStrategy.GetLastExitTradeOfTheStock(currentMinuteCandle, Trade.TypeOfTrade.MIS)
+            If lastExitTrade IsNot Nothing AndAlso lastExitTrade.PLPoint > 0 Then
+                ret = New Tuple(Of Boolean, String)(True, "Invalid Trade")
+            End If
+        End If
         Return ret
     End Function
 
