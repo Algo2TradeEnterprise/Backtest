@@ -35,9 +35,12 @@ Namespace StrategyHelper
 
         Public ForceTakeTrade As Boolean = False
         Public ForceCancelTrade As Boolean = False
+        Public ForceModifyTrade As Boolean = False
+        Public Comment As String = Nothing
 
         Public EligibleToTakeTrade As Boolean = True
         Protected _signalPayload As Dictionary(Of Date, Payload)
+        Protected _currentDayPayload As IEnumerable(Of KeyValuePair(Of Date, Payload))
 
         Protected ReadOnly _parentStrategy As Strategy
         Protected ReadOnly _tradingDate As Date
@@ -85,6 +88,7 @@ Namespace StrategyHelper
                 Else
                     _signalPayload = xMinutePayload
                 End If
+                _currentDayPayload = _signalPayload.Where(Function(x) x.Key.Date = _tradingDate.Date)
             End If
         End Sub
 

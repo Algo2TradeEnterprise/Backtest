@@ -390,6 +390,27 @@ Namespace StrategyHelper
 #End Region
 
 #Region "Public Functions"
+        Public Function IsAnyTradeActive() As Boolean
+            Dim ret As Boolean = False
+            If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
+                Dim tradeList As List(Of Trade) = Nothing
+                For Each runningDate In TradesTaken.Keys
+                    For Each runningStock In TradesTaken(runningDate).Keys
+                        For Each runningTrade In TradesTaken(runningDate)(runningStock)
+                            If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
+                                ret = True
+                            End If
+                            If ret Then Exit For
+                        Next
+                        If ret Then Exit For
+                    Next
+                    If ret Then Exit For
+                Next
+            End If
+
+            Return ret
+        End Function
+
         Public Function IsTradeActive(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TypeOfTrade, Optional ByVal tradeDirection As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None) As Boolean
             Dim ret As Boolean = False
             Dim tradeDate As Date = currentMinutePayload.PayloadDate.Date
@@ -858,25 +879,27 @@ Namespace StrategyHelper
         End Function
 
         Public Function CalculatePL(ByVal stockName As String, ByVal buyPrice As Decimal, ByVal sellPrice As Decimal, ByVal quantity As Integer, ByVal lotSize As Integer, ByVal typeOfStock As Trade.TypeOfStock) As Decimal
-            Dim potentialBrokerage As New Calculator.BrokerageAttributes
-            Dim calculator As New Calculator.BrokerageCalculator(_canceller)
+            'Dim potentialBrokerage As New Calculator.BrokerageAttributes
+            'Dim calculator As New Calculator.BrokerageCalculator(_canceller)
 
-            Select Case typeOfStock
-                Case Trade.TypeOfStock.Cash
-                    If Me.TradeType = Trade.TypeOfTrade.MIS Then
-                        calculator.Intraday_Equity(buyPrice, sellPrice, quantity, potentialBrokerage)
-                    ElseIf Me.TradeType = Trade.TypeOfTrade.CNC Then
-                        calculator.Delivery_Equity(buyPrice, sellPrice, quantity, potentialBrokerage)
-                    End If
-                Case Trade.TypeOfStock.Currency
-                    calculator.Currency_Futures(buyPrice, sellPrice, quantity / lotSize, potentialBrokerage)
-                Case Trade.TypeOfStock.Commodity
-                    calculator.Commodity_MCX(stockName, buyPrice, sellPrice, quantity / lotSize, potentialBrokerage)
-                Case Trade.TypeOfStock.Futures
-                    calculator.FO_Options(buyPrice, sellPrice, quantity, potentialBrokerage)
-            End Select
+            'Select Case typeOfStock
+            '    Case Trade.TypeOfStock.Cash
+            '        If Me.TradeType = Trade.TypeOfTrade.MIS Then
+            '            calculator.Intraday_Equity(buyPrice, sellPrice, quantity, potentialBrokerage)
+            '        ElseIf Me.TradeType = Trade.TypeOfTrade.CNC Then
+            '            calculator.Delivery_Equity(buyPrice, sellPrice, quantity, potentialBrokerage)
+            '        End If
+            '    Case Trade.TypeOfStock.Currency
+            '        calculator.Currency_Futures(buyPrice, sellPrice, quantity / lotSize, potentialBrokerage)
+            '    Case Trade.TypeOfStock.Commodity
+            '        calculator.Commodity_MCX(stockName, buyPrice, sellPrice, quantity / lotSize, potentialBrokerage)
+            '    Case Trade.TypeOfStock.Futures
+            '        calculator.FO_Options(buyPrice, sellPrice, quantity, potentialBrokerage)
+            'End Select
 
-            Return potentialBrokerage.NetProfitLoss
+            'Return potentialBrokerage.NetProfitLoss
+
+            Return (sellPrice - buyPrice) * quantity
         End Function
 
         Public Function CalculateQuantityFromTargetSL(ByVal stockName As String, ByVal buyPrice As Decimal, ByVal sellPrice As Decimal, ByVal NetProfitLossOfTrade As Decimal, ByVal typeOfStock As Trade.TypeOfStock) As Integer

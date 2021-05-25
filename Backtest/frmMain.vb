@@ -290,12 +290,12 @@ Public Class frmMain
                     Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
                                                                     exchangeStartTime:=TimeSpan.Parse("09:15:00"),
                                                                     exchangeEndTime:=TimeSpan.Parse("15:29:59"),
-                                                                    tradeStartTime:=TimeSpan.Parse("9:16:00"),
+                                                                    tradeStartTime:=TimeSpan.Parse("9:20:00"),
                                                                     lastTradeEntryTime:=TimeSpan.Parse("14:29:59"),
                                                                     eodExitTime:=TimeSpan.Parse("15:15:00"),
                                                                     tickSize:=tick,
                                                                     marginMultiplier:=margin,
-                                                                    timeframe:=1,
+                                                                    timeframe:=5,
                                                                     heikenAshiCandle:=False,
                                                                     stockType:=stockType,
                                                                     databaseTable:=database,
@@ -307,7 +307,7 @@ Public Class frmMain
                         AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                         With backtestStrategy
-                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Option Ladder Stocklist.csv")
+                            .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Saddam Stocklist.csv")
 
                             .AllowBothDirectionEntryAtSameTime = False
                             .TrailingStoploss = False
@@ -327,17 +327,17 @@ Public Class frmMain
                             .StockMaxProfitPerDay = Decimal.MaxValue
                             .StockMaxLossPerDay = Decimal.MinValue
 
-                            .ExitOnOverAllFixedTargetStoploss = False
+                            .ExitOnOverAllFixedTargetStoploss = True
                             .OverAllProfitPerDay = Decimal.MaxValue
-                            .OverAllLossPerDay = Decimal.MinValue
+                            .OverAllLossPerDay = -5000
 
-                            .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+                            .TypeOfMTMTrailing = Strategy.MTMTrailingType.FixedSlabTrailing
                             .MTMSlab = Math.Abs(.OverAllLossPerDay)
                             .MovementSlab = .MTMSlab / 2
                             .RealtimeTrailingPercentage = 50
                         End With
 
-                        Dim filename As String = String.Format("Option Ladder Output")
+                        Dim filename As String = String.Format("Option Output")
 
                         Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
                     End Using
