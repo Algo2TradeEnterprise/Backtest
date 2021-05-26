@@ -11,16 +11,20 @@ Public Class SaddamOptionStrategyRule
     Private _nakedCE As SaddamOptionStrategyRule
     Private _nakedPE As SaddamOptionStrategyRule
 
+    Private _nakedSTCE As SaddamOptionStrategyRule
+    Private _nakedSTPE As SaddamOptionStrategyRule
+
     Private _peOptionStrikeList As Dictionary(Of Decimal, StrategyRule) = Nothing
     Private _ceOptionStrikeList As Dictionary(Of Decimal, StrategyRule) = Nothing
 
     Private _signalCandle As Payload = Nothing
     Private _signalDirection As Trade.TradeExecutionDirection = Trade.TradeExecutionDirection.None
     Private _entryDone As Boolean = False
-    Private _nakedEntryDone As Boolean = False
 
     Private _bullLevel As Decimal = Decimal.MaxValue
+    Private _bullLevelTime As Date = Date.MinValue
     Private _bearLevel As Decimal = Decimal.MinValue
+    Private _bearLevelTime As Date = Date.MinValue
 
     Private _straddleStartTime As Date = Date.MinValue
 
@@ -129,11 +133,11 @@ Public Class SaddamOptionStrategyRule
                     End If
 
                     _straddleCE.ForceTakeTrade = True
-                    _straddleCE.Comment = "+++Straddle Entry CE"
+                    _straddleCE.Comment = "+++Straddle CE Entry"
                     _straddleCE.EligibleToTakeTrade = True
 
                     _straddlePE.ForceTakeTrade = True
-                    _straddlePE.Comment = "+++Straddle Entry PE"
+                    _straddlePE.Comment = "+++Straddle PE Entry"
                     _straddlePE.EligibleToTakeTrade = True
 
                     _firstTimeEntryDone = True
@@ -154,13 +158,21 @@ Public Class SaddamOptionStrategyRule
                             If _signalDirection = Trade.TradeExecutionDirection.Buy AndAlso
                                 currentMinuteCandle.PreviousCandlePayload.Close < _signalCandle.Low AndAlso
                                 currentTick.Open < currentMinuteCandle.PreviousCandlePayload.Low Then
-                                _firstTimeEntryDone = False
+                                If currentTick.Open > _bearLevel AndAlso currentTick.Open < _bullLevel Then
+                                    _firstTimeEntryDone = False
+                                End If
+                                _nakedPE.ForceCancelTrade = True
+                                _nakedPE.Comment = "Below breakout candle Naked PE Exit"
                                 _signalCandle = Nothing
                                 _signalDirection = Trade.TradeExecutionDirection.None
                             ElseIf _signalDirection = Trade.TradeExecutionDirection.Sell AndAlso
                                 currentMinuteCandle.PreviousCandlePayload.Close > _signalCandle.High AndAlso
                                 currentTick.Open > currentMinuteCandle.PreviousCandlePayload.High Then
-                                _firstTimeEntryDone = False
+                                If currentTick.Open > _bearLevel AndAlso currentTick.Open < _bullLevel Then
+                                    _firstTimeEntryDone = False
+                                End If
+                                _nakedCE.ForceCancelTrade = True
+                                _nakedCE.Comment = "Above breakout candle Naked PE Exit"
                                 _signalCandle = Nothing
                                 _signalDirection = Trade.TradeExecutionDirection.None
                             End If
@@ -172,12 +184,12 @@ Public Class SaddamOptionStrategyRule
                                     Me.AdjustmentDone = True
 
                                     _straddleCE.ForceCancelTrade = True
-                                    _straddleCE.Comment = "Bull level trigger"
+                                    _straddleCE.Comment = String.Format("Straddle CE Exit on Bull level({0} at {1})", _bullLevel, _bullLevelTime.ToString("HH:mm"))
 
                                     _straddlePE.ForceModifyTrade = True
 
                                     Dim nearestOTMPEStrike As Decimal = _peOptionStrikeList.Keys.Max(Function(x)
-                                                                                                         If x <= _bullLevel Then
+                                                                                                         If x <= _bullLevel - 100 Then
                                                                                                              Return x
                                                                                                          Else
                                                                                                              Return Decimal.MinValue
@@ -185,37 +197,34 @@ Public Class SaddamOptionStrategyRule
                                                                                                      End Function)
                                     _nakedPE = _peOptionStrikeList(nearestOTMPEStrike)
                                     _nakedPE.ForceTakeTrade = True
-                                    _nakedPE.Comment = "Naked Entry PE"
+                                    _nakedPE.Comment = String.Format("Naked PE Entry on Bull level({0} at {1})", _bullLevel, _bullLevelTime.ToString("HH:mm"))
                                     _nakedPE.EligibleToTakeTrade = True
                                 End If
                             End If
-                            If currentTick.Open > _bullLevel AndAlso Not _nakedEntryDone AndAlso
+                            If currentTick.Open > _bullLevel AndAlso _nakedSTCE Is Nothing AndAlso
                                 _supertrendColorPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate) = Color.Red Then
-                                Dim nakedPECandle As Payload = _nakedPE.GetCurrentCandle(currentTick.PayloadDate)
-                                Dim lowestDistance As Decimal = Decimal.MaxValue
-                                Dim lowestDistanceStrike As Decimal = Decimal.MinValue
-                                For Each runningStrike In _ceOptionStrikeList
-                                    Dim currentCandle As Payload = CType(runningStrike.Value, SaddamOptionStrategyRule).GetCurrentCandle(currentTick.PayloadDate)
-                                    If currentCandle IsNot Nothing Then
-                                        Dim distance As Decimal = Math.Abs(currentCandle.Open - nakedPECandle.Open)
-                                        If distance < lowestDistance Then
-                                            lowestDistance = distance
-                                            lowestDistanceStrike = runningStrike.Key
+                                If currentTick.Open <= currentMinuteCandle.PreviousCandlePayload.Low Then
+                                    Dim nakedPECandle As Payload = _nakedPE.GetCurrentCandle(currentTick.PayloadDate)
+                                    Dim lowestDistance As Decimal = Decimal.MaxValue
+                                    Dim lowestDistanceStrike As Decimal = Decimal.MinValue
+                                    For Each runningStrike In _ceOptionStrikeList
+                                        Dim currentCandle As Payload = CType(runningStrike.Value, SaddamOptionStrategyRule).GetCurrentCandle(currentTick.PayloadDate)
+                                        If currentCandle IsNot Nothing Then
+                                            Dim distance As Decimal = Math.Abs(currentCandle.Open - nakedPECandle.Open)
+                                            If distance < lowestDistance Then
+                                                lowestDistance = distance
+                                                lowestDistanceStrike = runningStrike.Key
+                                            End If
                                         End If
+                                    Next
+
+                                    If lowestDistanceStrike <> Decimal.MinValue Then
+                                        _nakedSTCE = _ceOptionStrikeList(lowestDistanceStrike)
+                                        _nakedSTCE.ForceTakeTrade = True
+                                        _nakedSTCE.Comment = "+++Low Break Supertrend Red above bull level"
+                                        _nakedSTCE.EligibleToTakeTrade = True
                                     End If
-                                Next
-
-                                If lowestDistanceStrike <> Decimal.MinValue Then
-                                    _nakedCE = _ceOptionStrikeList(lowestDistanceStrike)
-                                    _nakedCE.ForceTakeTrade = True
-                                    _nakedCE.Comment = "+++Naked Entry CE"
-                                    _nakedCE.EligibleToTakeTrade = True
-
-                                    _nakedEntryDone = True
                                 End If
-                            ElseIf _nakedEntryDone AndAlso _supertrendColorPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate) = Color.Green Then
-                                _nakedCE.ForceCancelTrade = True
-                                _nakedCE.Comment = "supertrend Color Change"
                             End If
                             If currentTick.Open > _bullLevel Then
                                 Dim dayHigh As Decimal = _inputPayload.Max(Function(x)
@@ -237,7 +246,7 @@ Public Class SaddamOptionStrategyRule
 
                                     Me.AdjustmentDone = True
                                     _peOptionStrikeList(otmPEStrike).ForceTakeTrade = True
-                                    _peOptionStrikeList(otmPEStrike).Comment = "Day High Entry***"
+                                    _peOptionStrikeList(otmPEStrike).Comment = "Day High Entry"
                                     _peOptionStrikeList(otmPEStrike).EligibleToTakeTrade = True
                                 End If
                             End If
@@ -248,12 +257,12 @@ Public Class SaddamOptionStrategyRule
                                     Me.AdjustmentDone = True
 
                                     _straddlePE.ForceCancelTrade = True
-                                    _straddlePE.Comment = "Bear level trigger"
+                                    _straddlePE.Comment = String.Format("Straddle PE Exit on Bear level({0} at {1})", _bearLevel, _bearLevelTime.ToString("HH:mm"))
 
                                     _straddleCE.ForceModifyTrade = True
 
                                     Dim nearestOTMCEStrike As Decimal = _ceOptionStrikeList.Keys.Min(Function(x)
-                                                                                                         If x >= _bearLevel Then
+                                                                                                         If x >= _bearLevel + 100 Then
                                                                                                              Return x
                                                                                                          Else
                                                                                                              Return Decimal.MaxValue
@@ -261,37 +270,34 @@ Public Class SaddamOptionStrategyRule
                                                                                                      End Function)
                                     _nakedCE = _ceOptionStrikeList(nearestOTMCEStrike)
                                     _nakedCE.ForceTakeTrade = True
-                                    _nakedCE.Comment = "Naked Entry CE"
+                                    _nakedCE.Comment = String.Format("Naked CE Entry on Bear level({0} at {1})", _bearLevel, _bearLevelTime.ToString("HH:mm"))
                                     _nakedCE.EligibleToTakeTrade = True
                                 End If
                             End If
-                            If currentTick.Open < _bearLevel AndAlso Not _nakedEntryDone AndAlso
+                            If currentTick.Open < _bearLevel AndAlso _nakedSTPE Is Nothing AndAlso
                                 _supertrendColorPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate) = Color.Green Then
-                                Dim nakedCECandle As Payload = _nakedCE.GetCurrentCandle(currentTick.PayloadDate)
-                                Dim lowestDistance As Decimal = Decimal.MaxValue
-                                Dim lowestDistanceStrike As Decimal = Decimal.MinValue
-                                For Each runningStrike In _peOptionStrikeList
-                                    Dim currentCandle As Payload = CType(runningStrike.Value, SaddamOptionStrategyRule).GetCurrentCandle(currentTick.PayloadDate)
-                                    If currentCandle IsNot Nothing Then
-                                        Dim distance As Decimal = Math.Abs(currentCandle.Open - nakedCECandle.Open)
-                                        If distance < lowestDistance Then
-                                            lowestDistance = distance
-                                            lowestDistanceStrike = runningStrike.Key
+                                If currentTick.Open >= currentMinuteCandle.PreviousCandlePayload.High Then
+                                    Dim nakedCECandle As Payload = _nakedCE.GetCurrentCandle(currentTick.PayloadDate)
+                                    Dim lowestDistance As Decimal = Decimal.MaxValue
+                                    Dim lowestDistanceStrike As Decimal = Decimal.MinValue
+                                    For Each runningStrike In _peOptionStrikeList
+                                        Dim currentCandle As Payload = CType(runningStrike.Value, SaddamOptionStrategyRule).GetCurrentCandle(currentTick.PayloadDate)
+                                        If currentCandle IsNot Nothing Then
+                                            Dim distance As Decimal = Math.Abs(currentCandle.Open - nakedCECandle.Open)
+                                            If distance < lowestDistance Then
+                                                lowestDistance = distance
+                                                lowestDistanceStrike = runningStrike.Key
+                                            End If
                                         End If
+                                    Next
+
+                                    If lowestDistanceStrike <> Decimal.MinValue Then
+                                        _nakedSTPE = _peOptionStrikeList(lowestDistanceStrike)
+                                        _nakedSTPE.ForceTakeTrade = True
+                                        _nakedSTPE.Comment = "+++High Break on Supertrend Green below bear level"
+                                        _nakedSTPE.EligibleToTakeTrade = True
                                     End If
-                                Next
-
-                                If lowestDistanceStrike <> Decimal.MinValue Then
-                                    _nakedPE = _peOptionStrikeList(lowestDistanceStrike)
-                                    _nakedPE.ForceTakeTrade = True
-                                    _nakedPE.Comment = "+++Naked Entry CE"
-                                    _nakedPE.EligibleToTakeTrade = True
-
-                                    _nakedEntryDone = True
                                 End If
-                            ElseIf _nakedEntryDone AndAlso _supertrendColorPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate) = Color.Green Then
-                                _nakedPE.ForceCancelTrade = True
-                                _nakedPE.Comment = "supertrend Color Change"
                             End If
                             If currentTick.Open < _bearLevel Then
                                 Dim dayLow As Decimal = _inputPayload.Min(Function(x)
@@ -313,10 +319,23 @@ Public Class SaddamOptionStrategyRule
 
                                     Me.AdjustmentDone = True
                                     _ceOptionStrikeList(otmCEStrike).ForceTakeTrade = True
-                                    _ceOptionStrikeList(otmCEStrike).Comment = "Day Low Entry***"
+                                    _ceOptionStrikeList(otmCEStrike).Comment = "Day Low Entry"
                                     _ceOptionStrikeList(otmCEStrike).EligibleToTakeTrade = True
                                 End If
                             End If
+                        End If
+                    End If
+
+                    If _supertrendColorPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate) = Color.Green AndAlso _nakedSTCE IsNot Nothing Then
+                        If currentTick.Open > currentMinuteCandle.PreviousCandlePayload.High Then
+                            _nakedSTCE.ForceCancelTrade = True
+                            _nakedSTCE.Comment = "High Break on Supertrend Green"
+                        End If
+                    End If
+                    If _supertrendColorPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate) = Color.Red AndAlso _nakedSTPE IsNot Nothing Then
+                        If currentTick.Open < currentMinuteCandle.PreviousCandlePayload.Low Then
+                            _nakedSTPE.ForceCancelTrade = True
+                            _nakedSTPE.Comment = "Low Break on Supertrend Red"
                         End If
                     End If
 
@@ -327,7 +346,6 @@ Public Class SaddamOptionStrategyRule
                             _signalDirection = Trade.TradeExecutionDirection.Buy
 
                             _entryDone = False
-                            _nakedEntryDone = False
                         End If
                     ElseIf currentMinuteCandle.PreviousCandlePayload.Close < _bearLevel AndAlso
                         _signalDirection <> Trade.TradeExecutionDirection.Sell Then
@@ -336,17 +354,22 @@ Public Class SaddamOptionStrategyRule
                             _signalDirection = Trade.TradeExecutionDirection.Sell
 
                             _entryDone = False
-                            _nakedEntryDone = False
                         End If
                     End If
 
                     If _bullLevel = Decimal.MaxValue Then
                         Dim bullCandle As Payload = GetBullCandle(currentMinuteCandle)
-                        If bullCandle IsNot Nothing Then _bullLevel = bullCandle.High
+                        If bullCandle IsNot Nothing Then
+                            _bullLevel = bullCandle.High
+                            _bullLevelTime = bullCandle.PayloadDate
+                        End If
                     End If
                     If _bearLevel = Decimal.MinValue Then
                         Dim bearCandle As Payload = GetBearCandle(currentMinuteCandle)
-                        If bearCandle IsNot Nothing Then _bearLevel = bearCandle.Low
+                        If bearCandle IsNot Nothing Then
+                            _bearLevel = bearCandle.Low
+                            _bearLevelTime = bearCandle.PayloadDate
+                        End If
                     End If
                 End If
             End If
@@ -360,10 +383,18 @@ Public Class SaddamOptionStrategyRule
         If Not Me.Controller Then
             If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
                 If Me.ForceCancelTrade Then
-                    ret = New Tuple(Of Boolean, String)(True, Me.Comment)
-                    Me.ForceCancelTrade = False
+                    If Me.Comment.ToUpper.Contains("NAKED") AndAlso currentTrade.Supporting1.ToUpper.Contains("NAKED") Then
+                        ret = New Tuple(Of Boolean, String)(True, Me.Comment)
+                        Me.ForceCancelTrade = False
+                    ElseIf Me.Comment.ToUpper.Contains("SUPERTREND") AndAlso currentTrade.Supporting1.ToUpper.Contains("SUPERTREND") Then
+                        ret = New Tuple(Of Boolean, String)(True, Me.Comment)
+                        Me.ForceCancelTrade = False
+                    ElseIf Me.Comment.ToUpper.Contains("STRADDLE") AndAlso currentTrade.Supporting1.ToUpper.Contains("STRADDLE") Then
+                        ret = New Tuple(Of Boolean, String)(True, Me.Comment)
+                        Me.ForceCancelTrade = False
+                    End If
                 Else
-                    If currentTrade.PotentialStopLoss <= currentTrade.EntryPrice + _stoplossPoint AndAlso Not currentTrade.Supporting1.EndsWith("***") Then
+                    If currentTrade.PotentialStopLoss <= currentTrade.EntryPrice + _stoplossPoint AndAlso currentTrade.Supporting1.ToUpper.Contains("STRADDLE") Then
                         Dim currentMinuteCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
                         Dim ema As Decimal = _EMAPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
                         If currentMinuteCandle.PreviousCandlePayload.Close > ema AndAlso
@@ -454,7 +485,7 @@ Public Class SaddamOptionStrategyRule
                                                                                 Return Decimal.MinValue
                                                                             End If
                                                                         End Function)
-                            If rsi > dayHighRSI - 20 Then
+                            If rsi < dayHighRSI - 20 Then
                                 ret = potentialSignalCandle
                             End If
                         End If

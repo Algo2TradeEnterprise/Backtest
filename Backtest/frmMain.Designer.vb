@@ -98,7 +98,7 @@ Partial Class frmMain
         '
         Me.cmbRule.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.cmbRule.FormattingEnabled = True
-        Me.cmbRule.Items.AddRange(New Object() {"Option Ladder", "Top Gainer Losser Every Slab", "Top Gainer Looser", "Previous Day High Low Sell", "Opening Price Options ATR Trailing Strategy"})
+        Me.cmbRule.Items.AddRange(New Object() {"Saddam Option Strategy"})
         Me.cmbRule.Location = New System.Drawing.Point(123, 30)
         Me.cmbRule.Margin = New System.Windows.Forms.Padding(3, 2, 3, 2)
         Me.cmbRule.Name = "cmbRule"
