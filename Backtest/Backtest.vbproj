@@ -113,6 +113,7 @@
     <Compile Include="Strategy Helper\Trade.vb" />
     <Compile Include="Strategy Rule MIS\AjitJhaOptionMultiExitStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\AjitJhaOptionStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\AjitJhaORBOptionStrategyRule.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="frmMain.resx">

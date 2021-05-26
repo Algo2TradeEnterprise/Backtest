@@ -113,6 +113,8 @@ Namespace StrategyHelper
                                             stockRule = New AjitJhaOptionStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, stockList(stock).Controller, _canceller)
                                         Case 1
                                             stockRule = New AjitJhaOptionMultiExitStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, stockList(stock).Controller, _canceller)
+                                        Case 2
+                                            stockRule = New AjitJhaORBOptionStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, stockList(stock).Controller, _canceller)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
