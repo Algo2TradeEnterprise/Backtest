@@ -117,6 +117,7 @@ Public Class SaddamOptionStrategyRule
 
             ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
             Me.ForceTakeTrade = False
+            Me.ForceCancelTrade = False
         ElseIf Me.Controller Then
             If currentMinuteCandle IsNot Nothing AndAlso currentMinuteCandle.PreviousCandlePayload IsNot Nothing AndAlso
                 currentMinuteCandle.PayloadDate >= _tradeStartTime AndAlso Me.EligibleToTakeTrade Then
