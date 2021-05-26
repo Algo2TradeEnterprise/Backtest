@@ -41,8 +41,8 @@ Public Class ORBStrategyRule
             currentMinuteCandle.PreviousCandlePayload.PayloadDate.Date = _tradingDate.Date AndAlso
             Not _parentStrategy.IsTradeOpen(currentMinuteCandle, Trade.TypeOfTrade.MIS) AndAlso
             Not _parentStrategy.IsTradeActive(currentMinuteCandle, Trade.TypeOfTrade.MIS) Then
-            Dim lastExitTrade As Trade = _parentStrategy.GetLastExitTradeOfTheStock(currentMinuteCandle, Trade.TypeOfTrade.MIS)
-            If lastExitTrade Is Nothing Then
+            Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandle, Trade.TypeOfTrade.MIS)
+            If lastExecutedTrade Is Nothing Then
                 Dim signalCandle As Payload = currentMinuteCandle.PreviousCandlePayload
                 If currentTick.Open < signalCandle.High Then
                     Dim parameter As PlaceOrderParameters = New PlaceOrderParameters With {
@@ -113,8 +113,8 @@ Public Class ORBStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Open Then
             Dim currentMinuteCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
-            Dim lastExitTrade As Trade = _parentStrategy.GetLastExitTradeOfTheStock(currentMinuteCandle, Trade.TypeOfTrade.MIS)
-            If lastExitTrade IsNot Nothing AndAlso lastExitTrade.PLPoint > 0 Then
+            Dim lastExecutedTrade As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentMinuteCandle, Trade.TypeOfTrade.MIS)
+            If lastExecutedTrade IsNot Nothing Then
                 ret = New Tuple(Of Boolean, String)(True, "Invalid Trade")
             End If
         End If

@@ -278,7 +278,7 @@ Public Class frmMain
                             tick = 0.0025
                         Case Trade.TypeOfStock.Futures
                             database = Common.DataBaseTable.Intraday_Futures
-                            margin = 1
+                            margin = 4
                             tick = 0.05
                     End Select
 
@@ -305,7 +305,7 @@ Public Class frmMain
                         With backtestStrategy
                             .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Banknifty Futures.csv")
 
-                            .AllowBothDirectionEntryAtSameTime = True
+                            .AllowBothDirectionEntryAtSameTime = False
                             .TrailingStoploss = False
                             .TickBasedStrategy = True
                             .RuleNumber = ruleNumber
@@ -319,7 +319,7 @@ Public Class frmMain
 
                             .NumberOfTradeableStockPerDay = 1
 
-                            .NumberOfTradesPerStockPerDay = 2
+                            .NumberOfTradesPerStockPerDay = 1
 
                             .StockMaxProfitPercentagePerDay = Decimal.MaxValue
                             .StockMaxLossPercentagePerDay = Decimal.MinValue
