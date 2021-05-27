@@ -153,7 +153,7 @@ Public Class AjitJhaORBOptionStrategyRule
                             Not _tradedSwingHighLevels.Contains(swingHigh.PayloadDate) AndAlso currentTick.Open >= swingHigh.High Then
                             _tradedSwingHighLevels.Add(swingHigh.PayloadDate)
                             takeTrade = True
-                            condition = String.Format("Swing High({0}) triggered", swingHigh)
+                            condition = String.Format("Swing High({0}) triggered", swingHigh.PayloadDate.ToString("HH:mm"))
                         End If
                     End If
                     If Not _buyORBTriggered AndAlso Not takeTrade AndAlso currentTick.Open >= _buyLevel Then
@@ -184,7 +184,7 @@ Public Class AjitJhaORBOptionStrategyRule
                             Not _tradedSwingLowLevels.Contains(swingLow.PayloadDate) AndAlso currentTick.Open <= swingLow.Low Then
                             _tradedSwingLowLevels.Add(swingLow.PayloadDate)
                             takeTrade = True
-                            condition = String.Format("Swing Low({0}) triggered", swingLow)
+                            condition = String.Format("Swing Low({0}) triggered", swingLow.PayloadDate.ToString("HH:mm"))
                         End If
                     End If
                     If Not _sellORBTriggered AndAlso Not takeTrade AndAlso currentTick.Open <= _sellLevel Then
