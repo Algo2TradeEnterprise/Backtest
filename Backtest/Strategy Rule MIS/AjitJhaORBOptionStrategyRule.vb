@@ -142,6 +142,12 @@ Public Class AjitJhaORBOptionStrategyRule
 
                 ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter1, parameter2})
                 Me.ForceTakeTrade = False
+                Me.ForceCancelTrade = False
+                If Me.Remarks.ToUpper = "OPENING RANGE BUY BREAKOUT" Then
+                    _buyORBTriggered = True
+                ElseIf Me.Remarks.ToUpper = "OPENING RANGE SELL BREAKOUT" Then
+                    _sellORBTriggered = True
+                End If
             ElseIf Controller Then
                 If Not IsActiveTrade(Trade.TradeExecutionDirection.Buy) Then
                     Dim takeTrade As Boolean = False
@@ -155,7 +161,6 @@ Public Class AjitJhaORBOptionStrategyRule
                         End If
                     End If
                     If Not _buyORBTriggered AndAlso Not takeTrade AndAlso currentTick.Open >= _buyLevel Then
-                        _buyORBTriggered = True
                         takeTrade = True
                         condition = "Opening Range Buy Breakout"
                     End If
@@ -184,7 +189,6 @@ Public Class AjitJhaORBOptionStrategyRule
                         End If
                     End If
                     If Not _sellORBTriggered AndAlso Not takeTrade AndAlso currentTick.Open <= _sellLevel Then
-                        _sellORBTriggered = True
                         takeTrade = True
                         condition = "Opening Range Sell Breakout"
                     End If
