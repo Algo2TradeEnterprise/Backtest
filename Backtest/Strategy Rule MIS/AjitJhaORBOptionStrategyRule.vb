@@ -20,14 +20,14 @@ Public Class AjitJhaORBOptionStrategyRule
 
     Private _buyLevel As Decimal = Decimal.MaxValue
     Private _sellLevel As Decimal = Decimal.MinValue
-    Private _swingHighPayload As Dictionary(Of Date, Decimal) = Nothing
-    Private _swingLowPayload As Dictionary(Of Date, Decimal) = Nothing
+    Private _swingHighPayload As Dictionary(Of Date, Payload) = Nothing
+    Private _swingLowPayload As Dictionary(Of Date, Payload) = Nothing
 
     Private _buyORBTriggered As Boolean = False
     Private _sellORBTriggered As Boolean = False
 
-    Private _tradedSwingHighLevels As List(Of Decimal)
-    Private _tradedSwingLowLevels As List(Of Decimal)
+    Private _tradedSwingHighLevels As List(Of Date)
+    Private _tradedSwingLowLevels As List(Of Date)
 
     Private _peOptionStrikeList As Dictionary(Of Decimal, AjitJhaORBOptionStrategyRule) = Nothing
     Private _ceOptionStrikeList As Dictionary(Of Decimal, AjitJhaORBOptionStrategyRule) = Nothing
@@ -70,8 +70,8 @@ Public Class AjitJhaORBOptionStrategyRule
                                                End If
                                            End Function)
 
-            _tradedSwingHighLevels = New List(Of Decimal)
-            _tradedSwingLowLevels = New List(Of Decimal)
+            _tradedSwingHighLevels = New List(Of Date)
+            _tradedSwingLowLevels = New List(Of Date)
         End If
     End Sub
 
@@ -148,9 +148,10 @@ Public Class AjitJhaORBOptionStrategyRule
                     Dim takeTrade As Boolean = False
                     Dim condition As String = Nothing
                     If _buyORBTriggered OrElse _sellORBTriggered Then
-                        Dim swingHigh As Decimal = _swingHighPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
-                        If Not _tradedSwingHighLevels.Contains(swingHigh) AndAlso currentTick.Open >= swingHigh Then
-                            _tradedSwingHighLevels.Add(swingHigh)
+                        Dim swingHigh As Payload = _swingHighPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
+                        If swingHigh IsNot Nothing AndAlso swingHigh.PayloadDate.Date = _tradingDate.Date AndAlso
+                            Not _tradedSwingHighLevels.Contains(swingHigh.PayloadDate) AndAlso currentTick.Open >= swingHigh.High Then
+                            _tradedSwingHighLevels.Add(swingHigh.PayloadDate)
                             takeTrade = True
                             condition = String.Format("Swing High({0}) triggered", swingHigh)
                         End If
@@ -178,9 +179,10 @@ Public Class AjitJhaORBOptionStrategyRule
                     Dim takeTrade As Boolean = False
                     Dim condition As String = Nothing
                     If _buyORBTriggered OrElse _sellORBTriggered Then
-                        Dim swingLow As Decimal = _swingLowPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
-                        If Not _tradedSwingLowLevels.Contains(swingLow) AndAlso currentTick.Open <= swingLow Then
-                            _tradedSwingLowLevels.Add(swingLow)
+                        Dim swingLow As Payload = _swingLowPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
+                        If swingLow IsNot Nothing AndAlso swingLow.PayloadDate.Date = _tradingDate.Date AndAlso
+                            Not _tradedSwingLowLevels.Contains(swingLow.PayloadDate) AndAlso currentTick.Open <= swingLow.Low Then
+                            _tradedSwingLowLevels.Add(swingLow.PayloadDate)
                             takeTrade = True
                             condition = String.Format("Swing Low({0}) triggered", swingLow)
                         End If
@@ -268,11 +270,11 @@ Public Class AjitJhaORBOptionStrategyRule
     End Function
 
 #Region "Indicator"
-    Private Sub CalculateSwingHighLow(inputPayload As Dictionary(Of Date, Payload), ByRef outputHighPayload As Dictionary(Of Date, Decimal), ByRef outputLowPayload As Dictionary(Of Date, Decimal))
+    Private Sub CalculateSwingHighLow(inputPayload As Dictionary(Of Date, Payload), ByRef outputHighPayload As Dictionary(Of Date, Payload), ByRef outputLowPayload As Dictionary(Of Date, Payload))
         If inputPayload IsNot Nothing AndAlso inputPayload.Count > 0 Then
             For Each runningPayload In inputPayload.Keys
-                Dim swingHigh As Decimal = Decimal.MaxValue
-                Dim swingLow As Decimal = Decimal.MinValue
+                Dim swingHigh As Payload = Nothing
+                Dim swingLow As Payload = Nothing
 
                 Dim previousnInputPayload As List(Of KeyValuePair(Of Date, Payload)) = Common.GetSubPayload(inputPayload, runningPayload, 7, True)
                 If previousnInputPayload IsNot Nothing AndAlso previousnInputPayload.Count = 7 Then
@@ -306,27 +308,20 @@ Public Class AjitJhaORBOptionStrategyRule
                                                                            End If
                                                                        End Function)
                     If middleCandle.Value.High > previousHigh AndAlso middleCandle.Value.High > nextHigh Then
-                        swingHigh = middleCandle.Value.High
+                        swingHigh = middleCandle.Value
                     Else
                         swingHigh = outputHighPayload(inputPayload(runningPayload).PreviousCandlePayload.PayloadDate)
                     End If
                     If middleCandle.Value.Low < previousLow AndAlso middleCandle.Value.Low < nextLow Then
-                        swingLow = middleCandle.Value.Low
+                        swingLow = middleCandle.Value
                     Else
                         swingLow = outputLowPayload(inputPayload(runningPayload).PreviousCandlePayload.PayloadDate)
                     End If
-                ElseIf previousnInputPayload IsNot Nothing Then
-                    swingHigh = previousnInputPayload.Max(Function(x)
-                                                              Return x.Value.High
-                                                          End Function)
-                    swingLow = previousnInputPayload.Min(Function(x)
-                                                             Return x.Value.Low
-                                                         End Function)
                 End If
 
-                If outputHighPayload Is Nothing Then outputHighPayload = New Dictionary(Of Date, Decimal)
+                If outputHighPayload Is Nothing Then outputHighPayload = New Dictionary(Of Date, Payload)
                 outputHighPayload.Add(runningPayload, swingHigh)
-                If outputLowPayload Is Nothing Then outputLowPayload = New Dictionary(Of Date, Decimal)
+                If outputLowPayload Is Nothing Then outputLowPayload = New Dictionary(Of Date, Payload)
                 outputLowPayload.Add(runningPayload, swingLow)
             Next
         End If
