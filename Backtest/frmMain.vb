@@ -494,7 +494,7 @@ Public Class frmMain
 
                             .AllowBothDirectionEntryAtSameTime = True
                             .TrailingStoploss = False
-                            .TickBasedStrategy = False
+                            .TickBasedStrategy = True
                             .RuleNumber = ruleNumber
 
                             .RuleEntityData = New AjitJhaORBOptionStrategyRule.StrategyRuleEntities With

@@ -26,6 +26,9 @@ Public Class AjitJhaORBOptionStrategyRule
     Private _buyORBTriggered As Boolean = False
     Private _sellORBTriggered As Boolean = False
 
+    Private _tradedSwingHighLevels As List(Of Decimal)
+    Private _tradedSwingLowLevels As List(Of Decimal)
+
     Private _peOptionStrikeList As Dictionary(Of Decimal, AjitJhaORBOptionStrategyRule) = Nothing
     Private _ceOptionStrikeList As Dictionary(Of Decimal, AjitJhaORBOptionStrategyRule) = Nothing
 
@@ -66,6 +69,9 @@ Public Class AjitJhaORBOptionStrategyRule
                                                    Return Decimal.MaxValue
                                                End If
                                            End Function)
+
+            _tradedSwingHighLevels = New List(Of Decimal)
+            _tradedSwingLowLevels = New List(Of Decimal)
         End If
     End Sub
 
@@ -142,7 +148,8 @@ Public Class AjitJhaORBOptionStrategyRule
                     Dim condition As String = Nothing
                     If _buyORBTriggered OrElse _sellORBTriggered Then
                         Dim swingHigh As Decimal = _swingHighPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
-                        If currentTick.Open >= swingHigh Then
+                        If Not _tradedSwingHighLevels.Contains(swingHigh) AndAlso currentTick.Open >= swingHigh Then
+                            _tradedSwingHighLevels.Add(swingHigh)
                             takeTrade = True
                             condition = String.Format("Swing High({0}) triggered", swingHigh)
                         End If
@@ -170,7 +177,8 @@ Public Class AjitJhaORBOptionStrategyRule
                     Dim condition As String = Nothing
                     If _buyORBTriggered OrElse _sellORBTriggered Then
                         Dim swingLow As Decimal = _swingLowPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
-                        If currentTick.Open <= swingLow Then
+                        If Not _tradedSwingLowLevels.Contains(swingLow) AndAlso currentTick.Open <= swingLow Then
+                            _tradedSwingLowLevels.Add(swingLow)
                             takeTrade = True
                             condition = String.Format("Swing Low({0}) triggered", swingLow)
                         End If
