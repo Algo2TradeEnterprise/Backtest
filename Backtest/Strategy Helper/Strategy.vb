@@ -614,6 +614,42 @@ Namespace StrategyHelper
             Return ret
         End Function
 
+        Public Function GetOverallLastExitTrade(ByVal tradingDate As Date) As Trade
+            Dim ret As Trade = Nothing
+            Dim allTrades As List(Of Trade) = Nothing
+            If TradeType = Trade.TypeOfTrade.MIS Then
+                If TradesTaken IsNot Nothing AndAlso TradesTaken.ContainsKey(tradingDate) Then
+                    For Each runningStock In TradesTaken(tradingDate).Keys
+                        For Each runningTrade In TradesTaken(tradingDate)(runningStock)
+                            If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
+                                If allTrades Is Nothing Then allTrades = New List(Of Trade)
+                                allTrades.Add(runningTrade)
+                            End If
+                        Next
+                    Next
+                End If
+            ElseIf TradeType = Trade.TypeOfTrade.CNC Then
+                If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
+                    For Each runningDate In TradesTaken.Keys
+                        For Each runningStock In TradesTaken(runningDate).Keys
+                            For Each runningTrade In TradesTaken(runningDate)(runningStock)
+                                If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
+                                    If allTrades Is Nothing Then allTrades = New List(Of Trade)
+                                    allTrades.Add(runningTrade)
+                                End If
+                            Next
+                        Next
+                    Next
+                End If
+            End If
+            If allTrades IsNot Nothing AndAlso allTrades.Count > 0 Then
+                ret = allTrades.OrderBy(Function(x)
+                                            Return x.ExitTime
+                                        End Function).LastOrDefault
+            End If
+            Return ret
+        End Function
+
         Public Sub ExitTradeByForce(ByVal currentTrade As Trade, ByVal currentPayload As Payload, ByVal exitRemark As String)
             If currentTrade Is Nothing Then Throw New ApplicationException("Supplied trade is nothing, cannot exit")
 

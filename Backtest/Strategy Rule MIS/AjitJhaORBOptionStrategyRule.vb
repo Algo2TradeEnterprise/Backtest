@@ -26,9 +26,6 @@ Public Class AjitJhaORBOptionStrategyRule
     Private _buyORBTriggered As Boolean = False
     Private _sellORBTriggered As Boolean = False
 
-    Private _tradedSwingHighLevels As List(Of Date)
-    Private _tradedSwingLowLevels As List(Of Date)
-
     Private _peOptionStrikeList As Dictionary(Of Decimal, AjitJhaORBOptionStrategyRule) = Nothing
     Private _ceOptionStrikeList As Dictionary(Of Decimal, AjitJhaORBOptionStrategyRule) = Nothing
 
@@ -69,9 +66,6 @@ Public Class AjitJhaORBOptionStrategyRule
                                                    Return Decimal.MaxValue
                                                End If
                                            End Function)
-
-            _tradedSwingHighLevels = New List(Of Date)
-            _tradedSwingLowLevels = New List(Of Date)
         End If
     End Sub
 
@@ -148,12 +142,13 @@ Public Class AjitJhaORBOptionStrategyRule
                     Dim takeTrade As Boolean = False
                     Dim condition As String = Nothing
                     If _buyORBTriggered OrElse _sellORBTriggered Then
-                        Dim swingHigh As Payload = _swingHighPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
-                        If swingHigh IsNot Nothing AndAlso swingHigh.PayloadDate.Date = _tradingDate.Date AndAlso
-                            Not _tradedSwingHighLevels.Contains(swingHigh.PayloadDate) AndAlso currentTick.Open >= swingHigh.High Then
-                            _tradedSwingHighLevels.Add(swingHigh.PayloadDate)
-                            takeTrade = True
-                            condition = String.Format("Swing High({0}) triggered", swingHigh.PayloadDate.ToString("HH:mm"))
+                        Dim lastExitTrade As Trade = _parentStrategy.GetOverallLastExitTrade(_tradingDate)
+                        If lastExitTrade IsNot Nothing Then
+                            Dim swingHigh As Payload = _swingHighPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
+                            If swingHigh IsNot Nothing AndAlso swingHigh.PayloadDate > lastExitTrade.ExitTime AndAlso currentTick.Open >= swingHigh.High Then
+                                takeTrade = True
+                                condition = String.Format("Swing High({0}) triggered", swingHigh.PayloadDate.ToString("HH:mm"))
+                            End If
                         End If
                     End If
                     If Not _buyORBTriggered AndAlso Not takeTrade AndAlso currentTick.Open >= _buyLevel Then
@@ -179,12 +174,13 @@ Public Class AjitJhaORBOptionStrategyRule
                     Dim takeTrade As Boolean = False
                     Dim condition As String = Nothing
                     If _buyORBTriggered OrElse _sellORBTriggered Then
-                        Dim swingLow As Payload = _swingLowPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
-                        If swingLow IsNot Nothing AndAlso swingLow.PayloadDate.Date = _tradingDate.Date AndAlso
-                            Not _tradedSwingLowLevels.Contains(swingLow.PayloadDate) AndAlso currentTick.Open <= swingLow.Low Then
-                            _tradedSwingLowLevels.Add(swingLow.PayloadDate)
-                            takeTrade = True
-                            condition = String.Format("Swing Low({0}) triggered", swingLow.PayloadDate.ToString("HH:mm"))
+                        Dim lastExitTrade As Trade = _parentStrategy.GetOverallLastExitTrade(_tradingDate)
+                        If lastExitTrade IsNot Nothing Then
+                            Dim swingLow As Payload = _swingLowPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
+                            If swingLow IsNot Nothing AndAlso swingLow.PayloadDate > lastExitTrade.ExitTime AndAlso currentTick.Open <= swingLow.Low Then
+                                takeTrade = True
+                                condition = String.Format("Swing Low({0}) triggered", swingLow.PayloadDate.ToString("HH:mm"))
+                            End If
                         End If
                     End If
                     If Not _sellORBTriggered AndAlso Not takeTrade AndAlso currentTick.Open <= _sellLevel Then
