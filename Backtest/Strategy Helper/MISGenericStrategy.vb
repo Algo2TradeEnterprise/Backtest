@@ -607,32 +607,69 @@ Namespace StrategyHelper
                     dt = csvHelper.GetDataTableFromCSV(1)
                 End Using
                 If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
-                    For i = 0 To dt.Rows.Count - 1
-                        Dim rowDate As Date = dt.Rows(i).Item("Date")
-                        If rowDate.Date = tradingDate.Date Then
-                            Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
-                            Dim lotSize As Integer = dt.Rows(i).Item("Lot Size")
+                    Select Case Me.RuleNumber
+                        Case 0, 1
+                            For i = 0 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i).Item("Date")
+                                If rowDate.Date = tradingDate.Date Then
+                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
+                                    Dim lotSize As Integer = dt.Rows(i).Item("Lot Size")
 
-                            Dim detailsOfStock As StockDetails = New StockDetails With
-                                       {.StockName = tradingSymbol,
-                                        .LotSize = lotSize,
-                                        .Controller = False,
-                                        .OptionStock = True,
-                                        .EligibleToTakeTrade = True}
+                                    Dim detailsOfStock As StockDetails = New StockDetails With
+                                               {.StockName = tradingSymbol,
+                                                .LotSize = lotSize,
+                                                .Controller = False,
+                                                .OptionStock = True,
+                                                .EligibleToTakeTrade = True}
 
-                            If ret Is Nothing Then
-                                ret = New Dictionary(Of String, StockDetails)
-                                Dim controllerStock As StockDetails = New StockDetails With
-                                       {.StockName = "NIFTY BANK",
-                                        .LotSize = lotSize,
-                                        .Controller = True,
-                                        .OptionStock = False,
-                                        .EligibleToTakeTrade = True}
-                                ret.Add(controllerStock.StockName, controllerStock)
-                            End If
-                            ret.Add(detailsOfStock.StockName, detailsOfStock)
-                        End If
-                    Next
+                                    If ret Is Nothing Then
+                                        ret = New Dictionary(Of String, StockDetails)
+                                        Dim controllerStock As StockDetails = New StockDetails With
+                                               {.StockName = "NIFTY BANK",
+                                                .LotSize = lotSize,
+                                                .Controller = True,
+                                                .OptionStock = False,
+                                                .EligibleToTakeTrade = True}
+                                        ret.Add(controllerStock.StockName, controllerStock)
+                                    End If
+                                    ret.Add(detailsOfStock.StockName, detailsOfStock)
+                                End If
+                            Next
+                        Case 2
+                            For i = 0 To dt.Rows.Count - 1
+                                Dim rowDate As Date = dt.Rows(i).Item("Date")
+                                If rowDate.Date = tradingDate.Date Then
+                                    Dim tradingSymbol As String = dt.Rows(i).Item("Trading Symbol")
+                                    Dim lotSize As Integer = dt.Rows(i).Item("Lot Size")
+
+                                    Dim detailsOfStock As StockDetails = New StockDetails With
+                                               {.StockName = tradingSymbol,
+                                                .LotSize = lotSize,
+                                                .Controller = False,
+                                                .OptionStock = True,
+                                                .EligibleToTakeTrade = True}
+
+                                    If ret Is Nothing Then
+                                        ret = New Dictionary(Of String, StockDetails)
+                                        Dim futSymbol As String = Cmn.GetCurrentTradingSymbol(Common.DataBaseTable.EOD_Futures, tradingDate.Date, "BANKNIFTY")
+                                        If futSymbol IsNot Nothing Then
+                                            Dim controllerStock As StockDetails = New StockDetails With
+                                               {.StockName = futSymbol,
+                                                .LotSize = lotSize,
+                                                .Controller = True,
+                                                .OptionStock = False,
+                                                .EligibleToTakeTrade = True}
+                                            ret.Add(controllerStock.StockName, controllerStock)
+                                        Else
+                                            Exit For
+                                        End If
+                                    End If
+                                    ret.Add(detailsOfStock.StockName, detailsOfStock)
+                                End If
+                            Next
+                        Case Else
+                            Throw New NotImplementedException
+                    End Select
                 End If
             End If
             Return ret

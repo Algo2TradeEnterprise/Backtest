@@ -447,7 +447,7 @@ Public Class frmMain
 #End Region
                 Case 2
 #Region "Ajit Jha ORB Option Strategy"
-                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
+                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Futures
                     Dim database As Common.DataBaseTable = Common.DataBaseTable.None
                     Dim margin As Decimal = 0
                     Dim tick As Decimal = 0
