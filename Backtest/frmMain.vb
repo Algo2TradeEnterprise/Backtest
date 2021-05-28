@@ -271,14 +271,14 @@ Public Class frmMain
             Else
                 sourceData = Strategy.SourceOfData.Database
             End If
-            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Futures
+            Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
             Dim database As Common.DataBaseTable = Common.DataBaseTable.None
             Dim margin As Decimal = 0
             Dim tick As Decimal = 0
             Select Case stockType
                 Case Trade.TypeOfStock.Cash
                     database = Common.DataBaseTable.Intraday_Cash
-                    margin = 10
+                    margin = 2
                     tick = 0.05
                 Case Trade.TypeOfStock.Commodity
                     database = Common.DataBaseTable.Intraday_Commodity
@@ -334,7 +334,8 @@ Public Class frmMain
                                      .ExitAtStockSlabMTM = False,
                                      .TypeOfSlabMTM = LowStoplossSlabBasedStrategyRule.SlabMTMType.Net,
                                      .SlabMTMStoploss = 3,
-                                     .SlabMTMTarget = 5
+                                     .SlabMTMTarget = 5,
+                                     .MaxLossPerTrade = -700
                                     }
 
                                 .NumberOfTradeableStockPerDay = 5

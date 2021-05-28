@@ -574,14 +574,14 @@ Namespace StrategyHelper
                                                                                     End Function)
                             If previousSlab IsNot Nothing AndAlso previousSlab.Count > 0 Then
                                 Dim projectedSlab As Decimal = previousSlab.LastOrDefault
-                                Dim buffer As Decimal = CalculateBuffer(previousDayClose, Utilities.Numbers.NumberManipulation.RoundOfType.Floor)
-                                Dim slPoint As Decimal = projectedSlab + 2 * buffer
-                                Dim pl As Decimal = CalculatePL(instrumentName, previousDayClose, previousDayClose - slPoint, lotSize, lotSize, Me.StockType)
-                                If Math.Abs(pl) >= 600 AndAlso Math.Abs(pl) <= 1200 Then
-                                    slab = projectedSlab
-                                Else
-                                    slab = Decimal.MinValue
-                                End If
+                                'Dim buffer As Decimal = CalculateBuffer(previousDayClose, Utilities.Numbers.NumberManipulation.RoundOfType.Floor)
+                                'Dim slPoint As Decimal = projectedSlab + 2 * buffer
+                                'Dim pl As Decimal = CalculatePL(instrumentName, previousDayClose, previousDayClose - slPoint, lotSize, lotSize, Me.StockType)
+                                'If Math.Abs(pl) >= 600 AndAlso Math.Abs(pl) <= 1200 Then
+                                slab = projectedSlab
+                                'Else
+                                '    slab = Decimal.MinValue
+                                'End If
                             Else
                                 slab = Decimal.MinValue
                             End If

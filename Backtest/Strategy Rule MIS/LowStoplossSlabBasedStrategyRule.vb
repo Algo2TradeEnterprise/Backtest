@@ -20,6 +20,7 @@ Public Class LowStoplossSlabBasedStrategyRule
         Public TypeOfSlabMTM As SlabMTMType
         Public SlabMTMTarget As Decimal
         Public SlabMTMStoploss As Decimal
+        Public MaxLossPerTrade As Decimal
     End Class
 #End Region
 
@@ -66,7 +67,6 @@ Public Class LowStoplossSlabBasedStrategyRule
             If signal IsNot Nothing AndAlso signal.Item1 Then
                 Dim lastExecutedOrder As Trade = _parentStrategy.GetLastExecutedTradeOfTheStock(currentTick, Trade.TypeOfTrade.MIS)
                 If lastExecutedOrder Is Nothing OrElse lastExecutedOrder.SignalCandle.PayloadDate <> signal.Item3.PayloadDate Then
-                    Dim quantity As Decimal = Me.LotSize
                     Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signal.Item2, RoundOfType.Floor)
                     Dim slPoint As Decimal = _slab * _userInputs.StoplossSlabMultiplier
                     Dim target As Decimal = _slab * _userInputs.TargetSlabMultiplier
@@ -74,6 +74,7 @@ Public Class LowStoplossSlabBasedStrategyRule
                         If Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) AndAlso
                             Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Buy) Then
                             If currentTick.Open < signal.Item2 + buffer Then
+                                Dim quantity As Decimal = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, signal.Item2 + buffer, signal.Item2 - slPoint - buffer, _userInputs.MaxLossPerTrade, _parentStrategy.StockType)
                                 parameter = New PlaceOrderParameters With {
                                             .EntryPrice = signal.Item2 + buffer,
                                             .EntryDirection = Trade.TradeExecutionDirection.Buy,
@@ -92,6 +93,7 @@ Public Class LowStoplossSlabBasedStrategyRule
                         If Not _parentStrategy.IsTradeActive(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) AndAlso
                             Not _parentStrategy.IsTradeOpen(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionDirection.Sell) Then
                             If currentTick.Open > signal.Item2 - buffer Then
+                                Dim quantity As Decimal = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, signal.Item2 + slPoint + buffer, signal.Item2 - buffer, _userInputs.MaxLossPerTrade, _parentStrategy.StockType)
                                 parameter = New PlaceOrderParameters With {
                                             .EntryPrice = signal.Item2 - buffer,
                                             .EntryDirection = Trade.TradeExecutionDirection.Sell,
