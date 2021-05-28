@@ -317,7 +317,7 @@ Public Class frmMain
                             AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
 
                             With backtestStrategy
-                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Stock.csv")
+                                .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "ATR Based All Cash Stock.csv")
                                 If .DataSource = Strategy.SourceOfData.Live Then
                                     .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, String.Format("Backtest Stocks {0}.csv", Now.ToString("dd_MM_yyyy")))
                                 End If
