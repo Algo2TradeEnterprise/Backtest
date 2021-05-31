@@ -144,7 +144,7 @@ Public Class AjitJhaORBOptionStrategyRule
                     Dim lastEntryTrade As Trade = _parentStrategy.GetOverallLastEntryTrade(_tradingDate)
                     If _buyORBTriggered OrElse _sellORBTriggered Then
                         Dim swingHigh As Payload = _swingHighPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
-                        If swingHigh IsNot Nothing AndAlso currentTick.Open >= swingHigh.High AndAlso swingHigh.PayloadDate > lastEntryTrade.SignalCandle.PayloadDate AndAlso
+                        If swingHigh IsNot Nothing AndAlso currentTick.Open >= swingHigh.High AndAlso swingHigh.PayloadDate >= lastEntryTrade.SignalCandle.PayloadDate AndAlso
                             Not IsSignalTriggered(swingHigh.High, Trade.TradeExecutionDirection.Buy, swingHigh.PayloadDate.AddMinutes(_parentStrategy.SignalTimeFrame), currentMinuteCandle.PayloadDate) Then
                             takeTrade = True
                             condition = String.Format("Swing High({0}) triggered", swingHigh.PayloadDate.ToString("HH:mm"))
@@ -155,18 +155,18 @@ Public Class AjitJhaORBOptionStrategyRule
                         condition = "Opening Range Buy Breakout"
                     End If
                     If takeTrade Then
-                        If lastEntryTrade Is Nothing OrElse currentMinuteCandle.PayloadDate >= lastEntryTrade.SignalCandle.PayloadDate.AddMinutes(30) Then
-                            Dim instrumentToTrade As AjitJhaORBOptionStrategyRule = _ceOptionStrikeList.Where(Function(x)
-                                                                                                                  Return x.Key <= currentTick.Open
-                                                                                                              End Function).OrderByDescending(Function(y)
-                                                                                                                                                  Return y.Key
-                                                                                                                                              End Function).FirstOrDefault.Value
-                            If instrumentToTrade IsNot Nothing Then
-                                instrumentToTrade.ForceTakeTrade = True
-                                instrumentToTrade.EligibleToTakeTrade = True
-                                instrumentToTrade.Remarks = condition
-                            End If
+                        'If lastEntryTrade Is Nothing OrElse currentMinuteCandle.PayloadDate >= lastEntryTrade.SignalCandle.PayloadDate.AddMinutes(30) Then
+                        Dim instrumentToTrade As AjitJhaORBOptionStrategyRule = _ceOptionStrikeList.Where(Function(x)
+                                                                                                              Return x.Key <= currentTick.Open
+                                                                                                          End Function).OrderByDescending(Function(y)
+                                                                                                                                              Return y.Key
+                                                                                                                                          End Function).FirstOrDefault.Value
+                        If instrumentToTrade IsNot Nothing Then
+                            instrumentToTrade.ForceTakeTrade = True
+                            instrumentToTrade.EligibleToTakeTrade = True
+                            instrumentToTrade.Remarks = condition
                         End If
+                        'End If
                     End If
                 Else
                     _buyORBTriggered = True
@@ -177,7 +177,7 @@ Public Class AjitJhaORBOptionStrategyRule
                     Dim lastEntryTrade As Trade = _parentStrategy.GetOverallLastEntryTrade(_tradingDate)
                     If _buyORBTriggered OrElse _sellORBTriggered Then
                         Dim swingLow As Payload = _swingLowPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate)
-                        If swingLow IsNot Nothing AndAlso currentTick.Open <= swingLow.Low AndAlso swingLow.PayloadDate > lastEntryTrade.SignalCandle.PayloadDate AndAlso
+                        If swingLow IsNot Nothing AndAlso currentTick.Open <= swingLow.Low AndAlso swingLow.PayloadDate >= lastEntryTrade.SignalCandle.PayloadDate AndAlso
                             Not IsSignalTriggered(swingLow.Low, Trade.TradeExecutionDirection.Sell, swingLow.PayloadDate.AddMinutes(_parentStrategy.SignalTimeFrame), currentMinuteCandle.PayloadDate) Then
                             takeTrade = True
                             condition = String.Format("Swing Low({0}) triggered", swingLow.PayloadDate.ToString("HH:mm"))
@@ -188,18 +188,18 @@ Public Class AjitJhaORBOptionStrategyRule
                         condition = "Opening Range Sell Breakout"
                     End If
                     If takeTrade Then
-                        If lastEntryTrade Is Nothing OrElse currentMinuteCandle.PayloadDate >= lastEntryTrade.SignalCandle.PayloadDate.AddMinutes(30) Then
-                            Dim instrumentToTrade As AjitJhaORBOptionStrategyRule = _peOptionStrikeList.Where(Function(x)
-                                                                                                                  Return x.Key >= currentTick.Open
-                                                                                                              End Function).OrderBy(Function(y)
-                                                                                                                                        Return y.Key
-                                                                                                                                    End Function).FirstOrDefault.Value
-                            If instrumentToTrade IsNot Nothing Then
-                                instrumentToTrade.ForceTakeTrade = True
-                                instrumentToTrade.EligibleToTakeTrade = True
-                                instrumentToTrade.Remarks = condition
-                            End If
+                        'If lastEntryTrade Is Nothing OrElse currentMinuteCandle.PayloadDate >= lastEntryTrade.SignalCandle.PayloadDate.AddMinutes(30) Then
+                        Dim instrumentToTrade As AjitJhaORBOptionStrategyRule = _peOptionStrikeList.Where(Function(x)
+                                                                                                              Return x.Key >= currentTick.Open
+                                                                                                          End Function).OrderBy(Function(y)
+                                                                                                                                    Return y.Key
+                                                                                                                                End Function).FirstOrDefault.Value
+                        If instrumentToTrade IsNot Nothing Then
+                            instrumentToTrade.ForceTakeTrade = True
+                            instrumentToTrade.EligibleToTakeTrade = True
+                            instrumentToTrade.Remarks = condition
                         End If
+                        'End If
                     End If
                 Else
                     _sellORBTriggered = True
