@@ -614,14 +614,15 @@ Namespace StrategyHelper
             Return ret
         End Function
 
-        Public Function GetOverallLastExitTrade(ByVal tradingDate As Date) As Trade
+        Public Function GetOverallLastEntryTrade(ByVal tradingDate As Date) As Trade
             Dim ret As Trade = Nothing
             Dim allTrades As List(Of Trade) = Nothing
             If TradeType = Trade.TypeOfTrade.MIS Then
                 If TradesTaken IsNot Nothing AndAlso TradesTaken.ContainsKey(tradingDate) Then
                     For Each runningStock In TradesTaken(tradingDate).Keys
                         For Each runningTrade In TradesTaken(tradingDate)(runningStock)
-                            If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
+                            If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close OrElse
+                                runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
                                 If allTrades Is Nothing Then allTrades = New List(Of Trade)
                                 allTrades.Add(runningTrade)
                             End If
@@ -633,7 +634,8 @@ Namespace StrategyHelper
                     For Each runningDate In TradesTaken.Keys
                         For Each runningStock In TradesTaken(runningDate).Keys
                             For Each runningTrade In TradesTaken(runningDate)(runningStock)
-                                If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close Then
+                                If runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Close OrElse
+                                    runningTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress Then
                                     If allTrades Is Nothing Then allTrades = New List(Of Trade)
                                     allTrades.Add(runningTrade)
                                 End If
