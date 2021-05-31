@@ -204,7 +204,8 @@ Public Class SaddamOptionStrategyRule
                             End If
                             If currentTick.Open > _bullLevel AndAlso _nakedSTCE Is Nothing AndAlso
                                 _supertrendColorPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate) = Color.Red Then
-                                If currentTick.Open <= currentMinuteCandle.PreviousCandlePayload.Low Then
+                                Dim startingCandle As Payload = GetCurrentSupertrendStartingCandle(currentMinuteCandle)
+                                If currentTick.Open <= startingCandle.Low Then
                                     Dim nakedPECandle As Payload = _nakedPE.GetCurrentCandle(currentTick.PayloadDate)
                                     Dim lowestDistance As Decimal = Decimal.MaxValue
                                     Dim lowestDistanceStrike As Decimal = Decimal.MinValue
@@ -277,7 +278,8 @@ Public Class SaddamOptionStrategyRule
                             End If
                             If currentTick.Open < _bearLevel AndAlso _nakedSTPE Is Nothing AndAlso
                                 _supertrendColorPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate) = Color.Green Then
-                                If currentTick.Open >= currentMinuteCandle.PreviousCandlePayload.High Then
+                                Dim startingCandle As Payload = GetCurrentSupertrendStartingCandle(currentMinuteCandle)
+                                If currentTick.Open >= startingCandle.High Then
                                     Dim nakedCECandle As Payload = _nakedCE.GetCurrentCandle(currentTick.PayloadDate)
                                     Dim lowestDistance As Decimal = Decimal.MaxValue
                                     Dim lowestDistanceStrike As Decimal = Decimal.MinValue
@@ -328,13 +330,15 @@ Public Class SaddamOptionStrategyRule
                     End If
 
                     If _supertrendColorPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate) = Color.Green AndAlso _nakedSTCE IsNot Nothing Then
-                        If currentTick.Open > currentMinuteCandle.PreviousCandlePayload.High Then
+                        Dim startingCandle As Payload = GetCurrentSupertrendStartingCandle(currentMinuteCandle)
+                        If currentTick.Open > startingCandle.High Then
                             _nakedSTCE.ForceCancelTrade = True
                             _nakedSTCE.Comment = "High Break on Supertrend Green"
                         End If
                     End If
                     If _supertrendColorPayload(currentMinuteCandle.PreviousCandlePayload.PayloadDate) = Color.Red AndAlso _nakedSTPE IsNot Nothing Then
-                        If currentTick.Open < currentMinuteCandle.PreviousCandlePayload.Low Then
+                        Dim startingCandle As Payload = GetCurrentSupertrendStartingCandle(currentMinuteCandle)
+                        If currentTick.Open < startingCandle.Low Then
                             _nakedSTPE.ForceCancelTrade = True
                             _nakedSTPE.Comment = "Low Break on Supertrend Red"
                         End If
@@ -428,6 +432,24 @@ Public Class SaddamOptionStrategyRule
     Public Overrides Async Function IsTriggerReceivedForModifyTargetOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
+        Return ret
+    End Function
+
+    Private Function GetCurrentSupertrendStartingCandle(currentCandle As Payload) As Payload
+        Dim ret As Payload = Nothing
+        If _supertrendColorPayload IsNot Nothing AndAlso _supertrendColorPayload.ContainsKey(currentCandle.PreviousCandlePayload.PayloadDate) Then
+            Dim currentColor As Color = _supertrendColorPayload(currentCandle.PreviousCandlePayload.PayloadDate)
+            For Each runningPayload In _currentDayPayload.OrderByDescending(Function(x)
+                                                                                Return x.Key
+                                                                            End Function)
+                If runningPayload.Value.PreviousCandlePayload.PayloadDate <= currentCandle.PreviousCandlePayload.PayloadDate Then
+                    If _supertrendColorPayload(runningPayload.Value.PreviousCandlePayload.PayloadDate) <> currentColor Then
+                        ret = runningPayload.Value
+                        Exit For
+                    End If
+                End If
+            Next
+        End If
         Return ret
     End Function
 
