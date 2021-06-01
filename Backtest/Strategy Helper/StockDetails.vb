@@ -3,6 +3,7 @@
         Public StockName As String
         Public OptionStock As Boolean
         Public Controller As Boolean
+        Public StrikeGap As Decimal
         Public LotSize As Integer
         Public EligibleToTakeTrade As Boolean
         Public PlaceOrderTrigger As Tuple(Of Boolean, List(Of PlaceOrderParameters))

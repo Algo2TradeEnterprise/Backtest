@@ -49,6 +49,7 @@ Namespace StrategyHelper
         Protected ReadOnly _cts As CancellationTokenSource
         Protected ReadOnly _entities As RuleEntities
         Public ReadOnly Controller As Boolean
+        Public ReadOnly StrikeGap As Decimal
 
         Public DependentInstrument As List(Of StrategyRule)
         Public ControllerInstrument As StrategyRule
@@ -60,6 +61,7 @@ Namespace StrategyHelper
                        ByVal tradingSymbol As String,
                        ByVal entities As RuleEntities,
                        ByVal controlller As Boolean,
+                       ByVal strikeGap As Decimal,
                        ByVal canceller As CancellationTokenSource)
             _inputPayload = inputPayload
             Me.LotSize = lotSize
@@ -69,6 +71,7 @@ Namespace StrategyHelper
             _cts = canceller
             _entities = entities
             Me.Controller = controlller
+            Me.StrikeGap = strikeGap
 
             EligibleToTakeTrade = True
         End Sub

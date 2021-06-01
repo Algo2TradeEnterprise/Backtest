@@ -46,8 +46,9 @@ Public Class SaddamOptionStrategyRule
                    ByVal tradingSymbol As String,
                    ByVal entities As RuleEntities,
                    ByVal controller As Integer,
+                   ByVal strikeGap As Decimal,
                    ByVal canceller As CancellationTokenSource)
-        MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, entities, controller, canceller)
+        MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, entities, controller, strikeGap, canceller)
 
         _buffer = 5
         _stoplossPoint = 50
@@ -87,6 +88,9 @@ Public Class SaddamOptionStrategyRule
                         End If
                     End If
                 Next
+                If _ceOptionStrikeList Is Nothing OrElse _peOptionStrikeList Is Nothing Then
+                    _parentStrategy.SkipCurrentDay = True
+                End If
             End If
         End If
     End Sub
@@ -123,26 +127,27 @@ Public Class SaddamOptionStrategyRule
                 currentMinuteCandle.PayloadDate >= _tradeStartTime AndAlso Me.EligibleToTakeTrade Then
                 If Not _firstTimeEntryDone Then
                     If _straddleCE Is Nothing AndAlso _straddlePE Is Nothing Then
-                        Dim currentATM As Decimal = GetATMStrike(currentTick.Open, _ceOptionStrikeList.Keys.ToList)
-                        If currentATM <> Decimal.MinValue AndAlso
-                            _ceOptionStrikeList.ContainsKey(currentATM) AndAlso
-                            _peOptionStrikeList.ContainsKey(currentATM) Then
-
+                        Dim currentATM As Decimal = GetATMStrike(currentTick.Open)
+                        If _ceOptionStrikeList.ContainsKey(currentATM) AndAlso _peOptionStrikeList.ContainsKey(currentATM) Then
                             _straddleCE = _ceOptionStrikeList(currentATM)
                             _straddlePE = _peOptionStrikeList(currentATM)
+                        Else
+                            _parentStrategy.SkipCurrentDay = True
+                            Exit Function
                         End If
                     End If
+                    If _straddleCE IsNot Nothing AndAlso _straddlePE IsNot Nothing Then
+                        _straddleCE.ForceTakeTrade = True
+                        _straddleCE.Comment = "+++Straddle CE Entry"
+                        _straddleCE.EligibleToTakeTrade = True
 
-                    _straddleCE.ForceTakeTrade = True
-                    _straddleCE.Comment = "+++Straddle CE Entry"
-                    _straddleCE.EligibleToTakeTrade = True
+                        _straddlePE.ForceTakeTrade = True
+                        _straddlePE.Comment = "+++Straddle PE Entry"
+                        _straddlePE.EligibleToTakeTrade = True
 
-                    _straddlePE.ForceTakeTrade = True
-                    _straddlePE.Comment = "+++Straddle PE Entry"
-                    _straddlePE.EligibleToTakeTrade = True
-
-                    _firstTimeEntryDone = True
-                    _straddleStartTime = currentTick.PayloadDate
+                        _firstTimeEntryDone = True
+                        _straddleStartTime = currentTick.PayloadDate
+                    End If
                 Else
                     If _signalCandle IsNot Nothing Then
                         If Not _entryDone Then
@@ -189,17 +194,23 @@ Public Class SaddamOptionStrategyRule
 
                                     _straddlePE.ForceModifyTrade = True
 
-                                    Dim nearestOTMPEStrike As Decimal = _peOptionStrikeList.Keys.Max(Function(x)
-                                                                                                         If x <= _bullLevel - 100 Then
-                                                                                                             Return x
-                                                                                                         Else
-                                                                                                             Return Decimal.MinValue
-                                                                                                         End If
-                                                                                                     End Function)
-                                    _nakedPE = _peOptionStrikeList(nearestOTMPEStrike)
-                                    _nakedPE.ForceTakeTrade = True
-                                    _nakedPE.Comment = String.Format("Naked PE Entry on Bull level({0} at {1})", _bullLevel, _bullLevelTime.ToString("HH:mm"))
-                                    _nakedPE.EligibleToTakeTrade = True
+                                    Dim nearestOTMPEStrike As Decimal = Math.Floor((_bullLevel - 100) / Me.StrikeGap) * Me.StrikeGap
+                                    'Dim nearestOTMPEStrike As Decimal = _peOptionStrikeList.Keys.Max(Function(x)
+                                    '                                                                     If x <= _bullLevel - 100 Then
+                                    '                                                                         Return x
+                                    '                                                                     Else
+                                    '                                                                         Return Decimal.MinValue
+                                    '                                                                     End If
+                                    '                                                                 End Function)
+                                    If _peOptionStrikeList.ContainsKey(nearestOTMPEStrike) Then
+                                        _nakedPE = _peOptionStrikeList(nearestOTMPEStrike)
+                                        _nakedPE.ForceTakeTrade = True
+                                        _nakedPE.Comment = String.Format("Naked PE Entry on Bull level({0} at {1})", _bullLevel, _bullLevelTime.ToString("HH:mm"))
+                                        _nakedPE.EligibleToTakeTrade = True
+                                    Else
+                                        _parentStrategy.SkipCurrentDay = True
+                                        Exit Function
+                                    End If
                                 End If
                             End If
                             If currentTick.Open > _bullLevel AndAlso _nakedSTCE Is Nothing AndAlso
@@ -238,18 +249,24 @@ Public Class SaddamOptionStrategyRule
                                                                            End Function)
 
                                 If currentTick.Open >= dayHigh AndAlso Not _parentStrategy.IsAnyTradeActive() Then
-                                    Dim otmPEStrike As Decimal = _peOptionStrikeList.Keys.Max(Function(x)
-                                                                                                  If x <= currentTick.Open - 200 Then
-                                                                                                      Return x
-                                                                                                  Else
-                                                                                                      Return Decimal.MinValue
-                                                                                                  End If
-                                                                                              End Function)
+                                    Dim otmPEStrike As Decimal = Math.Floor((currentTick.Open - 200) / Me.StrikeGap) * Me.StrikeGap
+                                    'Dim otmPEStrike As Decimal = _peOptionStrikeList.Keys.Max(Function(x)
+                                    '                                                              If x <= currentTick.Open - 200 Then
+                                    '                                                                  Return x
+                                    '                                                              Else
+                                    '                                                                  Return Decimal.MinValue
+                                    '                                                              End If
+                                    '                                                          End Function)
 
-                                    Me.AdjustmentDone = True
-                                    _peOptionStrikeList(otmPEStrike).ForceTakeTrade = True
-                                    _peOptionStrikeList(otmPEStrike).Comment = "Day High Entry"
-                                    _peOptionStrikeList(otmPEStrike).EligibleToTakeTrade = True
+                                    If _peOptionStrikeList.ContainsKey(otmPEStrike) Then
+                                        Me.AdjustmentDone = True
+                                        _peOptionStrikeList(otmPEStrike).ForceTakeTrade = True
+                                        _peOptionStrikeList(otmPEStrike).Comment = "Day High Entry"
+                                        _peOptionStrikeList(otmPEStrike).EligibleToTakeTrade = True
+                                    Else
+                                        _parentStrategy.SkipCurrentDay = True
+                                        Exit Function
+                                    End If
                                 End If
                             End If
                         ElseIf _signalDirection = Trade.TradeExecutionDirection.Sell Then
@@ -263,17 +280,24 @@ Public Class SaddamOptionStrategyRule
 
                                     _straddleCE.ForceModifyTrade = True
 
-                                    Dim nearestOTMCEStrike As Decimal = _ceOptionStrikeList.Keys.Min(Function(x)
-                                                                                                         If x >= _bearLevel + 100 Then
-                                                                                                             Return x
-                                                                                                         Else
-                                                                                                             Return Decimal.MaxValue
-                                                                                                         End If
-                                                                                                     End Function)
-                                    _nakedCE = _ceOptionStrikeList(nearestOTMCEStrike)
-                                    _nakedCE.ForceTakeTrade = True
-                                    _nakedCE.Comment = String.Format("Naked CE Entry on Bear level({0} at {1})", _bearLevel, _bearLevelTime.ToString("HH:mm"))
-                                    _nakedCE.EligibleToTakeTrade = True
+                                    Dim nearestOTMCEStrike As Decimal = Math.Ceiling((_bearLevel + 100) / Me.StrikeGap) * Me.StrikeGap
+                                    'Dim nearestOTMCEStrike As Decimal = _ceOptionStrikeList.Keys.Min(Function(x)
+                                    '                                                                     If x >= _bearLevel + 100 Then
+                                    '                                                                         Return x
+                                    '                                                                     Else
+                                    '                                                                         Return Decimal.MaxValue
+                                    '                                                                     End If
+                                    '                                                                 End Function)
+
+                                    If _ceOptionStrikeList.ContainsKey(nearestOTMCEStrike) Then
+                                        _nakedCE = _ceOptionStrikeList(nearestOTMCEStrike)
+                                        _nakedCE.ForceTakeTrade = True
+                                        _nakedCE.Comment = String.Format("Naked CE Entry on Bear level({0} at {1})", _bearLevel, _bearLevelTime.ToString("HH:mm"))
+                                        _nakedCE.EligibleToTakeTrade = True
+                                    Else
+                                        _parentStrategy.SkipCurrentDay = True
+                                        Exit Function
+                                    End If
                                 End If
                             End If
                             If currentTick.Open < _bearLevel AndAlso _nakedSTPE Is Nothing AndAlso
@@ -312,18 +336,23 @@ Public Class SaddamOptionStrategyRule
                                                                           End Function)
 
                                 If currentTick.Open <= dayLow AndAlso Not _parentStrategy.IsAnyTradeActive() Then
-                                    Dim otmCEStrike As Decimal = _ceOptionStrikeList.Keys.Min(Function(x)
-                                                                                                  If x >= currentTick.Open + 200 Then
-                                                                                                      Return x
-                                                                                                  Else
-                                                                                                      Return Decimal.MaxValue
-                                                                                                  End If
-                                                                                              End Function)
-
-                                    Me.AdjustmentDone = True
-                                    _ceOptionStrikeList(otmCEStrike).ForceTakeTrade = True
-                                    _ceOptionStrikeList(otmCEStrike).Comment = "Day Low Entry"
-                                    _ceOptionStrikeList(otmCEStrike).EligibleToTakeTrade = True
+                                    Dim otmCEStrike As Decimal = Math.Ceiling((currentTick.Open + 200) / Me.StrikeGap) * Me.StrikeGap
+                                    'Dim otmCEStrike As Decimal = _ceOptionStrikeList.Keys.Min(Function(x)
+                                    '                                                              If x >= currentTick.Open + 200 Then
+                                    '                                                                  Return x
+                                    '                                                              Else
+                                    '                                                                  Return Decimal.MaxValue
+                                    '                                                              End If
+                                    '                                                          End Function)
+                                    If _ceOptionStrikeList.ContainsKey(otmCEStrike) Then
+                                        Me.AdjustmentDone = True
+                                        _ceOptionStrikeList(otmCEStrike).ForceTakeTrade = True
+                                        _ceOptionStrikeList(otmCEStrike).Comment = "Day Low Entry"
+                                        _ceOptionStrikeList(otmCEStrike).EligibleToTakeTrade = True
+                                    Else
+                                        _parentStrategy.SkipCurrentDay = True
+                                        Exit Function
+                                    End If
                                 End If
                             End If
                         End If
@@ -519,41 +548,14 @@ Public Class SaddamOptionStrategyRule
         Return ret
     End Function
 
-    Private Function GetATMStrike(price As Decimal, allStrikes As List(Of Decimal)) As Decimal
-        Dim ret As Decimal = Decimal.MinValue
-        If allStrikes IsNot Nothing AndAlso allStrikes.Count > 0 Then
-            Dim upperStrikes As List(Of Decimal) = allStrikes.FindAll(Function(x)
-                                                                          Return x >= price
-                                                                      End Function)
-            Dim lowerStrikes As List(Of Decimal) = allStrikes.FindAll(Function(x)
-                                                                          Return x <= price
-                                                                      End Function)
-            Dim upperStrikePrice As Decimal = Decimal.MaxValue
-            Dim lowerStrikePrice As Decimal = Decimal.MinValue
-            If upperStrikes IsNot Nothing AndAlso upperStrikes.Count > 0 Then
-                upperStrikePrice = upperStrikes.OrderBy(Function(x)
-                                                            Return x
-                                                        End Function).FirstOrDefault
-            End If
-            If lowerStrikes IsNot Nothing AndAlso lowerStrikes.Count > 0 Then
-                lowerStrikePrice = lowerStrikes.OrderBy(Function(x)
-                                                            Return x
-                                                        End Function).LastOrDefault
-            End If
-
-            If upperStrikePrice <> Decimal.MaxValue AndAlso lowerStrikePrice <> Decimal.MinValue Then
-                If upperStrikePrice - price < price - lowerStrikePrice Then
-                    ret = upperStrikePrice
-                Else
-                    ret = lowerStrikePrice
-                End If
-            ElseIf upperStrikePrice <> Decimal.MaxValue Then
-                ret = upperStrikePrice
-            ElseIf lowerStrikePrice <> Decimal.MinValue Then
-                ret = lowerStrikePrice
-            End If
+    Private Function GetATMStrike(price As Decimal) As Decimal
+        Dim upperStrikePrice As Decimal = Math.Ceiling(price / Me.StrikeGap) * Me.StrikeGap
+        Dim lowerStrikePrice As Decimal = Math.Floor(price / Me.StrikeGap) * Me.StrikeGap
+        If upperStrikePrice - price < price - lowerStrikePrice Then
+            Return upperStrikePrice
+        Else
+            Return lowerStrikePrice
         End If
-        Return ret
     End Function
 
     Private Function GetCurrentTick(currentCandle As Payload, currentTime As Date) As Payload
