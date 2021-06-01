@@ -61,6 +61,7 @@ Namespace StrategyHelper
                 Dim portfolioLossPerDay As Decimal = Me.OverAllLossPerDay
                 While tradeCheckingDate <= endDate.Date
                     _canceller.Token.ThrowIfCancellationRequested()
+                    Me.SkipCurrentDay = False
                     Me.AvailableCapital = Me.UsableCapital
                     Me.OverAllLossPerDay = portfolioLossPerDay
                     TradesTaken = New Dictionary(Of Date, Dictionary(Of String, List(Of Trade)))
@@ -110,11 +111,11 @@ Namespace StrategyHelper
                                     Dim tradingSymbol As String = currentDayOneMinutePayload.LastOrDefault.Value.TradingSymbol
                                     Select Case RuleNumber
                                         Case 0
-                                            stockRule = New AjitJhaOptionStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, stockList(stock).Controller, _canceller)
+                                            stockRule = New AjitJhaOptionStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, stockList(stock).Controller, stockList(stock).StrikeGap, _canceller)
                                         Case 1
-                                            stockRule = New AjitJhaOptionMultiExitStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, stockList(stock).Controller, _canceller)
+                                            stockRule = New AjitJhaOptionMultiExitStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, stockList(stock).Controller, stockList(stock).StrikeGap, _canceller)
                                         Case 2
-                                            stockRule = New AjitJhaORBOptionStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, stockList(stock).Controller, _canceller)
+                                            stockRule = New AjitJhaORBOptionStrategyRule(XDayOneMinutePayload, stockList(stock).LotSize, Me, tradeCheckingDate, tradingSymbol, Me.RuleEntityData, stockList(stock).Controller, stockList(stock).StrikeGap, _canceller)
                                         Case Else
                                             Throw New NotImplementedException
                                     End Select
@@ -327,6 +328,7 @@ Namespace StrategyHelper
                                                             stockList(stockName).CancelOrderDoneForTheMinute = True
                                                         End If
                                                     End If
+                                                    If Me.SkipCurrentDay Then Exit For
                                                     _canceller.Token.ThrowIfCancellationRequested()
                                                     Dim potentialRuleExitTrades As List(Of Trade) = GetSpecificTrades(currentMinuteCandlePayload, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Inprogress)
                                                     If potentialRuleExitTrades IsNot Nothing AndAlso potentialRuleExitTrades.Count > 0 Then
@@ -344,6 +346,7 @@ Namespace StrategyHelper
                                                     If stockStrategyRule.Controller Then
                                                         Await stockStrategyRule.IsTriggerReceivedForExitOrderAsync(runningTick, Nothing).ConfigureAwait(False)
                                                     End If
+                                                    If Me.SkipCurrentDay Then Exit For
 
                                                     'Place Order
                                                     _canceller.Token.ThrowIfCancellationRequested()
@@ -435,6 +438,7 @@ Namespace StrategyHelper
                                                             Next
                                                         End If
                                                     End If
+                                                    If Me.SkipCurrentDay Then Exit For
 
                                                     'Exit Trade
                                                     _canceller.Token.ThrowIfCancellationRequested()
@@ -446,6 +450,7 @@ Namespace StrategyHelper
                                                             exitOrderSuccessful = ExitTradeIfPossible(runningPotentialExitTrade, runningTick)
                                                         Next
                                                     End If
+                                                    If Me.SkipCurrentDay Then Exit For
 
                                                     'Place Order
                                                     _canceller.Token.ThrowIfCancellationRequested()
@@ -524,6 +529,7 @@ Namespace StrategyHelper
                                                             Next
                                                         End If
                                                     End If
+                                                    If Me.SkipCurrentDay Then Exit For
 
                                                     'Enter Trade
                                                     _canceller.Token.ThrowIfCancellationRequested()
@@ -534,6 +540,7 @@ Namespace StrategyHelper
                                                             EnterTradeIfPossible(runningPotentialEntryTrade, runningTick)
                                                         Next
                                                     End If
+                                                    If Me.SkipCurrentDay Then Exit For
 
                                                     'Modify Stoploss Trade
                                                     _canceller.Token.ThrowIfCancellationRequested()
@@ -551,6 +558,7 @@ Namespace StrategyHelper
                                                         stockList(stockName).ModifyStoplossOrderDoneForTheMinute = True
                                                         'End If
                                                     End If
+                                                    If Me.SkipCurrentDay Then Exit For
 
                                                     'Modify Target Trade
                                                     _canceller.Token.ThrowIfCancellationRequested()
@@ -568,26 +576,35 @@ Namespace StrategyHelper
                                                             stockList(stockName).ModifyTargetOrderDoneForTheMinute = True
                                                         End If
                                                     End If
+                                                    If Me.SkipCurrentDay Then Exit For
                                                 Next
                                             End If
                                         End If
+                                        If Me.SkipCurrentDay Then Exit For
                                     Next
                                     startSecond = startSecond.Add(TimeSpan.FromSeconds(1))
+                                    If Me.SkipCurrentDay Then Exit While
                                 End While   'Second Loop
                                 startMinute = startMinute.Add(TimeSpan.FromMinutes(Me.SignalTimeFrame))
+                                If Me.SkipCurrentDay Then Exit While
                             End While   'Minute Loop
-                            ExitAllTradeByForce(tradeCheckingDate, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Special Force Close")
+                            If Not Me.SkipCurrentDay Then
+                                ExitAllTradeByForce(tradeCheckingDate, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Special Force Close")
+                            End If
                         End If
                     End If
-                    SetOverallDrawUpDrawDownForTheDay(tradeCheckingDate)
-                    totalPL += TotalPLAfterBrokerage(tradeCheckingDate)
-                    tradeCheckingDate = tradeCheckingDate.AddDays(1)
 
-                    'Serialization
-                    If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
-                        OnHeartbeat("Serializing Trades collection")
-                        SerializeFromCollectionUsingFileStream(Of Dictionary(Of Date, Dictionary(Of String, List(Of Trade))))(tradesFileName, TradesTaken)
+                    If Not Me.SkipCurrentDay Then
+                        SetOverallDrawUpDrawDownForTheDay(tradeCheckingDate)
+                        totalPL += TotalPLAfterBrokerage(tradeCheckingDate)
+
+                        'Serialization
+                        If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 Then
+                            OnHeartbeat("Serializing Trades collection")
+                            SerializeFromCollectionUsingFileStream(Of Dictionary(Of Date, Dictionary(Of String, List(Of Trade))))(tradesFileName, TradesTaken)
+                        End If
                     End If
+                    tradeCheckingDate = tradeCheckingDate.AddDays(1)
                 End While   'Date Loop
 
                 If CapitalMovement IsNot Nothing Then Utilities.Strings.SerializeFromCollection(Of Dictionary(Of Date, List(Of Capital)))(capitalFileName, CapitalMovement)
@@ -620,6 +637,7 @@ Namespace StrategyHelper
                                                 .LotSize = lotSize,
                                                 .Controller = False,
                                                 .OptionStock = True,
+                                                .StrikeGap = 100,
                                                 .EligibleToTakeTrade = True}
 
                                     If ret Is Nothing Then
@@ -629,6 +647,7 @@ Namespace StrategyHelper
                                                 .LotSize = lotSize,
                                                 .Controller = True,
                                                 .OptionStock = False,
+                                                .StrikeGap = 100,
                                                 .EligibleToTakeTrade = True}
                                         ret.Add(controllerStock.StockName, controllerStock)
                                     End If
@@ -647,6 +666,7 @@ Namespace StrategyHelper
                                                 .LotSize = lotSize,
                                                 .Controller = False,
                                                 .OptionStock = True,
+                                                .StrikeGap = 100,
                                                 .EligibleToTakeTrade = True}
 
                                     If ret Is Nothing Then
@@ -658,6 +678,7 @@ Namespace StrategyHelper
                                                 .LotSize = lotSize,
                                                 .Controller = True,
                                                 .OptionStock = False,
+                                                .StrikeGap = 100,
                                                 .EligibleToTakeTrade = True}
                                             ret.Add(controllerStock.StockName, controllerStock)
                                         Else

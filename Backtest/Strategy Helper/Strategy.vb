@@ -149,6 +149,7 @@ Namespace StrategyHelper
         Public MTMSlab As Decimal = Decimal.MinValue
         Public MovementSlab As Decimal = Decimal.MinValue
         Public RealtimeTrailingPercentage As Decimal = Decimal.MinValue
+        Public SkipCurrentDay As Boolean = False
 #End Region
 
 #Region "Public Calculated Property"

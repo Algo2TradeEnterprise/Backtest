@@ -40,8 +40,9 @@ Public Class AjitJhaORBOptionStrategyRule
                    ByVal tradingSymbol As String,
                    ByVal entities As RuleEntities,
                    ByVal controller As Integer,
+                   ByVal strikeGap As Decimal,
                    ByVal canceller As CancellationTokenSource)
-        MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, entities, controller, canceller)
+        MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, entities, controller, strikeGap, canceller)
         _tradeStartTime = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, _parentStrategy.TradeStartTime.Hours, _parentStrategy.TradeStartTime.Minutes, _parentStrategy.TradeStartTime.Seconds)
         _userInputs = _entities
     End Sub
@@ -156,15 +157,16 @@ Public Class AjitJhaORBOptionStrategyRule
                     End If
                     If takeTrade Then
                         'If lastEntryTrade Is Nothing OrElse currentMinuteCandle.PayloadDate >= lastEntryTrade.SignalCandle.PayloadDate.AddMinutes(30) Then
-                        Dim instrumentToTrade As AjitJhaORBOptionStrategyRule = _ceOptionStrikeList.Where(Function(x)
-                                                                                                              Return x.Key <= currentTick.Open
-                                                                                                          End Function).OrderByDescending(Function(y)
-                                                                                                                                              Return y.Key
-                                                                                                                                          End Function).FirstOrDefault.Value
-                        If instrumentToTrade IsNot Nothing Then
-                            instrumentToTrade.ForceTakeTrade = True
-                            instrumentToTrade.EligibleToTakeTrade = True
-                            instrumentToTrade.Remarks = condition
+                        Dim strikePrice As Decimal = Math.Floor(currentTick.Open / Me.StrikeGap) * Me.StrikeGap
+                        If _ceOptionStrikeList.ContainsKey(strikePrice) Then
+                            Dim instrumentToTrade As AjitJhaORBOptionStrategyRule = _ceOptionStrikeList(strikePrice)
+                            If instrumentToTrade IsNot Nothing Then
+                                instrumentToTrade.ForceTakeTrade = True
+                                instrumentToTrade.EligibleToTakeTrade = True
+                                instrumentToTrade.Remarks = condition
+                            End If
+                        Else
+                            _parentStrategy.SkipCurrentDay = True
                         End If
                         'End If
                     End If
@@ -189,15 +191,16 @@ Public Class AjitJhaORBOptionStrategyRule
                     End If
                     If takeTrade Then
                         'If lastEntryTrade Is Nothing OrElse currentMinuteCandle.PayloadDate >= lastEntryTrade.SignalCandle.PayloadDate.AddMinutes(30) Then
-                        Dim instrumentToTrade As AjitJhaORBOptionStrategyRule = _peOptionStrikeList.Where(Function(x)
-                                                                                                              Return x.Key >= currentTick.Open
-                                                                                                          End Function).OrderBy(Function(y)
-                                                                                                                                    Return y.Key
-                                                                                                                                End Function).FirstOrDefault.Value
-                        If instrumentToTrade IsNot Nothing Then
-                            instrumentToTrade.ForceTakeTrade = True
-                            instrumentToTrade.EligibleToTakeTrade = True
-                            instrumentToTrade.Remarks = condition
+                        Dim strikePrice As Decimal = Math.Ceiling(currentTick.Open / Me.StrikeGap) * Me.StrikeGap
+                        If _peOptionStrikeList.ContainsKey(strikePrice) Then
+                            Dim instrumentToTrade As AjitJhaORBOptionStrategyRule = _peOptionStrikeList(strikePrice)
+                            If instrumentToTrade IsNot Nothing Then
+                                instrumentToTrade.ForceTakeTrade = True
+                                instrumentToTrade.EligibleToTakeTrade = True
+                                instrumentToTrade.Remarks = condition
+                            End If
+                        Else
+                            _parentStrategy.SkipCurrentDay = True
                         End If
                         'End If
                     End If

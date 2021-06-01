@@ -38,8 +38,9 @@ Public Class AjitJhaOptionMultiExitStrategyRule
                    ByVal tradingSymbol As String,
                    ByVal entities As RuleEntities,
                    ByVal controller As Integer,
+                   ByVal strikeGap As Decimal,
                    ByVal canceller As CancellationTokenSource)
-        MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, entities, controller, canceller)
+        MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, entities, controller, strikeGap, canceller)
         _tradeStartTime = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, _parentStrategy.TradeStartTime.Hours, _parentStrategy.TradeStartTime.Minutes, _parentStrategy.TradeStartTime.Seconds)
         _userInputs = _entities
     End Sub
