@@ -91,6 +91,8 @@ Public Class SaddamOptionStrategyRule
                 If _ceOptionStrikeList Is Nothing OrElse _peOptionStrikeList Is Nothing Then
                     _parentStrategy.SkipCurrentDay = True
                 End If
+            Else
+                _parentStrategy.SkipCurrentDay = True
             End If
         End If
     End Sub
