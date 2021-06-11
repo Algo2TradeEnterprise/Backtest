@@ -88,7 +88,7 @@ Namespace Calculator
             Dim brokerage_sell As Decimal = If((sp * qty * 0.0003) > 20, 20, Math.Round(sp * qty * 0.0003, 2))
             Dim brokerage As Decimal = Math.Round(brokerage_buy + brokerage_sell, 2)
             Dim stt_total As Decimal = Math.Round(sp * qty * 0.00025, 2)
-            Dim etc As Decimal = Math.Round(0.0000325 * turnover, 2)
+            Dim etc As Decimal = Math.Round(0.0000345 * turnover, 2)
             Dim cc As Decimal = 0
             Dim stax As Decimal = Math.Round(0.18 * (brokerage + etc), 2)
             Dim sebi_charges As Decimal = Math.Round(turnover * 0.0000005, 2)
@@ -122,7 +122,7 @@ Namespace Calculator
             Dim turnover As Decimal = Math.Round((bp + sp) * qty, 2)
             Dim brokerage As Decimal = 0
             Dim stt_total As Decimal = Math.Round(turnover * 0.001, 2)
-            Dim etc As Decimal = Math.Round(0.0000325 * turnover, 2)
+            Dim etc As Decimal = Math.Round(0.0000345 * turnover, 2)
             Dim cc As Decimal = 0
             Dim stax As Decimal = Math.Round(0.18 * (brokerage + etc), 2)
             Dim sebi_charges As Decimal = Math.Round(turnover * 0.0000005, 2)
@@ -158,7 +158,7 @@ Namespace Calculator
             Dim brokerage_sell As Decimal = If((sp * qty * 0.0003) > 20, 20, Math.Round(sp * qty * 0.0003, 2))
             Dim brokerage As Decimal = Math.Round(brokerage_buy + brokerage_sell, 2)
             Dim stt_total As Decimal = Math.Round(sp * qty * 0.0001, 2)
-            Dim etc As Decimal = Math.Round(0.000019 * turnover, 2)
+            Dim etc As Decimal = Math.Round(0.00002 * turnover, 2)
             Dim stax As Decimal = Math.Round(0.18 * (brokerage + etc), 2)
             Dim sebi_charges As Decimal = Math.Round(turnover * 0.0000005, 2)
             Dim stamp_charges As Decimal = Math.Round(bp * qty * 0.00002, 2)
@@ -190,7 +190,7 @@ Namespace Calculator
             Dim turnover As Decimal = Math.Round((bp + sp) * qty, 2)
             Dim brokerage As Decimal = 40
             Dim stt_total As Decimal = Math.Round(sp * qty * 0.0005, 2)
-            Dim etc As Decimal = Math.Round(0.0005 * turnover, 2)
+            Dim etc As Decimal = Math.Round(0.00053 * turnover, 2)
             Dim stax As Decimal = Math.Round(0.18 * (brokerage + etc), 2)
             Dim sebi_charges As Decimal = Math.Round(turnover * 0.0000005, 2)
             Dim stamp_charges As Decimal = Math.Round(bp * qty * 0.00003, 2)

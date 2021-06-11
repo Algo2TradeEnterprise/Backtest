@@ -261,7 +261,7 @@ Public Class frmMain
         If My.Settings.LocalConnection Then
             My.Settings.ServerName = "localhost"
         Else
-            My.Settings.ServerName = "103.57.246.210"
+            My.Settings.ServerName = "103.220.208.5"
         End If
         My.Settings.Save()
 
