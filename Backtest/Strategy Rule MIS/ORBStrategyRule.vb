@@ -15,7 +15,7 @@ Public Class ORBStrategyRule
     End Class
 #End Region
 
-    Private _firstCandleOfTheDay As Payload
+    Private _firstCandleOfTheDay As Payload = Nothing
 
     Private ReadOnly _userInputs As StrategyRuleEntities
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
@@ -32,13 +32,17 @@ Public Class ORBStrategyRule
     Public Overrides Sub CompletePreProcessing()
         MyBase.CompletePreProcessing()
 
-        For Each runningPayload In _signalPayload.Values
-            If runningPayload.PayloadDate.Date = _tradingDate.Date AndAlso
-                runningPayload.PayloadDate.Date <> runningPayload.PreviousCandlePayload.PayloadDate.Date Then
-                _firstCandleOfTheDay = runningPayload
-                Exit For
-            End If
-        Next
+        If _signalPayload IsNot Nothing AndAlso _signalPayload.Count > 0 Then
+            For Each runningPayload In _signalPayload.Values
+                If runningPayload.PayloadDate.Date = _tradingDate.Date AndAlso runningPayload.PreviousCandlePayload IsNot Nothing AndAlso
+                    runningPayload.PayloadDate.Date <> runningPayload.PreviousCandlePayload.PayloadDate.Date Then
+                    _firstCandleOfTheDay = runningPayload
+                    If _firstCandleOfTheDay.Open > _userInputs.CapitalForEachTrade Then Me.EligibleToTakeTrade = False
+                    Exit For
+                End If
+            Next
+        End If
+        If _firstCandleOfTheDay Is Nothing Then Me.EligibleToTakeTrade = False
     End Sub
 
     Public Overrides Async Function IsTriggerReceivedForPlaceOrderAsync(currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
