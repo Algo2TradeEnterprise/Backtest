@@ -77,8 +77,10 @@ Namespace StrategyHelper
                     OnHeartbeat("Getting instrument list")
                     Dim stockList As Dictionary(Of String, StockDetails) = Await GetStockDataAsync(tradeCheckingDate).ConfigureAwait(False)
 
+                    Dim stockPayload As Dictionary(Of Date, Payload) = Cmn.GetRawPayloadForSpecificTradingSymbol(Common.DataBaseTable.EOD_POSITIONAL, "RELIANCE", tradeCheckingDate.Date, tradeCheckingDate.Date)
+                    Dim isTradingDay As Boolean = stockPayload IsNot Nothing AndAlso stockPayload.Count > 0
                     _canceller.Token.ThrowIfCancellationRequested()
-                    If stockList IsNot Nothing AndAlso stockList.Count > 0 Then
+                    If isTradingDay AndAlso stockList IsNot Nothing AndAlso stockList.Count > 0 Then
                         Dim currentDayOneMinuteStocksPayload As Dictionary(Of String, Dictionary(Of Date, Payload)) = Nothing
                         Dim XDayOneMinuteStocksPayload As Dictionary(Of String, Dictionary(Of Date, Payload)) = Nothing
                         Dim stocksRuleData As Dictionary(Of String, StrategyRule) = Nothing
