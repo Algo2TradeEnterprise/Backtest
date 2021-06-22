@@ -433,8 +433,8 @@ Public Class Common
                 tempPayload = New Payload(Payload.CandleDataSource.Chart)
                 tempPayload.PreviousCandlePayload = tempPreCandle
                 tempPayload.Open = dt.Rows(i).Item(openColumnIndex)
-                tempPayload.Low = dt.Rows(i).Item(lowColumnIndex)
-                tempPayload.High = dt.Rows(i).Item(highColumnIndex)
+                tempPayload.Low = Math.Min(dt.Rows(i).Item(openColumnIndex), dt.Rows(i).Item(lowColumnIndex))
+                tempPayload.High = Math.Max(dt.Rows(i).Item(openColumnIndex), dt.Rows(i).Item(highColumnIndex))
                 tempPayload.Close = dt.Rows(i).Item(closeColumnIndex)
                 tempPayload.PayloadDate = dt.Rows(i).Item(dateColumnIndex)
                 tempPayload.TradingSymbol = dt.Rows(i).Item(tradingSymbolColumnIndex)
