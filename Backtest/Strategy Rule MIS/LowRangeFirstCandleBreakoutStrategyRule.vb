@@ -18,7 +18,7 @@ Public Class LowRangeFirstCandleBreakoutStrategyRule
 #End Region
 
     Private _firstCandleOfTheDay As Payload = Nothing
-
+    Private ReadOnly _lastTradeEntryTime As Date
     Private ReadOnly _userInputs As StrategyRuleEntities
     Public Sub New(ByVal inputPayload As Dictionary(Of Date, Payload),
                    ByVal lotSize As Integer,
@@ -29,6 +29,7 @@ Public Class LowRangeFirstCandleBreakoutStrategyRule
                    ByVal entities As RuleEntities)
         MyBase.New(inputPayload, lotSize, parentStrategy, tradingDate, tradingSymbol, canceller, entities)
         _userInputs = _entities
+        _lastTradeEntryTime = New Date(_tradingDate.Year, _tradingDate.Month, _tradingDate.Day, _parentStrategy.LastTradeEntryTime.Hours, _parentStrategy.LastTradeEntryTime.Minutes, _parentStrategy.LastTradeEntryTime.Seconds)
     End Sub
 
     Public Overrides Sub CompletePreProcessing()
@@ -51,7 +52,8 @@ Public Class LowRangeFirstCandleBreakoutStrategyRule
         Await Task.Delay(0).ConfigureAwait(False)
         Dim currentCandle As Payload = _signalPayload(_parentStrategy.GetCurrentXMinuteCandleTime(currentTick.PayloadDate, _signalPayload))
         If currentCandle IsNot Nothing AndAlso currentCandle.PreviousCandlePayload IsNot Nothing AndAlso Me.EligibleToTakeTrade AndAlso
-            currentCandle.PayloadDate >= _tradeStartTime AndAlso Not _parentStrategy.IsAnyTradeOfTheStockTargetReached(currentCandle, Trade.TypeOfTrade.MIS) Then
+            currentCandle.PayloadDate >= _tradeStartTime AndAlso Not _parentStrategy.IsAnyTradeOfTheStockTargetReached(currentCandle, Trade.TypeOfTrade.MIS) AndAlso
+            Not _parentStrategy.IsAnyTradeOfTheStockBreakevenReached(currentCandle, Trade.TypeOfTrade.MIS) Then
             Dim signalCandle As Payload = _firstCandleOfTheDay
             Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Open, RoundOfType.Floor)
             Dim slPoint As Decimal = signalCandle.CandleRange + 2 * buffer
@@ -72,7 +74,7 @@ Public Class LowRangeFirstCandleBreakoutStrategyRule
                                 .SignalCandle = signalCandle,
                                 .OrderType = Trade.TypeOfOrder.SL,
                                 .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
-                                .Supporting2 = slPoint
+                                .Supporting2 = targetPoint
                             }
                         ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
                     End If
@@ -91,7 +93,7 @@ Public Class LowRangeFirstCandleBreakoutStrategyRule
                             .SignalCandle = signalCandle,
                             .OrderType = Trade.TypeOfOrder.SL,
                             .Supporting1 = signalCandle.PayloadDate.ToString("HH:mm:ss"),
-                            .Supporting2 = slPoint
+                            .Supporting2 = targetPoint
                         }
                         ret = New Tuple(Of Boolean, List(Of PlaceOrderParameters))(True, New List(Of PlaceOrderParameters) From {parameter})
                     End If
@@ -109,6 +111,8 @@ Public Class LowRangeFirstCandleBreakoutStrategyRule
                 ret = New Tuple(Of Boolean, String)(True, "Invalid Trade")
             ElseIf _parentStrategy.IsAnyTradeOfTheStockTargetReached(currentTick, Trade.TypeOfTrade.MIS) Then
                 ret = New Tuple(Of Boolean, String)(True, "Invalid Trade")
+            ElseIf _parentStrategy.IsAnyTradeOfTheStockBreakevenReached(currentTick, Trade.TypeOfTrade.MIS) Then
+                ret = New Tuple(Of Boolean, String)(True, "Invalid Trade")
             End If
         End If
         Return ret
@@ -117,15 +121,15 @@ Public Class LowRangeFirstCandleBreakoutStrategyRule
     Public Overrides Async Function IsTriggerReceivedForModifyStoplossOrderAsync(currentTick As Payload, currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))
         Dim ret As Tuple(Of Boolean, Decimal, String) = Nothing
         Await Task.Delay(0).ConfigureAwait(False)
-        If currentTrade IsNot Nothing AndAlso currentTrade.TradeCurrentStatus = Trade.TradeExecutionStatus.Inprogress AndAlso _userInputs.BreakevenMultiplier < 1 Then
-            Dim slPoint As Decimal = currentTrade.Supporting2
+        If currentTrade IsNot Nothing AndAlso _userInputs.BreakevenMultiplier < 1 AndAlso currentTrade.TargetRemark.ToUpper <> "LOSS MAKEUP" Then
+            Dim targetPoint As Decimal = currentTrade.Supporting2
             Dim triggerPrice As Decimal = Decimal.MinValue
             If currentTrade.EntryDirection = Trade.TradeExecutionDirection.Buy AndAlso
-                currentTick.Open >= currentTrade.EntryPrice + slPoint * _userInputs.BreakevenMultiplier Then
+                currentTick.Open >= currentTrade.EntryPrice + targetPoint * _userInputs.BreakevenMultiplier Then
                 Dim breakevenPoint As Decimal = _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, currentTrade.LotSize, currentTrade.StockType)
                 triggerPrice = currentTrade.EntryPrice + breakevenPoint
             ElseIf currentTrade.EntryDirection = Trade.TradeExecutionDirection.Sell AndAlso
-                currentTick.Open <= currentTrade.EntryPrice - slPoint * _userInputs.BreakevenMultiplier Then
+                currentTick.Open <= currentTrade.EntryPrice - targetPoint * _userInputs.BreakevenMultiplier Then
                 Dim breakevenPoint As Decimal = _parentStrategy.GetBreakevenPoint(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, currentTrade.EntryDirection, currentTrade.LotSize, currentTrade.StockType)
                 triggerPrice = currentTrade.EntryPrice - breakevenPoint
             End If
@@ -142,7 +146,7 @@ Public Class LowRangeFirstCandleBreakoutStrategyRule
         If currentTrade IsNot Nothing AndAlso _userInputs.ReverseSignalEntry AndAlso _parentStrategy.IsAnyTradeOfTheStockStoplossReached(currentTick, Trade.TypeOfTrade.MIS) Then
             Dim price As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, currentTrade.EntryPrice, currentTrade.Quantity, Math.Abs(_userInputs.StoplossPerTrade), currentTrade.EntryDirection, currentTrade.StockType)
             If price <> Decimal.MinValue AndAlso price <> currentTrade.PotentialTarget Then
-                ret = New Tuple(Of Boolean, Decimal, String)(True, price, Math.Abs(price - currentTrade.PotentialStopLoss))
+                ret = New Tuple(Of Boolean, Decimal, String)(True, price, "Loss Makeup")
             End If
         End If
         Return ret
@@ -152,9 +156,28 @@ Public Class LowRangeFirstCandleBreakoutStrategyRule
         Throw New NotImplementedException()
     End Function
 
-    Public Overrides Async Function UpdateRequiredCollectionsAsync(currentTick As Payload) As Task
+    Public Overrides Async Function eodUpdateRequiredCollectionsAsync(currentTick As Payload) As Task
         Await Task.Delay(0).ConfigureAwait(False)
-
+        Dim closedTrades As List(Of Trade) = _parentStrategy.GetSpecificTrades(currentTick, Trade.TypeOfTrade.MIS, Trade.TradeExecutionStatus.Close)
+        If closedTrades IsNot Nothing AndAlso closedTrades.Count > 0 Then
+            If closedTrades.Count = 1 Then
+                If closedTrades.FirstOrDefault.ExitCondition = Trade.TradeExitCondition.StopLoss Then
+                    If closedTrades.FirstOrDefault.SLRemark.ToUpper.Contains("BREAKEVEN") Then
+                        closedTrades.FirstOrDefault.UpdateTrade(Supporting5:="Breakeven")
+                    Else
+                        closedTrades.FirstOrDefault.UpdateTrade(Supporting5:="Stoploss")
+                    End If
+                Else
+                    closedTrades.FirstOrDefault.UpdateTrade(Supporting5:=closedTrades.FirstOrDefault.ExitCondition.ToString)
+                End If
+            Else
+                If closedTrades.LastOrDefault.ExitCondition = Trade.TradeExitCondition.Target Then
+                    closedTrades.LastOrDefault.UpdateTrade(Supporting5:="Loss Makeup")
+                Else
+                    closedTrades.LastOrDefault.UpdateTrade(Supporting5:=closedTrades.LastOrDefault.ExitCondition.ToString)
+                End If
+            End If
+        End If
     End Function
 
     Private Function GetHighestPointOfTheDay(ByVal candle As Payload) As Decimal

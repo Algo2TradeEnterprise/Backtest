@@ -86,6 +86,10 @@ Namespace StrategyHelper
             Await Task.Delay(0).ConfigureAwait(False)
         End Function
 
+        Public Overridable Async Function EODUpdateRequiredCollectionsAsync(ByVal currentTick As Payload) As Task
+            Await Task.Delay(0).ConfigureAwait(False)
+        End Function
+
         Public MustOverride Async Function IsTriggerReceivedForPlaceOrderAsync(ByVal currentTick As Payload) As Task(Of Tuple(Of Boolean, List(Of PlaceOrderParameters)))
         Public MustOverride Async Function IsTriggerReceivedForExitOrderAsync(ByVal currentTick As Payload, ByVal currentTrade As Trade) As Task(Of Tuple(Of Boolean, String))
         Public MustOverride Async Function IsTriggerReceivedForExitCNCEODOrderAsync(ByVal currentTick As Payload, ByVal currentTrade As Trade) As Task(Of Tuple(Of Boolean, Decimal, String))

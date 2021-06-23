@@ -1188,6 +1188,24 @@ Namespace StrategyHelper
             Return ret
         End Function
 
+        Public Function IsAnyTradeOfTheStockBreakevenReached(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TypeOfTrade) As Boolean
+            Dim ret As Boolean = False
+            If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentMinutePayload.PayloadDate.Date) AndAlso
+                TradesTaken(currentMinutePayload.PayloadDate.Date).ContainsKey(currentMinutePayload.TradingSymbol) Then
+                Dim completeTrades As List(Of Trade) = GetSpecificTrades(currentMinutePayload, tradeType, Trade.TradeExecutionStatus.Close)
+                If completeTrades IsNot Nothing AndAlso completeTrades.Count > 0 Then
+                    Dim targetTrades As List(Of Trade) = completeTrades.FindAll(Function(x)
+                                                                                    Return x.ExitCondition = Trade.TradeExitCondition.StopLoss AndAlso
+                                                                                    x.AdditionalTrade = False AndAlso x.PLPoint > 0
+                                                                                End Function)
+                    If targetTrades IsNot Nothing AndAlso targetTrades.Count > 0 Then
+                        ret = True
+                    End If
+                End If
+            End If
+            Return ret
+        End Function
+
         Public Function GetNumberOfUniqueSignalTradeOfTheStock(ByVal currentMinutePayload As Payload, ByVal tradeType As Trade.TypeOfTrade) As Integer
             Dim ret As Integer = 0
             If TradesTaken IsNot Nothing AndAlso TradesTaken.Count > 0 AndAlso TradesTaken.ContainsKey(currentMinutePayload.PayloadDate.Date) AndAlso

@@ -391,9 +391,11 @@ Namespace StrategyHelper
                                                     If stockPL >= stockStrategyRule.MaxProfitOfThisStock Then
                                                         ExitStockTradesByForce(runningTick, Trade.TypeOfTrade.MIS, "Max Stock Profit reached for the day")
                                                         stockList(stockName).EligibleToTakeTrade = False
+                                                        Await stockStrategyRule.EODUpdateRequiredCollectionsAsync(runningTick).ConfigureAwait(False)
                                                     ElseIf stockPL <= stockStrategyRule.MaxLossOfThisStock Then
                                                         ExitStockTradesByForce(runningTick, Trade.TypeOfTrade.MIS, "Max Stock Loss reached for the day")
                                                         stockList(stockName).EligibleToTakeTrade = False
+                                                        Await stockStrategyRule.EODUpdateRequiredCollectionsAsync(runningTick).ConfigureAwait(False)
                                                     End If
 
                                                     'Force exit at day end
@@ -401,6 +403,7 @@ Namespace StrategyHelper
                                                     If runningTick.PayloadDate >= eodTime Then
                                                         ExitStockTradesByForce(runningTick, Trade.TypeOfTrade.MIS, "EOD Exit")
                                                         stockList(stockName).EligibleToTakeTrade = False
+                                                        Await stockStrategyRule.EODUpdateRequiredCollectionsAsync(runningTick).ConfigureAwait(False)
                                                     End If
 
                                                     'Stock MTM Check
@@ -410,9 +413,11 @@ Namespace StrategyHelper
                                                         If stockPL >= StockMaxProfitPerDay Then
                                                             ExitStockTradesByForce(runningTick, Trade.TypeOfTrade.MIS, "Max Stock Profit reached for the day")
                                                             stockList(stockName).EligibleToTakeTrade = False
+                                                            Await stockStrategyRule.EODUpdateRequiredCollectionsAsync(runningTick).ConfigureAwait(False)
                                                         ElseIf stockPL <= Math.Abs(StockMaxLossPerDay) * -1 Then
                                                             ExitStockTradesByForce(runningTick, Trade.TypeOfTrade.MIS, "Max Stock Loss reached for the day")
                                                             stockList(stockName).EligibleToTakeTrade = False
+                                                            Await stockStrategyRule.EODUpdateRequiredCollectionsAsync(runningTick).ConfigureAwait(False)
                                                         End If
                                                     End If
 
@@ -426,26 +431,32 @@ Namespace StrategyHelper
                                                             ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Max Profit reached for the day")
                                                             exitDone = True
                                                             stockList(stockName).EligibleToTakeTrade = False
+                                                            Await stockStrategyRule.EODUpdateRequiredCollectionsAsync(runningTick).ConfigureAwait(False)
                                                         ElseIf totalPLOftheDay <= Math.Abs(OverAllLossPerDay) * -1 Then
                                                             ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Max Loss reached for the day")
                                                             exitDone = True
                                                             stockList(stockName).EligibleToTakeTrade = False
+                                                            Await stockStrategyRule.EODUpdateRequiredCollectionsAsync(runningTick).ConfigureAwait(False)
                                                         ElseIf Me.TypeOfMTMTrailing = MTMTrailingType.FixedSlabTrailing AndAlso totalPLOftheDay <= OverAllLossPerDay Then
                                                             ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Trailing MTM reached for the day")
                                                             exitDone = True
                                                             stockList(stockName).EligibleToTakeTrade = False
+                                                            Await stockStrategyRule.EODUpdateRequiredCollectionsAsync(runningTick).ConfigureAwait(False)
                                                         ElseIf Me.TypeOfMTMTrailing = MTMTrailingType.LogSlabTrailing AndAlso totalPLOftheDay <= OverAllLossPerDay Then
                                                             ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Log MTM reached for the day")
                                                             exitDone = True
                                                             stockList(stockName).EligibleToTakeTrade = False
+                                                            Await stockStrategyRule.EODUpdateRequiredCollectionsAsync(runningTick).ConfigureAwait(False)
                                                         ElseIf Me.TypeOfMTMTrailing = MTMTrailingType.RealtimeTrailing AndAlso totalPLOftheDay <= OverAllLossPerDay Then
                                                             ExitAllTradeByForce(potentialTickSignalTime, currentDayOneMinuteStocksPayload, Trade.TypeOfTrade.MIS, "Realtime Trailing MTM reached for the day")
                                                             exitDone = True
                                                             stockList(stockName).EligibleToTakeTrade = False
+                                                            Await stockStrategyRule.EODUpdateRequiredCollectionsAsync(runningTick).ConfigureAwait(False)
                                                         End If
                                                         If exitDone Then
                                                             For Each runningStock In stockList
                                                                 runningStock.Value.EligibleToTakeTrade = False
+                                                                Await stockStrategyRule.EODUpdateRequiredCollectionsAsync(runningTick).ConfigureAwait(False)
                                                             Next
                                                         End If
                                                     End If
