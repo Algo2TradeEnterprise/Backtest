@@ -7081,9 +7081,9 @@ Public Class frmMain
 
                                         .RuleEntityData = New LowRangeFirstCandleBreakoutStrategyRule.StrategyRuleEntities With
                                                           {.StoplossPerTrade = -500,
-                                                           .TargetMultiplier = 4,
-                                                           .BreakevenMultiplier = 0.5,
-                                                           .ReverseSignalEntry = True}
+                                                           .TargetMultiplier = tgtMul,
+                                                           .BreakevenMultiplier = brkvnMul,
+                                                           .ReverseSignalEntry = rvrs}
 
                                         .NumberOfTradeableStockPerDay = 5
 

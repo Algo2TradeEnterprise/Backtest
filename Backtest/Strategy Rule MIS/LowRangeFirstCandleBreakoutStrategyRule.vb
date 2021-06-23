@@ -58,7 +58,8 @@ Public Class LowRangeFirstCandleBreakoutStrategyRule
             Dim buffer As Decimal = _parentStrategy.CalculateBuffer(signalCandle.Open, RoundOfType.Floor)
             Dim slPoint As Decimal = signalCandle.CandleRange + 2 * buffer
             Dim quantity As Decimal = _parentStrategy.CalculateQuantityFromTargetSL(_tradingSymbol, signalCandle.Open, signalCandle.Open - slPoint, _userInputs.StoplossPerTrade, _parentStrategy.StockType)
-            Dim targetPoint As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, signalCandle.Open, quantity, Math.Abs(_userInputs.StoplossPerTrade) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType) - signalCandle.Open
+            'Dim targetPoint As Decimal = _parentStrategy.CalculatorTargetOrStoploss(_tradingSymbol, signalCandle.Open, quantity, Math.Abs(_userInputs.StoplossPerTrade) * _userInputs.TargetMultiplier, Trade.TradeExecutionDirection.Buy, _parentStrategy.StockType) - signalCandle.Open
+            Dim targetPoint As Decimal = slPoint * _userInputs.TargetMultiplier
             If quantity > 0 Then
                 If _userInputs.ReverseSignalEntry OrElse Not IsTradeRunningOrComplete(currentCandle, Trade.TradeExecutionDirection.Sell) Then
                     If GetHighestPointOfTheDay(currentCandle) - signalCandle.High + buffer < targetPoint AndAlso
