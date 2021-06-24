@@ -145,6 +145,7 @@
     <Compile Include="Strategy Rule MIS\EMADirectionBasedHammerCandleBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\EmaSmaCrossoverStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\LowRangeCandleBreakoutStrategyRule.vb" />
+    <Compile Include="Strategy Rule MIS\LowRangeFirstCandleBreakoutGapStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\LowRangeFirstCandleBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\XMinCandleBreakoutStrategyRule.vb" />
     <Compile Include="Strategy Rule MIS\FavourableCandleBreakoutAfterVStrategyRule.vb" />

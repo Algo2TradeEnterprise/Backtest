@@ -7115,6 +7115,95 @@ Public Class frmMain
                         Next
                     Next
 #End Region
+                Case 77
+#Region "Low Range First Candle Gap Breakout Strategy"
+                    Dim stockType As Trade.TypeOfStock = Trade.TypeOfStock.Cash
+                    Dim database As Common.DataBaseTable = Common.DataBaseTable.None
+                    Dim margin As Decimal = 0
+                    Dim tick As Decimal = 0
+                    Select Case stockType
+                        Case Trade.TypeOfStock.Cash
+                            database = Common.DataBaseTable.Intraday_Cash
+                            margin = 1
+                            tick = 0.05
+                        Case Trade.TypeOfStock.Commodity
+                            database = Common.DataBaseTable.Intraday_Commodity
+                            margin = 1
+                            tick = 1
+                        Case Trade.TypeOfStock.Currency
+                            database = Common.DataBaseTable.Intraday_Currency
+                            margin = 1
+                            tick = 0.0025
+                        Case Trade.TypeOfStock.Futures
+                            database = Common.DataBaseTable.Intraday_Futures
+                            margin = 4
+                            tick = 0.05
+                    End Select
+
+                    For tgtMul As Decimal = 3 To 5 Step 1
+                        For brkvnMul As Decimal = 0.5 To 1 Step 0.5
+                            Using backtestStrategy As New MISGenericStrategy(canceller:=_canceller,
+                                                                             exchangeStartTime:=TimeSpan.Parse("09:15:00"),
+                                                                             exchangeEndTime:=TimeSpan.Parse("15:29:59"),
+                                                                             tradeStartTime:=TimeSpan.Parse("09:16:00"),
+                                                                             lastTradeEntryTime:=TimeSpan.Parse("14:30:00"),
+                                                                             eodExitTime:=TimeSpan.Parse("15:15:00"),
+                                                                             tickSize:=tick,
+                                                                             marginMultiplier:=margin,
+                                                                             timeframe:=1,
+                                                                             heikenAshiCandle:=False,
+                                                                             stockType:=stockType,
+                                                                             optionStockType:=Trade.TypeOfStock.None,
+                                                                             databaseTable:=database,
+                                                                             dataSource:=sourceData,
+                                                                             initialCapital:=Decimal.MaxValue / 2,
+                                                                             usableCapital:=Decimal.MaxValue / 2,
+                                                                             minimumEarnedCapitalToWithdraw:=Decimal.MaxValue,
+                                                                             amountToBeWithdrawn:=0)
+                                AddHandler backtestStrategy.Heartbeat, AddressOf OnHeartbeat
+
+                                With backtestStrategy
+                                    .StockFileName = Path.Combine(My.Application.Info.DirectoryPath, "Low Range ATR Stocks.csv")
+
+                                    .AllowBothDirectionEntryAtSameTime = False
+                                    .TrailingStoploss = False
+                                    .TickBasedStrategy = True
+                                    .RuleNumber = ruleNumber
+
+                                    .RuleEntityData = New LowRangeFirstCandleBreakoutGapStrategyRule.StrategyRuleEntities With
+                                                      {.StoplossPerTrade = -500,
+                                                       .TargetMultiplier = tgtMul,
+                                                       .BreakevenMultiplier = brkvnMul}
+
+                                    .NumberOfTradeableStockPerDay = 5
+
+                                    .NumberOfTradesPerStockPerDay = Integer.MaxValue
+
+                                    .StockMaxProfitPercentagePerDay = Decimal.MaxValue
+                                    .StockMaxLossPercentagePerDay = Decimal.MinValue
+
+                                    .ExitOnStockFixedTargetStoploss = False
+                                    .StockMaxProfitPerDay = Decimal.MaxValue
+                                    .StockMaxLossPerDay = Decimal.MinValue
+
+                                    .ExitOnOverAllFixedTargetStoploss = False
+                                    .OverAllProfitPerDay = Decimal.MaxValue
+                                    .OverAllLossPerDay = Decimal.MinValue
+
+                                    .TypeOfMTMTrailing = Strategy.MTMTrailingType.None
+                                    .MTMSlab = Math.Abs(.OverAllLossPerDay)
+                                    .MovementSlab = .MTMSlab / 2
+                                    .RealtimeTrailingPercentage = 50
+                                End With
+
+                                Dim ruleData As LowRangeFirstCandleBreakoutGapStrategyRule.StrategyRuleEntities = backtestStrategy.RuleEntityData
+                                Dim filename As String = String.Format("LwRngFrstCndlGapBrkot,Tgt {0},Brkevn {1}", ruleData.TargetMultiplier, ruleData.BreakevenMultiplier)
+
+                                Await backtestStrategy.TestStrategyAsync(startDate, endDate, filename).ConfigureAwait(False)
+                            End Using
+                        Next
+                    Next
+#End Region
                 Case Else
                     Throw New NotImplementedException
             End Select
